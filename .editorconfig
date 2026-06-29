@@ -1,0 +1,27 @@
+# このファイルがプロジェクトのルートであることを示す
+root = true
+
+# すべてのファイルに共通の設定
+[*]
+charset = utf-8-bom        # UTF-8 BOMを付けて保存
+end_of_line = lf           # UNIX形式の改行
+insert_final_newline = true  # ファイル末尾に改行を挿入
+trim_trailing_whitespace = true  # 行末の空白を削除
+
+# C++ ソースファイル専用の設定
+[*.cpp]
+indent_style = space
+indent_size = 4
+
+# C++ ヘッダーファイル専用の設定
+[*.h]
+indent_style = space
+indent_size = 4
+
+# Visual Studio 用設定（任意）
+[*.vcxproj]
+charset = utf-8-bom
+
+# CMakeファイル
+[CMakeLists.txt]
+charset = utf-8-bom
