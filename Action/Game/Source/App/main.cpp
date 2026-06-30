@@ -8,6 +8,8 @@
 
 
 
+// デバッグビルド終了時にD3D12リソースのリークを検出してログ出力する。
+// dxgidebug.dll は実行時ロードが必須（静的リンク不可）。
 void ReportLiveObjects()
 {
 	IDXGIDebug* pDxgiDebug;
@@ -43,6 +45,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	// ここからゲームループ。
 	while (DispatchWindowMessage())
 	{
+		// Aボタンが押された瞬間だけバイブレーションを開始（Hold中は再トリガーしない）。
 		if (g_pad[0]->IsTrigger(enButtonA) ){
 			g_pad[0]->SetVibration(/*durationSec=*/0.5f, /*normalizedPower=*/1.0f);
 		}

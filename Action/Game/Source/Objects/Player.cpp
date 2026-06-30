@@ -6,16 +6,18 @@ namespace
 	constexpr float kMoveSpeed = 300.0f;
 	constexpr float kJumpSpeed = 400.0f;
 	constexpr float kGravity = 980.0f;
+	// スティック入力のデッドゾーン閾値（二乗値）。sqrt を避けるため平方根前の値で比較。
 	constexpr float kStickDeadZoneSq = 0.01f;
-	constexpr float kRushDistance = 300.0f;
-	constexpr float kRushSpeed = 1500.0f;
+	constexpr float kRushDistance = 300.0f;    // ラッシュスキルの総移動距離。
+	constexpr float kRushSpeed = 1500.0f;      // ラッシュ中の移動速度（通常の5倍）。
+	// ラッシュ中に停止させるランアニメーションの再生位置（秒）。疾走ポーズに合った時刻。
 	constexpr float kRushRunPoseTime = 0.23f;
-	constexpr float kRespawnHeight = -1000.0f;
-	const Vector3 kSwordOffset = Vector3(5.0f, -3.0f, 10.0f);
+	constexpr float kRespawnHeight = -1000.0f; // この高さを下回るとステージ外と判断してリスポーン。
+	const Vector3 kSwordOffset = Vector3(5.0f, -3.0f, 10.0f);   // 右手ボーンローカル空間での剣の位置オフセット。
 	const Vector3 kSwordScale = Vector3(1.35f, 1.35f, 1.35f);
 	constexpr float kSwordRotOffsetX = 0.0f;
 	constexpr float kSwordRotOffsetY = 0.0f;
-	constexpr float kSwordRotOffsetZ = -90.0f;
+	constexpr float kSwordRotOffsetZ = -90.0f; // 剣モデルのZ軸が手の向きと90度ずれているため補正。
 }
 
 Player::Player()
@@ -131,6 +133,8 @@ void Player::UpdateAnimation()
 
 void Player::InitSword()
 {
+	// 右手ボーンの名前はモデルのセットアップによって異なる。
+	// 1つ目で見つからなければ別名で再検索する。
 	m_rightHandBoneNo = m_modelRender.FindBoneID(L"Character1_RightHand");
 	if (m_rightHandBoneNo < 0) {
 		m_rightHandBoneNo = m_modelRender.FindBoneID(L"J_R_ForeArm_00_tw");
@@ -175,7 +179,9 @@ void Player::UpdateSword()
 
 bool Player::IsRushSkillKeyTrigger()
 {
-	const bool isRushKeyPressed = (GetAsyncKeyState('L') & 0x8000) != 0;
+	// ラッシュスキルはキーボードLキーに割り当てているためGetAsyncKeyStateを使用。
+	// 前フレームの状態と比較して「押した瞬間」だけtrueを返す。
+	const bool isRushKeyPressed = GetAsyncKeyState('L') != 0;
 	const bool isTrigger = isRushKeyPressed && !m_isRushKeyPressed;
 	m_isRushKeyPressed = isRushKeyPressed;
 	return isTrigger;
@@ -185,6 +191,7 @@ void Player::StartRushSkill(const Vector3& direction)
 {
 	m_rushDirection = direction;
 	m_rushDirection.y = 0.0f;
+	// スティック入力がデッドゾーン以下なら、プレイヤーが向いている方向へラッシュする。
 	if (m_rushDirection.LengthSq() <= kStickDeadZoneSq) {
 		m_rushDirection = GetForward();
 		m_rushDirection.y = 0.0f;
@@ -240,6 +247,7 @@ void Player::Move()
 	}
 
 	if (m_rushRemainingDistance > 0.0f && deltaTime > FLT_EPSILON) {
+		// 今フレームの移動距離が残り距離を超えないよう、小さい方の値を使う。
 		const float maxRushMoveDistance = kRushSpeed * deltaTime;
 		const float rushMoveDistance = maxRushMoveDistance < m_rushRemainingDistance ? maxRushMoveDistance : m_rushRemainingDistance;
 		horizontalMoveSpeed = m_rushDirection * (rushMoveDistance / deltaTime);

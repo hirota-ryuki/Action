@@ -7,8 +7,9 @@ namespace
 {
 	constexpr float kMoveSpeed = 140.0f;
 	constexpr float kGravity = 980.0f;
-	constexpr float kChaseRange = 900.0f;
-	constexpr float kStopDistance = 90.0f;
+	constexpr float kChaseRange = 900.0f;      // この距離以内に入ると追跡を開始する。
+	constexpr float kStopDistance = 90.0f;     // この距離まで近づいたら停止する（近づきすぎ防止）。
+	// 距離の比較は sqrt を避けるため二乗値で行う。
 	constexpr float kChaseRangeSq = kChaseRange * kChaseRange;
 	constexpr float kStopDistanceSq = kStopDistance * kStopDistance;
 }
@@ -72,10 +73,11 @@ void Enemy::Move()
 {
 	Vector3 toPlayer;
 	toPlayer.Subtract(m_player->GetPosition(), m_position);
-	toPlayer.y = 0.0f;
+	toPlayer.y = 0.0f;  // 高低差を無視して水平方向の追跡のみ行う。
 
 	const float distanceSq = toPlayer.LengthSq();
 	Vector3 horizontalMoveSpeed = Vector3::Zero;
+	// 追跡範囲内かつ停止距離の外にいるときだけ追跡する。
 	m_isChasing = distanceSq <= kChaseRangeSq && distanceSq > kStopDistanceSq;
 
 	if (m_isChasing) {

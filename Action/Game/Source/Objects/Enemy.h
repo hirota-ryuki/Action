@@ -2,6 +2,8 @@
 
 class Player;
 
+// 敵キャラクターを管理するクラス。
+// プレイヤーとの距離に応じて追跡・停止を切り替える。
 class Enemy : public IGameObject
 {
 public:

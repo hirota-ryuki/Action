@@ -19,10 +19,11 @@ Stage::~Stage()
 bool Stage::Start()
 {
 	m_modelRender.Init(kStageModelPath);
-	m_modelRender.SetShadowCasterFlag(false);
+	m_modelRender.SetShadowCasterFlag(false);  // ステージ自体は影を落とさない。
 	m_modelRender.SetTRS(m_position, m_rotation, m_scale);
 	m_modelRender.Update();
 
+	// モデルのメッシュ形状をそのまま物理コリジョンとして使用する。
 	m_physicsStaticObject.CreateFromModel(m_modelRender.GetModel(), m_modelRender.GetModel().GetWorldMatrix());
 	m_physicsStaticObject.SetFriction(1.0f);
 
