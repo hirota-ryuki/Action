@@ -9,6 +9,8 @@ namespace nsK2Engine {
 	class SkyCube;
 }
 
+// ゲーム全体を管理するルートオブジェクト。
+// ステージ・プレイヤー・敵・カメラ・スカイキューブの生成と破棄を担う。
 class Game : public IGameObject
 {
 public:
@@ -23,5 +25,5 @@ private:
 	Player* m_player = nullptr;
 	Enemy* m_enemy = nullptr;
 	GameCamera* m_gameCamera = nullptr;
-	nsK2Engine::SkyCube* m_skyCube = nullptr;
+	nsK2Engine::SkyCube* m_skyCube = nullptr;  // IBLの環境マップ生成も兼ねる。
 };

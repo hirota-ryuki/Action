@@ -1,5 +1,7 @@
 #pragma once
 
+// ステージの地形を管理するクラス。
+// モデルから物理コリジョンを生成し、キャラクターが乗れる静的な床を提供する。
 class Stage : public IGameObject
 {
 public:
