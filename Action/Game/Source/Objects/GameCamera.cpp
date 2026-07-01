@@ -11,9 +11,11 @@ namespace
 	constexpr float kMouseCameraRotateSpeed = 0.12f;
 	// 1フレームあたりのマウス回転量の上限。フレームレートの揺れによるカクつきを抑える。
 	constexpr float kMaxMouseCameraRotateDeg = 12.0f;
-	constexpr float kTargetHeight = 80.0f;           // 注視点をプレイヤーの足元でなく腰あたりに合わせる高さ。
+	// カメラをプレイヤーに近づける代わりに画角を広げてプレイヤー全体が収まるようにしてある。
+	constexpr float kTargetHeight = 170.0f;          // 注視点をプレイヤーの足元でなく腰あたりに合わせる高さ。
 	constexpr float kTargetForwardOffset = 20.0f;    // 注視点をカメラ正面方向に少しずらして奥行き感を出す。
 	constexpr float kFirstPersonEyeHeight = 90.0f;   // 一人称カメラの目線の高さ（プレイヤー足元からのオフセット）。
+	constexpr float kViewAngleDeg = 90.0f;           // カメラを近づけた分、画角を通常の60度から広げる。
 	constexpr float kFirstPersonLookDistance = 1000.0f;
 	constexpr float kFirstPersonNear = 5.0f;         // 一人称時はNearを小さくして手元の銃モデルが見切れないようにする。
 	const Vector3 kFirstPersonGunOffset = Vector3(52.0f, -26.0f, 42.0f);  // カメラローカル空間での銃の位置。
@@ -56,6 +58,8 @@ bool GameCamera::Start()
 
 	m_defaultNear = g_camera3D->GetNear();
 	m_firstPersonForward = m_player->GetForward();
+
+	g_camera3D->SetViewAngle(Math::DegToRad(kViewAngleDeg));
 
 	InitFirstPersonGun();
 
@@ -181,7 +185,7 @@ void GameCamera::UpdateFirstPersonGun()
 
 	Vector3 gunPosition = cameraPosition;
 	gunPosition += cameraRight * kFirstPersonGunOffset.x;
-	gunPosition += Vector3::AxisY * kFirstPersonGunOffset.y;  // カメラの傾きに依らず世界の上方向へオフセット。
+	gunPosition += cameraUp * kFirstPersonGunOffset.y;  // カメラのローカル空間で揃えることで、ピッチ時も銃が画面上で固定されて見えるようにする。
 	gunPosition += cameraForward * kFirstPersonGunOffset.z;
 
 	Quaternion gunRotation;
