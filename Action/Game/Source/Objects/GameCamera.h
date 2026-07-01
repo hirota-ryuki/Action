@@ -34,7 +34,7 @@ private:
 
 	Player* m_player = nullptr;
 	ModelRender m_firstPersonGunRender;
-	Vector3 m_toCameraPos = Vector3(0.0f, 200.0f, -400.0f);  // プレイヤーからカメラへのオフセット（三人称）。
+	Vector3 m_toCameraPos = Vector3(0.0f, 250.0f, -250.0f);  // プレイヤーからカメラへのオフセット（三人称）。画角を広げた分、距離は半分に近づけてある。
 	Vector3 m_firstPersonForward = Vector3::AxisZ;            // 一人称カメラの向き（正規化済み）。
 	EnCameraMode m_cameraMode = EnCameraMode::ThirdPerson;
 	float m_defaultNear = 1.0f;         // 三人称時のNearを保持しておき、一人称終了時に復元する。
