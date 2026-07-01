@@ -4,6 +4,7 @@
 namespace
 {
 	constexpr float kMoveSpeed = 300.0f;
+	constexpr float kRunSpeedMultiplier = 1.6f; // 左Shift押下中の移動速度倍率。
 	constexpr float kJumpSpeed = 400.0f;
 	constexpr float kGravity = 980.0f;
 	// スティック入力のデッドゾーン閾値（二乗値）。sqrt を避けるため平方根前の値で比較。
@@ -39,15 +40,15 @@ bool Player::Start()
 	m_charaCon.Init(20.0f, 100.0f, m_position);
 	m_isCharaConReady = true;
 
-	// idleのみアニメーションデータを用意済み。walk/run/jumpは未用意のためコメントアウトのまま。
+	// idle/walk/run/jumpのアニメーションデータが揃った。
 	m_animClips[enAnimClip_Idle].Load("Assets/animData/player/idle.tka");
 	m_animClips[enAnimClip_Idle].SetLoopFlag(true);
-	// m_animClips[enAnimClip_Walk].Load("Assets/animData/walk.tka");
-	// m_animClips[enAnimClip_Walk].SetLoopFlag(true);
-	// m_animClips[enAnimClip_Run].Load("Assets/animData/run.tka");
-	// m_animClips[enAnimClip_Run].SetLoopFlag(true);
-	// m_animClips[enAnimClip_Jump].Load("Assets/animData/jump.tka");
-	// m_animClips[enAnimClip_Jump].SetLoopFlag(false);
+	m_animClips[enAnimClip_Walk].Load("Assets/animData/player/walk.tka");
+	m_animClips[enAnimClip_Walk].SetLoopFlag(true);
+	m_animClips[enAnimClip_Run].Load("Assets/animData/player/run.tka");
+	m_animClips[enAnimClip_Run].SetLoopFlag(true);
+	m_animClips[enAnimClip_Jump].Load("Assets/animData/player/jump.tka");
+	m_animClips[enAnimClip_Jump].SetLoopFlag(false);
 
 	// player.tkmは3ds Max(Z-up)で作成されているため、enModelUpAxisZを指定して起こす（Yのままだと仰向けに倒れた状態になる）。
 	m_modelRender.Init("Assets/modelData/player/player.tkm", m_animClips, enAnimClip_Num, enModelUpAxisZ);
@@ -67,7 +68,7 @@ void Player::Update()
 {
 	Move();
 	RespawnIfNeeded();
-	// UpdateAnimation();
+	UpdateAnimation();
 
 	m_modelRender.SetPosition(m_position);
 	m_modelRender.SetRotation(m_rotation);
@@ -95,46 +96,45 @@ Vector3 Player::GetForward() const
 
 void Player::UpdateAnimation()
 {
-	// player.tkm用のアニメーションデータが未用意のため、処理全体をコメントアウト。
-	// const bool isRushActive = m_rushRemainingDistance > 0.0f;
-	// if (isRushActive) {
-	// 	if (m_currentAnimNo != enAnimClip_Run || !m_isRushPoseActive) {
-	// 		m_modelRender.PlayAnimationAtTime(enAnimClip_Run, kRushRunPoseTime);
-	// 		m_modelRender.SetAnimationSpeed(0.0f);
-	// 		m_currentAnimNo = enAnimClip_Run;
-	// 		m_isRushPoseActive = true;
-	// 	}
-	// 	return;
-	// }
-	//
-	// if (m_isRushPoseActive) {
-	// 	m_modelRender.SetAnimationSpeed(1.0f);
-	// 	m_isRushPoseActive = false;
-	// }
-	//
-	// const float stickX = g_pad[0]->GetLStickXF();
-	// const float stickY = g_pad[0]->GetLStickYF();
-	// const float stickLen = sqrtf(stickX * stickX + stickY * stickY);
-	//
-	// int newAnimNo;
-	// if (!m_charaCon.IsOnGround()) {
-	// 	newAnimNo = enAnimClip_Jump;
-	// }
-	// else if (stickLen < 0.1f) {
-	// 	newAnimNo = enAnimClip_Idle;
-	// }
-	// else if (stickLen < 0.7f) {
-	// 	newAnimNo = enAnimClip_Walk;
-	// }
-	// else {
-	// 	newAnimNo = enAnimClip_Run;
-	// }
-	//
-	// // Avoid rewinding the clip if it is already playing
-	// if (newAnimNo != m_currentAnimNo) {
-	// 	m_modelRender.PlayAnimation(newAnimNo, 0.2f);
-	// 	m_currentAnimNo = newAnimNo;
-	// }
+	const bool isRushActive = m_rushRemainingDistance > 0.0f;
+	if (isRushActive) {
+		if (m_currentAnimNo != enAnimClip_Run || !m_isRushPoseActive) {
+			m_modelRender.PlayAnimationAtTime(enAnimClip_Run, kRushRunPoseTime);
+			m_modelRender.SetAnimationSpeed(0.0f);
+			m_currentAnimNo = enAnimClip_Run;
+			m_isRushPoseActive = true;
+		}
+		return;
+	}
+
+	if (m_isRushPoseActive) {
+		m_modelRender.SetAnimationSpeed(1.0f);
+		m_isRushPoseActive = false;
+	}
+
+	const float stickX = g_pad[0]->GetLStickXF();
+	const float stickY = g_pad[0]->GetLStickYF();
+	const float stickLen = sqrtf(stickX * stickX + stickY * stickY);
+
+	int newAnimNo;
+	if (!m_charaCon.IsOnGround()) {
+		newAnimNo = enAnimClip_Jump;
+	}
+	else if (stickLen < 0.1f) {
+		newAnimNo = enAnimClip_Idle;
+	}
+	else if (IsRunKeyPressed()) {
+		newAnimNo = enAnimClip_Run;
+	}
+	else {
+		newAnimNo = enAnimClip_Walk;
+	}
+
+	// Avoid rewinding the clip if it is already playing
+	if (newAnimNo != m_currentAnimNo) {
+		m_modelRender.PlayAnimation(newAnimNo, 0.2f);
+		m_currentAnimNo = newAnimNo;
+	}
 }
 
 void Player::InitSword()
@@ -193,6 +193,12 @@ bool Player::IsRushSkillKeyTrigger()
 	return isTrigger;
 }
 
+bool Player::IsRunKeyPressed() const
+{
+	// 左Shiftを押している間だけ走る。
+	return GetAsyncKeyState(VK_LSHIFT) != 0;
+}
+
 void Player::StartRushSkill(const Vector3& direction)
 {
 	m_rushDirection = direction;
@@ -242,11 +248,14 @@ void Player::Move()
 	cameraForward.Normalize();
 	cameraRight.Normalize();
 
+	// 左Shift押下中は移動速度も上げる。
+	const float currentMoveSpeed = IsRunKeyPressed() ? kMoveSpeed * kRunSpeedMultiplier : kMoveSpeed;
+
 	Vector3 horizontalMoveSpeed = Vector3::Zero;
-	horizontalMoveSpeed.x += cameraForward.x * stickY * kMoveSpeed;
-	horizontalMoveSpeed.z += cameraForward.z * stickY * kMoveSpeed;
-	horizontalMoveSpeed.x += cameraRight.x * stickX * kMoveSpeed;
-	horizontalMoveSpeed.z += cameraRight.z * stickX * kMoveSpeed;
+	horizontalMoveSpeed.x += cameraForward.x * stickY * currentMoveSpeed;
+	horizontalMoveSpeed.z += cameraForward.z * stickY * currentMoveSpeed;
+	horizontalMoveSpeed.x += cameraRight.x * stickX * currentMoveSpeed;
+	horizontalMoveSpeed.z += cameraRight.z * stickX * currentMoveSpeed;
 
 	if (IsRushSkillKeyTrigger() && m_rushRemainingDistance <= 0.0f) {
 		StartRushSkill(horizontalMoveSpeed);
