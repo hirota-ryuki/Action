@@ -8,9 +8,9 @@ public:
 	// 再生するアニメーションの種類。
 	enum EnAnimClip {
 		enAnimClip_Idle,
-		enAnimClip_Walk,
+		/*enAnimClip_Walk,
 		enAnimClip_Run,
-		enAnimClip_Jump,
+		enAnimClip_Jump,*/
 		enAnimClip_Num,
 	};
 

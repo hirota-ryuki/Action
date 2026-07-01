@@ -13,6 +13,8 @@ namespace
 	// ラッシュ中に停止させるランアニメーションの再生位置（秒）。疾走ポーズに合った時刻。
 	constexpr float kRushRunPoseTime = 0.23f;
 	constexpr float kRespawnHeight = -1000.0f; // この高さを下回るとステージ外と判断してリスポーン。
+	constexpr float kModelScale = 3.0f;        // player.tkmは元のモデルより小さいため拡大する。
+	const Vector3 kModelScaleVec = Vector3(kModelScale, kModelScale, kModelScale);
 	const Vector3 kSwordOffset = Vector3(5.0f, -3.0f, 10.0f);   // 右手ボーンローカル空間での剣の位置オフセット。
 	const Vector3 kSwordScale = Vector3(1.35f, 1.35f, 1.35f);
 	constexpr float kSwordRotOffsetX = 0.0f;
@@ -37,19 +39,22 @@ bool Player::Start()
 	m_charaCon.Init(20.0f, 100.0f, m_position);
 	m_isCharaConReady = true;
 
-	m_animClips[enAnimClip_Idle].Load("Assets/animData/idle.tka");
+	// idleのみアニメーションデータを用意済み。walk/run/jumpは未用意のためコメントアウトのまま。
+	m_animClips[enAnimClip_Idle].Load("Assets/animData/player/idle.tka");
 	m_animClips[enAnimClip_Idle].SetLoopFlag(true);
-	m_animClips[enAnimClip_Walk].Load("Assets/animData/walk.tka");
-	m_animClips[enAnimClip_Walk].SetLoopFlag(true);
-	m_animClips[enAnimClip_Run].Load("Assets/animData/run.tka");
-	m_animClips[enAnimClip_Run].SetLoopFlag(true);
-	m_animClips[enAnimClip_Jump].Load("Assets/animData/jump.tka");
-	m_animClips[enAnimClip_Jump].SetLoopFlag(false);
+	// m_animClips[enAnimClip_Walk].Load("Assets/animData/walk.tka");
+	// m_animClips[enAnimClip_Walk].SetLoopFlag(true);
+	// m_animClips[enAnimClip_Run].Load("Assets/animData/run.tka");
+	// m_animClips[enAnimClip_Run].SetLoopFlag(true);
+	// m_animClips[enAnimClip_Jump].Load("Assets/animData/jump.tka");
+	// m_animClips[enAnimClip_Jump].SetLoopFlag(false);
 
-	m_modelRender.Init("Assets/modelData/unityChan.tkm", m_animClips, enAnimClip_Num,enModelUpAxisY);
+	// player.tkmは3ds Max(Z-up)で作成されているため、enModelUpAxisZを指定して起こす（Yのままだと仰向けに倒れた状態になる）。
+	m_modelRender.Init("Assets/modelData/player/player.tkm", m_animClips, enAnimClip_Num, enModelUpAxisZ);
 	m_modelRender.SetShadowCasterFlag(true);
 	m_modelRender.SetPosition(m_position);
 	m_modelRender.SetRotation(m_rotation);
+	m_modelRender.SetScale(kModelScaleVec);
 	m_modelRender.PlayAnimation(enAnimClip_Idle);
 	m_modelRender.Update();
 
@@ -62,7 +67,7 @@ void Player::Update()
 {
 	Move();
 	RespawnIfNeeded();
-	UpdateAnimation();
+	// UpdateAnimation();
 
 	m_modelRender.SetPosition(m_position);
 	m_modelRender.SetRotation(m_rotation);
@@ -90,45 +95,46 @@ Vector3 Player::GetForward() const
 
 void Player::UpdateAnimation()
 {
-	const bool isRushActive = m_rushRemainingDistance > 0.0f;
-	if (isRushActive) {
-		if (m_currentAnimNo != enAnimClip_Run || !m_isRushPoseActive) {
-			m_modelRender.PlayAnimationAtTime(enAnimClip_Run, kRushRunPoseTime);
-			m_modelRender.SetAnimationSpeed(0.0f);
-			m_currentAnimNo = enAnimClip_Run;
-			m_isRushPoseActive = true;
-		}
-		return;
-	}
-
-	if (m_isRushPoseActive) {
-		m_modelRender.SetAnimationSpeed(1.0f);
-		m_isRushPoseActive = false;
-	}
-
-	const float stickX = g_pad[0]->GetLStickXF();
-	const float stickY = g_pad[0]->GetLStickYF();
-	const float stickLen = sqrtf(stickX * stickX + stickY * stickY);
-
-	int newAnimNo;
-	if (!m_charaCon.IsOnGround()) {
-		newAnimNo = enAnimClip_Jump;
-	}
-	else if (stickLen < 0.1f) {
-		newAnimNo = enAnimClip_Idle;
-	}
-	else if (stickLen < 0.7f) {
-		newAnimNo = enAnimClip_Walk;
-	}
-	else {
-		newAnimNo = enAnimClip_Run;
-	}
-
-	// Avoid rewinding the clip if it is already playing
-	if (newAnimNo != m_currentAnimNo) {
-		m_modelRender.PlayAnimation(newAnimNo, 0.2f);
-		m_currentAnimNo = newAnimNo;
-	}
+	// player.tkm用のアニメーションデータが未用意のため、処理全体をコメントアウト。
+	// const bool isRushActive = m_rushRemainingDistance > 0.0f;
+	// if (isRushActive) {
+	// 	if (m_currentAnimNo != enAnimClip_Run || !m_isRushPoseActive) {
+	// 		m_modelRender.PlayAnimationAtTime(enAnimClip_Run, kRushRunPoseTime);
+	// 		m_modelRender.SetAnimationSpeed(0.0f);
+	// 		m_currentAnimNo = enAnimClip_Run;
+	// 		m_isRushPoseActive = true;
+	// 	}
+	// 	return;
+	// }
+	//
+	// if (m_isRushPoseActive) {
+	// 	m_modelRender.SetAnimationSpeed(1.0f);
+	// 	m_isRushPoseActive = false;
+	// }
+	//
+	// const float stickX = g_pad[0]->GetLStickXF();
+	// const float stickY = g_pad[0]->GetLStickYF();
+	// const float stickLen = sqrtf(stickX * stickX + stickY * stickY);
+	//
+	// int newAnimNo;
+	// if (!m_charaCon.IsOnGround()) {
+	// 	newAnimNo = enAnimClip_Jump;
+	// }
+	// else if (stickLen < 0.1f) {
+	// 	newAnimNo = enAnimClip_Idle;
+	// }
+	// else if (stickLen < 0.7f) {
+	// 	newAnimNo = enAnimClip_Walk;
+	// }
+	// else {
+	// 	newAnimNo = enAnimClip_Run;
+	// }
+	//
+	// // Avoid rewinding the clip if it is already playing
+	// if (newAnimNo != m_currentAnimNo) {
+	// 	m_modelRender.PlayAnimation(newAnimNo, 0.2f);
+	// 	m_currentAnimNo = newAnimNo;
+	// }
 }
 
 void Player::InitSword()
@@ -215,7 +221,7 @@ void Player::Respawn()
 	m_moveSpeed = Vector3::Zero;
 	m_rushRemainingDistance = 0.0f;
 	m_isRushPoseActive = false;
-	m_modelRender.SetAnimationSpeed(1.0f);
+	// m_modelRender.SetAnimationSpeed(1.0f);
 
 	if (m_isCharaConReady) {
 		m_charaCon.SetPosition(m_position);
