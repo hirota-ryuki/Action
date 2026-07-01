@@ -8,9 +8,9 @@ public:
 	// 再生するアニメーションの種類。
 	enum EnAnimClip {
 		enAnimClip_Idle,
-		/*enAnimClip_Walk,
+		enAnimClip_Walk,
 		enAnimClip_Run,
-		enAnimClip_Jump,*/
+		enAnimClip_Jump,
 		enAnimClip_Num,
 	};
 
@@ -45,6 +45,7 @@ private:
 	void InitSword();
 	void UpdateSword();
 	bool IsRushSkillKeyTrigger();
+	bool IsRunKeyPressed() const;
 	void StartRushSkill(const Vector3& direction);
 	void RespawnIfNeeded();
 	void Respawn();
