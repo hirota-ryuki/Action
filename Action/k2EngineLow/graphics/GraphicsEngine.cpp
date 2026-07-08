@@ -26,6 +26,9 @@ namespace nsK2EngineLow {
 	{
 		WaitDraw();
 
+		//デバイスを解放する前にImGuiが確保したD3D12オブジェクトを解放しておく。
+		m_imGuiRenderer.Shutdown();
+
 		for (auto& req : m_reqDelayRelease3d12ObjectList) {
 			if (req.d3dObject) {
 				req.d3dObject->Release();
@@ -177,6 +180,9 @@ namespace nsK2EngineLow {
 		m_fontEngine.Init();
 		//レイトレエンジンを初期化。
 		m_raytracingEngine.Init(raytracingInitData);
+
+		//ImGuiを初期化。FrameBuffer::FRAME_BUFFER_COUNTと同じ値(2)を渡す。
+		m_imGuiRenderer.Init(hwnd, m_d3dDevice, 2, DXGI_FORMAT_R8G8B8A8_UNORM);
 		return true;
 	}
 

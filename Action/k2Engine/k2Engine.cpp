@@ -53,6 +53,8 @@ namespace nsK2Engine {
 
 		g_engine->BeginFrame();
 
+		g_graphicsEngine->GetImGuiRenderer().NewFrame();
+
 		g_engine->ExecuteUpdate();
 		// レンダリングエンジンの更新。
 		m_renderingEngine.Update();
@@ -67,6 +69,10 @@ namespace nsK2Engine {
 		//////////////////////////////////////
 		//絵を描くコードを書くのはここまで！！！
 		//////////////////////////////////////
+
+		//ImGuiの描画。レンダーターゲットがPRESENT状態へ遷移する前(EndFrame()より前)に行う必要がある。
+		g_graphicsEngine->GetImGuiRenderer().Render(g_graphicsEngine->GetCommandList());
+
 		g_engine->EndFrame();
 	}
 #ifdef K2_DEBUG
