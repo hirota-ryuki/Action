@@ -14,6 +14,7 @@
 #include "NullTextureMaps.h"
 #include "font/FontEngine.h"
 #include "FrameBuffer.h"
+#include "ImGuiRenderer.h"
 #include <pix.h>
 
 namespace nsK2EngineLow {
@@ -166,6 +167,14 @@ namespace nsK2EngineLow {
 		D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentFrameBuffuerDSV() const
 		{
 			return m_frameBuffer.GetCurrentDepthStencilViewDescriptorHandle();
+		}
+		/// <summary>
+		/// ImGuiRendererを取得。
+		/// </summary>
+		/// <returns></returns>
+		ImGuiRenderer& GetImGuiRenderer()
+		{
+			return m_imGuiRenderer;
 		}
 		/// <summary>
 		/// レイトレの結果のテクスチャを取得。
@@ -402,6 +411,7 @@ namespace nsK2EngineLow {
 		raytracing::Engine m_raytracingEngine;		// レイトレエンジン。
 		NullTextureMaps m_nullTextureMaps;			// ヌルテクスチャマップ。
 		FontEngine m_fontEngine;					// フォントエンジン。
+		ImGuiRenderer m_imGuiRenderer;				// ImGuiの初期化・更新・描画を管理する。
 		std::unique_ptr<DirectX::GraphicsMemory> m_directXTKGfxMemroy;					//DirectXTKのグラフィックメモリシステム。
 		bool m_isExecuteCommandList = false;											//コマンドリストをGPUに流した？
 		std::list< RequestDelayReleaseD3D12Object > m_reqDelayRelease3d12ObjectList;	// D3D12オブジェクトの遅延解放リクエストのリスト。

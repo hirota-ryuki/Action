@@ -14,6 +14,9 @@ HWND			g_hWnd = NULL;				//ウィンドウハンドル。
 ///////////////////////////////////////////////////////////////////
 LRESULT CALLBACK MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	//ImGuiにメッセージを渡す。
+	ImGuiRenderer::WndProcHandler(hWnd, msg, wParam, lParam);
+
 	//送られてきたメッセージで処理を分岐させる。
 	switch (msg)
 	{
