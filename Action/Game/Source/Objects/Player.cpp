@@ -51,12 +51,13 @@ bool Player::Start()
 	m_animClips[enAnimClip_Jump].SetLoopFlag(false);
 
 	// player.tkmは3ds Max(Z-up)で作成されているため、enModelUpAxisZを指定して起こす（Yのままだと仰向けに倒れた状態になる）。
-	m_modelRender.Init("Assets/modelData/player/player.tkm", m_animClips, enAnimClip_Num, enModelUpAxisZ);
+	// 注意: SK_Player.FBXはランタイムFBXインポート(フェーズ1)で読み込んでおり、まだスケルトンが無いため、
+	// 旧Sapphiartモデル用のアニメーションクリップ(ボーンインデックス参照)は渡さない(渡すとGetBone()が範囲外アクセスする)。
+	m_modelRender.Init("Assets/modelData/player/Model/SK_Player.FBX", nullptr, 0, enModelUpAxisZ);
 	m_modelRender.SetShadowCasterFlag(true);
 	m_modelRender.SetPosition(m_position);
 	m_modelRender.SetRotation(m_rotation);
-	m_modelRender.SetScale(kModelScaleVec);
-	m_modelRender.PlayAnimation(enAnimClip_Idle);
+	m_modelRender.SetScale(Vector3(0.03f, 0.03f, 0.03f)); // SK_Player.FBXは単位系が違うため暫定的に縮小(表示確認用)。
 	m_modelRender.Update();
 
 	InitSword();
