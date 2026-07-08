@@ -1,5 +1,6 @@
 ﻿#include "stdafx.h"
 #include "Player.h"
+#include "tkFile/FbxRuntimeImporter.h"
 
 namespace
 {
@@ -40,24 +41,42 @@ bool Player::Start()
 	m_charaCon.Init(20.0f, 100.0f, m_position);
 	m_isCharaConReady = true;
 
-	// idle/walk/run/jumpのアニメーションデータが揃った。
-	m_animClips[enAnimClip_Idle].Load("Assets/animData/player/idle.tka");
-	m_animClips[enAnimClip_Idle].SetLoopFlag(true);
-	m_animClips[enAnimClip_Walk].Load("Assets/animData/player/walk.tka");
-	m_animClips[enAnimClip_Walk].SetLoopFlag(true);
-	m_animClips[enAnimClip_Run].Load("Assets/animData/player/run.tka");
-	m_animClips[enAnimClip_Run].SetLoopFlag(true);
-	m_animClips[enAnimClip_Jump].Load("Assets/animData/player/jump.tka");
-	m_animClips[enAnimClip_Jump].SetLoopFlag(false);
-
 	// player.tkmは3ds Max(Z-up)で作成されているため、enModelUpAxisZを指定して起こす（Yのままだと仰向けに倒れた状態になる）。
-	// 注意: SK_Player.FBXはランタイムFBXインポート(フェーズ1)で読み込んでおり、まだスケルトンが無いため、
-	// 旧Sapphiartモデル用のアニメーションクリップ(ボーンインデックス参照)は渡さない(渡すとGetBone()が範囲外アクセスする)。
-	m_modelRender.Init("Assets/modelData/player/Model/SK_Player.FBX", nullptr, 0, enModelUpAxisZ);
+	// 注意: SK_Player.FBXはランタイムFBXインポート(フェーズ2)でスキン・スケルトン付きで変換される。
+	// idle/walk/jumpは旧Sapphiartモデル用のアニメーションクリップ(旧スケルトンのボーンインデックス参照)
+	// のため、新しいSK_Playerのスケルトンとは互換性が無い。今はrunアニメーションのみ対応する。
+	// ModelRender::Init()はAnimation::Init()経由で内部的にPlay(0)(enAnimClip_Idle)を
+	// 呼び出すため、Init()を呼ぶ前に全クリップ(少なくともenAnimClip_Idle)をロードしておく必要がある
+	// (他の呼び出し元(Enemy.cpp等)と同じ規約)。
+	// SK_Playerのスケルトン(.tks)はInit()内のFBX→tkm変換で生成されるため、
+	// アニメーションをリターゲットするにはInit()より前に一度tkm/tksの変換だけを済ませておく。
+	nsK2EngineLow::FbxRuntimeImporter::ResolveToTkmFilePath("Assets/modelData/player/Model/SK_Player.FBX");
+
+	// ThirdPersonRun.fbxのアニメーションを、SK_Playerのスケルトンにボーン名ベースでリターゲットして.tkaへ変換。
+	// 現状はrunクリップのみ対応のため、暫定的に全クリップ枠にrunアニメーションを読み込ませておく
+	// (Animation::Init()のPlay(0)がクラッシュしないようにするため)。
+	std::string runTkaPath = nsK2EngineLow::FbxRuntimeImporter::ResolveAnimationFbxToTka(
+		"Assets/modelData/player/Animation/ThirdPersonRun.fbx",
+		"Assets/modelData/player/Model/SK_Player.tks");
+	if (!runTkaPath.empty()) {
+		for (int i = 0; i < enAnimClip_Num; i++) {
+			m_animClips[i].Load(runTkaPath.c_str());
+			m_animClips[i].SetLoopFlag(true);
+		}
+	}
+
+	m_modelRender.Init("Assets/modelData/player/Model/SK_Player.FBX", m_animClips, enAnimClip_Num, enModelUpAxisZ);
 	m_modelRender.SetShadowCasterFlag(true);
 	m_modelRender.SetPosition(m_position);
 	m_modelRender.SetRotation(m_rotation);
-	m_modelRender.SetScale(Vector3(0.03f, 0.03f, 0.03f)); // SK_Player.FBXは単位系が違うため暫定的に縮小(表示確認用)。
+	// UnityChan(Enemy)の2倍の高さを狙って1.692に設定した後、実機で見て大きすぎたため
+	// その2/3のサイズ(1.692 * 2/3 ≒ 1.128)に調整。
+	m_modelRender.SetScale(Vector3(1.128f, 1.128f, 1.128f));
+
+	if (!runTkaPath.empty()) {
+		m_modelRender.PlayAnimation(enAnimClip_Run);
+	}
+
 	m_modelRender.Update();
 
 	InitSword();
