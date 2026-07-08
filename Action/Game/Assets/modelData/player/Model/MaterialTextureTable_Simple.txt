@@ -1,0 +1,87 @@
+SK_Player マテリアル簡易対応表 (3ds Max用)
+============================================================
+※ 全35テクスチャのうち、各パーツ固有の重要なものだけを抜粋しています。
+※ Textures フォルダに全PNGがありますが、下記に出てこないもの
+  (T_DummyWhite / T_DummyBlack / T_Dummy_N / T_DummyWhite_Linear /
+   T_Shader_NoneBlack / T_Shader_NoneNormal / MaterialBackdrop /
+   Good64x64TilingNoiseHighFreq / SphereRenderNormalsMap / T_soft_smoke /
+   T_aniso_N)
+  は全スロット共通のダミー/汎用テクスチャで、実質的な見た目には使われて
+  いないので3ds Maxでの貼り付けは不要です。
+
+------------------------------------------------------------
+[口] N00_000_00_FaceMouth_00_FACE
+  拡散色(Diffuse): T__01.png
+
+[目・虹彩] N00_000_00_EyeIris_00_EYE
+  拡散色(Diffuse): T__02.png
+
+[目・ハイライト] N00_000_00_EyeHighlight_00_EYE
+  拡散色(Diffuse): T__03.png
+
+[顔・肌] N00_000_00_Face_00_SKIN
+  拡散色(Diffuse): T__04.png
+  法線(Normal):    T__05.png
+  マットキャップ:   T_MatcapWarp.png
+
+[目・白目] N00_000_00_EyeWhite_00_EYE
+  拡散色(Diffuse): T__06.png
+
+[眉] N00_000_00_FaceBrow_00_FACE
+  拡散色(Diffuse): T__07.png
+  マットキャップ:   T_MatcapWarp.png
+
+[まつげ] N00_000_00_FaceEyelash_00_FACE
+  拡散色(Diffuse): T__08.png
+  マットキャップ:   T_MatcapWarp.png
+
+[目のライン] N00_000_00_FaceEyeline_00_FACE
+  拡散色(Diffuse): T__09.png
+  マットキャップ:   T_MatcapWarp.png
+
+[体・肌] N00_000_00_Body_00_SKIN
+  拡散色(Diffuse): T__10.png
+  法線(Normal):    T__11.png
+  マットキャップ:   T_MatcapWarp.png
+
+[髪・後ろ] N00_000_00_HairBack_00_HAIR
+  拡散色(Diffuse): T__12.png
+  法線(Normal):    T_N00_000_00_HairBack_00_nml.png
+
+[トップス01_CLOTH_01 (バリエーション007)] N00_007_01_Tops_01_CLOTH_01
+  拡散色(Diffuse): T__13.png
+  マットキャップ:   T_MatcapWarp.png
+
+[トップス01_CLOTH_01 (バリエーション002)] N00_002_03_Tops_01_CLOTH_01
+  拡散色(Diffuse): T__14.png
+  マットキャップ:   T_MatcapWarp.png
+
+[トップス01_CLOTH_02 (バリエーション007)] N00_007_01_Tops_01_CLOTH_02
+  拡散色(Diffuse): T__15.png
+  マットキャップ:   T_MatcapWarp.png
+
+[トップス01_CLOTH_02 (バリエーション002)] N00_002_03_Tops_01_CLOTH_02
+  拡散色(Diffuse): T__16.png
+  マットキャップ:   T_MatcapWarp.png
+
+[トップス01_CLOTH_03 (バリエーション002)] N00_002_03_Tops_01_CLOTH_03
+  拡散色(Diffuse): T__17.png
+  マットキャップ:   T_MatcapWarp.png
+
+[ボトムス] N00_001_02_Bottoms_01_CLOTH
+  拡散色(Diffuse): T__18.png
+  マットキャップ:   T_MatcapWarp.png
+
+[靴] N00_008_01_Shoes_01_CLOTH
+  拡散色(Diffuse): T__19.png
+  マットキャップ:   T_MatcapWarp.png
+
+[髪] N00_000_Hair_00_HAIR
+  拡散色(Diffuse): T__20.png
+  法線(Normal):    T_N00_000_Hair_00_nml.png
+  発光(Emissive):  T__21.png
+  マットキャップ:   T_MatcapWarp.png
+
+============================================================
+詳細版(全35テクスチャ・全パラメータ名付き)は
+MaterialTextureTable.txt を参照してください。
