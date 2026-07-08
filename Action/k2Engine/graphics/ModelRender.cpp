@@ -1,6 +1,7 @@
 ﻿#include "k2EnginePreCompile.h"
 #include "ModelRender.h"
 #include "RenderingEngine.h"
+#include "tkFile/FbxRuntimeImporter.h"
 
 
 
@@ -61,6 +62,10 @@ namespace nsK2Engine {
 		int maxInstance,
 		bool isFrontCullingOnDrawShadowMap)
 	{
+		// filePathが.fbxの場合、ランタイムでtkmへ変換し、以降は変換後のtkmパスを使う。
+		std::string resolvedFilePath = nsK2EngineLow::FbxRuntimeImporter::ResolveToTkmFilePath(filePath);
+		filePath = resolvedFilePath.c_str();
+
 		//インスタンシング描画用のデータを初期化。
 		InitInstancingDraw(maxInstance);
 		//スケルトンを初期化。
@@ -90,6 +95,7 @@ namespace nsK2Engine {
 
 	void ModelRender::InitForwardRendering(ModelInitData& initData)
 	{
+		// 注意: このパスはinitData.m_tkmFilePathに.fbxを渡してもランタイム変換されない(Init/IniTranslucent限定の機能)。
 		//インスタンシング描画用のデータを初期化。
 		InitInstancingDraw(1);
 		InitSkeleton(initData.m_tkmFilePath);
@@ -121,6 +127,10 @@ namespace nsK2Engine {
 		int maxInstance,
 		bool isFrontCullingOnDrawShadowMap)
 	{
+		// filePathが.fbxの場合、ランタイムでtkmへ変換し、以降は変換後のtkmパスを使う。
+		std::string resolvedFilePath = nsK2EngineLow::FbxRuntimeImporter::ResolveToTkmFilePath(filePath);
+		filePath = resolvedFilePath.c_str();
+
 		// インスタンシング描画用のデータを初期化。
 		InitInstancingDraw(maxInstance);
 		// スケルトンを初期化。
@@ -139,7 +149,7 @@ namespace nsK2Engine {
 		InitGeometryDatas(maxInstance);
 		// 各種ワールド行列を更新する。
 		UpdateWorldMatrixInModes();
-		
+
 		if (m_isRaytracingWorld) {
 			// レイトレワールドに追加。
 			g_renderingEngine->AddModelToRaytracingWorld(m_renderToGBufferModel);

@@ -188,6 +188,9 @@
     <ClCompile Include="tkFile\TkaFile.cpp">
       <Filter>tkFile</Filter>
     </ClCompile>
+    <ClCompile Include="tkFile\FbxRuntimeImporter.cpp">
+      <Filter>tkFile</Filter>
+    </ClCompile>
     <ClCompile Include="tkFile\TkmFile.cpp">
       <Filter>tkFile</Filter>
     </ClCompile>
@@ -460,6 +463,9 @@
       <Filter>tkFile</Filter>
     </ClInclude>
     <ClInclude Include="tkFile\TkaFile.h">
+      <Filter>tkFile</Filter>
+    </ClInclude>
+    <ClInclude Include="tkFile\FbxRuntimeImporter.h">
       <Filter>tkFile</Filter>
     </ClInclude>
     <ClInclude Include="tkFile\TkmFile.h">

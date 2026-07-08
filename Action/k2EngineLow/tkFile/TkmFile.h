@@ -119,6 +119,17 @@ namespace nsK2EngineLow {
 		{
 			return (int)(m_meshParts.size());
 		}
+		/// <summary>
+		/// メッシュパーツを直接設定する。
+		/// </summary>
+		/// <remarks>
+		/// Load()を介さずランタイムで構築したメッシュデータをSave()するための経路。
+		/// (FbxRuntimeImporterなど)通常のtkmロードではLoad()を使用すること。
+		/// </remarks>
+		void SetMeshPartsForRuntimeImport(std::vector<SMesh>&& meshParts)
+		{
+			m_meshParts = std::move(meshParts);
+		}
 	private:
 		/// <summary>
 		/// テクスチャ名をロード。
