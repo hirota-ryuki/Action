@@ -209,7 +209,6 @@ namespace nsK2EngineLow {
 			ufbx_node* node = scene->nodes.data[i];
 			nameToNode[ToStdString(node->name)] = node;
 		}
-
 		// 4. 30fps固定でサンプリングしながらキーフレームを構築する。
 		const double frameRate = 30.0;
 		double duration = stack->time_end - stack->time_begin;
