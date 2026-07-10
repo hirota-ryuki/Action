@@ -274,7 +274,6 @@
     <ClCompile Include="graphics\GaussianBlur.cpp" />
     <ClCompile Include="graphics\GPUBuffer.cpp" />
     <ClCompile Include="graphics\GraphicsEngine.cpp" />
-    <ClCompile Include="graphics\ImGuiRenderer.cpp" />
     <ClCompile Include="graphics\IndexBuffer.cpp" />
     <ClCompile Include="graphics\Material.cpp" />
     <ClCompile Include="graphics\MeshParts.cpp" />
@@ -305,31 +304,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Preview|x64'">Create</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="ExEngine\imgui\imgui.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Preview|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="ExEngine\imgui\imgui_draw.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Preview|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="ExEngine\imgui\imgui_widgets.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Preview|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="ExEngine\imgui\imgui_impl_dx12.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Preview|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="ExEngine\imgui\imgui_impl_win32.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Preview|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="ExEngine\ufbx\ufbx.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -394,7 +368,6 @@
     <ClInclude Include="graphics\GaussianBlur.h" />
     <ClInclude Include="graphics\GPUBuffer.h" />
     <ClInclude Include="graphics\GraphicsEngine.h" />
-    <ClInclude Include="graphics\ImGuiRenderer.h" />
     <ClInclude Include="graphics\IndexBuffer.h" />
     <ClInclude Include="graphics\IShaderResource.h" />
     <ClInclude Include="graphics\IUnorderAccessResource.h" />
@@ -428,14 +401,6 @@
     <ClInclude Include="HID\GamePadVibration.h" />
     <ClInclude Include="k2EngineLow.h" />
     <ClInclude Include="k2EngineLowPreCompile.h" />
-    <ClInclude Include="ExEngine\imgui\imgui.h" />
-    <ClInclude Include="ExEngine\imgui\imgui_internal.h" />
-    <ClInclude Include="ExEngine\imgui\imconfig.h" />
-    <ClInclude Include="ExEngine\imgui\imstb_rectpack.h" />
-    <ClInclude Include="ExEngine\imgui\imstb_textedit.h" />
-    <ClInclude Include="ExEngine\imgui\imstb_truetype.h" />
-    <ClInclude Include="ExEngine\imgui\imgui_impl_dx12.h" />
-    <ClInclude Include="ExEngine\imgui\imgui_impl_win32.h" />
     <ClInclude Include="ExEngine\ufbx\ufbx.h" />
     <ClInclude Include="level2D\CaslFile.h" />
     <ClInclude Include="level2D\Level2D.h" />
