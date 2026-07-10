@@ -52,11 +52,11 @@ bool Player::Start()
 	// アニメーションをリターゲットするにはInit()より前に一度tkm/tksの変換だけを済ませておく。
 	nsK2EngineLow::FbxRuntimeImporter::ResolveToTkmFilePath("Assets/modelData/player/Model/SK_Player.FBX");
 
-	// ThirdPersonRun.fbxのアニメーションを、SK_Playerのスケルトンにボーン名ベースでリターゲットして.tkaへ変換。
+	// ThirdPersonRunPlayer_Run.fbxのアニメーションを、SK_Playerのスケルトンにボーン名ベースでリターゲットして.tkaへ変換。
 	// 現状はrunクリップのみ対応のため、暫定的に全クリップ枠にrunアニメーションを読み込ませておく
 	// (Animation::Init()のPlay(0)がクラッシュしないようにするため)。
 	std::string runTkaPath = nsK2EngineLow::FbxRuntimeImporter::ResolveAnimationFbxToTka(
-		"Assets/modelData/player/Animation/ThirdPersonRun.fbx",
+		"Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
 		"Assets/modelData/player/Model/SK_Player.tks");
 	if (!runTkaPath.empty()) {
 		for (int i = 0; i < enAnimClip_Num; i++) {
