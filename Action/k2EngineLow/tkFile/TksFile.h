@@ -28,6 +28,19 @@ namespace nsK2EngineLow {
 		/// <param name="filePath"></param>
 		bool Load(const char* filePath);
 		/// <summary>
+		/// TKSファイルを保存する。
+		/// </summary>
+		/// <param name="filePath">保存先のファイルパス。</param>
+		bool Save(const char* filePath);
+		/// <summary>
+		/// ボーンを直接設定する(Load()を介さずランタイムで構築したスケルトンをSave()するための経路)。
+		/// </summary>
+		void SetBonesForRuntimeImport(std::vector<SBone>&& bones)
+		{
+			m_bones = std::move(bones);
+			m_numBone = static_cast<int>(m_bones.size());
+		}
+		/// <summary>
 		/// ボーンに対してクエリを行う。
 		/// </summary>
 		/// <param name="query">クエリ関数</param>

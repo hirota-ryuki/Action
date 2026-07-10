@@ -40,6 +40,18 @@ namespace nsK2EngineLow {
 		/// <param name="filePath"></param>
 		void Load(const char* filePath);
 		/// <summary>
+		/// 保存処理。
+		/// </summary>
+		/// <param name="filePath">保存先のファイルパス。</param>
+		bool Save(const char* filePath);
+		/// <summary>
+		/// キーフレームを直接設定する(Load()を介さずランタイムで構築したアニメーションをSave()するための経路)。
+		/// </summary>
+		void SetKeyFramesForRuntimeImport(std::vector<KeyFrame>&& keyFrames)
+		{
+			m_keyFrames = std::move(keyFrames);
+		}
+		/// <summary>
 		/// アニメーションイベントにクエリを行う。
 		/// </summary>
 		/// <param name="query">クエリ関数</param>

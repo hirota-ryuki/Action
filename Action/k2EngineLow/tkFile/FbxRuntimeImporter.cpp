@@ -1,6 +1,7 @@
 ﻿#include "k2EngineLowPreCompile.h"
 #include "tkFile/FbxRuntimeImporter.h"
 #include <cctype>
+#include <set>
 
 namespace nsK2EngineLow {
 	namespace {
@@ -143,6 +144,126 @@ namespace nsK2EngineLow {
 		}
 		return tkmPathStr;
 	}
+	std::string FbxRuntimeImporter::ResolveAnimationFbxToTka(
+		const char* animFbxPath,
+		const char* skeletonTksPath,
+		bool isOutputErrorCodeTTY
+	) {
+		std::string fbxPath = animFbxPath;
+		std::string tkaPath = JoinPath(GetDirectory(fbxPath), GetStem(fbxPath) + ".tka");
+
+		// スケルトン(.tks)がアニメ出力(.tka)より新しい場合も再変換する
+		// (ボーン構成が変わった際にキャッシュが古いままにならないように)。
+		bool tksNewerThanTka = false;
+		FILETIME tksTime, tkaTime;
+		if (FileExists(tkaPath) && GetLastWriteTime(skeletonTksPath, tksTime) && GetLastWriteTime(tkaPath, tkaTime)) {
+			tksNewerThanTka = CompareFileTime(&tksTime, &tkaTime) > 0;
+		}
+		if (IsConversionNeeded(fbxPath, tkaPath) || tksNewerThanTka) {
+			if (!ConvertAnimationFbxToTka(fbxPath, skeletonTksPath, tkaPath, isOutputErrorCodeTTY)) {
+				return "";
+			}
+		}
+		return tkaPath;
+	}
+	bool FbxRuntimeImporter::ConvertAnimationFbxToTka(
+		const std::string& animFbxPath,
+		const std::string& skeletonTksPath,
+		const std::string& tkaPath,
+		bool isOutputErrorCodeTTY
+	) {
+		// 1. スケルトンからボーン名リスト(tka内のboneIndexが指す順序)を読み込む。
+		TksFile tksFile;
+		if (!tksFile.Load(skeletonTksPath.c_str())) {
+			ReportError("スケルトンファイルの読み込みに失敗しました。" + skeletonTksPath, isOutputErrorCodeTTY);
+			return false;
+		}
+		std::vector<std::string> boneNames;
+		tksFile.QueryBone([&](TksFile::SBone& bone) {
+			boneNames.push_back(bone.name.get());
+		});
+
+		// 2. アニメーションFBXをロード。
+		ufbx_load_opts opts = {};
+		ufbx_error error;
+		ufbx_scene* scene = ufbx_load_file(animFbxPath.c_str(), &opts, &error);
+		if (scene == nullptr) {
+			std::string msg = "アニメーションFBXの読み込みに失敗しました。";
+			msg += animFbxPath;
+			msg += " : ";
+			msg += error.description.data;
+			ReportError(msg, isOutputErrorCodeTTY);
+			return false;
+		}
+
+		if (scene->anim_stacks.count == 0) {
+			ReportError("アニメーションFBXにアニメーションスタックが見つかりませんでした。" + animFbxPath, isOutputErrorCodeTTY);
+			ufbx_free_scene(scene);
+			return false;
+		}
+		ufbx_anim_stack* stack = scene->anim_stacks.data[0];
+
+		// 3. ボーン名→ノードのマップを構築(名前完全一致でのみリターゲットする)。
+		std::map<std::string, ufbx_node*> nameToNode;
+		for (size_t i = 0; i < scene->nodes.count; i++) {
+			ufbx_node* node = scene->nodes.data[i];
+			nameToNode[ToStdString(node->name)] = node;
+		}
+		// 4. 30fps固定でサンプリングしながらキーフレームを構築する。
+		const double frameRate = 30.0;
+		double duration = stack->time_end - stack->time_begin;
+		if (duration < 0.0) {
+			duration = 0.0;
+		}
+		int numFrames = (int)(duration * frameRate) + 1;
+		if (numFrames < 1) {
+			numFrames = 1;
+		}
+
+		std::vector<TkaFile::KeyFrame> keyFrames;
+		keyFrames.reserve(boneNames.size() * (size_t)numFrames);
+
+		int numMatchedBones = 0;
+		for (size_t boneIndex = 0; boneIndex < boneNames.size(); boneIndex++) {
+			auto it = nameToNode.find(boneNames[boneIndex]);
+			if (it == nameToNode.end()) {
+				// このアニメーションFBXには同名のボーンが無い。静止(バインドポーズ)のままにする。
+				continue;
+			}
+			numMatchedBones++;
+			ufbx_node* node = it->second;
+			for (int f = 0; f < numFrames; f++) {
+				double time = stack->time_begin + (double)f / frameRate;
+				if (time > stack->time_end) {
+					time = stack->time_end;
+				}
+
+				ufbx_transform localTransform = ufbx_evaluate_transform(stack->anim, node, time);
+				ufbx_matrix m = ufbx_transform_to_matrix(&localTransform);
+
+				TkaFile::KeyFrame keyFrame;
+				keyFrame.boneIndex = static_cast<uint32_t>(boneIndex);
+				keyFrame.time = (float)(time - stack->time_begin);
+				float rows[4][3];
+				ConvertUfbxMatrixToRows(m, rows);
+				for (int r = 0; r < 4; r++) {
+					keyFrame.transform[r] = Vector3(rows[r][0], rows[r][1], rows[r][2]);
+				}
+				keyFrames.push_back(keyFrame);
+			}
+		}
+
+		ufbx_free_scene(scene);
+
+		if (numMatchedBones == 0) {
+			ReportError("アニメーションFBXとスケルトンでボーン名が1つも一致しませんでした。" + animFbxPath, isOutputErrorCodeTTY);
+			return false;
+		}
+
+		TkaFile tkaFile;
+		tkaFile.SetKeyFramesForRuntimeImport(std::move(keyFrames));
+		return tkaFile.Save(tkaPath.c_str());
+	}
 	bool FbxRuntimeImporter::IsConversionNeeded(const std::string& fbxFilePath, const std::string& tkmFilePath)
 	{
 		if (!FileExists(tkmFilePath)) {
@@ -174,8 +295,14 @@ namespace nsK2EngineLow {
 		std::string fbxDirectory = GetDirectory(fbxFilePath);
 		MaterialTextureTable materialTextureTable = LoadMaterialTextureTable(fbxDirectory);
 
+		// スキンクラスターが参照するボーン(+祖先チェーン)を収集し、スケルトンを構築する。
+		// 見つからなければoutBonesは空のままで、静的メッシュとして扱われる(フェーズ1と同じ挙動)。
+		std::vector<TksFile::SBone> bones;
+		std::map<ufbx_node*, int> nodeToBoneIndex;
+		BuildSkeleton(scene, bones, nodeToBoneIndex);
+
 		std::vector<TkmFile::SMesh> meshParts;
-		BuildMeshParts(scene, meshParts, fbxDirectory, materialTextureTable, isOutputErrorCodeTTY);
+		BuildMeshParts(scene, meshParts, fbxDirectory, materialTextureTable, nodeToBoneIndex, isOutputErrorCodeTTY);
 
 		ufbx_free_scene(scene);
 
@@ -186,13 +313,27 @@ namespace nsK2EngineLow {
 
 		TkmFile tkmFile;
 		tkmFile.SetMeshPartsForRuntimeImport(std::move(meshParts));
-		return tkmFile.Save(tkmFilePath.c_str());
+		if (!tkmFile.Save(tkmFilePath.c_str())) {
+			return false;
+		}
+
+		if (!bones.empty()) {
+			// tkmと同じフォルダ・同名の.tksを生成する。ModelRender::InitSkeleton()が
+			// .tkm→.tks の拡張子置換で自動的に読み込むため、呼び出し側の変更は不要。
+			std::string tksFilePath = JoinPath(GetDirectory(tkmFilePath), GetStem(tkmFilePath) + ".tks");
+			TksFile tksFile;
+			tksFile.SetBonesForRuntimeImport(std::move(bones));
+			tksFile.Save(tksFilePath.c_str());
+		}
+
+		return true;
 	}
 	void FbxRuntimeImporter::BuildMeshParts(
 		ufbx_scene* scene,
 		std::vector<TkmFile::SMesh>& outMeshParts,
 		const std::string& fbxDirectory,
 		const MaterialTextureTable& materialTextureTable,
+		const std::map<ufbx_node*, int>& nodeToBoneIndex,
 		bool isOutputErrorCodeTTY
 	) {
 		outMeshParts.reserve(scene->meshes.count);
@@ -261,6 +402,10 @@ namespace nsK2EngineLow {
 						v.uv = Vector2((float)uv.x, (float)uv.y);
 						v.indices[0] = v.indices[1] = v.indices[2] = v.indices[3] = 0;
 						v.skinWeights = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+						if (!nodeToBoneIndex.empty()) {
+							uint32_t rawVertexIndex = mesh->vertex_indices.data[corner];
+							ResolveVertexSkin(mesh, rawVertexIndex, nodeToBoneIndex, v.indices, v.skinWeights);
+						}
 
 						uint32_t newIndex = (uint32_t)dstMesh.vertexBuffer.size();
 						dstMesh.vertexBuffer.push_back(v);
@@ -285,6 +430,141 @@ namespace nsK2EngineLow {
 
 			outMeshParts.push_back(std::move(dstMesh));
 		}
+	}
+	void FbxRuntimeImporter::ConvertUfbxMatrixToRows(const ufbx_matrix& m, float outRows[4][3])
+	{
+		// ufbx_matrixは列優先(cols[0..2]=基底ベクトル、cols[3]=平行移動)。
+		// TksFile/TkaFileの行優先[4][3]は「各行が基底ベクトル/平行移動」を表すので、
+		// 掛け算の向きに関わらず基底ベクトルの実体は同じ3成分であり、転置は不要でそのままコピーできる。
+		for (int i = 0; i < 4; i++) {
+			outRows[i][0] = (float)m.cols[i].x;
+			outRows[i][1] = (float)m.cols[i].y;
+			outRows[i][2] = (float)m.cols[i].z;
+		}
+	}
+	void FbxRuntimeImporter::BuildSkeleton(
+		ufbx_scene* scene,
+		std::vector<TksFile::SBone>& outBones,
+		std::map<ufbx_node*, int>& outNodeToBoneIndex
+	) {
+		// 1. スキンクラスターが参照するボーンノードと、そのクラスター(バインドポーズ取得用)を集める。
+		std::map<ufbx_node*, const ufbx_skin_cluster*> nodeToCluster;
+		for (size_t meshNo = 0; meshNo < scene->meshes.count; meshNo++) {
+			ufbx_mesh* mesh = scene->meshes.data[meshNo];
+			for (size_t d = 0; d < mesh->skin_deformers.count; d++) {
+				ufbx_skin_deformer* deformer = mesh->skin_deformers.data[d];
+				for (size_t c = 0; c < deformer->clusters.count; c++) {
+					ufbx_skin_cluster* cluster = deformer->clusters.data[c];
+					if (cluster->bone_node != nullptr) {
+						nodeToCluster[cluster->bone_node] = cluster;
+					}
+				}
+			}
+		}
+		if (nodeToCluster.empty()) {
+			// スキンが無いFBX。フェーズ1と同じ静的メッシュ扱い。
+			return;
+		}
+
+		// 2. 祖先チェーンを辿ってボーン集合を完成させる(親も配列に含める必要があるため)。
+		std::vector<ufbx_node*> boneNodes;
+		std::set<ufbx_node*> boneNodeSet;
+		for (auto& pair : nodeToCluster) {
+			boneNodes.push_back(pair.first);
+			boneNodeSet.insert(pair.first);
+		}
+		for (size_t i = 0; i < boneNodes.size(); i++) {
+			ufbx_node* parent = boneNodes[i]->parent;
+			while (parent != nullptr && boneNodeSet.find(parent) == boneNodeSet.end()) {
+				boneNodeSet.insert(parent);
+				boneNodes.push_back(parent);
+				parent = parent->parent;
+			}
+		}
+
+		// 3. 各ノードにボーンインデックスを割り当てる。
+		for (size_t i = 0; i < boneNodes.size(); i++) {
+			outNodeToBoneIndex[boneNodes[i]] = static_cast<int>(i);
+		}
+
+		// 4. SBoneを構築する。
+		outBones.resize(boneNodes.size());
+		for (size_t i = 0; i < boneNodes.size(); i++) {
+			ufbx_node* node = boneNodes[i];
+			TksFile::SBone& bone = outBones[i];
+
+			std::string name = ToStdString(node->name);
+			bone.name = std::make_unique<char[]>(name.size() + 1);
+			memcpy(bone.name.get(), name.c_str(), name.size() + 1);
+
+			auto parentIt = (node->parent != nullptr) ? outNodeToBoneIndex.find(node->parent) : outNodeToBoneIndex.end();
+			bone.parentNo = (parentIt != outNodeToBoneIndex.end()) ? parentIt->second : -1;
+
+			// バインドポーズ: クラスターがあれば「バインド時のボーンのワールド行列」そのもの、
+			// 無ければ(祖先補完のみのノード)ノードの現在のワールド行列を代用する。
+			auto clusterIt = nodeToCluster.find(node);
+			ufbx_matrix bindPoseUfbx = (clusterIt != nodeToCluster.end())
+				? clusterIt->second->bind_to_world
+				: node->node_to_world;
+			ufbx_matrix invBindPoseUfbx = ufbx_matrix_invert(&bindPoseUfbx);
+
+			ConvertUfbxMatrixToRows(bindPoseUfbx, bone.bindPose);
+			ConvertUfbxMatrixToRows(invBindPoseUfbx, bone.invBindPose);
+			bone.no = static_cast<int>(i);
+		}
+	}
+	void FbxRuntimeImporter::ResolveVertexSkin(
+		const ufbx_mesh* mesh,
+		uint32_t rawVertexIndex,
+		const std::map<ufbx_node*, int>& nodeToBoneIndex,
+		int outIndices[4],
+		Vector4& outSkinWeights
+	) {
+		outIndices[0] = outIndices[1] = outIndices[2] = outIndices[3] = 0;
+		outSkinWeights = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+
+		if (mesh->skin_deformers.count == 0) {
+			return;
+		}
+		const ufbx_skin_deformer* deformer = mesh->skin_deformers.data[0];
+		if (rawVertexIndex >= deformer->vertices.count) {
+			return;
+		}
+		const ufbx_skin_vertex& skinVertex = deformer->vertices.data[rawVertexIndex];
+
+		// 重み降順ソート済みなので上位4件を採用する。
+		float weights[4] = { 0, 0, 0, 0 };
+		int indices[4] = { 0, 0, 0, 0 };
+		uint32_t numUse = (skinVertex.num_weights < 4) ? skinVertex.num_weights : 4;
+		float total = 0.0f;
+		for (uint32_t k = 0; k < numUse; k++) {
+			const ufbx_skin_weight& sw = deformer->weights.data[skinVertex.weight_begin + k];
+			int boneIndex = 0;
+			if (sw.cluster_index < deformer->clusters.count) {
+				ufbx_node* boneNode = deformer->clusters.data[sw.cluster_index]->bone_node;
+				auto it = (boneNode != nullptr) ? nodeToBoneIndex.find(boneNode) : nodeToBoneIndex.end();
+				if (it != nodeToBoneIndex.end()) {
+					boneIndex = it->second;
+				}
+			}
+			indices[k] = boneIndex;
+			weights[k] = (float)sw.weight;
+			total += weights[k];
+		}
+		if (total > 0.0f) {
+			for (uint32_t k = 0; k < numUse; k++) {
+				weights[k] /= total;
+			}
+		}
+
+		outIndices[0] = indices[0];
+		outIndices[1] = indices[1];
+		outIndices[2] = indices[2];
+		outIndices[3] = indices[3];
+		// シェーダー側はskinWeights.xyzの3つだけを使い、4本目(indices[3])の重みは
+		// 1.0-(x+y+z)として暗黙に補完するため、weights[3]はここでは使わない
+		// (正規化済みなので合計は1になり、暗黙の補完値と一致する)。
+		outSkinWeights = Vector4(weights[0], weights[1], weights[2], 0.0f);
 	}
 	void FbxRuntimeImporter::BuildMaterial(
 		const ufbx_material* srcMat,

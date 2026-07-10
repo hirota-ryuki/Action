@@ -31,4 +31,27 @@ namespace nsK2EngineLow {
 		fclose(fp);
 		return true;
 	}
+	bool TksFile::Save(const char* filePath)
+	{
+		auto fp = fopen(filePath, "wb");
+		if (fp == nullptr) {
+			return false;
+		}
+		int numBone = static_cast<int>(m_bones.size());
+		fwrite(&numBone, sizeof(numBone), 1, fp);
+		for (auto& bone : m_bones) {
+			// 骨の名前を書き込む(Load()側は1byteの長さプレフィックスなので255文字まで)。
+			uint8_t nameCount = static_cast<uint8_t>(strlen(bone.name.get()));
+			fwrite(&nameCount, 1, 1, fp);
+			fwrite(bone.name.get(), static_cast<size_t>(nameCount) + 1, 1, fp);
+			//親のIDを書き込む。
+			fwrite(&bone.parentNo, sizeof(bone.parentNo), 1, fp);
+			//バインドポーズを書き込む。
+			fwrite(bone.bindPose, sizeof(bone.bindPose), 1, fp);
+			//バインドポーズの逆数を書き込む。
+			fwrite(bone.invBindPose, sizeof(bone.invBindPose), 1, fp);
+		}
+		fclose(fp);
+		return true;
+	}
 }

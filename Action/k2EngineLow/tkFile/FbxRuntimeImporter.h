@@ -11,6 +11,8 @@
 #pragma once
 
 #include "tkFile/TkmFile.h"
+#include "tkFile/TksFile.h"
+#include "tkFile/TkaFile.h"
 #include "ExEngine/ufbx/ufbx.h"
 
 namespace nsK2EngineLow {
@@ -38,7 +40,30 @@ namespace nsK2EngineLow {
 			const char* filePath,
 			bool isOutputErrorCodeTTY = false
 		);
+		/// <summary>
+		/// アニメーションFBX(例: ThirdPersonRun.fbx)を、skeletonTksPathが指すスケルトンの
+		/// ボーン名に対して名前ベースでリターゲットしつつ.tkaへランタイム変換する。
+		/// キャッシュ判定は.tkmと同様、fbxとtkaの更新日時比較で行う。
+		/// </summary>
+		/// <param name="animFbxPath">アニメーションFBXのファイルパス。</param>
+		/// <param name="skeletonTksPath">対象スケルトンの.tksファイルパス(先に生成済みである必要がある)。</param>
+		/// <param name="isOutputErrorCodeTTY">エラーをTTYに出力する？falseならメッセージボックス。</param>
+		/// <returns>後続処理で使用すべきtkaファイルパス。変換失敗時は空文字。</returns>
+		static std::string ResolveAnimationFbxToTka(
+			const char* animFbxPath,
+			const char* skeletonTksPath,
+			bool isOutputErrorCodeTTY = false
+		);
 	private:
+		/// <summary>
+		/// アニメーションFBX→tka変換の実処理。
+		/// </summary>
+		static bool ConvertAnimationFbxToTka(
+			const std::string& animFbxPath,
+			const std::string& skeletonTksPath,
+			const std::string& tkaPath,
+			bool isOutputErrorCodeTTY
+		);
 		/// <summary>
 		/// .fbx拡張子か判定。
 		/// </summary>
@@ -63,8 +88,35 @@ namespace nsK2EngineLow {
 			std::vector<TkmFile::SMesh>& outMeshParts,
 			const std::string& fbxDirectory,
 			const MaterialTextureTable& materialTextureTable,
+			const std::map<ufbx_node*, int>& nodeToBoneIndex,
 			bool isOutputErrorCodeTTY
 		);
+		/// <summary>
+		/// スキンクラスターが参照する全ボーンとその祖先チェーンを収集し、
+		/// TksFile::SBone配列とノード→ボーンインデックスの対応表を構築する。
+		/// ボーンが1つも見つからなければoutBonesは空のまま。
+		/// </summary>
+		static void BuildSkeleton(
+			ufbx_scene* scene,
+			std::vector<TksFile::SBone>& outBones,
+			std::map<ufbx_node*, int>& outNodeToBoneIndex
+		);
+		/// <summary>
+		/// nodeToBoneIndexを使い、メッシュの生頂点インデックスからスキンインデックス/ウェイトを解決する。
+		/// スキンデフォーマーが無い、または該当頂点に影響が無い場合はindices/weightsとも0のまま。
+		/// </summary>
+		static void ResolveVertexSkin(
+			const ufbx_mesh* mesh,
+			uint32_t rawVertexIndex,
+			const std::map<ufbx_node*, int>& nodeToBoneIndex,
+			int outIndices[4],
+			Vector4& outSkinWeights
+		);
+		/// <summary>
+		/// ufbx_matrix(列優先、cols[0..2]=基底ベクトル、cols[3]=平行移動)を
+		/// TksFile/TkaFileが使う行優先4x4の[4][3]配列に変換する(転置不要、cols[i]をそのままrow[i]へ)。
+		/// </summary>
+		static void ConvertUfbxMatrixToRows(const ufbx_matrix& m, float outRows[4][3]);
 		/// <summary>
 		/// ufbxのマテリアルからtkmマテリアルを構築する(テクスチャの解決/DDS変換込み)。
 		/// </summary>
