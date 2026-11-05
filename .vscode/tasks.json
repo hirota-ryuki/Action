@@ -1,0 +1,23 @@
+{
+    // フォルダーを開いたときに、別のPCで最近使っていた Claude の会話をタブで開き直す。
+    // 中身は .claude/scripts/claude-sessions.ps1 の restore モード。
+    // 初回は VSCode が「自動タスクを許可するか」を聞いてくるので「許可」を選ぶ。
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Claude のタブを開き直す",
+            "type": "process",
+            "command": "powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy", "Bypass",
+                "-File", "${workspaceFolder}/.claude/scripts/claude-sessions.ps1",
+                "-Mode", "restore",
+                "-RepoDir", "${workspaceFolder}"
+            ],
+            "runOptions": { "runOn": "folderOpen" },
+            "presentation": { "reveal": "silent", "panel": "dedicated", "close": true },
+            "problemMatcher": []
+        }
+    ]
+}

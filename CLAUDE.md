@@ -40,6 +40,12 @@
   - セッション開始時: 個人用 OneDrive から新しい会話を取ってくる（pull）
   - やりとりの区切り・セッション終了時: 個人用 OneDrive へ送る（push）
   - どちらも「新しい方で上書きするコピー」だけで、削除は相手側に伝えない
+  - やりとりの区切りで、その会話の ID と時刻を「タブの記録」（`%APPDATA%\claude-sessions\tabs-Action\<PC名>.json`）に書き、個人用 OneDrive の `01_ClaudeSessions/Action-tabs/` へ送る
+- タブの開き直し（`.vscode/tasks.json` → `claude-sessions.ps1 -Mode restore`）
+  - VSCode でこのフォルダーを開くと、いちばん最近 Claude を使ったPCの記録から、最後のやりとりの3時間前までに使った会話をタブで開く
+  - 最後に使ったのがこのPCなら何もしない（VSCode が自分でタブを戻すため）。同じ記録では2回開かない
+  - 別のPCで30分以内に使っていたときは、開く前に確認を出す
+  - 初回は VSCode が「自動タスクを許可するか」を聞くので「許可」を選んでもらう（`Tasks: Manage Automatic Tasks` で変えられる）
 - 「バックアップがまだ設定されていません」と出たPCでは、ユーザーに `.claude\scripts\setup-sessions.cmd` を1回実行してもらう（rclone のインストールと、ブラウザでの個人アカウントの許可）。
 - やめるとき
   - そのPCだけ: `.claude\scripts\remove-sessions.cmd`（rclone の設定と本体を消す）

@@ -3,17 +3,29 @@
 #   -Mode setup  : rclone を入れて個人用 OneDrive への許可を取る（PCごとに1回、手で実行）
 #   -Mode pull   : 個人用 OneDrive から新しい会話を取ってくる（セッション開始時にフックが実行）
 #   -Mode push   : 個人用 OneDrive へ会話を送る（やりとりの区切りでフックが実行）
+#   -Mode restore: 別のPCで最近使っていた会話を、タブで開き直す（フォルダーを開いたときに .vscode/tasks.json が実行）
 #   -Mode remove : このPCから rclone の設定と rclone 本体を消す（手で実行）
 #
 # 会話ファイルの場所: <Claude の設定フォルダ>\projects\<リポジトリのパスを変換した名前>\
 # 送り先          : 個人用 OneDrive の 01_ClaudeSessions\Action\（どのPCでも同じ）
 # 送受信は「新しい方で上書きするコピー」だけで、どちらかで消したファイルを相手側で消すことはしない。
+#
+# タブの記録: Stop フック（やりとりの区切り）で、その会話の ID と時刻を
+#   %APPDATA%\claude-sessions\tabs-Action\<PC名>.json に書き、個人用 OneDrive の 01_ClaudeSessions\Action-tabs\ へ送る。
+#   restore では、いちばん最近使われたPCの記録から、最後のやりとりの $TabWindowHours 時間前までに使った会話を開く。
 
 param(
-    [ValidateSet('setup', 'pull', 'push', 'remove')]
+    [ValidateSet('setup', 'pull', 'push', 'restore', 'remove')]
     [string]$Mode = 'pull',
-    [string]$RepoDir = $env:CLAUDE_PROJECT_DIR
+    [string]$RepoDir = $env:CLAUDE_PROJECT_DIR,
+    [double]$TabWindowHours = 3
 )
+
+# フックから呼ばれたときは、標準入力にフックの情報（JSON）が来る。最初に読んでおく。
+$hookInput = $null
+if ([Console]::IsInputRedirected) {
+    try { $hookInput = [Console]::In.ReadToEnd() | ConvertFrom-Json } catch { $hookInput = $null }
+}
 
 # 'Stop' にすると、rclone や winget が標準エラーに出す通知だけで止まってしまう（PowerShell 5.1）。
 # 失敗は終了コードを見て throw する。
@@ -33,6 +45,40 @@ $RemotePath = "${RemoteName}:01_ClaudeSessions/Action"
 
 # setup でインストール先を選んだPCでは、その場所をここに覚えておく（リポジトリには入れない）。
 $PathFile = Join-Path $env:APPDATA 'claude-sessions\rclone-path.txt'
+
+# タブの記録（どの会話をいつ使ったか）。PCごとに別のファイルにして、取り合いにならないようにする。
+$RemoteTabs   = "${RemoteName}:01_ClaudeSessions/Action-tabs"
+$LocalTabs    = Join-Path $env:APPDATA 'claude-sessions\tabs-Action'
+$PcName       = $env:COMPUTERNAME
+$MyTabFile    = Join-Path $LocalTabs "$PcName.json"
+# restore で最後に開いた記録（同じ記録で何度も開かないため）
+$RestoredFile = Join-Path $env:APPDATA 'claude-sessions\restored-Action.txt'
+
+function Get-NowUnix { return [int64]([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()) }
+
+# 1つのPCのタブ記録を読む。返り値: @{ 会話ID = 使った時刻(Unix秒) }
+function Read-TabFile([string]$path) {
+    $map = @{}
+    if (-not (Test-Path $path)) { return $map }
+    try {
+        $obj = Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json
+        foreach ($p in $obj.sessions.PSObject.Properties) { $map[$p.Name] = [int64]$p.Value }
+    } catch { }
+    return $map
+}
+
+# この会話を「今使った」と記録する。7日より古い記録は消す。
+function Write-TabRecord([string]$sessionId) {
+    if ($sessionId -notmatch '^[0-9a-fA-F-]{36}$') { return }
+    $now = Get-NowUnix
+    $map = Read-TabFile $MyTabFile
+    $map[$sessionId] = $now
+    $keep = [ordered]@{}
+    foreach ($k in $map.Keys) { if ($now - $map[$k] -lt 7 * 86400) { $keep[$k] = $map[$k] } }
+    New-Item -ItemType Directory -Force -Path $LocalTabs | Out-Null
+    $json = [ordered]@{ pc = $PcName; sessions = $keep } | ConvertTo-Json -Depth 3
+    [System.IO.File]::WriteAllText($MyTabFile, $json, (New-Object System.Text.UTF8Encoding $false))
+}
 
 function Find-Rclone {
     if (Test-Path $PathFile) {
@@ -163,13 +209,88 @@ switch ($Mode) {
         if (-not $lock) { exit 0 }
         try {
             if (-not (Test-Path $LocalDir)) { New-Item -ItemType Directory -Force -Path $LocalDir | Out-Null }
-            if ($Mode -eq 'pull') { Invoke-Copy $rclone $RemotePath $LocalDir }
-            else                  { Invoke-Copy $rclone $LocalDir $RemotePath }
+            if ($Mode -eq 'pull') {
+                Invoke-Copy $rclone $RemotePath $LocalDir
+            } else {
+                Invoke-Copy $rclone $LocalDir $RemotePath
+                # 会話ファイルを送ったあとにタブの記録を送る（記録だけ先に届いて会話がない、を避ける）
+                if ($hookInput -and $hookInput.hook_event_name -eq 'Stop' -and $hookInput.session_id) {
+                    Write-TabRecord $hookInput.session_id
+                }
+                if (Test-Path $MyTabFile) {
+                    & $rclone copyto $MyTabFile "$RemoteTabs/$PcName.json" --retries 2 --low-level-retries 3 --log-level ERROR
+                }
+            }
         } catch {
             Write-Output "$tag $($_.Exception.Message)"
         } finally {
             $lock.Dispose()
         }
+    }
+
+    'restore' {
+        $rclone = Find-Rclone
+        if (-not $rclone -or (Get-RemoteDriveType $rclone) -ne 'personal') { exit 0 }
+        $lock = Enter-Lock
+        if (-not $lock) { exit 0 }
+        try {
+            if (-not (Test-Path $LocalDir)) { New-Item -ItemType Directory -Force -Path $LocalDir | Out-Null }
+            New-Item -ItemType Directory -Force -Path $LocalTabs | Out-Null
+            Invoke-Copy $rclone $RemotePath $LocalDir
+            # 記録のフォルダーがまだない（どのPCもまだ記録していない）ときは失敗するので、エラーは無視する
+            & $rclone copy $RemoteTabs $LocalTabs --update --retries 2 --low-level-retries 3 --log-level ERROR 2>$null
+        } catch {
+            Write-Output "$tag $($_.Exception.Message)"
+            exit 0
+        } finally {
+            $lock.Dispose()
+        }
+
+        # いちばん最近やりとりがあったPCを探す
+        $latestPc = $null; $latestTime = [int64]0; $latestMap = $null
+        foreach ($f in Get-ChildItem $LocalTabs -Filter *.json -ErrorAction SilentlyContinue) {
+            $map = Read-TabFile $f.FullName
+            foreach ($t in $map.Values) {
+                if ($t -gt $latestTime) { $latestTime = $t; $latestPc = $f.BaseName; $latestMap = $map }
+            }
+        }
+        if (-not $latestPc) { Write-Output "$tag タブの記録がまだありません。"; exit 0 }
+        if ($latestPc -eq $PcName) {
+            # 最後に使ったのがこのPCなら、VSCode が自分でタブを戻すので何もしない
+            Write-Output "$tag 最後に使ったのはこのPC（$PcName）なので、タブは開きません。"
+            exit 0
+        }
+        $marker = "$latestPc $latestTime"
+        if ((Test-Path $RestoredFile) -and ((Get-Content $RestoredFile -Raw).Trim() -eq $marker)) {
+            Write-Output "$tag $latestPc の記録はもう開いています。"
+            exit 0
+        }
+
+        # そのPCで、最後のやりとりの $TabWindowHours 時間前までに使った会話（このPCに会話ファイルがあるものだけ）
+        $from = $latestTime - [int64]($TabWindowHours * 3600)
+        $ids = $latestMap.GetEnumerator() |
+               Where-Object { $_.Value -ge $from -and (Test-Path (Join-Path $LocalDir "$($_.Key).jsonl")) } |
+               Sort-Object Value | ForEach-Object { $_.Key }
+        if (-not $ids) { Write-Output "$tag 開く会話がありません。"; exit 0 }
+
+        # 別のPCでついさっきまで使っていたなら、同時に進めてしまわないように確認する
+        $minutes = [int](((Get-NowUnix) - $latestTime) / 60)
+        if ($minutes -lt 30) {
+            Add-Type -AssemblyName System.Windows.Forms
+            $msg = "$latestPc で $minutes 分前まで Claude の会話を使っていました。`n" +
+                   "同じ会話を2台で同時に進めると、片方の続きが消えます。`n`n" +
+                   "$latestPc の Claude を閉じてから「はい」を押してください。`n" +
+                   "（「いいえ」で今回は開きません）"
+            $ans = [System.Windows.Forms.MessageBox]::Show($msg, 'Claude のタブを開き直す', 'YesNo', 'Warning')
+            if ($ans -ne [System.Windows.Forms.DialogResult]::Yes) { exit 0 }
+        }
+
+        foreach ($id in $ids) {
+            Start-Process "vscode://anthropic.claude-code/open?session=$id"
+            Start-Sleep -Milliseconds 800
+        }
+        Set-Content -Path $RestoredFile -Value $marker -Encoding UTF8
+        Write-Output "$tag $latestPc で使っていた会話を $(@($ids).Count) 個開きました。"
     }
 
     'remove' {
