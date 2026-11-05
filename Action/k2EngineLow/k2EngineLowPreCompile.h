@@ -40,7 +40,7 @@ const int MAX_RENDERING_TARGET = D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT;	//レ�
 
 using namespace Microsoft::WRL;
 
-#define USE_FPS_LIMITTER		// 有効でFPSに上限を設ける。
+//#define USE_FPS_LIMITTER		// 有効でFPSに上限を設ける。（無効にしてFPS無制限）
 static const int MAX_FPS = 60;	// 最大FPS。USE_FPS_LIMITTERが有効なときに使用される。
 #define ENABLE_DXR_ON_RTX_ONLY	// 有効でDXRはRTXシリーズのみ有効。
 
