@@ -332,4 +332,6 @@ ASALocalRun/
 .claude/settings.local.json
 
 # VSCode のPCごとの設定（絶対パスを含む）
-.vscode/
+.vscode/*
+# 例外: フォルダーを開いたときに Claude のタブを開き直すタスク（どのPCでも同じ）
+!.vscode/tasks.json
