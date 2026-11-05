@@ -5,6 +5,7 @@
 #include "Enemy.h"
 #include "GameCamera.h"
 #include "Stage.h"
+#include "FireEffect.h"
 
 namespace
 {
@@ -14,6 +15,8 @@ namespace
 	const Vector3 kMainLightColor = { 2.0f, 2.0f, 2.0f };        // HDR値（1.0超）で太陽光の強さを表現。
 	const Vector3 kPlayerStartPosition = { 0.0f, 100.0f, 0.0f };
 	const Vector3 kEnemyStartPosition = { 320.0f, 100.0f, 320.0f };
+	const Vector3 kFirePosition = { -200.0f, 0.0f, 200.0f };
+	const Vector3 kFireScale = { 10.0f, 10.0f, 10.0f };  // Effekseerの1単位をワールド10単位に拡大。見た目に合わせて要調整。
 }
 
 Game::Game()
@@ -27,6 +30,7 @@ Game::~Game()
 	DeleteGO(m_player);
 	DeleteGO(m_enemy);
 	DeleteGO(m_gameCamera);
+	DeleteGO(m_fireEffect);
 	DeleteGO(m_skyCube);
 }
 
@@ -53,6 +57,9 @@ bool Game::Start()
 	m_enemy = NewGO<Enemy>(1, "enemy");
 	m_enemy->SetPosition(kEnemyStartPosition);
 	m_gameCamera = NewGO<GameCamera>(2, "gameCamera");
+	m_fireEffect = NewGO<FireEffect>(1, "fireEffect");
+	m_fireEffect->SetPosition(kFirePosition);
+	m_fireEffect->SetScale(kFireScale);
 
 	// SkyCubeのテクスチャをIBLの環境マップとしても使い回す。
 	m_skyCube = NewGO<nsK2Engine::SkyCube>(0, "skyCube");

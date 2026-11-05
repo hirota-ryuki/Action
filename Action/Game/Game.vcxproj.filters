@@ -39,6 +39,9 @@
     <ClCompile Include="Source\Objects\Player.cpp">
       <Filter>Source\Objects</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Objects\FireEffect.cpp">
+      <Filter>Source\Objects</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Objects\Stage.cpp">
       <Filter>Source\Objects</Filter>
     </ClCompile>
@@ -56,10 +59,16 @@
     <ClInclude Include="Source\Objects\GameCamera.h">
       <Filter>Source\Objects</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Core\EffectId.h">
+      <Filter>Source\Core</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Core\Game.h">
       <Filter>Source\Core</Filter>
     </ClInclude>
     <ClInclude Include="Source\Objects\Player.h">
+      <Filter>Source\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Objects\FireEffect.h">
       <Filter>Source\Objects</Filter>
     </ClInclude>
     <ClInclude Include="Source\Objects\Stage.h">
