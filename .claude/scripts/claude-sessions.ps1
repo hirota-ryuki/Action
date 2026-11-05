@@ -15,7 +15,9 @@ param(
     [string]$RepoDir = $env:CLAUDE_PROJECT_DIR
 )
 
-$ErrorActionPreference = 'Stop'
+# 'Stop' にすると、rclone や winget が標準エラーに出す通知だけで止まってしまう（PowerShell 5.1）。
+# 失敗は終了コードを見て throw する。
+$ErrorActionPreference = 'Continue'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $tag = '[会話バックアップ]'
 
@@ -28,7 +30,14 @@ $configDir  = if ($env:CLAUDE_CONFIG_DIR) { $env:CLAUDE_CONFIG_DIR } else { Join
 $LocalDir   = Join-Path $configDir ('projects\' + ($RepoDir -replace '[^A-Za-z0-9]', '-'))
 $RemotePath = "${RemoteName}:12_ClaudeSessions/" + (Split-Path $RepoDir -Leaf)
 
+# setup でインストール先を選んだPCでは、その場所をここに覚えておく（リポジトリには入れない）。
+$PathFile = Join-Path $env:APPDATA 'claude-sessions\rclone-path.txt'
+
 function Find-Rclone {
+    if (Test-Path $PathFile) {
+        $saved = (Get-Content $PathFile -Raw).Trim()
+        if ($saved -and (Test-Path $saved)) { return $saved }
+    }
     $cmd = Get-Command rclone.exe -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }
     $link = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links\rclone.exe'
@@ -40,6 +49,9 @@ function Find-Rclone {
 }
 
 function Get-RemoteDriveType([string]$rclone) {
+    # 設定ファイルがないと rclone が通知を出すので、空のファイルを先に作っておく。
+    $conf = Join-Path $env:APPDATA 'rclone\rclone.conf'
+    if (-not (Test-Path $conf)) { New-Item -ItemType File -Force -Path $conf | Out-Null }
     $text = & $rclone config show $RemoteName 2>$null
     if ($LASTEXITCODE -ne 0 -or -not $text) { return $null }
     $line = $text | Where-Object { $_ -match '^\s*drive_type\s*=' } | Select-Object -First 1
@@ -63,8 +75,30 @@ switch ($Mode) {
     'setup' {
         $rclone = Find-Rclone
         if (-not $rclone) {
+            Write-Output "$tag rclone のインストール先を選んでください（キャンセルすると標準の場所に入れます）。"
+            $installDir = $null
+            try {
+                Add-Type -AssemblyName System.Windows.Forms
+                $dlg = New-Object System.Windows.Forms.FolderBrowserDialog
+                $dlg.Description = 'rclone のインストール先フォルダ（キャンセルで標準の場所）'
+                $dlg.ShowNewFolderButton = $true
+                if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { $installDir = $dlg.SelectedPath }
+            } catch {
+                $installDir = Read-Host "$tag インストール先のフォルダ（空のまま Enter で標準の場所）"
+            }
+
             Write-Output "$tag rclone をインストールします（winget）..."
-            winget install --id $WingetId -e --accept-source-agreements --accept-package-agreements
+            if ($installDir) {
+                Write-Output "$tag インストール先: $installDir"
+                winget install --id $WingetId -e --location $installDir --accept-source-agreements --accept-package-agreements
+                $exe = Get-ChildItem $installDir -Recurse -Filter rclone.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($exe) {
+                    New-Item -ItemType Directory -Force -Path (Split-Path $PathFile) | Out-Null
+                    Set-Content -Path $PathFile -Value $exe.FullName -Encoding UTF8
+                }
+            } else {
+                winget install --id $WingetId -e --accept-source-agreements --accept-package-agreements
+            }
             $rclone = Find-Rclone
             if (-not $rclone) { throw 'rclone のインストール後に rclone.exe が見つかりません。' }
         }
@@ -120,6 +154,7 @@ switch ($Mode) {
             & $rclone config delete $RemoteName 2>$null | Out-Null
             Write-Output "$tag このPCから個人用 OneDrive への鍵（rclone の設定）を消しました。"
             winget uninstall --id $WingetId -e
+            if (Test-Path $PathFile) { Remove-Item (Split-Path $PathFile) -Recurse -Force }
             Write-Output "$tag rclone をアンインストールしました。"
         } else {
             Write-Output "$tag このPCには rclone がありません。"
