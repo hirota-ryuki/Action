@@ -21,10 +21,13 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	input.moveDirection = cameraForward * pad.GetLStickYF() + cameraRight * pad.GetLStickXF();
 	input.lookDirection = Vector3::Zero;
 
-	input.isRun = IsKeyPressed(VK_LSHIFT);
 	input.jump.Update(pad.IsPress(enButtonA));
-	// パッド未接続時はXボタンがLキーに割り当てられているので、どちらでも同じ動きになる。
-	input.rush.Update(IsKeyPressed('L') || pad.IsPress(enButtonX));
+	// 左Shift（パッドは X）: 押した瞬間にラッシュ、押しっぱなしで走る。
+	// 走るのはラッシュが終わったあとなので、単押しを繰り返すとラッシュが続けて出る。
+	// パッド未接続時は X ボタンが L キーに割り当てられているので、L でも同じ動きになる。
+	const bool isDashPress = IsKeyPressed(VK_LSHIFT) || pad.IsPress(enButtonX);
+	input.rush.Update(isDashPress);
+	input.isRun = isDashPress;
 	input.fire.Update((IsGameWindowActive() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
 	// パッド未接続時は右トリガー(RB2)が8キーに割り当てられている。
 	input.subFire.Update((IsGameWindowActive() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
