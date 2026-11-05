@@ -1,0 +1,11 @@
+{
+  "work_dir": "/Game/04_Retarget/Mixamo",
+  "source_mesh_fbx": "D:/04_dawnload/mixamo/YBot.fbx",
+  "align_source_to_target": false,
+  "clips": [
+    {"name": "Idle", "fbx": "D:/04_dawnload/mixamo/Idle.fbx"},
+    {"name": "Walk", "fbx": "D:/04_dawnload/mixamo/Walk.fbx"}
+  ],
+  "export_dir": "D:/02_git/01_my/01_Action/Action/Game/Assets/modelData/player/Animation",
+  "log": "D:/04_dawnload/mixamo/retarget_result.txt"
+}

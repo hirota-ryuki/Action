@@ -25,4 +25,13 @@ protected:
 	{
 		return context.mover->GetSettings().walkSpeed;
 	}
+	// 足が地面を送る速さと、実際に進む速さをそろえる。
+	float GetAnimSpeed(const PlayerStateContext& context) const override
+	{
+		const float animMoveSpeed = context.settings.walkAnimMoveSpeed;
+		if (animMoveSpeed <= 0.0f) {
+			return 1.0f;
+		}
+		return GetMoveSpeed(context) / animMoveSpeed;
+	}
 };

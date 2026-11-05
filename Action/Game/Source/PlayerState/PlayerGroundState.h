@@ -22,4 +22,9 @@ public:
 protected:
 	virtual int GetAnimClip() const = 0;
 	virtual float GetMoveSpeed(const PlayerStateContext& context) const = 0;
+	// アニメーションの再生速度。足が地面の上を滑らないよう、移動の速さに合わせたいときに変える。
+	virtual float GetAnimSpeed(const PlayerStateContext& context) const
+	{
+		return 1.0f;
+	}
 };

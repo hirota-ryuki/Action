@@ -17,8 +17,9 @@ namespace
 	CharacterMoveSettings MakeMoveSettings()
 	{
 		CharacterMoveSettings settings;
-		settings.walkSpeed = 300.0f;
-		settings.runSpeedMultiplier = 1.6f;  // 走る入力中の移動速度倍率。
+		// 歩きは原神のような落ち着いた速さにする（Walk アニメーションを約1.3倍で再生して足をそろえる）。
+		settings.walkSpeed = 170.0f;
+		settings.runSpeedMultiplier = 480.0f / 170.0f;  // 走る速さは 480 のまま変えない。
 		settings.jumpSpeed = 400.0f;
 		settings.gravity = 980.0f;
 		settings.capsuleRadius = 20.0f;
@@ -34,6 +35,8 @@ namespace
 		settings.rushPoseTime = 0.23f;   // ランアニメーションの疾走ポーズに合った時刻。
 		settings.moveThreshold = 0.1f;   // 移動入力がこれより小さければ立ち止まる。
 		settings.animBlendSeconds = 0.2f;
+		// Walk.fbx（Mixamo の Female Walk）の足が地面を送る速さ。UE で足のボーンを測った 115/秒 × モデルの大きさ 1.128。
+		settings.walkAnimMoveSpeed = 130.0f;
 		return settings;
 	}
 
@@ -45,10 +48,14 @@ namespace
 		desc.upAxis = enModelUpAxisZ;
 		// UnityChan(Enemy)の2倍の高さ(1.692)を狙った後、実機で大きすぎたのでその2/3にした。
 		desc.scale = 1.128f;
-		// 暫定: 今の SK_Player で使えるアニメーションは run だけ（旧Sapphiart用の idle/walk/jump はスケルトンが違う）。
-		// クリップの数はステートが使う番号に合わせる必要があるので、全部の枠に run を入れておく。
+		// Idle・Walk は Mixamo のモーションを UE で SK_Player にリターゲットしたもの。
+		// Jump はまだ SK_Player 用が無いので、暫定で run を入れておく。
 		const AnimClipDesc run = { "Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx", true };
-		desc.clips.assign(enPlayerAnimClip_Num, run);
+		desc.clips.resize(enPlayerAnimClip_Num);
+		desc.clips[enPlayerAnimClip_Idle] = { "Assets/modelData/player/Animation/Idle.fbx", true };
+		desc.clips[enPlayerAnimClip_Walk] = { "Assets/modelData/player/Animation/Walk.fbx", true };
+		desc.clips[enPlayerAnimClip_Run] = run;
+		desc.clips[enPlayerAnimClip_Jump] = run;
 		return desc;
 	}
 
