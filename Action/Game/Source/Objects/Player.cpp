@@ -1,6 +1,5 @@
 ﻿#include "stdafx.h"
 #include "Player.h"
-#include "tkFile/FbxRuntimeImporter.h"
 #include "IceMagic.h"
 #include "FireMagic.h"
 
@@ -38,6 +37,21 @@ namespace
 		return settings;
 	}
 
+	CharacterModelDesc MakeModelDesc()
+	{
+		CharacterModelDesc desc;
+		// 3ds Max(Z-up)で作られているので Z を上にして起こす（Yのままだと仰向けに倒れる）。
+		desc.modelPath = "Assets/modelData/player/Model/SK_Player.FBX";
+		desc.upAxis = enModelUpAxisZ;
+		// UnityChan(Enemy)の2倍の高さ(1.692)を狙った後、実機で大きすぎたのでその2/3にした。
+		desc.scale = 1.128f;
+		// 暫定: 今の SK_Player で使えるアニメーションは run だけ（旧Sapphiart用の idle/walk/jump はスケルトンが違う）。
+		// クリップの数はステートが使う番号に合わせる必要があるので、全部の枠に run を入れておく。
+		const AnimClipDesc run = { "Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx", true };
+		desc.clips.assign(enPlayerAnimClip_Num, run);
+		return desc;
+	}
+
 	MagicCaster::Settings MakeCasterSettings()
 	{
 		MagicCaster::Settings settings;
@@ -62,46 +76,17 @@ bool Player::Start()
 	m_respawnPosition = m_mover.GetPosition();
 	m_mover.Init(MakeMoveSettings());
 
-	// player.tkmは3ds Max(Z-up)で作成されているため、enModelUpAxisZを指定して起こす（Yのままだと仰向けに倒れた状態になる）。
-	// 注意: SK_Player.FBXはランタイムFBXインポート(フェーズ2)でスキン・スケルトン付きで変換される。
-	// idle/walk/jumpは旧Sapphiartモデル用のアニメーションクリップ(旧スケルトンのボーンインデックス参照)
-	// のため、新しいSK_Playerのスケルトンとは互換性が無い。今はrunアニメーションのみ対応する。
-	// ModelRender::Init()はAnimation::Init()経由で内部的にPlay(0)(enAnimClip_Idle)を
-	// 呼び出すため、Init()を呼ぶ前に全クリップ(少なくともenAnimClip_Idle)をロードしておく必要がある
-	// (他の呼び出し元(Enemy.cpp等)と同じ規約)。
-	// SK_Playerのスケルトン(.tks)はInit()内のFBX→tkm変換で生成されるため、
-	// アニメーションをリターゲットするにはInit()より前に一度tkm/tksの変換だけを済ませておく。
-	nsK2EngineLow::FbxRuntimeImporter::ResolveToTkmFilePath("Assets/modelData/player/Model/SK_Player.FBX");
-
-	// ThirdPersonRunPlayer_Run.fbxのアニメーションを、SK_Playerのスケルトンにボーン名ベースでリターゲットして.tkaへ変換。
-	// 現状はrunクリップのみ対応のため、暫定的に全クリップ枠にrunアニメーションを読み込ませておく
-	// (Animation::Init()のPlay(0)がクラッシュしないようにするため)。
-	std::string runTkaPath = nsK2EngineLow::FbxRuntimeImporter::ResolveAnimationFbxToTka(
-		"Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
-		"Assets/modelData/player/Model/SK_Player.tks");
-	if (!runTkaPath.empty()) {
-		for (int i = 0; i < enPlayerAnimClip_Num; i++) {
-			m_animClips[i].Load(runTkaPath.c_str());
-			m_animClips[i].SetLoopFlag(true);
-		}
-	}
-
-	m_modelRender.Init("Assets/modelData/player/Model/SK_Player.FBX", m_animClips, enPlayerAnimClip_Num, enModelUpAxisZ);
-	m_modelRender.SetShadowCasterFlag(true);
-	m_modelRender.SetPosition(m_mover.GetPosition());
-	m_modelRender.SetRotation(m_mover.GetRotation());
-	// UnityChan(Enemy)の2倍の高さを狙って1.692に設定した後、実機で見て大きすぎたため
-	// その2/3のサイズ(1.692 * 2/3 ≒ 1.128)に調整。
-	m_modelRender.SetScale(Vector3(1.128f, 1.128f, 1.128f));
-	m_modelRender.Update();
+	m_model.Init(MakeModelDesc());
+	m_model.SetTransform(m_mover.GetPosition(), m_mover.GetRotation());
+	m_model.Update();
 
 	InitSword();
 
-	m_statusEffects.Init(&m_modelRender);
+	m_statusEffects.Init(&m_model.GetModelRender());
 
 	PlayerStateContext stateContext;
 	stateContext.mover = &m_mover;
-	stateContext.modelRender = &m_modelRender;
+	stateContext.modelRender = &m_model.GetModelRender();
 	stateContext.statusEffects = &m_statusEffects;
 	stateContext.settings = MakeStateSettings();
 	m_stateMachine.Init(stateContext);  // Idle から始める。
@@ -138,9 +123,8 @@ void Player::Update()
 	RespawnIfNeeded();
 	m_hitTarget.SetPosition(m_mover.GetPosition());
 
-	m_modelRender.SetPosition(m_mover.GetPosition());
-	m_modelRender.SetRotation(m_mover.GetRotation());
-	m_modelRender.Update();
+	m_model.SetTransform(m_mover.GetPosition(), m_mover.GetRotation());
+	m_model.Update();
 
 	UpdateSword();
 }
@@ -151,7 +135,7 @@ void Player::Render(RenderContext& rc)
 		return;
 	}
 
-	m_modelRender.Draw(rc);
+	m_model.Draw(rc);
 	m_swordModelRender.Draw(rc);
 }
 
@@ -159,9 +143,9 @@ void Player::InitSword()
 {
 	// 右手ボーンの名前はモデルのセットアップによって異なる。
 	// 1つ目で見つからなければ別名で再検索する。
-	m_rightHandBoneNo = m_modelRender.FindBoneID(L"Character1_RightHand");
+	m_rightHandBoneNo = m_model.GetModelRender().FindBoneID(L"Character1_RightHand");
 	if (m_rightHandBoneNo < 0) {
-		m_rightHandBoneNo = m_modelRender.FindBoneID(L"J_R_ForeArm_00_tw");
+		m_rightHandBoneNo = m_model.GetModelRender().FindBoneID(L"J_R_ForeArm_00_tw");
 	}
 
 	m_swordModelRender.Init("Assets/modelData/weapon/sowrd/sowrd.tkm");
@@ -175,7 +159,7 @@ void Player::UpdateSword()
 		return;
 	}
 
-	Bone* rightHandBone = m_modelRender.GetBone(m_rightHandBoneNo);
+	Bone* rightHandBone = m_model.GetModelRender().GetBone(m_rightHandBoneNo);
 	if (rightHandBone == nullptr) {
 		return;
 	}

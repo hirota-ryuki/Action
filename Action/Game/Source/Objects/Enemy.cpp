@@ -30,6 +30,18 @@ namespace
 		return settings;
 	}
 
+	CharacterModelDesc MakeModelDesc()
+	{
+		CharacterModelDesc desc;
+		desc.modelPath = "Assets/modelData/unityChan.tkm";
+		desc.upAxis = enModelUpAxisY;
+		desc.scale = 1.08f;
+		desc.clips.resize(Enemy::enAnimClip_Num);
+		desc.clips[Enemy::enAnimClip_Idle] = { "Assets/animData/idle.tka", true };
+		desc.clips[Enemy::enAnimClip_Run] = { "Assets/animData/run.tka", true };
+		return desc;
+	}
+
 	MagicCaster::Settings MakeCasterSettings()
 	{
 		MagicCaster::Settings settings;
@@ -54,18 +66,12 @@ bool Enemy::Start()
 {
 	m_mover.Init(MakeMoveSettings());
 
-	m_animClips[enAnimClip_Idle].Load("Assets/animData/idle.tka");
-	m_animClips[enAnimClip_Idle].SetLoopFlag(true);
-	m_animClips[enAnimClip_Run].Load("Assets/animData/run.tka");
-	m_animClips[enAnimClip_Run].SetLoopFlag(true);
+	m_model.Init(MakeModelDesc());
+	m_model.SetTransform(m_mover.GetPosition(), m_mover.GetRotation());
+	m_model.PlayAnimation(enAnimClip_Idle);
+	m_model.Update();
 
-	m_modelRender.Init("Assets/modelData/unityChan.tkm", m_animClips, enAnimClip_Num, enModelUpAxisY);
-	m_modelRender.SetShadowCasterFlag(true);
-	m_modelRender.SetTRS(m_mover.GetPosition(), m_mover.GetRotation(), m_scale);
-	m_modelRender.PlayAnimation(enAnimClip_Idle);
-	m_modelRender.Update();
-
-	m_statusEffects.Init(&m_modelRender);
+	m_statusEffects.Init(&m_model.GetModelRender());
 
 	m_hitTarget.Init(this, m_faction, kHitRadius, kHitCenterHeight);
 	m_hitTarget.SetStatusEffects(&m_statusEffects);
@@ -110,13 +116,13 @@ void Enemy::Update()
 
 	m_hitTarget.SetPosition(m_mover.GetPosition());
 
-	m_modelRender.SetTRS(m_mover.GetPosition(), m_mover.GetRotation(), m_scale);
-	m_modelRender.Update();
+	m_model.SetTransform(m_mover.GetPosition(), m_mover.GetRotation());
+	m_model.Update();
 }
 
 void Enemy::Render(RenderContext& rc)
 {
-	m_modelRender.Draw(rc);
+	m_model.Draw(rc);
 }
 
 void Enemy::UpdateAnimation()
@@ -124,7 +130,7 @@ void Enemy::UpdateAnimation()
 	const int newAnimNo = m_mover.IsMoving() ? enAnimClip_Run : enAnimClip_Idle;
 
 	if (newAnimNo != m_currentAnimNo) {
-		m_modelRender.PlayAnimation(newAnimNo, 0.2f);
+		m_model.PlayAnimation(newAnimNo, 0.2f);
 		m_currentAnimNo = newAnimNo;
 	}
 }

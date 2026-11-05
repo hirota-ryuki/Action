@@ -39,6 +39,9 @@
     <ClCompile Include="Source\Character\CharacterMover.cpp">
       <Filter>Source\Character</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Character\CharacterModel.cpp">
+      <Filter>Source\Character</Filter>
+    </ClCompile>
     <ClCompile Include="Source\PlayerState\PlayerStateMachine.cpp">
       <Filter>Source\PlayerState</Filter>
     </ClCompile>
@@ -117,6 +120,9 @@
       <Filter>Source\Character</Filter>
     </ClInclude>
     <ClInclude Include="Source\Character\CharacterMover.h">
+      <Filter>Source\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\CharacterModel.h">
       <Filter>Source\Character</Filter>
     </ClInclude>
     <ClInclude Include="Source\PlayerState\PlayerState.h">
