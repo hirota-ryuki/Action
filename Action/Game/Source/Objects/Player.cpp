@@ -1,6 +1,7 @@
 ﻿#include "stdafx.h"
 #include "Player.h"
 #include "tkFile/FbxRuntimeImporter.h"
+#include "IceMagic.h"
 
 namespace
 {
@@ -22,6 +23,9 @@ namespace
 	constexpr float kSwordRotOffsetX = 0.0f;
 	constexpr float kSwordRotOffsetY = 0.0f;
 	constexpr float kSwordRotOffsetZ = -90.0f; // 剣モデルのZ軸が手の向きと90度ずれているため補正。
+	constexpr float kIceMagicCooldown = 0.35f;        // 氷魔法の連射間隔（秒）。
+	constexpr float kIceMagicCastHeight = 70.0f;      // 三人称時、足元からこの高さで撃つ（胸のあたり）。
+	constexpr float kIceMagicCastForward = 60.0f;     // 自分のカプセル(半径20)に当たらないよう前に出して撃つ。
 }
 
 Player::Player()
@@ -87,6 +91,7 @@ bool Player::Start()
 void Player::Update()
 {
 	Move();
+	UpdateIceMagic();
 	RespawnIfNeeded();
 	UpdateAnimation();
 
@@ -232,6 +237,44 @@ void Player::StartRushSkill(const Vector3& direction)
 		m_rushDirection.Normalize();
 		m_rushRemainingDistance = kRushDistance;
 	}
+}
+
+void Player::UpdateIceMagic()
+{
+	if (m_iceMagicCooldown > 0.0f) {
+		m_iceMagicCooldown -= g_gameTime->GetFrameDeltaTime();
+	}
+	// Yボタン(キーボードはI)で発射。
+	if (g_pad[0]->IsTrigger(enButtonY) && m_iceMagicCooldown <= 0.0f) {
+		CastIceMagic();
+		m_iceMagicCooldown = kIceMagicCooldown;
+	}
+}
+
+void Player::CastIceMagic()
+{
+	Vector3 origin;
+	Vector3 direction;
+	if (m_isRenderBody) {
+		// 三人称: キャラクターの向いている方向へ、胸の高さから撃つ。
+		direction = GetForward();
+		direction.y = 0.0f;
+		origin = m_position;
+		origin.y += kIceMagicCastHeight;
+	}
+	else {
+		// 一人称(体を非表示にしている間): 視線の方向へ、目の位置から撃つ。
+		direction = g_camera3D->GetForward();
+		origin = g_camera3D->GetPosition();
+	}
+	if (direction.LengthSq() <= FLT_EPSILON) {
+		direction = Vector3::AxisZ;
+	}
+	direction.Normalize();
+	origin += direction * kIceMagicCastForward;
+
+	IceMagic* iceMagic = NewGO<IceMagic>(1, "iceMagic");
+	iceMagic->Init(origin, direction);
 }
 
 void Player::RespawnIfNeeded()

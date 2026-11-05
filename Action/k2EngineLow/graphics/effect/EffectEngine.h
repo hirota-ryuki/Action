@@ -59,6 +59,20 @@ namespace nsK2EngineLow {
 		/// <param name="scale"></param>
 		void UpdateEffectWorldMatrix(int handle, Vector3 pos, Quaternion rot, Vector3 scale)
 		{
+			m_manager->SetBaseMatrix(handle, ToEffekseerMatrix(pos, rot, scale));
+		}
+		/// <summary>
+		/// エフェクトのルートの行列だけを更新。
+		/// UpdateEffectWorldMatrix はエフェクト全体を動かすが、こちらは発生済みのパーティクルを動かさないため、
+		/// 「発生時のみ親に従う」設定のパーティクルがその場に残り、移動する弾などの軌跡になる。
+		/// </summary>
+		void UpdateEffectRootMatrix(int handle, Vector3 pos, Quaternion rot, Vector3 scale)
+		{
+			m_manager->SetMatrix(handle, ToEffekseerMatrix(pos, rot, scale));
+		}
+	private:
+		static Effekseer::Matrix43 ToEffekseerMatrix(const Vector3& pos, const Quaternion& rot, const Vector3& scale)
+		{
 			Matrix mTrans, mRot, mScale, mBase;
 			mTrans.MakeTranslation(pos);
 			mRot.MakeRotationFromQuaternion(rot);
@@ -82,9 +96,9 @@ namespace nsK2EngineLow {
 			baseMat.Value[3][0] = mBase.m[3][0];
 			baseMat.Value[3][1] = mBase.m[3][1];
 			baseMat.Value[3][2] = mBase.m[3][2];
-
-			m_manager->SetBaseMatrix(handle, baseMat);
+			return baseMat;
 		}
+	public:
 		/// <summary>
 		/// エフェクトを再生。
 		/// </summary>
@@ -96,6 +110,11 @@ namespace nsK2EngineLow {
 		/// </summary>
 		/// <param name="effectHandle"></param>
 		void Stop(int effectHandle);
+		/// <summary>
+		/// エフェクトのルートだけを停止。発生済みのパーティクルは寿命まで残る。
+		/// </summary>
+		/// <param name="effectHandle"></param>
+		void StopRoot(int effectHandle);
 		/// <summary>
 		/// エフェクトをロード。
 		/// </summary>

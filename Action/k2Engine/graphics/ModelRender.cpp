@@ -244,6 +244,9 @@ namespace nsK2Engine {
 			// インスタンシング描画を行う場合は、拡張SRVにインスタンシング描画用のデータを設定する。
 			modelInitData.m_expandShaderResoruceView[0] = &m_worldMatrixArraySB;
 		}
+		// 乗算色などをb1に送る。シェーダー側がb1を読むので全モデルで必ず設定する。
+		modelInitData.m_expandConstantBuffer = &m_gbufferExpandCB;
+		modelInitData.m_expandConstantBufferSize = sizeof(m_gbufferExpandCB);
 		m_renderToGBufferModel.Init(modelInitData);
 
 	}

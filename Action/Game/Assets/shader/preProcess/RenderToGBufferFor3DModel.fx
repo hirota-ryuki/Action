@@ -40,6 +40,16 @@ Texture2D<float4> g_spacular : register(t2);    //スペキュラマップ
 sampler g_sampler : register(s0);
 
 ///////////////////////////////////////
+// 定数バッファ。
+///////////////////////////////////////
+// ModelRender から送られる拡張定数バッファ。
+cbuffer GBufferExpandCb : register(b1)
+{
+    float4 mulColor;    // アルベドカラーへの乗算色。(1,1,1,1)で元の色。
+    float4 addColor;    // アルベドカラーへの加算色。(0,0,0,0)で元の色。乗算の後に足す。
+};
+
+///////////////////////////////////////
 // 関数
 ///////////////////////////////////////
 
@@ -88,6 +98,7 @@ SPSOut PSMainCore( SPSIn psIn, int isShadowReciever)
     psOut.albedo = g_albedo.Sample(g_sampler, psIn.uv);
     
     clip(psOut.albedo.a - 0.2f);    // ピクセルキル
+    psOut.albedo.xyz = psOut.albedo.xyz * mulColor.xyz + addColor.xyz;
 
     psOut.albedo.w = psIn.pos.z;
     // 法線を出力

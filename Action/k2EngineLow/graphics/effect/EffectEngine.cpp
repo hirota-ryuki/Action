@@ -65,6 +65,10 @@ namespace nsK2EngineLow {
 	{
 		m_manager->StopEffect(effectHandle);
 	}
+	void EffectEngine::StopRoot(int effectHandle)
+	{
+		m_manager->StopRoot(effectHandle);
+	}
 
 
 	void EffectEngine::Update(float deltaTime)

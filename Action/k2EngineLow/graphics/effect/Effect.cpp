@@ -37,4 +37,13 @@ namespace nsK2EngineLow {
 			m_scale
 		);
 	}
+	void Effect::UpdateRoot()
+	{
+		EffectEngine::GetInstance()->UpdateEffectRootMatrix(
+			m_handle,
+			m_position,
+			m_rotation,
+			m_scale
+		);
+	}
 }

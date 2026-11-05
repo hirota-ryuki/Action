@@ -36,6 +36,14 @@ namespace nsK2EngineLow {
 			//再生中のエフェクトを停止する。
 			EffectEngine::GetInstance()->Stop(m_handle);
 		}
+		/// <summary>
+		/// ルートだけを停止する。新しい発生は止まり、発生済みのパーティクルは寿命まで残る。
+		/// (RemoveWhenParentIsRemoved が有効なノードはルートと一緒に消える)
+		/// </summary>
+		void StopRoot()
+		{
+			EffectEngine::GetInstance()->StopRoot(m_handle);
+		}
 		/*!
 		*@brief	座標を設定。
 		*/
@@ -92,6 +100,11 @@ namespace nsK2EngineLow {
 		 *@brief	更新。
 		 */
 		void Update();
+		/// <summary>
+		/// ルートの行列だけを更新する。Update() と違い発生済みのパーティクルは動かないので、
+		/// 移動しながら軌跡を残すエフェクト(弾など)に使う。
+		/// </summary>
+		void UpdateRoot();
 	private:
 		Effekseer::EffectRef m_effect;	//エフェクト
 		int	m_handle = -1;				//再生中のエフェクトのハンドル。

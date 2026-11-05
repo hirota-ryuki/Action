@@ -5,6 +5,7 @@
 #include "Enemy.h"
 #include "GameCamera.h"
 #include "Stage.h"
+#include "IceMagic.h"
 
 namespace
 {
@@ -28,6 +29,11 @@ Game::~Game()
 	DeleteGO(m_enemy);
 	DeleteGO(m_gameCamera);
 	DeleteGO(m_skyCube);
+	// プレイヤーが撃った氷魔法は Game が持っていないので、名前で探して消す。
+	QueryGOs<IceMagic>("iceMagic", [](IceMagic* iceMagic) {
+		DeleteGO(iceMagic);
+		return true;
+	});
 }
 
 bool Game::Start()

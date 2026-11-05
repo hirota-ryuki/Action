@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 // プレイヤーキャラクターを管理するクラス。
-// 移動・ジャンプ・ラッシュスキル・剣のボーン追従・リスポーンを担う。
+// 移動・ジャンプ・ラッシュスキル・氷魔法・剣のボーン追従・リスポーンを担う。
 class Player : public IGameObject
 {
 public:
@@ -47,6 +47,8 @@ private:
 	bool IsRushSkillKeyTrigger();
 	bool IsRunKeyPressed() const;
 	void StartRushSkill(const Vector3& direction);
+	void UpdateIceMagic();
+	void CastIceMagic();
 	void RespawnIfNeeded();
 	void Respawn();
 
@@ -60,6 +62,7 @@ private:
 	Vector3 m_rushDirection = Vector3::AxisZ;   // ラッシュ中の移動方向（正規化済み）。
 	Quaternion m_rotation = Quaternion::Identity;
 	float m_rushRemainingDistance = 0.0f;       // 0より大きい間ラッシュ中と判定する。
+	float m_iceMagicCooldown = 0.0f;            // 氷魔法を再び撃てるまでの残り秒数。
 	int m_rightHandBoneNo = -1;                 // -1は右手ボーンが見つからなかった状態。
 	int m_currentAnimNo = enAnimClip_Idle;
 	bool m_isRushKeyPressed = false;            // 前フレームのLキー状態。トリガー判定に使用。
