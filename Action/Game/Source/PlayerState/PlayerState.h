@@ -34,6 +34,7 @@ struct PlayerStateSettings
 	float rushPoseTime = 0.23f;       // ラッシュ中に止めておく、ランアニメーションの再生位置（秒）。
 	float moveThreshold = 0.1f;       // 移動入力の長さがこれより小さければ立ち止まっているとみなす。
 	float animBlendSeconds = 0.2f;    // アニメーションを切り替えるときの補間時間。
+	float walkAnimMoveSpeed = 0.0f;   // 歩くアニメーションを等速で再生したとき、足が地面を送る速さ。0なら等速で再生する。
 };
 
 // ステートが触ってよいもの。ステートは Player クラスを直接は知らない。
@@ -44,11 +45,11 @@ struct PlayerStateContext
 	const StatusEffects* statusEffects = nullptr;
 	PlayerStateSettings settings;
 
-	// アニメーションを切り替えて、普通の速さで再生する。
-	void PlayAnimation(int animClip) const
+	// アニメーションを切り替えて、speed 倍の速さで再生する。
+	void PlayAnimation(int animClip, float speed = 1.0f) const
 	{
 		modelRender->PlayAnimation(animClip, settings.animBlendSeconds);
-		modelRender->SetAnimationSpeed(1.0f);
+		modelRender->SetAnimationSpeed(speed);
 	}
 };
 
