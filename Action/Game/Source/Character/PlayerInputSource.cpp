@@ -26,6 +26,8 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	// パッド未接続時はXボタンがLキーに割り当てられているので、どちらでも同じ動きになる。
 	input.rush.Update(IsKeyPressed('L') || pad.IsPress(enButtonX));
 	input.fire.Update((IsGameWindowActive() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
+	// パッド未接続時は右トリガー(RB2)が8キーに割り当てられている。
+	input.subFire.Update((IsGameWindowActive() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
 
 	m_prevMagicKey.Update(IsKeyPressed('Q'));
 	m_nextMagicKey.Update(IsKeyPressed('E'));
