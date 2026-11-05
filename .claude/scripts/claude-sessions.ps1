@@ -6,7 +6,7 @@
 #   -Mode remove : このPCから rclone の設定と rclone 本体を消す（手で実行）
 #
 # 会話ファイルの場所: <Claude の設定フォルダ>\projects\<リポジトリのパスを変換した名前>\
-# 送り先          : 個人用 OneDrive の 01_ClaudeSessions\<リポジトリのフォルダ名>\
+# 送り先          : 個人用 OneDrive の 01_ClaudeSessions\Action\（どのPCでも同じ）
 # 送受信は「新しい方で上書きするコピー」だけで、どちらかで消したファイルを相手側で消すことはしない。
 
 param(
@@ -28,7 +28,8 @@ if (-not $RepoDir) { $RepoDir = (Resolve-Path (Join-Path $PSScriptRoot '..\..'))
 $RepoDir    = $RepoDir.TrimEnd('\', '/')
 $configDir  = if ($env:CLAUDE_CONFIG_DIR) { $env:CLAUDE_CONFIG_DIR } else { Join-Path $env:USERPROFILE '.claude' }
 $LocalDir   = Join-Path $configDir ('projects\' + ($RepoDir -replace '[^A-Za-z0-9]', '-'))
-$RemotePath = "${RemoteName}:01_ClaudeSessions/" + (Split-Path $RepoDir -Leaf)
+# 送り先はリポジトリ名で固定する。クローン先のフォルダ名（Action / 01_Action など）はPCごとに違うことがあるため。
+$RemotePath = "${RemoteName}:01_ClaudeSessions/Action"
 
 # setup でインストール先を選んだPCでは、その場所をここに覚えておく（リポジトリには入れない）。
 $PathFile = Join-Path $env:APPDATA 'claude-sessions\rclone-path.txt'
