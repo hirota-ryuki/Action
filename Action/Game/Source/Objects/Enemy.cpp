@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "Enemy.h"
 
 #include "Player.h"
@@ -12,6 +12,22 @@ namespace
 	// 距離の比較は sqrt を避けるため二乗値で行う。
 	constexpr float kChaseRangeSq = kChaseRange * kChaseRange;
 	constexpr float kStopDistanceSq = kStopDistance * kStopDistance;
+	// 凍結中の色。乗算で赤を落として青を上げ、さらに水色を足して暗い部分（髪・服）も水色にする。
+	const Vector4 kFrozenMulColor = Vector4(0.30f, 0.78f, 1.45f, 1.0f);
+	const Vector4 kFrozenAddColor = Vector4(0.06f, 0.22f, 0.34f, 0.0f);
+	const Vector4 kNormalMulColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	const Vector4 kNormalAddColor = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+
+	// a(t=0) から b(t=1) へ線形補間する。
+	Vector4 LerpColor(float t, const Vector4& a, const Vector4& b)
+	{
+		return Vector4(
+			a.x + (b.x - a.x) * t,
+			a.y + (b.y - a.y) * t,
+			a.z + (b.z - a.z) * t,
+			a.w + (b.w - a.w) * t);
+	}
+	constexpr float kUnfreezeFadeSeconds = 0.4f;  // 凍結が解ける直前、この秒数をかけて元の色へ戻す。
 }
 
 Enemy::Enemy()
@@ -57,8 +73,11 @@ void Enemy::Update()
 		}
 	}
 
-	Move();
-	UpdateAnimation();
+	UpdateFreeze();
+	if (!IsFrozen()) {
+		Move();
+		UpdateAnimation();
+	}
 
 	m_modelRender.SetTRS(m_position, m_rotation, m_scale);
 	m_modelRender.Update();
@@ -67,6 +86,43 @@ void Enemy::Update()
 void Enemy::Render(RenderContext& rc)
 {
 	m_modelRender.Draw(rc);
+}
+
+void Enemy::Freeze(float seconds)
+{
+	if (seconds <= m_freezeTimer) {
+		return;
+	}
+	if (!IsFrozen()) {
+		// 凍った瞬間のポーズで固める。
+		m_modelRender.SetAnimationSpeed(0.0f);
+	}
+	m_modelRender.SetMulColor(kFrozenMulColor);
+	m_modelRender.SetAddColor(kFrozenAddColor);
+	m_freezeTimer = seconds;
+	// 動いていた勢いは凍結で打ち消す（解けた瞬間に滑り出さないように）。
+	m_moveSpeed = Vector3::Zero;
+}
+
+void Enemy::UpdateFreeze()
+{
+	if (!IsFrozen()) {
+		return;
+	}
+	m_freezeTimer -= g_gameTime->GetFrameDeltaTime();
+	if (m_freezeTimer <= 0.0f) {
+		m_freezeTimer = 0.0f;
+		m_modelRender.SetAnimationSpeed(1.0f);
+		m_modelRender.SetMulColor(kNormalMulColor);
+		m_modelRender.SetAddColor(kNormalAddColor);
+		return;
+	}
+	// 解ける直前は水色から元の色へなめらかに戻す。
+	if (m_freezeTimer < kUnfreezeFadeSeconds) {
+		const float t = m_freezeTimer / kUnfreezeFadeSeconds;  // 1→0
+		m_modelRender.SetMulColor(LerpColor(t, kNormalMulColor, kFrozenMulColor));
+		m_modelRender.SetAddColor(LerpColor(t, kNormalAddColor, kFrozenAddColor));
+	}
 }
 
 void Enemy::Move()

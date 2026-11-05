@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 class Player;
 
@@ -32,9 +32,19 @@ public:
 		return m_position;
 	}
 
+	// 一定時間凍らせる。凍っている間は移動もアニメーションも止まる。
+	// 凍結中に再度呼ぶと、残り時間の長い方で上書きする。
+	void Freeze(float seconds);
+
+	bool IsFrozen() const
+	{
+		return m_freezeTimer > 0.0f;
+	}
+
 private:
 	void Move();
 	void UpdateAnimation();
+	void UpdateFreeze();
 
 	Player* m_player = nullptr;
 	AnimationClip m_animClips[enAnimClip_Num];
@@ -44,6 +54,7 @@ private:
 	Vector3 m_moveSpeed = Vector3::Zero;
 	Vector3 m_scale = Vector3(1.08f, 1.08f, 1.08f);
 	Quaternion m_rotation = Quaternion::Identity;
+	float m_freezeTimer = 0.0f;  // 凍結の残り秒数。0より大きい間は凍結中。
 	int m_currentAnimNo = enAnimClip_Idle;
 	bool m_isCharaConReady = false;
 	bool m_isChasing = false;

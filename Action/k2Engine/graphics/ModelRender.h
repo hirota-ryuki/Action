@@ -219,6 +219,28 @@ namespace nsK2Engine {
 			m_animationSpeed = animationSpeed;
 		}
 		/// <summary>
+		/// アルベドカラーに乗算する色を設定する。(1,1,1,1)で元の色。
+		/// 凍結時に水色にする、被弾時に赤くするなどの演出に使う。
+		/// </summary>
+		/// <remarks>Init()で初期化したモデル(GBuffer描画)にのみ有効。</remarks>
+		void SetMulColor(const Vector4& mulColor)
+		{
+			m_gbufferExpandCB.mulColor = mulColor;
+		}
+		const Vector4& GetMulColor() const
+		{
+			return m_gbufferExpandCB.mulColor;
+		}
+		/// <summary>
+		/// アルベドカラーに加算する色を設定する。(0,0,0,0)で元の色。乗算の後に足される。
+		/// 乗算だけでは色が乗りにくい暗い部分にも色を付けたい時に使う。
+		/// </summary>
+		/// <remarks>Init()で初期化したモデル(GBuffer描画)にのみ有効。</remarks>
+		void SetAddColor(const Vector4& addColor)
+		{
+			m_gbufferExpandCB.addColor = addColor;
+		}
+		/// <summary>
 		/// ボーンの名前からボーン番号を検索。
 		/// </summary>
 		/// <param name="boneName">ボーンの名前</param>
@@ -458,6 +480,12 @@ namespace nsK2Engine {
 		bool						m_isRaytracingWorld = true;			//レイトレワールドに登録する？
 		std::unique_ptr<Matrix[]>	m_worldMatrixArray;					// ワールド行列の配列。
 		StructuredBuffer			m_worldMatrixArraySB;				// ワールド行列の配列のストラクチャードバッファ。
+		// GBuffer描画用シェーダー(RenderToGBufferFor3DModel.fx)のb1に送る拡張定数バッファ。
+		struct GBufferExpandCB {
+			Vector4 mulColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);	// アルベドカラーへの乗算色。
+			Vector4 addColor = Vector4(0.0f, 0.0f, 0.0f, 0.0f);	// アルベドカラーへの加算色。
+		};
+		GBufferExpandCB				m_gbufferExpandCB;					// 描画のたびにVRAMへコピーされる。
 		std::vector< GemometryData > m_geometryDatas;					// ジオメトリ情報。
 		std::unique_ptr<int[]>		m_instanceNoToWorldMatrixArrayIndexTable;	// インスタンス番号からワールド行列の配列のインデックスに変換するテーブル。
 
