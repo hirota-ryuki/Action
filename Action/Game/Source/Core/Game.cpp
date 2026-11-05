@@ -6,7 +6,7 @@
 #include "GameCamera.h"
 #include "Stage.h"
 #include "FireEffect.h"
-#include "IceMagic.h"
+#include "BulletBase.h"
 
 namespace
 {
@@ -33,9 +33,9 @@ Game::~Game()
 	DeleteGO(m_gameCamera);
 	DeleteGO(m_fireEffect);
 	DeleteGO(m_skyCube);
-	// プレイヤーが撃った氷魔法は Game が持っていないので、名前で探して消す。
-	QueryGOs<IceMagic>("iceMagic", [](IceMagic* iceMagic) {
-		DeleteGO(iceMagic);
+	// キャラクターが撃った弾は Game が持っていないので、名前で探して消す。
+	QueryGOs<BulletBase>(BulletBase::kObjectName, [](BulletBase* bullet) {
+		DeleteGO(bullet);
 		return true;
 	});
 }

@@ -98,7 +98,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>$(ProjectDir)Source;$(ProjectDir)Source\App;$(ProjectDir)Source\Core;$(ProjectDir)Source\Objects;$(ProjectDir)Source\System;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)Source;$(ProjectDir)Source\App;$(ProjectDir)Source\Core;$(ProjectDir)Source\Objects;$(ProjectDir)Source\System;$(ProjectDir)Source\Character;$(ProjectDir)Source\Magic;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
@@ -228,7 +228,15 @@
   <ItemGroup>
     <ClCompile Include="Source\Objects\Enemy.cpp" />
     <ClCompile Include="Source\Objects\FireEffect.cpp" />
-    <ClCompile Include="Source\Objects\IceMagic.cpp" />
+    <ClCompile Include="Source\Character\PlayerInputSource.cpp" />
+    <ClCompile Include="Source\Character\NpcInputSource.cpp" />
+    <ClCompile Include="Source\Character\HitTarget.cpp" />
+    <ClCompile Include="Source\Character\CharacterMover.cpp" />
+    <ClCompile Include="Source\Character\StatusEffects.cpp" />
+    <ClCompile Include="Source\Magic\MagicCaster.cpp" />
+    <ClCompile Include="Source\Magic\IceMagic.cpp" />
+    <ClCompile Include="Source\Magic\BulletBase.cpp" />
+    <ClCompile Include="Source\Magic\IceBullet.cpp" />
     <ClCompile Include="Source\Objects\GameCamera.cpp" />
     <ClCompile Include="Source\Core\Game.cpp" />
     <ClCompile Include="Source\App\main.cpp" />
@@ -244,7 +252,18 @@
   <ItemGroup>
     <ClInclude Include="Source\Objects\Enemy.h" />
     <ClInclude Include="Source\Objects\FireEffect.h" />
-    <ClInclude Include="Source\Objects\IceMagic.h" />
+    <ClInclude Include="Source\Character\PlayerInputSource.h" />
+    <ClInclude Include="Source\Character\NpcInputSource.h" />
+    <ClInclude Include="Source\Character\HitTarget.h" />
+    <ClInclude Include="Source\Character\CharacterMover.h" />
+    <ClInclude Include="Source\Character\StatusEffects.h" />
+    <ClInclude Include="Source\Magic\MagicCaster.h" />
+    <ClInclude Include="Source\Magic\IceMagic.h" />
+    <ClInclude Include="Source\Magic\BulletBase.h" />
+    <ClInclude Include="Source\Magic\IceBullet.h" />
+    <ClInclude Include="Source\Character\Faction.h" />
+    <ClInclude Include="Source\Character\CharacterInput.h" />
+    <ClInclude Include="Source\Magic\MagicBase.h" />
     <ClInclude Include="Source\Objects\GameCamera.h" />
     <ClInclude Include="Source\Core\EffectId.h" />
     <ClInclude Include="Source\Core\Game.h" />

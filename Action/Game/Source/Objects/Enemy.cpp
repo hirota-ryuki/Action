@@ -1,36 +1,46 @@
 ﻿#include "stdafx.h"
 #include "Enemy.h"
-
-#include "Player.h"
+#include "IceMagic.h"
 
 namespace
 {
-	constexpr float kMoveSpeed = 140.0f;
-	constexpr float kGravity = 980.0f;
-	constexpr float kChaseRange = 900.0f;      // この距離以内に入ると追跡を開始する。
-	constexpr float kStopDistance = 90.0f;     // この距離まで近づいたら停止する（近づきすぎ防止）。
-	// 距離の比較は sqrt を避けるため二乗値で行う。
-	constexpr float kChaseRangeSq = kChaseRange * kChaseRange;
-	constexpr float kStopDistanceSq = kStopDistance * kStopDistance;
-	// 凍結中の色。乗算で赤を落として青を上げ、さらに水色を足して暗い部分（髪・服）も水色にする。
-	const Vector4 kFrozenMulColor = Vector4(0.30f, 0.78f, 1.45f, 1.0f);
-	const Vector4 kFrozenAddColor = Vector4(0.06f, 0.22f, 0.34f, 0.0f);
-	const Vector4 kNormalMulColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	const Vector4 kNormalAddColor = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+	constexpr float kHitRadius = 45.0f;        // 弾に当たる球の半径。
+	constexpr float kHitCenterHeight = 60.0f;  // 足元から当たり判定の中心までの高さ。
 
-	// a(t=0) から b(t=1) へ線形補間する。
-	Vector4 LerpColor(float t, const Vector4& a, const Vector4& b)
+	CharacterMoveSettings MakeMoveSettings()
 	{
-		return Vector4(
-			a.x + (b.x - a.x) * t,
-			a.y + (b.y - a.y) * t,
-			a.z + (b.z - a.z) * t,
-			a.w + (b.w - a.w) * t);
+		CharacterMoveSettings settings;
+		settings.walkSpeed = 140.0f;
+		settings.gravity = 980.0f;
+		settings.capsuleRadius = 20.0f;
+		settings.capsuleHeight = 100.0f;
+		return settings;
 	}
-	constexpr float kUnfreezeFadeSeconds = 0.4f;  // 凍結が解ける直前、この秒数をかけて元の色へ戻す。
+
+	NpcInputSource::Settings MakeAiSettings()
+	{
+		NpcInputSource::Settings settings;
+		settings.searchRange = 900.0f;   // この距離以内に入ると追跡を開始する。
+		settings.stopDistance = 90.0f;   // この距離まで近づいたら停止する（近づきすぎ防止）。
+		settings.canFire = true;
+		settings.fireRange = 700.0f;
+		settings.fireInterval = 4.0f;    // 凍結(2.5秒)より長くして、凍らされ続けないようにする。
+		settings.firstFireDelay = 1.5f;
+		settings.castHeight = 60.0f;
+		return settings;
+	}
+
+	MagicCaster::Settings MakeCasterSettings()
+	{
+		MagicCaster::Settings settings;
+		settings.castHeight = 60.0f;
+		settings.castForward = 60.0f;  // 自分のカプセル(半径20)に当たらないよう前に出して撃つ。
+		return settings;
+	}
 }
 
 Enemy::Enemy()
+	: m_npcInputSource(MakeAiSettings())
 {
 
 }
@@ -42,13 +52,7 @@ Enemy::~Enemy()
 
 bool Enemy::Start()
 {
-	m_player = FindGO<Player>("player");
-	if (m_player == nullptr) {
-		return false;
-	}
-
-	m_charaCon.Init(20.0f, 100.0f, m_position);
-	m_isCharaConReady = true;
+	m_mover.Init(MakeMoveSettings());
 
 	m_animClips[enAnimClip_Idle].Load("Assets/animData/idle.tka");
 	m_animClips[enAnimClip_Idle].SetLoopFlag(true);
@@ -57,29 +61,57 @@ bool Enemy::Start()
 
 	m_modelRender.Init("Assets/modelData/unityChan.tkm", m_animClips, enAnimClip_Num, enModelUpAxisY);
 	m_modelRender.SetShadowCasterFlag(true);
-	m_modelRender.SetTRS(m_position, m_rotation, m_scale);
+	m_modelRender.SetTRS(m_mover.GetPosition(), m_mover.GetRotation(), m_scale);
 	m_modelRender.PlayAnimation(enAnimClip_Idle);
 	m_modelRender.Update();
+
+	m_statusEffects.Init(&m_modelRender);
+
+	m_hitTarget.Init(this, m_faction, kHitRadius, kHitCenterHeight);
+	m_hitTarget.SetStatusEffects(&m_statusEffects);
+	m_hitTarget.SetPosition(m_mover.GetPosition());
+
+	m_magicCaster.Init(this, m_faction, MakeCasterSettings());
+	m_magicCaster.AddMagic(std::make_unique<IceMagic>());
 
 	return true;
 }
 
+void Enemy::SetFaction(Faction faction)
+{
+	m_faction = faction;
+	m_hitTarget.SetFaction(faction);
+	m_magicCaster.SetFaction(faction);
+}
+
 void Enemy::Update()
 {
-	if (m_player == nullptr) {
-		m_player = FindGO<Player>("player");
-		if (m_player == nullptr) {
-			return;
-		}
-	}
+	const float deltaTime = g_gameTime->GetFrameDeltaTime();
 
-	UpdateFreeze();
-	if (!IsFrozen()) {
-		Move();
+	InputSourceContext context;
+	context.self = this;
+	context.faction = m_faction;
+	context.position = m_mover.GetPosition();
+	context.forward = m_mover.GetForward();
+	context.deltaTime = deltaTime;
+	m_inputSource->Update(context, m_input);
+
+	m_statusEffects.Update(deltaTime);
+	const bool canAct = m_statusEffects.CanAct();
+	if (canAct) {
+		m_mover.Update(m_input, deltaTime);
 		UpdateAnimation();
 	}
+	else {
+		// 凍結中は入力を無視し、重力で落ちるだけにする。
+		m_mover.CancelRush();
+		m_mover.Update(CharacterInput(), deltaTime);
+	}
+	m_magicCaster.Update(m_input, m_mover.GetPosition(), m_mover.GetForward(), deltaTime, canAct);
 
-	m_modelRender.SetTRS(m_position, m_rotation, m_scale);
+	m_hitTarget.SetPosition(m_mover.GetPosition());
+
+	m_modelRender.SetTRS(m_mover.GetPosition(), m_mover.GetRotation(), m_scale);
 	m_modelRender.Update();
 }
 
@@ -88,74 +120,9 @@ void Enemy::Render(RenderContext& rc)
 	m_modelRender.Draw(rc);
 }
 
-void Enemy::Freeze(float seconds)
-{
-	if (seconds <= m_freezeTimer) {
-		return;
-	}
-	if (!IsFrozen()) {
-		// 凍った瞬間のポーズで固める。
-		m_modelRender.SetAnimationSpeed(0.0f);
-	}
-	m_modelRender.SetMulColor(kFrozenMulColor);
-	m_modelRender.SetAddColor(kFrozenAddColor);
-	m_freezeTimer = seconds;
-	// 動いていた勢いは凍結で打ち消す（解けた瞬間に滑り出さないように）。
-	m_moveSpeed = Vector3::Zero;
-}
-
-void Enemy::UpdateFreeze()
-{
-	if (!IsFrozen()) {
-		return;
-	}
-	m_freezeTimer -= g_gameTime->GetFrameDeltaTime();
-	if (m_freezeTimer <= 0.0f) {
-		m_freezeTimer = 0.0f;
-		m_modelRender.SetAnimationSpeed(1.0f);
-		m_modelRender.SetMulColor(kNormalMulColor);
-		m_modelRender.SetAddColor(kNormalAddColor);
-		return;
-	}
-	// 解ける直前は水色から元の色へなめらかに戻す。
-	if (m_freezeTimer < kUnfreezeFadeSeconds) {
-		const float t = m_freezeTimer / kUnfreezeFadeSeconds;  // 1→0
-		m_modelRender.SetMulColor(LerpColor(t, kNormalMulColor, kFrozenMulColor));
-		m_modelRender.SetAddColor(LerpColor(t, kNormalAddColor, kFrozenAddColor));
-	}
-}
-
-void Enemy::Move()
-{
-	Vector3 toPlayer;
-	toPlayer.Subtract(m_player->GetPosition(), m_position);
-	toPlayer.y = 0.0f;  // 高低差を無視して水平方向の追跡のみ行う。
-
-	const float distanceSq = toPlayer.LengthSq();
-	Vector3 horizontalMoveSpeed = Vector3::Zero;
-	// 追跡範囲内かつ停止距離の外にいるときだけ追跡する。
-	m_isChasing = distanceSq <= kChaseRangeSq && distanceSq > kStopDistanceSq;
-
-	if (m_isChasing) {
-		toPlayer.Normalize();
-		horizontalMoveSpeed = toPlayer * kMoveSpeed;
-		m_rotation.SetRotationYFromDirectionXZ(horizontalMoveSpeed);
-	}
-
-	m_moveSpeed.x = horizontalMoveSpeed.x;
-	m_moveSpeed.z = horizontalMoveSpeed.z;
-	m_moveSpeed.y -= kGravity * g_gameTime->GetFrameDeltaTime();
-
-	m_position = m_charaCon.Execute(m_moveSpeed, g_gameTime->GetFrameDeltaTime());
-
-	if (m_charaCon.IsOnGround()) {
-		m_moveSpeed.y = 0.0f;
-	}
-}
-
 void Enemy::UpdateAnimation()
 {
-	const int newAnimNo = m_isChasing ? enAnimClip_Run : enAnimClip_Idle;
+	const int newAnimNo = m_mover.IsMoving() ? enAnimClip_Run : enAnimClip_Idle;
 
 	if (newAnimNo != m_currentAnimNo) {
 		m_modelRender.PlayAnimation(newAnimNo, 0.2f);

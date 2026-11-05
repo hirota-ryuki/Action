@@ -333,7 +333,6 @@ namespace nsK2EngineLow {
         auto newNodePtr = std::make_shared<SNode>();
         newNodePtr->type = enEntityType_Node;
         newNodePtr->centerPos = centerPos;
-        newNodePtr->leafArray = leafArray;
         auto newNode = static_cast<SNode*>(newNodePtr.get());
 
         // 分散しているので、共分散行列を利用して
@@ -363,15 +362,12 @@ namespace nsK2EngineLow {
         
         return newNodePtr;
     }
-    void BSP::WalkTree(SEntityPtr entityPtr, const Vector3& pos, std::function<void(SLeaf* leaf)> onEndWalk) const
+    void BSP::WalkTree(const SEntityPtr& entityPtr, const Vector3& pos, const std::function<void(SLeaf* leaf)>& onEndWalk) const
     {
         if (entityPtr->type == enEntityType_Node) {
             // これはノードなのでさらに潜る。
             // 左に潜る？右に潜る？
             SNode* node = static_cast<SNode*>(entityPtr.get());
-            for (SEntityPtr& entity : node->leafArray) {
-                 
-            }
             float t = Dot(pos, node->plane.normal);
              if (t < node->plane.distance) {
                 // 左に潜る。
@@ -389,12 +385,12 @@ namespace nsK2EngineLow {
         else if (entityPtr->type == enEntityType_LeafList) {
             // リーフのリストに到達した。
             auto leafList = static_cast<SLeafList*>(entityPtr.get());
-            for (auto leaf : leafList->leafList) {
+            for (const auto& leaf : leafList->leafList) {
                 onEndWalk(static_cast<SLeaf*>(leaf.get()));
             }
         }
     }
-    void BSP::WalkTree(const Vector3& pos, std::function<void(SLeaf* leaf)> onEndWalk) const
+    void BSP::WalkTree(const Vector3& pos, const std::function<void(SLeaf* leaf)>& onEndWalk) const
     {
         WalkTree(m_rootNode, pos, onEndWalk);
     }

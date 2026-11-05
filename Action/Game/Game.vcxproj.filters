@@ -13,11 +13,44 @@
     <Filter Include="Source\Objects">
       <UniqueIdentifier>{746964ec-ae1f-418c-a97c-a9ef78aaab8e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Character">
+      <UniqueIdentifier>{5b0c2f4e-8d1a-4c7e-9f3b-2a6d8e1c4b70}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Magic">
+      <UniqueIdentifier>{9e3a7c51-2f4d-4b8a-a6c1-7d0e5f9b3a28}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\System">
       <UniqueIdentifier>{22dd8095-74f9-46df-81a1-36675a040b1f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Character\PlayerInputSource.cpp">
+      <Filter>Source\Character</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Character\NpcInputSource.cpp">
+      <Filter>Source\Character</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Character\HitTarget.cpp">
+      <Filter>Source\Character</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Character\CharacterMover.cpp">
+      <Filter>Source\Character</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Character\StatusEffects.cpp">
+      <Filter>Source\Character</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Magic\MagicCaster.cpp">
+      <Filter>Source\Magic</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Magic\IceMagic.cpp">
+      <Filter>Source\Magic</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Magic\BulletBase.cpp">
+      <Filter>Source\Magic</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Magic\IceBullet.cpp">
+      <Filter>Source\Magic</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Objects\Enemy.cpp">
       <Filter>Source\Objects</Filter>
     </ClCompile>
@@ -42,14 +75,47 @@
     <ClCompile Include="Source\Objects\FireEffect.cpp">
       <Filter>Source\Objects</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Objects\IceMagic.cpp">
-      <Filter>Source\Objects</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Objects\Stage.cpp">
       <Filter>Source\Objects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Character\PlayerInputSource.h">
+      <Filter>Source\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\NpcInputSource.h">
+      <Filter>Source\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\HitTarget.h">
+      <Filter>Source\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\CharacterMover.h">
+      <Filter>Source\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\StatusEffects.h">
+      <Filter>Source\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Magic\MagicCaster.h">
+      <Filter>Source\Magic</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Magic\IceMagic.h">
+      <Filter>Source\Magic</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Magic\BulletBase.h">
+      <Filter>Source\Magic</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Magic\IceBullet.h">
+      <Filter>Source\Magic</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\Faction.h">
+      <Filter>Source\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\CharacterInput.h">
+      <Filter>Source\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Magic\MagicBase.h">
+      <Filter>Source\Magic</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Objects\Enemy.h">
       <Filter>Source\Objects</Filter>
     </ClInclude>
@@ -72,9 +138,6 @@
       <Filter>Source\Objects</Filter>
     </ClInclude>
     <ClInclude Include="Source\Objects\FireEffect.h">
-      <Filter>Source\Objects</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Objects\IceMagic.h">
       <Filter>Source\Objects</Filter>
     </ClInclude>
     <ClInclude Include="Source\Objects\Stage.h">
