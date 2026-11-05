@@ -19,6 +19,9 @@
     <Filter Include="Source\Magic">
       <UniqueIdentifier>{9e3a7c51-2f4d-4b8a-a6c1-7d0e5f9b3a28}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\PlayerState">
+      <UniqueIdentifier>{c4e8a2d6-3b7f-4e91-8a5c-6d2f0b9e1a47}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\System">
       <UniqueIdentifier>{22dd8095-74f9-46df-81a1-36675a040b1f}</UniqueIdentifier>
     </Filter>
@@ -35,6 +38,21 @@
     </ClCompile>
     <ClCompile Include="Source\Character\CharacterMover.cpp">
       <Filter>Source\Character</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\PlayerState\PlayerStateMachine.cpp">
+      <Filter>Source\PlayerState</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\PlayerState\PlayerGroundState.cpp">
+      <Filter>Source\PlayerState</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\PlayerState\PlayerAirState.cpp">
+      <Filter>Source\PlayerState</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\PlayerState\PlayerRushState.cpp">
+      <Filter>Source\PlayerState</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\PlayerState\PlayerFrozenState.cpp">
+      <Filter>Source\PlayerState</Filter>
     </ClCompile>
     <ClCompile Include="Source\Character\StatusEffects.cpp">
       <Filter>Source\Character</Filter>
@@ -100,6 +118,33 @@
     </ClInclude>
     <ClInclude Include="Source\Character\CharacterMover.h">
       <Filter>Source\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PlayerState\PlayerState.h">
+      <Filter>Source\PlayerState</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PlayerState\PlayerStateMachine.h">
+      <Filter>Source\PlayerState</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PlayerState\PlayerGroundState.h">
+      <Filter>Source\PlayerState</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PlayerState\PlayerIdleState.h">
+      <Filter>Source\PlayerState</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PlayerState\PlayerWalkState.h">
+      <Filter>Source\PlayerState</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PlayerState\PlayerRunState.h">
+      <Filter>Source\PlayerState</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PlayerState\PlayerAirState.h">
+      <Filter>Source\PlayerState</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PlayerState\PlayerRushState.h">
+      <Filter>Source\PlayerState</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PlayerState\PlayerFrozenState.h">
+      <Filter>Source\PlayerState</Filter>
     </ClInclude>
     <ClInclude Include="Source\Character\StatusEffects.h">
       <Filter>Source\Character</Filter>

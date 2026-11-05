@@ -98,7 +98,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>$(ProjectDir)Source;$(ProjectDir)Source\App;$(ProjectDir)Source\Core;$(ProjectDir)Source\Objects;$(ProjectDir)Source\System;$(ProjectDir)Source\Character;$(ProjectDir)Source\Magic;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)Source;$(ProjectDir)Source\App;$(ProjectDir)Source\Core;$(ProjectDir)Source\Objects;$(ProjectDir)Source\System;$(ProjectDir)Source\Character;$(ProjectDir)Source\Magic;$(ProjectDir)Source\PlayerState;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
@@ -232,6 +232,11 @@
     <ClCompile Include="Source\Character\NpcInputSource.cpp" />
     <ClCompile Include="Source\Character\HitTarget.cpp" />
     <ClCompile Include="Source\Character\CharacterMover.cpp" />
+    <ClCompile Include="Source\PlayerState\PlayerStateMachine.cpp" />
+    <ClCompile Include="Source\PlayerState\PlayerGroundState.cpp" />
+    <ClCompile Include="Source\PlayerState\PlayerAirState.cpp" />
+    <ClCompile Include="Source\PlayerState\PlayerRushState.cpp" />
+    <ClCompile Include="Source\PlayerState\PlayerFrozenState.cpp" />
     <ClCompile Include="Source\Character\StatusEffects.cpp" />
     <ClCompile Include="Source\Magic\MagicCaster.cpp" />
     <ClCompile Include="Source\Magic\IceMagic.cpp" />
@@ -259,6 +264,15 @@
     <ClInclude Include="Source\Character\NpcInputSource.h" />
     <ClInclude Include="Source\Character\HitTarget.h" />
     <ClInclude Include="Source\Character\CharacterMover.h" />
+    <ClInclude Include="Source\PlayerState\PlayerState.h" />
+    <ClInclude Include="Source\PlayerState\PlayerStateMachine.h" />
+    <ClInclude Include="Source\PlayerState\PlayerGroundState.h" />
+    <ClInclude Include="Source\PlayerState\PlayerIdleState.h" />
+    <ClInclude Include="Source\PlayerState\PlayerWalkState.h" />
+    <ClInclude Include="Source\PlayerState\PlayerRunState.h" />
+    <ClInclude Include="Source\PlayerState\PlayerAirState.h" />
+    <ClInclude Include="Source\PlayerState\PlayerRushState.h" />
+    <ClInclude Include="Source\PlayerState\PlayerFrozenState.h" />
     <ClInclude Include="Source\Character\StatusEffects.h" />
     <ClInclude Include="Source\Magic\MagicCaster.h" />
     <ClInclude Include="Source\Magic\IceMagic.h" />

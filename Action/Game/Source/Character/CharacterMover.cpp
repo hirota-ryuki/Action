@@ -38,55 +38,48 @@ bool CharacterMover::IsOnGround() const
 void CharacterMover::Stop()
 {
 	m_moveSpeed = Vector3::Zero;
-	m_rushRemainingDistance = 0.0f;
 	m_isMoving = false;
 }
 
 void CharacterMover::Update(const CharacterInput& input, float deltaTime)
 {
+	const bool canRun = input.isRun && m_settings.runSpeedMultiplier != 1.0f;
+	const float speed = canRun ? m_settings.walkSpeed * m_settings.runSpeedMultiplier : m_settings.walkSpeed;
+	if (input.jump.isTrigger) {
+		Jump(m_settings.jumpSpeed);
+	}
+	MoveByInput(input, speed, deltaTime);
+}
+
+void CharacterMover::MoveByInput(const CharacterInput& input, float speed, float deltaTime)
+{
+	Vector3 horizontalVelocity = input.moveDirection;
+	horizontalVelocity.y = 0.0f;
+	horizontalVelocity *= speed;
+
+	// 向きたい方向の指定があればそちらを、なければ移動方向を向く。
+	Vector3 lookDirection = input.lookDirection;
+	lookDirection.y = 0.0f;
+	if (lookDirection.LengthSq() > FLT_EPSILON) {
+		FaceTo(lookDirection);
+	}
+	else if (horizontalVelocity.LengthSq() > kMoveDeadZoneSq) {
+		FaceTo(horizontalVelocity);
+	}
+
+	Move(horizontalVelocity, deltaTime);
+}
+
+void CharacterMover::Move(const Vector3& horizontalVelocity, float deltaTime)
+{
 	if (!m_isInitialized) {
 		return;
 	}
 
-	Vector3 moveDirection = input.moveDirection;
-	moveDirection.y = 0.0f;
-	const bool canRun = input.isRun && m_settings.runSpeedMultiplier != 1.0f;
-	const float speed = canRun ? m_settings.walkSpeed * m_settings.runSpeedMultiplier : m_settings.walkSpeed;
-	Vector3 horizontalMoveSpeed = moveDirection * speed;
-
-	if (input.rush.isTrigger && !IsRushing() && m_settings.rushDistance > 0.0f) {
-		StartRush(horizontalMoveSpeed);
-	}
-
-	if (IsRushing() && deltaTime > FLT_EPSILON) {
-		// 今フレームの移動距離が残り距離を超えないよう、小さい方の値を使う。
-		const float maxRushMoveDistance = m_settings.rushSpeed * deltaTime;
-		const float rushMoveDistance = maxRushMoveDistance < m_rushRemainingDistance ? maxRushMoveDistance : m_rushRemainingDistance;
-		horizontalMoveSpeed = m_rushDirection * (rushMoveDistance / deltaTime);
-		m_rushRemainingDistance -= rushMoveDistance;
-		if (m_rushRemainingDistance < 0.0f) {
-			m_rushRemainingDistance = 0.0f;
-		}
-	}
-
-	m_moveSpeed.x = horizontalMoveSpeed.x;
-	m_moveSpeed.z = horizontalMoveSpeed.z;
-
-	if (input.jump.isTrigger && m_settings.jumpSpeed > 0.0f && m_charaCon.IsOnGround()) {
-		m_moveSpeed.y = m_settings.jumpSpeed;
-	}
+	m_moveSpeed.x = horizontalVelocity.x;
+	m_moveSpeed.z = horizontalVelocity.z;
 	m_moveSpeed.y -= m_settings.gravity * deltaTime;
-
-	// 向きたい方向の指定があればそちらを、なければ移動方向を向く。
-	m_isMoving = horizontalMoveSpeed.LengthSq() > kMoveDeadZoneSq;
-	Vector3 lookDirection = input.lookDirection;
-	lookDirection.y = 0.0f;
-	if (lookDirection.LengthSq() > FLT_EPSILON && !IsRushing()) {
-		m_rotation.SetRotationYFromDirectionXZ(lookDirection);
-	}
-	else if (m_isMoving) {
-		m_rotation.SetRotationYFromDirectionXZ(horizontalMoveSpeed);
-	}
+	m_isMoving = m_moveSpeed.x * m_moveSpeed.x + m_moveSpeed.z * m_moveSpeed.z > kMoveDeadZoneSq;
 
 	m_position = m_charaCon.Execute(m_moveSpeed, deltaTime);
 
@@ -95,17 +88,21 @@ void CharacterMover::Update(const CharacterInput& input, float deltaTime)
 	}
 }
 
-void CharacterMover::StartRush(const Vector3& direction)
+bool CharacterMover::Jump(float speed)
 {
-	m_rushDirection = direction;
-	m_rushDirection.y = 0.0f;
-	// 移動入力がデッドゾーン以下なら、向いている方向へラッシュする。
-	if (m_rushDirection.LengthSq() <= kMoveDeadZoneSq) {
-		m_rushDirection = GetForward();
-		m_rushDirection.y = 0.0f;
+	if (speed <= 0.0f || !IsOnGround()) {
+		return false;
 	}
-	if (m_rushDirection.LengthSq() > FLT_EPSILON) {
-		m_rushDirection.Normalize();
-		m_rushRemainingDistance = m_settings.rushDistance;
+	m_moveSpeed.y = speed;
+	return true;
+}
+
+void CharacterMover::FaceTo(const Vector3& direction)
+{
+	Vector3 horizontal = direction;
+	horizontal.y = 0.0f;
+	if (horizontal.LengthSq() <= FLT_EPSILON) {
+		return;
 	}
+	m_rotation.SetRotationYFromDirectionXZ(horizontal);
 }

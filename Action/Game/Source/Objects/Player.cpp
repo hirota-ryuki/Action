@@ -6,9 +6,7 @@
 
 namespace
 {
-	constexpr float kRushRunPoseTime = 0.23f;  // ラッシュ中に停止させるランアニメーションの再生位置（秒）。疾走ポーズに合った時刻。
 	constexpr float kRespawnHeight = -1000.0f; // この高さを下回るとステージ外と判断してリスポーン。
-	constexpr float kAnimMoveThreshold = 0.1f; // 移動入力がこれより小さければ待機アニメにする。
 	const Vector3 kSwordOffset = Vector3(5.0f, -3.0f, 10.0f);   // 右手ボーンローカル空間での剣の位置オフセット。
 	const Vector3 kSwordScale = Vector3(1.35f, 1.35f, 1.35f);
 	constexpr float kSwordRotOffsetX = 0.0f;
@@ -24,10 +22,19 @@ namespace
 		settings.runSpeedMultiplier = 1.6f;  // 走る入力中の移動速度倍率。
 		settings.jumpSpeed = 400.0f;
 		settings.gravity = 980.0f;
-		settings.rushDistance = 300.0f;      // ラッシュスキルの総移動距離。
-		settings.rushSpeed = 1500.0f;        // ラッシュ中の移動速度（通常の5倍）。
 		settings.capsuleRadius = 20.0f;
 		settings.capsuleHeight = 100.0f;
+		return settings;
+	}
+
+	PlayerStateSettings MakeStateSettings()
+	{
+		PlayerStateSettings settings;
+		settings.rushDistance = 300.0f;  // ラッシュスキルの総移動距離。
+		settings.rushSpeed = 1500.0f;    // ラッシュ中の移動速度（通常の5倍）。
+		settings.rushPoseTime = 0.23f;   // ランアニメーションの疾走ポーズに合った時刻。
+		settings.moveThreshold = 0.1f;   // 移動入力がこれより小さければ立ち止まる。
+		settings.animBlendSeconds = 0.2f;
 		return settings;
 	}
 
@@ -73,29 +80,31 @@ bool Player::Start()
 		"Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
 		"Assets/modelData/player/Model/SK_Player.tks");
 	if (!runTkaPath.empty()) {
-		for (int i = 0; i < enAnimClip_Num; i++) {
+		for (int i = 0; i < enPlayerAnimClip_Num; i++) {
 			m_animClips[i].Load(runTkaPath.c_str());
 			m_animClips[i].SetLoopFlag(true);
 		}
 	}
 
-	m_modelRender.Init("Assets/modelData/player/Model/SK_Player.FBX", m_animClips, enAnimClip_Num, enModelUpAxisZ);
+	m_modelRender.Init("Assets/modelData/player/Model/SK_Player.FBX", m_animClips, enPlayerAnimClip_Num, enModelUpAxisZ);
 	m_modelRender.SetShadowCasterFlag(true);
 	m_modelRender.SetPosition(m_mover.GetPosition());
 	m_modelRender.SetRotation(m_mover.GetRotation());
 	// UnityChan(Enemy)の2倍の高さを狙って1.692に設定した後、実機で見て大きすぎたため
 	// その2/3のサイズ(1.692 * 2/3 ≒ 1.128)に調整。
 	m_modelRender.SetScale(Vector3(1.128f, 1.128f, 1.128f));
-
-	if (!runTkaPath.empty()) {
-		m_modelRender.PlayAnimation(enAnimClip_Run);
-	}
-
 	m_modelRender.Update();
 
 	InitSword();
 
 	m_statusEffects.Init(&m_modelRender);
+
+	PlayerStateContext stateContext;
+	stateContext.mover = &m_mover;
+	stateContext.modelRender = &m_modelRender;
+	stateContext.statusEffects = &m_statusEffects;
+	stateContext.settings = MakeStateSettings();
+	m_stateMachine.Init(stateContext);  // Idle から始める。
 
 	m_hitTarget.Init(this, Faction::Player, kHitRadius, kHitCenterHeight);
 	m_hitTarget.SetStatusEffects(&m_statusEffects);
@@ -122,17 +131,9 @@ void Player::Update()
 	m_inputSource->Update(context, m_input);
 
 	m_statusEffects.Update(deltaTime);
-	const bool canAct = m_statusEffects.CanAct();
-	if (canAct) {
-		m_mover.Update(m_input, deltaTime);
-		UpdateAnimation();
-	}
-	else {
-		// 凍結中は入力を無視し、重力で落ちるだけにする。
-		m_mover.CancelRush();
-		m_mover.Update(CharacterInput(), deltaTime);
-	}
-	m_magicCaster.Update(m_input, m_mover.GetPosition(), m_mover.GetForward(), deltaTime, canAct);
+	// 移動とアニメーションはステートが行う。凍結中は Frozen ステートになり、重力で落ちるだけになる。
+	m_stateMachine.Update(m_input, deltaTime);
+	m_magicCaster.Update(m_input, m_mover.GetPosition(), m_mover.GetForward(), deltaTime, m_statusEffects.CanAct());
 
 	RespawnIfNeeded();
 	m_hitTarget.SetPosition(m_mover.GetPosition());
@@ -152,46 +153,6 @@ void Player::Render(RenderContext& rc)
 
 	m_modelRender.Draw(rc);
 	m_swordModelRender.Draw(rc);
-}
-
-void Player::UpdateAnimation()
-{
-	if (m_mover.IsRushing()) {
-		if (m_currentAnimNo != enAnimClip_Run || !m_isRushPoseActive) {
-			m_modelRender.PlayAnimationAtTime(enAnimClip_Run, kRushRunPoseTime);
-			m_modelRender.SetAnimationSpeed(0.0f);
-			m_currentAnimNo = enAnimClip_Run;
-			m_isRushPoseActive = true;
-		}
-		return;
-	}
-
-	if (m_isRushPoseActive) {
-		m_modelRender.SetAnimationSpeed(1.0f);
-		m_isRushPoseActive = false;
-	}
-
-	const float moveLength = m_input.moveDirection.Length();
-
-	int newAnimNo;
-	if (!m_mover.IsOnGround()) {
-		newAnimNo = enAnimClip_Jump;
-	}
-	else if (moveLength < kAnimMoveThreshold) {
-		newAnimNo = enAnimClip_Idle;
-	}
-	else if (m_input.isRun) {
-		newAnimNo = enAnimClip_Run;
-	}
-	else {
-		newAnimNo = enAnimClip_Walk;
-	}
-
-	// Avoid rewinding the clip if it is already playing
-	if (newAnimNo != m_currentAnimNo) {
-		m_modelRender.PlayAnimation(newAnimNo, 0.2f);
-		m_currentAnimNo = newAnimNo;
-	}
 }
 
 void Player::InitSword()
@@ -251,5 +212,5 @@ void Player::Respawn()
 {
 	m_mover.SetPosition(m_respawnPosition);
 	m_mover.Stop();
-	m_isRushPoseActive = false;
+	m_stateMachine.Reset();
 }
