@@ -25,7 +25,16 @@
 - 作業ブランチ上のコミットは `<分類>説明` の形で書く（例: `<FireMagic>右クリックで撃つ炎魔法を追加`、`<docs>設計書を追加`）。
 - push などで GitHub の認証を求められたら、`hirota-ryuki` アカウントでログインしてよい。リモートは https://github.com/hirota-ryuki/Action.git 。ただし、push するブランチは指示があったものだけにする。
 
-## 会話（タブ）の保存先
+## 会話（タブ）のバックアップと引き継ぎ
 
 - Claude の会話ファイルは、会社用（学校法人河原学園）の OneDrive に置かない。
-- 個人用 OneDrive へのバックアップの仕組みは準備中。
+- 会話ファイルは各PCの `~/.claude/projects/<このリポジトリのパス>/` に置いたまま、rclone で**個人用 OneDrive** の `12_ClaudeSessions/Action/` にコピーする。個人用 OneDrive のアプリにはサインインしない。
+- 自動で動くもの（`.claude/settings.json` のフック → `.claude/scripts/claude-sessions.ps1`）
+  - セッション開始時: 個人用 OneDrive から新しい会話を取ってくる（pull）
+  - やりとりの区切り・セッション終了時: 個人用 OneDrive へ送る（push）
+  - どちらも「新しい方で上書きするコピー」だけで、削除は相手側に伝えない
+- 「バックアップがまだ設定されていません」と出たPCでは、ユーザーに `.claude\scripts\setup-sessions.cmd` を1回実行してもらう（rclone のインストールと、ブラウザでの個人アカウントの許可）。
+- やめるとき
+  - そのPCだけ: `.claude\scripts\remove-sessions.cmd`（rclone の設定と本体を消す）
+  - 全PCまとめて: https://account.live.com/consent/Manage で rclone の許可を取り消す
+- 同じ会話を2台のPCで同時に進めない（新しい方で上書きされ、もう片方の続きが消える）。
