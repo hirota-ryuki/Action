@@ -4,6 +4,7 @@
 #include "MagicBase.h"
 
 struct CharacterInput;
+struct ButtonState;
 
 // キャラクターが持つ魔法の一覧と、今選んでいる魔法を管理する。
 // 入力の発射ボタン・切り替えに応じて、魔法の OnPress / OnHold / OnRelease を呼ぶ。
@@ -22,6 +23,8 @@ public:
 		m_faction = faction;
 	}
 	void AddMagic(std::unique_ptr<MagicBase> magic);
+	// サブの発射ボタン（subFire）で撃つ魔法。切り替えの対象にはならず、いつでも撃てる。
+	void SetSubMagic(std::unique_ptr<MagicBase> magic);
 
 	// canAct が false（凍結中など）の間は撃てない。押している途中なら中断する。
 	// 照準の指定がないときは、position の castHeight の高さから forward の向き（水平）へ撃つ。
@@ -32,12 +35,17 @@ public:
 
 private:
 	MagicCastContext MakeContext(const CharacterInput& input, const Vector3& position, const Vector3& forward, float deltaTime) const;
+	// ボタンの状態に応じて魔法の OnPress / OnHold / OnRelease を呼ぶ。
+	static void UpdateButton(MagicBase& magic, const ButtonState& button, const MagicCastContext& context, bool& isHolding);
 	void CancelHolding();
+	void CancelSubHolding();
 
 	std::vector<std::unique_ptr<MagicBase>> m_magics;
+	std::unique_ptr<MagicBase> m_subMagic;
 	IGameObject* m_owner = nullptr;
 	Settings m_settings;
 	Faction m_faction = Faction::Neutral;
 	int m_currentIndex = 0;
-	bool m_isHolding = false;  // 発射ボタンを押して魔法を使っている最中か。
+	bool m_isHolding = false;     // 発射ボタンを押して魔法を使っている最中か。
+	bool m_isSubHolding = false;  // サブの発射ボタンを押してサブの魔法を使っている最中か。
 };

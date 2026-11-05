@@ -16,6 +16,12 @@ void MagicCaster::AddMagic(std::unique_ptr<MagicBase> magic)
 	}
 }
 
+void MagicCaster::SetSubMagic(std::unique_ptr<MagicBase> magic)
+{
+	CancelSubHolding();
+	m_subMagic = std::move(magic);
+}
+
 MagicBase* MagicCaster::GetCurrentMagic() const
 {
 	if (m_magics.empty()) {
@@ -45,9 +51,13 @@ void MagicCaster::Update(const CharacterInput& input, const Vector3& position, c
 	for (auto& magic : m_magics) {
 		magic->Update(deltaTime);
 	}
+	if (m_subMagic != nullptr) {
+		m_subMagic->Update(deltaTime);
+	}
 
 	if (!canAct) {
 		CancelHolding();
+		CancelSubHolding();
 		return;
 	}
 
@@ -55,22 +65,27 @@ void MagicCaster::Update(const CharacterInput& input, const Vector3& position, c
 		SelectMagic(m_currentIndex + input.magicSwitch);
 	}
 
-	MagicBase* magic = GetCurrentMagic();
-	if (magic == nullptr) {
-		return;
-	}
-
 	const MagicCastContext context = MakeContext(input, position, forward, deltaTime);
-	if (input.fire.isTrigger) {
-		m_isHolding = true;
-		magic->OnPress(context);
+	if (MagicBase* magic = GetCurrentMagic()) {
+		UpdateButton(*magic, input.fire, context, m_isHolding);
 	}
-	if (m_isHolding && input.fire.isPress) {
-		magic->OnHold(context);
+	if (m_subMagic != nullptr) {
+		UpdateButton(*m_subMagic, input.subFire, context, m_isSubHolding);
 	}
-	if (m_isHolding && !input.fire.isPress) {
-		m_isHolding = false;
-		magic->OnRelease(context);
+}
+
+void MagicCaster::UpdateButton(MagicBase& magic, const ButtonState& button, const MagicCastContext& context, bool& isHolding)
+{
+	if (button.isTrigger) {
+		isHolding = true;
+		magic.OnPress(context);
+	}
+	if (isHolding && button.isPress) {
+		magic.OnHold(context);
+	}
+	if (isHolding && !button.isPress) {
+		isHolding = false;
+		magic.OnRelease(context);
 	}
 }
 
@@ -107,5 +122,16 @@ void MagicCaster::CancelHolding()
 	m_isHolding = false;
 	if (MagicBase* magic = GetCurrentMagic()) {
 		magic->OnCancel();
+	}
+}
+
+void MagicCaster::CancelSubHolding()
+{
+	if (!m_isSubHolding) {
+		return;
+	}
+	m_isSubHolding = false;
+	if (m_subMagic != nullptr) {
+		m_subMagic->OnCancel();
 	}
 }

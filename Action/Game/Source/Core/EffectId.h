@@ -8,4 +8,9 @@ enum class EffectId : int
 	Fire,
 	IceBullet,  // 氷魔法の弾（飛翔中）
 	IceHit,     // 氷魔法の着弾
+	FireBullet, // 炎魔法の弾（飛翔中）
+	FireCharge, // 炎魔法の溜め中
+	FireCharged,// 炎魔法が最大まで溜まった瞬間
+	FireHit,    // 炎魔法の着弾
+	FireGround, // 炎魔法の着弾後に燃え続ける床
 };

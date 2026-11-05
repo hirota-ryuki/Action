@@ -7,6 +7,7 @@
 #include "Stage.h"
 #include "FireEffect.h"
 #include "BulletBase.h"
+#include "BurningGround.h"
 
 namespace
 {
@@ -36,6 +37,10 @@ Game::~Game()
 	// キャラクターが撃った弾は Game が持っていないので、名前で探して消す。
 	QueryGOs<BulletBase>(BulletBase::kObjectName, [](BulletBase* bullet) {
 		DeleteGO(bullet);
+		return true;
+	});
+	QueryGOs<BurningGround>(BurningGround::kObjectName, [](BurningGround* ground) {
+		DeleteGO(ground);
 		return true;
 	});
 }

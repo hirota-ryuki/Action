@@ -2,6 +2,7 @@
 #include "Player.h"
 #include "tkFile/FbxRuntimeImporter.h"
 #include "IceMagic.h"
+#include "FireMagic.h"
 
 namespace
 {
@@ -102,6 +103,7 @@ bool Player::Start()
 
 	m_magicCaster.Init(this, Faction::Player, MakeCasterSettings());
 	m_magicCaster.AddMagic(std::make_unique<IceMagic>());
+	m_magicCaster.SetSubMagic(std::make_unique<FireMagic>());  // 右クリックで撃つ。
 
 	return true;
 }

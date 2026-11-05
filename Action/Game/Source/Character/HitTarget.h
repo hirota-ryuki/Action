@@ -50,6 +50,10 @@ public:
 	void NotifyHit(const HitInfo& hitInfo) const;
 
 	Vector3 GetCenter() const;
+	const Vector3& GetFootPosition() const
+	{
+		return m_footPosition;
+	}
 	float GetRadius() const
 	{
 		return m_radius;

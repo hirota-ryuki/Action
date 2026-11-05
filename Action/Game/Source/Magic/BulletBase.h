@@ -39,6 +39,12 @@ public:
 protected:
 	explicit BulletBase(const BulletSettings& settings);
 
+	// 弾ごとに性能を変えたいとき（溜め具合など）に、Start() より前に呼ぶ。
+	void SetSettings(const BulletSettings& settings)
+	{
+		m_settings = settings;
+	}
+
 	virtual bool OnStart() { return true; }
 	virtual void OnMove() {}
 	virtual void OnHitTarget(HitTarget& target, const Vector3& hitPosition) { (void)target; (void)hitPosition; }
