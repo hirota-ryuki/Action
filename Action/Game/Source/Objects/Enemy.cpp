@@ -104,7 +104,6 @@ void Enemy::Update()
 	}
 	else {
 		// 凍結中は入力を無視し、重力で落ちるだけにする。
-		m_mover.CancelRush();
 		m_mover.Update(CharacterInput(), deltaTime);
 	}
 	m_magicCaster.Update(m_input, m_mover.GetPosition(), m_mover.GetForward(), deltaTime, canAct);

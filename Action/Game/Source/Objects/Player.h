@@ -6,23 +6,16 @@
 #include "StatusEffects.h"
 #include "HitTarget.h"
 #include "MagicCaster.h"
+#include "PlayerStateMachine.h"
 
 // プレイヤーキャラクター。
 // 入力元（既定ではパッド・キーボード・マウス）から CharacterInput を受け取って動くだけで、
 // 入力デバイスを直接は読まない。移動・魔法・状態異常・当たり判定は部品に任せ、
-// このクラスはモデル・アニメーション・剣・リスポーン・一人称の表示切り替えを担う。
+// 立ち止まる・歩く・走る・空中・ラッシュ・凍結の切り替えは PlayerStateMachine（ステートパターン）に任せる。
+// このクラスはモデル・剣・リスポーン・一人称の表示切り替えを担う。
 class Player : public IGameObject
 {
 public:
-	// 再生するアニメーションの種類。
-	enum EnAnimClip {
-		enAnimClip_Idle,
-		enAnimClip_Walk,
-		enAnimClip_Run,
-		enAnimClip_Jump,
-		enAnimClip_Num,
-	};
-
 	Player();
 	~Player();
 	bool Start();
@@ -61,9 +54,17 @@ public:
 	{
 		return m_statusEffects;
 	}
+	// 今のステート。デバッグ表示用。
+	PlayerStateId GetStateId() const
+	{
+		return m_stateMachine.GetCurrentId();
+	}
+	const char* GetStateName() const
+	{
+		return m_stateMachine.GetCurrentName();
+	}
 
 private:
-	void UpdateAnimation();
 	void InitSword();
 	void UpdateSword();
 	void RespawnIfNeeded();
@@ -76,13 +77,12 @@ private:
 	StatusEffects m_statusEffects;
 	HitTarget m_hitTarget;
 	MagicCaster m_magicCaster;
+	PlayerStateMachine m_stateMachine;
 
-	AnimationClip m_animClips[enAnimClip_Num];
+	AnimationClip m_animClips[enPlayerAnimClip_Num];
 	ModelRender m_modelRender;
 	ModelRender m_swordModelRender;
 	Vector3 m_respawnPosition = Vector3::Zero;  // Start()時の位置を記録。落下後の復帰先。
 	int m_rightHandBoneNo = -1;                 // -1は右手ボーンが見つからなかった状態。
-	int m_currentAnimNo = enAnimClip_Idle;
-	bool m_isRushPoseActive = false;            // ラッシュ中にアニメを停止しているか。
 	bool m_isRenderBody = true;                 // 一人称カメラ時はfalseにして体を非表示にする。
 };
