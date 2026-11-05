@@ -106,6 +106,9 @@ namespace nsK2EngineLow {
 		/// <returns></returns>
 		bool IsPlaying() const
 		{
+			if (m_numAnimationPlayController == 0) {
+				return false;
+			}
 			int lastIndex = GetLastAnimationControllerIndex();
 			return m_animationPlayController[lastIndex].IsPlaying();
 		}
@@ -161,11 +164,15 @@ namespace nsK2EngineLow {
 	private:
 		void PlayCommon(AnimationClip* nextClip, float interpolateTime)
 		{
-			int index = GetLastAnimationControllerIndex();
-			if (m_animationPlayController[index].GetAnimClip() == nextClip) {
-				return;
+			// まだ何も再生していないときは、最後のコントローラーが無い（番号が -1 になり、配列の外を読んでしまう）。
+			// 外のゴミが偶然 nextClip と一致すると「再生中」とみなされ、最初の Play が無視されて T ポーズのままになる。
+			if (m_numAnimationPlayController > 0) {
+				int index = GetLastAnimationControllerIndex();
+				if (m_animationPlayController[index].GetAnimClip() == nextClip) {
+					return;
+				}
 			}
-			if (interpolateTime == 0.0f) {
+			if (interpolateTime == 0.0f || m_numAnimationPlayController == 0) {
 				//補完なし。
 				m_numAnimationPlayController = 1;
 			}
@@ -173,7 +180,7 @@ namespace nsK2EngineLow {
 				//補完あり。
 				m_numAnimationPlayController++;
 			}
-			index = GetLastAnimationControllerIndex();
+			const int index = GetLastAnimationControllerIndex();
 			m_animationPlayController[index].ChangeAnimationClip(nextClip);
 			m_animationPlayController[index].SetInterpolateTime(interpolateTime);
 			m_interpolateTime = 0.0f;
