@@ -52,6 +52,9 @@ function Get-RemoteDriveType([string]$rclone) {
     # 設定ファイルがないと rclone が通知を出すので、空のファイルを先に作っておく。
     $conf = Join-Path $env:APPDATA 'rclone\rclone.conf'
     if (-not (Test-Path $conf)) { New-Item -ItemType File -Force -Path $conf | Out-Null }
+    # 未設定でも config show は終了コード 0 を返すので、listremotes で有無を見る。
+    $remotes = & $rclone listremotes 2>$null
+    if (-not ($remotes | Where-Object { $_.Trim() -eq "${RemoteName}:" })) { return $null }
     $text = & $rclone config show $RemoteName 2>$null
     if ($LASTEXITCODE -ne 0 -or -not $text) { return $null }
     $line = $text | Where-Object { $_ -match '^\s*drive_type\s*=' } | Select-Object -First 1
