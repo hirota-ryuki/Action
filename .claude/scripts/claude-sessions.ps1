@@ -112,8 +112,28 @@ switch ($Mode) {
             Write-Output ''
             Write-Output "$tag ブラウザが開きます。【個人用】の Microsoft アカウントでサインインして「はい（許可）」を押してください。"
             Write-Output "$tag ※ 会社・学校のアカウントは選ばないでください。"
-            & $rclone config create $RemoteName onedrive config_type=onedrive
-            if ($LASTEXITCODE -ne 0) { throw '個人用 OneDrive の許可が完了しませんでした。' }
+            # 1) ブラウザで許可を取り、トークンだけを受け取る（ここでは質問が出ない）
+            & $rclone authorize onedrive 2>&1 | ForEach-Object { "$_" } | Tee-Object -Variable authOut | Out-Host
+            $token = ([regex]::Match(($authOut -join "`n"), '\{.*\}')).Value
+            if (-not $token) { throw '個人用 OneDrive の許可が完了しませんでした。' }
+            # 2) 設定を作る。質問には自動で答える。
+            #    ドライブは「OneDrive (personal)」を選ぶ（既定値は普段見えないシステム用のドライブのことがある）
+            $out = & $rclone config create $RemoteName onedrive ('token=' + ($token -replace '"', '\"')) config_type=onedrive --non-interactive 2>$null
+            for ($i = 0; $i -lt 10; $i++) {
+                $q = ($out -join "`n") | ConvertFrom-Json
+                if (-not $q.State) { break }
+                $answer = $q.Option.DefaultStr
+                if ($q.Option.Name -eq 'config_driveid') {
+                    $pick = $q.Option.Examples | Where-Object { $_.Help -eq 'OneDrive (personal)' } | Select-Object -First 1
+                    if (-not $pick) { $pick = $q.Option.Examples | Where-Object { $_.Value -notlike 'b!*' } | Select-Object -First 1 }
+                    if ($pick) { $answer = $pick.Value }
+                } elseif ($q.Option.Name -eq 'config_drive_ok') {
+                    $answer = 'true'
+                } elseif ($q.Option.Name -eq 'config_refresh_token') {
+                    $answer = 'false'   # トークンは 1) で取ったので取り直さない
+                }
+                $out = & $rclone config update $RemoteName --continue --state $q.State --result $answer --non-interactive 2>$null
+            }
             $type = Get-RemoteDriveType $rclone
         }
         if ($type -ne 'personal') {
