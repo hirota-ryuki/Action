@@ -25,7 +25,7 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	input.jump.Update(pad.IsPress(enButtonA));
 	// パッド未接続時はXボタンがLキーに割り当てられているので、どちらでも同じ動きになる。
 	input.rush.Update(IsKeyPressed('L') || pad.IsPress(enButtonX));
-	input.fire.Update((IsGameWindowActive() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonY));
+	input.fire.Update((IsGameWindowActive() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
 
 	m_prevMagicKey.Update(IsKeyPressed('Q'));
 	m_nextMagicKey.Update(IsKeyPressed('E'));
