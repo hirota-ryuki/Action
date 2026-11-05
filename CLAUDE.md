@@ -25,9 +25,7 @@
 - 作業ブランチ上のコミットは `<分類>説明` の形で書く（例: `<FireMagic>右クリックで撃つ炎魔法を追加`、`<docs>設計書を追加`）。
 - push などで GitHub の認証を求められたら、`hirota-ryuki` アカウントでログインしてよい。リモートは https://github.com/hirota-ryuki/Action.git 。ただし、push するブランチは指示があったものだけにする。
 
-## 会話（タブ）の引き継ぎ
+## 会話（タブ）の保存先
 
-- このリポジトリの Claude の会話は OneDrive の `12_ClaudeSessions\Action\` に保存され、どのPCからでも続きを開ける。
-- 仕組み: セッション開始時に `.claude/settings.json` のフックが `.claude/scripts/link-sessions.ps1` を実行し、`~/.claude/projects/<このリポジトリのパス>` を OneDrive のフォルダへのジャンクションにする（初回だけ実際に切り替わり、2回目以降は何もしない）。
-- 切り替えのメッセージに「使用中で切り替えられなかった」と出たら、VSCode の Claude のタブをすべて閉じてから、メッセージにあるコマンドを手で実行するようユーザーに伝える。
-- 同じ会話を2台のPCで同時に進めない（OneDrive 上で同じファイルに別々の内容が追記され、競合する）。
+- Claude の会話ファイルは、会社用（学校法人河原学園）の OneDrive に置かない。
+- 個人用 OneDrive へのバックアップの仕組みは準備中。
