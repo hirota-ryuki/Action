@@ -22,7 +22,8 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	input.lookDirection = Vector3::Zero;
 
 	input.isRun = IsKeyPressed(VK_LSHIFT);
-	input.jump.Update(pad.IsPress(enButtonA));
+	// ジャンプはスペース（パッドは A）。パッド未接続時は A ボタンが J キーに割り当てられているので、J でも跳べる。
+	input.jump.Update(IsKeyPressed(VK_SPACE) || pad.IsPress(enButtonA));
 	// パッド未接続時はXボタンがLキーに割り当てられているので、どちらでも同じ動きになる。
 	input.rush.Update(IsKeyPressed('L') || pad.IsPress(enButtonX));
 	input.fire.Update((IsGameWindowActive() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
