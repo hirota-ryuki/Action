@@ -21,7 +21,8 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	input.moveDirection = cameraForward * pad.GetLStickYF() + cameraRight * pad.GetLStickXF();
 	input.lookDirection = Vector3::Zero;
 
-	input.jump.Update(pad.IsPress(enButtonA));
+	// ジャンプはスペース（パッドは A）。パッド未接続時は A ボタンが J キーに割り当てられているので、J でも跳べる。
+	input.jump.Update(IsKeyPressed(VK_SPACE) || pad.IsPress(enButtonA));
 	// 左Shift（パッドは X）: 押した瞬間にラッシュ、押しっぱなしで走る。
 	// 走るのはラッシュが終わったあとなので、単押しを繰り返すとラッシュが続けて出る。
 	// パッド未接続時は X ボタンが L キーに割り当てられているので、L でも同じ動きになる。
