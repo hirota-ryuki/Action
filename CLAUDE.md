@@ -28,7 +28,7 @@
 ## 会話（タブ）のバックアップと引き継ぎ
 
 - Claude の会話ファイルは、会社用（学校法人河原学園）の OneDrive に置かない。
-- 会話ファイルは各PCの `~/.claude/projects/<このリポジトリのパス>/` に置いたまま、rclone で**個人用 OneDrive** の `12_ClaudeSessions/Action/` にコピーする。個人用 OneDrive のアプリにはサインインしない。
+- 会話ファイルは各PCの `~/.claude/projects/<このリポジトリのパス>/` に置いたまま、rclone で**個人用 OneDrive** の `01_ClaudeSessions/Action/` にコピーする。個人用 OneDrive のアプリにはサインインしない。
 - 自動で動くもの（`.claude/settings.json` のフック → `.claude/scripts/claude-sessions.ps1`）
   - セッション開始時: 個人用 OneDrive から新しい会話を取ってくる（pull）
   - やりとりの区切り・セッション終了時: 個人用 OneDrive へ送る（push）

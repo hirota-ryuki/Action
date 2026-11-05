@@ -6,7 +6,7 @@
 #   -Mode remove : このPCから rclone の設定と rclone 本体を消す（手で実行）
 #
 # 会話ファイルの場所: <Claude の設定フォルダ>\projects\<リポジトリのパスを変換した名前>\
-# 送り先          : 個人用 OneDrive の 12_ClaudeSessions\<リポジトリのフォルダ名>\
+# 送り先          : 個人用 OneDrive の 01_ClaudeSessions\<リポジトリのフォルダ名>\
 # 送受信は「新しい方で上書きするコピー」だけで、どちらかで消したファイルを相手側で消すことはしない。
 
 param(
@@ -28,7 +28,7 @@ if (-not $RepoDir) { $RepoDir = (Resolve-Path (Join-Path $PSScriptRoot '..\..'))
 $RepoDir    = $RepoDir.TrimEnd('\', '/')
 $configDir  = if ($env:CLAUDE_CONFIG_DIR) { $env:CLAUDE_CONFIG_DIR } else { Join-Path $env:USERPROFILE '.claude' }
 $LocalDir   = Join-Path $configDir ('projects\' + ($RepoDir -replace '[^A-Za-z0-9]', '-'))
-$RemotePath = "${RemoteName}:12_ClaudeSessions/" + (Split-Path $RepoDir -Leaf)
+$RemotePath = "${RemoteName}:01_ClaudeSessions/" + (Split-Path $RepoDir -Leaf)
 
 # setup でインストール先を選んだPCでは、その場所をここに覚えておく（リポジトリには入れない）。
 $PathFile = Join-Path $env:APPDATA 'claude-sessions\rclone-path.txt'
@@ -146,7 +146,7 @@ switch ($Mode) {
         Invoke-Copy $rclone $RemotePath $LocalDir
         Invoke-Copy $rclone $LocalDir $RemotePath
         Write-Output ''
-        Write-Output "$tag 完了しました。会話は個人用 OneDrive の 12_ClaudeSessions に保存されます。"
+        Write-Output "$tag 完了しました。会話は個人用 OneDrive の 01_ClaudeSessions に保存されます。"
         Write-Output "$tag VSCode の Claude を開き直すと、過去の会話一覧に他のPCの会話も出ます。"
     }
 
@@ -185,6 +185,6 @@ switch ($Mode) {
         Write-Output ''
         Write-Output "$tag 全部のPCをまとめて止めるには、次のページで rclone の許可を取り消してください:"
         Write-Output '  https://account.live.com/consent/Manage'
-        Write-Output "$tag 会話ファイル（このPCと個人用 OneDrive の 12_ClaudeSessions）は消していません。"
+        Write-Output "$tag 会話ファイル（このPCと個人用 OneDrive の 01_ClaudeSessions）は消していません。"
     }
 }
