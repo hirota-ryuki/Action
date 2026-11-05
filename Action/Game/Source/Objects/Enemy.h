@@ -3,6 +3,7 @@
 #include "CharacterInput.h"
 #include "NpcInputSource.h"
 #include "CharacterMover.h"
+#include "CharacterModel.h"
 #include "StatusEffects.h"
 #include "HitTarget.h"
 #include "MagicCaster.h"
@@ -70,9 +71,7 @@ private:
 	HitTarget m_hitTarget;
 	MagicCaster m_magicCaster;
 
-	AnimationClip m_animClips[enAnimClip_Num];
-	ModelRender m_modelRender;
-	Vector3 m_scale = Vector3(1.08f, 1.08f, 1.08f);
+	CharacterModel m_model;
 	Faction m_faction = Faction::Enemy;
 	int m_currentAnimNo = enAnimClip_Idle;
 };
