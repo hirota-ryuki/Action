@@ -5,27 +5,38 @@
 
 namespace
 {
-	constexpr float kMoveSpeed = 300.0f;
-	constexpr float kRunSpeedMultiplier = 1.6f; // 左Shift押下中の移動速度倍率。
-	constexpr float kJumpSpeed = 400.0f;
-	constexpr float kGravity = 980.0f;
-	// スティック入力のデッドゾーン閾値（二乗値）。sqrt を避けるため平方根前の値で比較。
-	constexpr float kStickDeadZoneSq = 0.01f;
-	constexpr float kRushDistance = 300.0f;    // ラッシュスキルの総移動距離。
-	constexpr float kRushSpeed = 1500.0f;      // ラッシュ中の移動速度（通常の5倍）。
-	// ラッシュ中に停止させるランアニメーションの再生位置（秒）。疾走ポーズに合った時刻。
-	constexpr float kRushRunPoseTime = 0.23f;
+	constexpr float kRushRunPoseTime = 0.23f;  // ラッシュ中に停止させるランアニメーションの再生位置（秒）。疾走ポーズに合った時刻。
 	constexpr float kRespawnHeight = -1000.0f; // この高さを下回るとステージ外と判断してリスポーン。
-	constexpr float kModelScale = 3.0f;        // player.tkmは元のモデルより小さいため拡大する。
-	const Vector3 kModelScaleVec = Vector3(kModelScale, kModelScale, kModelScale);
+	constexpr float kAnimMoveThreshold = 0.1f; // 移動入力がこれより小さければ待機アニメにする。
 	const Vector3 kSwordOffset = Vector3(5.0f, -3.0f, 10.0f);   // 右手ボーンローカル空間での剣の位置オフセット。
 	const Vector3 kSwordScale = Vector3(1.35f, 1.35f, 1.35f);
 	constexpr float kSwordRotOffsetX = 0.0f;
 	constexpr float kSwordRotOffsetY = 0.0f;
 	constexpr float kSwordRotOffsetZ = -90.0f; // 剣モデルのZ軸が手の向きと90度ずれているため補正。
-	constexpr float kIceMagicCooldown = 0.35f;        // 氷魔法の連射間隔（秒）。
-	constexpr float kIceMagicCastHeight = 70.0f;      // 三人称時、足元からこの高さで撃つ（胸のあたり）。
-	constexpr float kIceMagicCastForward = 60.0f;     // 自分のカプセル(半径20)に当たらないよう前に出して撃つ。
+	constexpr float kHitRadius = 45.0f;        // 弾に当たる球の半径。
+	constexpr float kHitCenterHeight = 70.0f;  // 足元から当たり判定の中心までの高さ（胸のあたり）。
+
+	CharacterMoveSettings MakeMoveSettings()
+	{
+		CharacterMoveSettings settings;
+		settings.walkSpeed = 300.0f;
+		settings.runSpeedMultiplier = 1.6f;  // 走る入力中の移動速度倍率。
+		settings.jumpSpeed = 400.0f;
+		settings.gravity = 980.0f;
+		settings.rushDistance = 300.0f;      // ラッシュスキルの総移動距離。
+		settings.rushSpeed = 1500.0f;        // ラッシュ中の移動速度（通常の5倍）。
+		settings.capsuleRadius = 20.0f;
+		settings.capsuleHeight = 100.0f;
+		return settings;
+	}
+
+	MagicCaster::Settings MakeCasterSettings()
+	{
+		MagicCaster::Settings settings;
+		settings.castHeight = 70.0f;   // 三人称時、足元からこの高さで撃つ（胸のあたり）。
+		settings.castForward = 60.0f;  // 自分のカプセル(半径20)に当たらないよう前に出して撃つ。
+		return settings;
+	}
 }
 
 Player::Player()
@@ -40,10 +51,8 @@ Player::~Player()
 
 bool Player::Start()
 {
-	m_respawnPosition = m_position;
-
-	m_charaCon.Init(20.0f, 100.0f, m_position);
-	m_isCharaConReady = true;
+	m_respawnPosition = m_mover.GetPosition();
+	m_mover.Init(MakeMoveSettings());
 
 	// player.tkmは3ds Max(Z-up)で作成されているため、enModelUpAxisZを指定して起こす（Yのままだと仰向けに倒れた状態になる）。
 	// 注意: SK_Player.FBXはランタイムFBXインポート(フェーズ2)でスキン・スケルトン付きで変換される。
@@ -71,8 +80,8 @@ bool Player::Start()
 
 	m_modelRender.Init("Assets/modelData/player/Model/SK_Player.FBX", m_animClips, enAnimClip_Num, enModelUpAxisZ);
 	m_modelRender.SetShadowCasterFlag(true);
-	m_modelRender.SetPosition(m_position);
-	m_modelRender.SetRotation(m_rotation);
+	m_modelRender.SetPosition(m_mover.GetPosition());
+	m_modelRender.SetRotation(m_mover.GetRotation());
 	// UnityChan(Enemy)の2倍の高さを狙って1.692に設定した後、実機で見て大きすぎたため
 	// その2/3のサイズ(1.692 * 2/3 ≒ 1.128)に調整。
 	m_modelRender.SetScale(Vector3(1.128f, 1.128f, 1.128f));
@@ -85,18 +94,49 @@ bool Player::Start()
 
 	InitSword();
 
+	m_statusEffects.Init(&m_modelRender);
+
+	m_hitTarget.Init(this, Faction::Player, kHitRadius, kHitCenterHeight);
+	m_hitTarget.SetStatusEffects(&m_statusEffects);
+	m_hitTarget.SetPosition(m_mover.GetPosition());
+
+	m_magicCaster.Init(this, Faction::Player, MakeCasterSettings());
+	m_magicCaster.AddMagic(std::make_unique<IceMagic>());
+
 	return true;
 }
 
 void Player::Update()
 {
-	Move();
-	UpdateIceMagic();
-	RespawnIfNeeded();
-	UpdateAnimation();
+	const float deltaTime = g_gameTime->GetFrameDeltaTime();
 
-	m_modelRender.SetPosition(m_position);
-	m_modelRender.SetRotation(m_rotation);
+	InputSourceContext context;
+	context.self = this;
+	context.faction = Faction::Player;
+	context.position = m_mover.GetPosition();
+	context.forward = m_mover.GetForward();
+	context.deltaTime = deltaTime;
+	context.isFirstPerson = !m_isRenderBody;
+	m_inputSource->Update(context, m_input);
+
+	m_statusEffects.Update(deltaTime);
+	const bool canAct = m_statusEffects.CanAct();
+	if (canAct) {
+		m_mover.Update(m_input, deltaTime);
+		UpdateAnimation();
+	}
+	else {
+		// 凍結中は入力を無視し、重力で落ちるだけにする。
+		m_mover.CancelRush();
+		m_mover.Update(CharacterInput(), deltaTime);
+	}
+	m_magicCaster.Update(m_input, m_mover.GetPosition(), m_mover.GetForward(), deltaTime, canAct);
+
+	RespawnIfNeeded();
+	m_hitTarget.SetPosition(m_mover.GetPosition());
+
+	m_modelRender.SetPosition(m_mover.GetPosition());
+	m_modelRender.SetRotation(m_mover.GetRotation());
 	m_modelRender.Update();
 
 	UpdateSword();
@@ -112,17 +152,9 @@ void Player::Render(RenderContext& rc)
 	m_swordModelRender.Draw(rc);
 }
 
-Vector3 Player::GetForward() const
-{
-	Vector3 forward = Vector3::AxisZ;
-	m_rotation.Apply(forward);
-	return forward;
-}
-
 void Player::UpdateAnimation()
 {
-	const bool isRushActive = m_rushRemainingDistance > 0.0f;
-	if (isRushActive) {
+	if (m_mover.IsRushing()) {
 		if (m_currentAnimNo != enAnimClip_Run || !m_isRushPoseActive) {
 			m_modelRender.PlayAnimationAtTime(enAnimClip_Run, kRushRunPoseTime);
 			m_modelRender.SetAnimationSpeed(0.0f);
@@ -137,18 +169,16 @@ void Player::UpdateAnimation()
 		m_isRushPoseActive = false;
 	}
 
-	const float stickX = g_pad[0]->GetLStickXF();
-	const float stickY = g_pad[0]->GetLStickYF();
-	const float stickLen = sqrtf(stickX * stickX + stickY * stickY);
+	const float moveLength = m_input.moveDirection.Length();
 
 	int newAnimNo;
-	if (!m_charaCon.IsOnGround()) {
+	if (!m_mover.IsOnGround()) {
 		newAnimNo = enAnimClip_Jump;
 	}
-	else if (stickLen < 0.1f) {
+	else if (moveLength < kAnimMoveThreshold) {
 		newAnimNo = enAnimClip_Idle;
 	}
-	else if (IsRunKeyPressed()) {
+	else if (m_input.isRun) {
 		newAnimNo = enAnimClip_Run;
 	}
 	else {
@@ -208,149 +238,16 @@ void Player::UpdateSword()
 	m_swordModelRender.Update();
 }
 
-bool Player::IsRushSkillKeyTrigger()
-{
-	// ラッシュスキルはキーボードLキーに割り当てているためGetAsyncKeyStateを使用。
-	// 前フレームの状態と比較して「押した瞬間」だけtrueを返す。
-	const bool isRushKeyPressed = GetAsyncKeyState('L') != 0;
-	const bool isTrigger = isRushKeyPressed && !m_isRushKeyPressed;
-	m_isRushKeyPressed = isRushKeyPressed;
-	return isTrigger;
-}
-
-bool Player::IsRunKeyPressed() const
-{
-	// 左Shiftを押している間だけ走る。
-	return GetAsyncKeyState(VK_LSHIFT) != 0;
-}
-
-void Player::StartRushSkill(const Vector3& direction)
-{
-	m_rushDirection = direction;
-	m_rushDirection.y = 0.0f;
-	// スティック入力がデッドゾーン以下なら、プレイヤーが向いている方向へラッシュする。
-	if (m_rushDirection.LengthSq() <= kStickDeadZoneSq) {
-		m_rushDirection = GetForward();
-		m_rushDirection.y = 0.0f;
-	}
-	if (m_rushDirection.LengthSq() > FLT_EPSILON) {
-		m_rushDirection.Normalize();
-		m_rushRemainingDistance = kRushDistance;
-	}
-}
-
-void Player::UpdateIceMagic()
-{
-	if (m_iceMagicCooldown > 0.0f) {
-		m_iceMagicCooldown -= g_gameTime->GetFrameDeltaTime();
-	}
-	// Yボタン(キーボードはI)で発射。
-	if (g_pad[0]->IsTrigger(enButtonY) && m_iceMagicCooldown <= 0.0f) {
-		CastIceMagic();
-		m_iceMagicCooldown = kIceMagicCooldown;
-	}
-}
-
-void Player::CastIceMagic()
-{
-	Vector3 origin;
-	Vector3 direction;
-	if (m_isRenderBody) {
-		// 三人称: キャラクターの向いている方向へ、胸の高さから撃つ。
-		direction = GetForward();
-		direction.y = 0.0f;
-		origin = m_position;
-		origin.y += kIceMagicCastHeight;
-	}
-	else {
-		// 一人称(体を非表示にしている間): 視線の方向へ、目の位置から撃つ。
-		direction = g_camera3D->GetForward();
-		origin = g_camera3D->GetPosition();
-	}
-	if (direction.LengthSq() <= FLT_EPSILON) {
-		direction = Vector3::AxisZ;
-	}
-	direction.Normalize();
-	origin += direction * kIceMagicCastForward;
-
-	IceMagic* iceMagic = NewGO<IceMagic>(1, "iceMagic");
-	iceMagic->Init(origin, direction);
-}
-
 void Player::RespawnIfNeeded()
 {
-	if (m_position.y < kRespawnHeight) {
+	if (m_mover.GetPosition().y < kRespawnHeight) {
 		Respawn();
 	}
 }
 
 void Player::Respawn()
 {
-	m_position = m_respawnPosition;
-	m_moveSpeed = Vector3::Zero;
-	m_rushRemainingDistance = 0.0f;
+	m_mover.SetPosition(m_respawnPosition);
+	m_mover.Stop();
 	m_isRushPoseActive = false;
-	// m_modelRender.SetAnimationSpeed(1.0f);
-
-	if (m_isCharaConReady) {
-		m_charaCon.SetPosition(m_position);
-	}
-}
-
-void Player::Move()
-{
-	const float deltaTime = g_gameTime->GetFrameDeltaTime();
-	const float stickX = g_pad[0]->GetLStickXF();
-	const float stickY = g_pad[0]->GetLStickYF();
-
-	Vector3 cameraForward = g_camera3D->GetForward();
-	Vector3 cameraRight = g_camera3D->GetRight();
-
-	cameraForward.y = 0.0f;
-	cameraRight.y = 0.0f;
-	cameraForward.Normalize();
-	cameraRight.Normalize();
-
-	// 左Shift押下中は移動速度も上げる。
-	const float currentMoveSpeed = IsRunKeyPressed() ? kMoveSpeed * kRunSpeedMultiplier : kMoveSpeed;
-
-	Vector3 horizontalMoveSpeed = Vector3::Zero;
-	horizontalMoveSpeed.x += cameraForward.x * stickY * currentMoveSpeed;
-	horizontalMoveSpeed.z += cameraForward.z * stickY * currentMoveSpeed;
-	horizontalMoveSpeed.x += cameraRight.x * stickX * currentMoveSpeed;
-	horizontalMoveSpeed.z += cameraRight.z * stickX * currentMoveSpeed;
-
-	if (IsRushSkillKeyTrigger() && m_rushRemainingDistance <= 0.0f) {
-		StartRushSkill(horizontalMoveSpeed);
-	}
-
-	if (m_rushRemainingDistance > 0.0f && deltaTime > FLT_EPSILON) {
-		// 今フレームの移動距離が残り距離を超えないよう、小さい方の値を使う。
-		const float maxRushMoveDistance = kRushSpeed * deltaTime;
-		const float rushMoveDistance = maxRushMoveDistance < m_rushRemainingDistance ? maxRushMoveDistance : m_rushRemainingDistance;
-		horizontalMoveSpeed = m_rushDirection * (rushMoveDistance / deltaTime);
-		m_rushRemainingDistance -= rushMoveDistance;
-		if (m_rushRemainingDistance < 0.0f) {
-			m_rushRemainingDistance = 0.0f;
-		}
-	}
-
-	m_moveSpeed.x = horizontalMoveSpeed.x;
-	m_moveSpeed.z = horizontalMoveSpeed.z;
-
-	if (g_pad[0]->IsTrigger(enButtonA) && m_charaCon.IsOnGround()) {
-		m_moveSpeed.y = kJumpSpeed;
-	}
-
-	m_moveSpeed.y -= kGravity * deltaTime;
-
-	if (horizontalMoveSpeed.LengthSq() > kStickDeadZoneSq) {
-		m_rotation.SetRotationYFromDirectionXZ(horizontalMoveSpeed);
-	}
-
-	m_position = m_charaCon.Execute(m_moveSpeed, deltaTime);
-
-	if (m_charaCon.IsOnGround()) {
-		m_moveSpeed.y = 0.0f;
-	}
 }

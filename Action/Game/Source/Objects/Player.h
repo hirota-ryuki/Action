@@ -1,7 +1,16 @@
 ﻿#pragma once
 
-// プレイヤーキャラクターを管理するクラス。
-// 移動・ジャンプ・ラッシュスキル・氷魔法・剣のボーン追従・リスポーンを担う。
+#include "CharacterInput.h"
+#include "PlayerInputSource.h"
+#include "CharacterMover.h"
+#include "StatusEffects.h"
+#include "HitTarget.h"
+#include "MagicCaster.h"
+
+// プレイヤーキャラクター。
+// 入力元（既定ではパッド・キーボード・マウス）から CharacterInput を受け取って動くだけで、
+// 入力デバイスを直接は読まない。移動・魔法・状態異常・当たり判定は部品に任せ、
+// このクラスはモデル・アニメーション・剣・リスポーン・一人称の表示切り替えを担う。
 class Player : public IGameObject
 {
 public:
@@ -22,51 +31,58 @@ public:
 
 	void SetPosition(const Vector3& position)
 	{
-		m_position = position;
-		if (m_isCharaConReady) {
-			m_charaCon.SetPosition(position);
-		}
+		m_mover.SetPosition(position);
 	}
-
 	const Vector3& GetPosition() const
 	{
-		return m_position;
+		return m_mover.GetPosition();
 	}
-
-	Vector3 GetForward() const;
+	Vector3 GetForward() const
+	{
+		return m_mover.GetForward();
+	}
 	void SetRenderBody(bool isRenderBody)
 	{
 		m_isRenderBody = isRenderBody;
 	}
 
+	// 入力元を差し替える（AIで動かす、記録した入力を再生する、などのデバッグ用）。
+	// nullptr を渡すとパッド・キーボード・マウスの入力に戻る。
+	void SetInputSource(IInputSource* inputSource)
+	{
+		m_inputSource = inputSource != nullptr ? inputSource : &m_playerInputSource;
+	}
+	// このフレームに受け取った入力。デバッグ表示用。
+	const CharacterInput& GetInput() const
+	{
+		return m_input;
+	}
+	StatusEffects& GetStatusEffects()
+	{
+		return m_statusEffects;
+	}
+
 private:
-	void Move();
 	void UpdateAnimation();
 	void InitSword();
 	void UpdateSword();
-	bool IsRushSkillKeyTrigger();
-	bool IsRunKeyPressed() const;
-	void StartRushSkill(const Vector3& direction);
-	void UpdateIceMagic();
-	void CastIceMagic();
 	void RespawnIfNeeded();
 	void Respawn();
+
+	PlayerInputSource m_playerInputSource;
+	IInputSource* m_inputSource = &m_playerInputSource;
+	CharacterInput m_input;
+	CharacterMover m_mover;
+	StatusEffects m_statusEffects;
+	HitTarget m_hitTarget;
+	MagicCaster m_magicCaster;
 
 	AnimationClip m_animClips[enAnimClip_Num];
 	ModelRender m_modelRender;
 	ModelRender m_swordModelRender;
-	CharacterController m_charaCon;
-	Vector3 m_position = Vector3::Zero;
 	Vector3 m_respawnPosition = Vector3::Zero;  // Start()時の位置を記録。落下後の復帰先。
-	Vector3 m_moveSpeed = Vector3::Zero;
-	Vector3 m_rushDirection = Vector3::AxisZ;   // ラッシュ中の移動方向（正規化済み）。
-	Quaternion m_rotation = Quaternion::Identity;
-	float m_rushRemainingDistance = 0.0f;       // 0より大きい間ラッシュ中と判定する。
-	float m_iceMagicCooldown = 0.0f;            // 氷魔法を再び撃てるまでの残り秒数。
 	int m_rightHandBoneNo = -1;                 // -1は右手ボーンが見つからなかった状態。
 	int m_currentAnimNo = enAnimClip_Idle;
-	bool m_isRushKeyPressed = false;            // 前フレームのLキー状態。トリガー判定に使用。
 	bool m_isRushPoseActive = false;            // ラッシュ中にアニメを停止しているか。
-	bool m_isCharaConReady = false;             // CharacterControllerの初期化が完了しているか。
 	bool m_isRenderBody = true;                 // 一人称カメラ時はfalseにして体を非表示にする。
 };
