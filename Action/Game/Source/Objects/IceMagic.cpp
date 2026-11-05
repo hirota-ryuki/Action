@@ -12,7 +12,7 @@ namespace
 	constexpr const char16_t* kBulletEffectPath = u"Assets/effect/ice_bullet.efk";
 	constexpr const char16_t* kHitEffectPath = u"Assets/effect/ice_hit.efk";
 
-	const Vector3 kEffectScale = { 10.0f, 10.0f, 10.0f };  // Effekseerの1単位をワールド10単位に拡大。
+	const Vector3 kEffectScale = { 10.0f, 10.0f, 10.0f };  // Effekseerの1単位をワールド10単位に拡大（炎と同じ）。
 	constexpr float kSpeed = 1500.0f;          // 弾の速さ（毎秒）。
 	constexpr float kRange = 2000.0f;          // 射程。これだけ飛ぶと消える。
 	constexpr float kEnemyHitRadius = 55.0f;   // 敵の中心からこの距離以内を通ると命中。

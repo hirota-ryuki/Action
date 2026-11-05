@@ -227,6 +227,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\Objects\Enemy.cpp" />
+    <ClCompile Include="Source\Objects\FireEffect.cpp" />
     <ClCompile Include="Source\Objects\IceMagic.cpp" />
     <ClCompile Include="Source\Objects\GameCamera.cpp" />
     <ClCompile Include="Source\Core\Game.cpp" />
@@ -242,6 +243,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Objects\Enemy.h" />
+    <ClInclude Include="Source\Objects\FireEffect.h" />
     <ClInclude Include="Source\Objects\IceMagic.h" />
     <ClInclude Include="Source\Objects\GameCamera.h" />
     <ClInclude Include="Source\Core\EffectId.h" />
