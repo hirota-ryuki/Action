@@ -1,7 +1,9 @@
 ﻿#include "k2EngineLowPreCompile.h"
 #include "tkFile/FbxRuntimeImporter.h"
 #include <cctype>
+#include <cstring>
 #include <set>
+#include <unordered_map>
 
 namespace nsK2EngineLow {
 	namespace {
@@ -112,6 +114,57 @@ namespace nsK2EngineLow {
 			} while (FindNextFileA(hFind, &findData));
 			FindClose(hFind);
 			return result;
+		}
+
+		// 頂点の重複判定用キー。tkmに保存される属性(座標・法線・UV・スキン)だけを詰めて持つ。
+		// 全メンバが4バイト型なのでパディングは無く、memcmpとバイト列ハッシュで比較できる。
+		struct VertexKey {
+			float pos[3];
+			float normal[3];
+			float uv[2];
+			float skinWeights[4];
+			int indices[4];
+
+			bool operator==(const VertexKey& rhs) const
+			{
+				return std::memcmp(this, &rhs, sizeof(VertexKey)) == 0;
+			}
+		};
+		static_assert(sizeof(VertexKey) == 4 * 16, "VertexKeyにパディングが入っています。");
+
+		struct VertexKeyHash {
+			size_t operator()(const VertexKey& key) const
+			{
+				// FNV-1a(64bit)。
+				const auto* bytes = reinterpret_cast<const unsigned char*>(&key);
+				uint64_t hash = 14695981039346656037ull;
+				for (size_t i = 0; i < sizeof(VertexKey); i++) {
+					hash ^= bytes[i];
+					hash *= 1099511628211ull;
+				}
+				return static_cast<size_t>(hash);
+			}
+		};
+
+		VertexKey MakeVertexKey(const TkmFile::SVertex& v)
+		{
+			VertexKey key;
+			key.pos[0] = v.pos.x;
+			key.pos[1] = v.pos.y;
+			key.pos[2] = v.pos.z;
+			key.normal[0] = v.normal.x;
+			key.normal[1] = v.normal.y;
+			key.normal[2] = v.normal.z;
+			key.uv[0] = v.uv.x;
+			key.uv[1] = v.uv.y;
+			key.skinWeights[0] = v.skinWeights.x;
+			key.skinWeights[1] = v.skinWeights.y;
+			key.skinWeights[2] = v.skinWeights.z;
+			key.skinWeights[3] = v.skinWeights.w;
+			for (int i = 0; i < 4; i++) {
+				key.indices[i] = v.indices[i];
+			}
+			return key;
 		}
 	}
 
@@ -362,6 +415,12 @@ namespace nsK2EngineLow {
 			size_t maxTriIndices = mesh->max_face_triangles * 3;
 			std::vector<uint32_t> triIndexBuf(maxTriIndices > 3 ? maxTriIndices : 3);
 
+			// FBXは法線・UVを「面の角(corner)」単位で持つため、角ごとに頂点を作ると
+			// 同じ頂点が大量に重複する。全属性が一致する頂点は1つにまとめてインデックスで共有する。
+			// 頂点バッファはメッシュ内の全マテリアルで共有なので、マップもメッシュ単位で持つ。
+			std::unordered_map<VertexKey, uint32_t, VertexKeyHash> vertexIndexMap;
+			vertexIndexMap.reserve(mesh->num_indices);
+
 			for (size_t matNo = 0; matNo < numMaterialSlots; matNo++) {
 				TkmFile::SMaterial dstMat;
 				BuildMaterial(
@@ -408,8 +467,12 @@ namespace nsK2EngineLow {
 						}
 
 						uint32_t newIndex = (uint32_t)dstMesh.vertexBuffer.size();
-						dstMesh.vertexBuffer.push_back(v);
-						dstIb.indices.push_back(newIndex);
+						auto inserted = vertexIndexMap.emplace(MakeVertexKey(v), newIndex);
+						if (inserted.second) {
+							// 初めて出てきた頂点。
+							dstMesh.vertexBuffer.push_back(v);
+						}
+						dstIb.indices.push_back(inserted.first->second);
 					}
 				}
 
