@@ -31,9 +31,10 @@ namespace
 	{
 		PlayerStateSettings settings;
 		settings.dashDistance = 300.0f;  // ダッシュスキルの総移動距離。
-		settings.dashSpeed = 2000.0f;    // ダッシュの平均の速さ（走りの約4倍）。300 を 0.15秒で進む。
-		settings.dashEndSpeed = 480.0f;  // 終わりは走る速さ。蹴った瞬間は 3520 になる。
-		settings.dashAnimSpeed = 2.0f;   // 0.3秒の一蹴りを2倍で流し、ダッシュの0.15秒で流し終える。
+		// ダッシュの時間は、はじめの 0.3秒の 3/4（0.225秒）。
+		settings.dashSpeed = 300.0f / 0.225f; // ダッシュの平均の速さ（約1333）。
+		settings.dashEndSpeed = 480.0f;  // 終わりは走る速さ。蹴った瞬間は約2190 になる。
+		settings.dashAnimSpeed = 0.3f / 0.225f; // 0.3秒の一蹴りを約1.33倍で流し、ダッシュの0.225秒で流し終える。
 		settings.dashAnimBlendSeconds = 0.05f;
 		// しゃがみ込むクリップ（沈む4コマ＋底で踏ん張る4コマ、0.27秒）を2.5倍で流し、一瞬（約0.1秒）で溜めて飛び出す。
 		settings.dashCrouchAnimSpeed = 2.5f;
@@ -42,8 +43,8 @@ namespace
 		settings.dashCrouchSpeed = 200.0f;     // 入った勢いで少し進み、踏ん張って止まってから飛び出す。
 		settings.dashKickBlendSeconds = 0.03f;
 		settings.dashChainKickStartTime = 2.0f / 30.0f; // 一蹴りの f02 から（脚が伸び切ったところ）。
-		settings.dashLandAnimSpeed = 2.0f;     // 着地のクリップ（7コマ、0.2秒）を2倍で流す。前の足の膝を曲げて受け止める。
-		settings.dashLandSeconds = 0.1f;       // 着地のクリップを2倍で流し終える長さ。
+		settings.dashLandAnimSpeed = 0.2f / 0.15f; // 着地のクリップ（7コマ、0.2秒）を約1.33倍で流す。低い姿勢から膝を曲げて受け止める。
+		settings.dashLandSeconds = 0.15f;      // 着地のクリップを流し終える長さ（はじめの 0.2秒の 3/4）。
 		settings.dashLandBlendSeconds = 0.05f;
 		settings.dashExitBlendSeconds = 0.25f; // 着地から走りへ。足の位置は合わせてあるので、ふつうより少し長めで足りる。
 		// 着地のあとの走り・歩きの始め。Run（30fps・19コマ）と Walk（30fps・36コマ）で足の位置を測って決めた。

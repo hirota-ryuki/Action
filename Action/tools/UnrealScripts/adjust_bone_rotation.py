@@ -631,7 +631,9 @@ def blend_from(anim, cfg, anim_dir):
     cfg = {"clip": "DashCrouchL", "weights": [1.0, 0.7, 0.4, 0.15]}
     clip は同じ実行の中で先に作ったクリップの名前。weights はコマごとに、そのポーズをどれだけ混ぜるか
     （先頭のコマから。足りないコマは 0）。全ボーンのローカルの回転と位置を混ぜる。
-    混ぜたコマで、つま先が ground_toe_cm（省略すると 0.5cm）より下になったら、その分だけ腰を上げる。"""
+    混ぜたコマで、つま先が ground_toe_cm（省略すると 0.5cm）より下になったら、その分だけ腰を上げる。
+    bend_knees を true にすると、上げた腰を crouch で元の高さへ戻し、代わりに膝を曲げて足を地面の上に保つ
+    （腰が一度上がってから下がる、上下の揺れを出さないため）。"""
     P = unreal.AnimPoseExtensions
     L = unreal.AnimPoseSpaces.LOCAL
     opts = eval_options()
@@ -681,6 +683,12 @@ def blend_from(anim, cfg, anim_dir):
         c.close_bracket(False)
     unreal.EditorAssetLibrary.save_loaded_asset(anim)
     log("blend_from", cfg["clip"], "weights", cfg["weights"], "raised hips", raised)
+    if raised and cfg.get("bend_knees"):
+        top = max(r for _, r in raised)
+        ws = [0.0] * num_keys
+        for f, r in raised:
+            ws[f] = r / top
+        crouch(anim, {"lower_cm": top, "weights": ws})
 
 
 def log_frames(anim, label):
