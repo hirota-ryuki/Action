@@ -10,8 +10,9 @@
 // 途中で向きは変えられない。重力はかかるので、空中で出すと落ちながら進む。
 // 1回ごとに蹴る足を左右入れ替える。
 // 飛んだあとは着地（dashLandSeconds）。着地の間は dashEndSpeed で進む。
-// ダッシュ中にもう一度ダッシュボタンを押すと覚えておき、進み切ったらすぐ次のダッシュを出す（連打で続けて出る）。
-//   進み切った → もう一度押していれば次のダッシュ、そうでなければ入力と足場に合わせて Idle / Walk / Run / Air
+// 着地まで終わるまでは入力を受け付けない（dashCanChain が true のときだけ、ダッシュ中の押下を覚えて続けて出す）。
+// 着地に入ったとき走るボタンを押したままなら、着地の間に走りのアニメーションへ先に補間しておく（見た目だけ）。
+//   着地まで終わった → 入力と足場に合わせて Walk / Run / Air。移動の入力がなければ Stop（勢いで滑って止まる）
 //   （ボタンを押しっぱなしなら Run になる）
 class PlayerDashState : public PlayerState
 {
@@ -50,8 +51,8 @@ private:
 	{
 		return IsKickFinished() && !m_isLanding;
 	}
-	// 着地を始める。
-	void BeginLanding();
+	// 着地を始める。走るなら、走りのアニメーションへの補間もここで始める。
+	void BeginLanding(PlayerStateContext& context, const CharacterInput& input);
 
 	Vector3 m_direction = Vector3::AxisZ;  // 進む方向（水平・正規化済み）。
 	float m_duration = 0.0f;               // 1回分のダッシュにかかる時間。0ならダッシュしない。
@@ -61,5 +62,7 @@ private:
 	bool m_isLanding = false;              // 着地中。
 	bool m_isLeftKick = false;             // 今回、左足で蹴るか。ダッシュのたびに入れ替える（ステートを出ても覚えておく）。
 	bool m_isNextDashQueued = false;       // ダッシュ中にもう一度押された。進み切ったら次のダッシュを出す。
-	bool m_isFirstFrame = false;           // 入ったフレーム。入るきっかけになった押下を、次のダッシュの予約と数えないため。
+	bool m_isFirstFrame = false;
+	bool m_isRunBlended = false;           // 着地の間に、走りのアニメーションへ補間し始めた。
+	float m_runAnimTime = 0.0f;            // 走りのアニメーションの位置（秒）。出るときに context.runAnimTime へ渡す。           // 入ったフレーム。入るきっかけになった押下を、次のダッシュの予約と数えないため。
 };
