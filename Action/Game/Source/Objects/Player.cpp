@@ -57,8 +57,8 @@ namespace
 		desc.clips[enPlayerAnimClip_Walk] = { "Assets/modelData/player/Animation/Walk.fbx", true };
 		desc.clips[enPlayerAnimClip_Run] = run;
 		desc.clips[enPlayerAnimClip_Jump] = run;
-		// DashL・DashR は、Run の体全体を前へ倒して一蹴り（着地→蹴り切り）だけを切り出したもの。
-		// tools/UnrealScripts/dash_lean.json で作る。ループしないので、終わると蹴り切ったポーズで止まる。
+		// DashL・DashR は、Run の体全体を前へ倒し、片足で蹴って宙へ飛び出す1歩だけにしたもの（L・R は蹴る足）。
+		// tools/UnrealScripts/dash_lean.json で作る。ループしないので、終わると飛び出したポーズ（後ろ足を伸ばし、片腕を前へ）で止まる。
 		desc.clips[enPlayerAnimClip_DashL] = { "Assets/modelData/player/Animation/DashL.fbx", false };
 		desc.clips[enPlayerAnimClip_DashR] = { "Assets/modelData/player/Animation/DashR.fbx", false };
 		return desc;

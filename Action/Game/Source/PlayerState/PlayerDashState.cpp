@@ -41,9 +41,9 @@ void PlayerDashState::Begin(PlayerStateContext& context, const CharacterInput& i
 		context.mover->FaceTo(m_direction);
 	}
 
-	// 一蹴りのアニメーションを1回流す（ループしないので、終わると蹴り切ったポーズで止まる）。
+	// 一蹴りのアニメーションを1回流す（ループしないので、終わると宙へ飛び出したポーズで止まる）。
 	// 蹴る足を毎回入れ替えるので、連打しても別のクリップへの切り替えになり、最初から流れる。
-	// DashR の終わりと DashL の始まりは同じ姿勢なので、連打すると走りのようにつながる。
+	// 連打すると、飛び出したポーズから次の蹴りの着地へ dashAnimBlendSeconds で移り、左右交互に蹴って進む。
 	m_isLeftKick = !m_isLeftKick;
 	const int clip = m_isLeftKick ? enPlayerAnimClip_DashL : enPlayerAnimClip_DashR;
 	context.modelRender->PlayAnimation(clip, context.settings.dashAnimBlendSeconds);

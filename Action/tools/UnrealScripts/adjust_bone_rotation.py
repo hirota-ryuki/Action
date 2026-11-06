@@ -359,6 +359,143 @@ def trim(anim, start, count):
     log("trim bones", len(names), "failed", failed, "len", anim.get_play_length())
 
 
+# 向きを合わせられるボーンと、その向き（自分 → 子）を測るための子のボーン。
+SEGMENT_CHILD = {}
+for _s in "LR":
+    SEGMENT_CHILD["J_Bip_%s_UpperLeg" % _s] = "J_Bip_%s_LowerLeg" % _s
+    SEGMENT_CHILD["J_Bip_%s_LowerLeg" % _s] = "J_Bip_%s_Foot" % _s
+    SEGMENT_CHILD["J_Bip_%s_UpperArm" % _s] = "J_Bip_%s_LowerArm" % _s
+    SEGMENT_CHILD["J_Bip_%s_LowerArm" % _s] = "J_Bip_%s_Hand" % _s
+# 向きを合わせるときに、先に回した親の分を差し引くための親子関係（SEGMENT_CHILD の中だけ）。
+SEGMENT_PARENT = {}
+for _s in "LR":
+    SEGMENT_PARENT["J_Bip_%s_LowerLeg" % _s] = "J_Bip_%s_UpperLeg" % _s
+    SEGMENT_PARENT["J_Bip_%s_LowerArm" % _s] = "J_Bip_%s_UpperArm" % _s
+
+
+def segment_angle(pose, bone, fwd):
+    """ボーン → 子のボーンの線の向き（度）。前 = 0、真上 = 90、真下 = -90、真後ろ = ±180。"""
+    P = unreal.AnimPoseExtensions
+    W = unreal.AnimPoseSpaces.WORLD
+    a = P.get_bone_pose(pose, bone, W).translation
+    b = P.get_bone_pose(pose, SEGMENT_CHILD[bone], W).translation
+    d = b - a
+    return math.degrees(math.atan2(d.z, d.dot(fwd)))
+
+
+def wrap180(deg):
+    return (deg + 180.0) % 360.0 - 180.0
+
+
+def pose_to(anim, cfg):
+    """最後のコマで、指定したボーンの向きを目標の角度にする。ramp_start のコマから最後のコマへ、なめらかに寄せる。
+    lift_cm を指定すると、同じ割合で腰を持ち上げる（足が地面から離れて、宙に浮く）。
+    cfg = {"ramp_start": 3, "lift_cm": 15, "angle_deg": {"J_Bip_L_UpperArm": -60, ...}}
+    角度は segment_angle と同じ測り方。左右の軸まわりにしか回さないので、横へ開いた腕などは少しずれる。
+    そのため、測り直して残りの差を足すのを3回くり返す。"""
+    P = unreal.AnimPoseExtensions
+    W = unreal.AnimPoseSpaces.WORLD
+    L = unreal.AnimPoseSpaces.LOCAL
+    opts = eval_options()
+    num_keys = unreal.AnimationLibrary.get_num_frames(anim) + 1
+    last = num_keys - 1
+    axis = side_axis(P.get_reference_pose(anim.get_editor_property("skeleton")))
+    fwd = unreal.Vector(0.0, 0.0, 1.0).cross(axis) * -1.0
+    targets = cfg.get("angle_deg", {})
+    lift = cfg.get("lift_cm", 0.0)
+    ramp_start = cfg.get("ramp_start", 0)
+
+    # ramp_start までは 0、最後のコマで 1（smoothstep）。
+    weights = []
+    for f in range(num_keys):
+        u = 1.0 if last <= ramp_start else max(0.0, min(1.0, (f - ramp_start) / float(last - ramp_start)))
+        weights.append(u * u * (3.0 - 2.0 * u))
+
+    # 元の値を読む。膝は反らないように抑えるので、両足のすねも読んでおく。
+    shins = ["J_Bip_%s_LowerLeg" % s for s in "LR"]
+    bones = list(dict.fromkeys(list(targets) + [HIPS] + shins))
+    extra = {b: [0.0] * num_keys for b in shins}  # コマごとに足す角度（膝が反らないようにする分）。
+    orig = {b: {"pos": [], "rot": [], "scl": [], "axis": [], "parent": []} for b in bones}
+    for f in range(num_keys):
+        pose = P.get_anim_pose_at_frame(anim, f, opts)
+        for b in bones:
+            local = P.get_bone_pose(pose, b, L)
+            world = P.get_bone_pose(pose, b, W)
+            parent_rot = q_mul(world.rotation, q_inv(local.rotation))
+            o = orig[b]
+            o["pos"].append(local.translation)
+            o["rot"].append(local.rotation)
+            o["scl"].append(local.scale3d)
+            o["axis"].append(q_rotate(q_inv(parent_rot), axis))
+            o["parent"].append(parent_rot)
+
+    end_pose = P.get_anim_pose_at_frame(anim, last, opts)
+    before = {b: segment_angle(end_pose, b, fwd) for b in targets}
+    pitch = {b: 0.0 for b in targets}  # 最後のコマで足す角度（正 = 前へ倒す）。
+
+    def write():
+        c = get_controller(anim)
+        c.open_bracket(unreal.Text("pose_to"), False)
+        for b in bones:
+            o = orig[b]
+            rots, poss = [], []
+            for f in range(num_keys):
+                deg = pitch.get(b, 0.0) * weights[f] + (extra[b][f] if b in extra else 0.0)
+                half = math.radians(deg) * 0.5
+                s = math.sin(half)
+                a = o["axis"][f]
+                rots.append(q_mul(unreal.Quat(a.x * s, a.y * s, a.z * s, math.cos(half)), o["rot"][f]))
+                p = o["pos"][f]
+                if b == HIPS and lift != 0.0:
+                    p = p + q_rotate(q_inv(o["parent"][f]), unreal.Vector(0.0, 0.0, lift * weights[f]))
+                poss.append(p)
+            c.set_bone_track_keys(b, poss, rots, o["scl"], False)
+        c.close_bracket(False)
+
+    for it in range(3):
+        end_pose = P.get_anim_pose_at_frame(anim, last, opts)
+        # 親から順に、残りの差を足す。前へ回すと角度は小さくなるので、差の符号を反転して足す。
+        # 親の角度を変えると子も同じだけ回るので、子は親に足した分を差し引く。
+        added = {}
+        for b in targets:
+            diff = wrap180(targets[b] - segment_angle(end_pose, b, fwd))
+            d = -diff
+            parent = SEGMENT_PARENT.get(b)
+            if parent in added:
+                d -= added[parent]
+            pitch[b] += d
+            added[b] = d
+        write()
+
+    # 膝が反らないようにする。曲がり = 太ももの向き − すねの向き（正 = 曲がっている。かかとがお尻へ近づく向き）。
+    # min_knee_deg より小さいコマは、すねをその分だけ曲げる。
+    min_knee = cfg.get("min_knee_deg", 3.0)
+    for it in range(2):
+        fixed = 0
+        for f in range(num_keys):
+            pose = P.get_anim_pose_at_frame(anim, f, opts)
+            for s in "LR":
+                thigh = "J_Bip_%s_UpperLeg" % s
+                shin = "J_Bip_%s_LowerLeg" % s
+                bend = wrap180(segment_angle(pose, thigh, fwd) - segment_angle(pose, shin, fwd))
+                if bend < min_knee:
+                    # すねを前へ回す（正）と向きの角度は小さくなり、曲がりが増える。
+                    extra[shin][f] += min_knee - bend
+                    fixed += 1
+        log("pose_to knee fix pass", it, "frames", fixed)
+        if fixed == 0:
+            break
+        write()
+
+    end_pose = P.get_anim_pose_at_frame(anim, last, opts)
+    for b in targets:
+        log("pose_to", b, "before", round(before[b], 1), "target", targets[b],
+            "after", round(segment_angle(end_pose, b, fwd), 1), "pitch", round(pitch[b], 1))
+    unreal.EditorAssetLibrary.save_loaded_asset(anim)
+    toe = min(P.get_bone_pose(end_pose, "J_Bip_%s_ToeBase" % s, W).translation.z for s in "LR")
+    log("pose_to lift", lift, "lowest toe at end(cm)", round(toe, 1))
+
+
 def main():
     cfg_path = sys.argv[-1]
     cfg = json.load(open(cfg_path, encoding="utf-8"))
@@ -384,6 +521,8 @@ def main():
             frames = clip.get("frames")
             if frames:
                 trim(anim, frames["start"], frames["count"])
+            if clip.get("pose_to"):
+                pose_to(anim, clip["pose_to"])
             export_fbx(anim, path(clip["out"]))
         log("DONE")
     except Exception as e:
