@@ -90,6 +90,8 @@ void PlayerDashState::Exit(PlayerStateContext& context)
 {
 	// アニメーションの速さは、次のステートの Enter で戻す。
 	// ここで戻すと、凍結で止めたアニメーションが動き出してしまう。
+	// 次のアニメーションへは長めに補間して、飛び出したポーズが少し残るようにする。
+	context.nextBlendSeconds = context.settings.dashExitBlendSeconds;
 	m_elapsed = m_duration;
 	m_isNextDashQueued = false;
 }

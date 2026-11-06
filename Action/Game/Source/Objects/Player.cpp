@@ -31,9 +31,10 @@ namespace
 	{
 		PlayerStateSettings settings;
 		settings.dashDistance = 300.0f;  // ダッシュスキルの総移動距離。
-		settings.dashSpeed = 1500.0f;    // ダッシュの平均の速さ（通常の約3倍）。300 を 0.2秒で進む。
-		settings.dashAnimSpeed = 1.5f;   // 0.3秒の一蹴りを、ダッシュの0.2秒で蹴り切る。
+		settings.dashSpeed = 1000.0f;    // ダッシュの平均の速さ（走りの約2倍）。300 を 0.3秒で進む。蹴った瞬間はこの2倍。
+		settings.dashAnimSpeed = 1.0f;   // 0.3秒の一蹴りを、ダッシュの0.3秒でそのまま流す（速く流すとバタバタして見える）。
 		settings.dashAnimBlendSeconds = 0.05f;
+		settings.dashExitBlendSeconds = 0.4f;  // ダッシュのあと、走りへゆっくり移ってポーズを残す。
 		settings.moveThreshold = 0.1f;   // 移動入力がこれより小さければ立ち止まる。
 		settings.animBlendSeconds = 0.2f;
 		// Walk.fbx（Mixamo の Female Walk）の足が地面を送る速さ。UE で足のボーンを測った 115/秒 × モデルの大きさ 1.128。

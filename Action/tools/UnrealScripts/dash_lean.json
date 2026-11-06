@@ -5,7 +5,7 @@
     {"in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
      "out": "../../Game/Assets/modelData/player/Animation/DashL.fbx",
      "frames": {"start": 14, "count": 10},
-     "pose_to": {"ramp_start": 3, "lift_cm": 15.0, "angle_deg": {
+     "pose_to": {"ramp_start": 1, "lift_ramp_start": 3, "lift_cm": -8.0, "angle_deg": {
        "J_Bip_L_UpperLeg": -172.0, "J_Bip_L_LowerLeg": -178.0,
        "J_Bip_R_UpperLeg": -50.0, "J_Bip_R_LowerLeg": -120.0,
        "J_Bip_L_UpperArm": -60.0, "J_Bip_L_LowerArm": -20.0,
@@ -13,7 +13,7 @@
     {"in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
      "out": "../../Game/Assets/modelData/player/Animation/DashR.fbx",
      "frames": {"start": 5, "count": 10},
-     "pose_to": {"ramp_start": 3, "lift_cm": 15.0, "angle_deg": {
+     "pose_to": {"ramp_start": 1, "lift_ramp_start": 3, "lift_cm": -8.0, "angle_deg": {
        "J_Bip_R_UpperLeg": -172.0, "J_Bip_R_LowerLeg": -178.0,
        "J_Bip_L_UpperLeg": -50.0, "J_Bip_L_LowerLeg": -120.0,
        "J_Bip_R_UpperArm": -60.0, "J_Bip_R_LowerArm": -20.0,

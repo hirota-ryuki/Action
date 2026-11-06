@@ -389,8 +389,10 @@ def wrap180(deg):
 
 def pose_to(anim, cfg):
     """最後のコマで、指定したボーンの向きを目標の角度にする。ramp_start のコマから最後のコマへ、なめらかに寄せる。
-    lift_cm を指定すると、同じ割合で腰を持ち上げる（足が地面から離れて、宙に浮く）。
-    cfg = {"ramp_start": 3, "lift_cm": 15, "angle_deg": {"J_Bip_L_UpperArm": -60, ...}}
+    lift_cm を指定すると、腰を上下させる（正 = 持ち上げて宙に浮く、負 = 下げて低く飛ぶ）。
+    腰は lift_ramp_start（省略すると ramp_start）のコマから寄せる。接地しているコマで下げると足がめり込むため、
+    足が離れるコマを指定する。
+    cfg = {"ramp_start": 1, "lift_ramp_start": 3, "lift_cm": -8, "angle_deg": {"J_Bip_L_UpperArm": -60, ...}}
     角度は segment_angle と同じ測り方。左右の軸まわりにしか回さないので、横へ開いた腕などは少しずれる。
     そのため、測り直して残りの差を足すのを3回くり返す。"""
     P = unreal.AnimPoseExtensions
@@ -405,11 +407,15 @@ def pose_to(anim, cfg):
     lift = cfg.get("lift_cm", 0.0)
     ramp_start = cfg.get("ramp_start", 0)
 
-    # ramp_start までは 0、最後のコマで 1（smoothstep）。
-    weights = []
-    for f in range(num_keys):
-        u = 1.0 if last <= ramp_start else max(0.0, min(1.0, (f - ramp_start) / float(last - ramp_start)))
-        weights.append(u * u * (3.0 - 2.0 * u))
+    # start までは 0、最後のコマで 1（smoothstep）。
+    def make_weights(start):
+        ws = []
+        for f in range(num_keys):
+            u = 1.0 if last <= start else max(0.0, min(1.0, (f - start) / float(last - start)))
+            ws.append(u * u * (3.0 - 2.0 * u))
+        return ws
+    weights = make_weights(ramp_start)
+    lift_weights = make_weights(cfg.get("lift_ramp_start", ramp_start))
 
     # 元の値を読む。膝は反らないように抑えるので、両足のすねも読んでおく。
     shins = ["J_Bip_%s_LowerLeg" % s for s in "LR"]
@@ -447,7 +453,7 @@ def pose_to(anim, cfg):
                 rots.append(q_mul(unreal.Quat(a.x * s, a.y * s, a.z * s, math.cos(half)), o["rot"][f]))
                 p = o["pos"][f]
                 if b == HIPS and lift != 0.0:
-                    p = p + q_rotate(q_inv(o["parent"][f]), unreal.Vector(0.0, 0.0, lift * weights[f]))
+                    p = p + q_rotate(q_inv(o["parent"][f]), unreal.Vector(0.0, 0.0, lift * lift_weights[f]))
                 poss.append(p)
             c.set_bone_track_keys(b, poss, rots, o["scl"], False)
         c.close_bracket(False)

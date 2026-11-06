@@ -32,9 +32,10 @@ enum EnPlayerAnimClip
 struct PlayerStateSettings
 {
 	float dashDistance = 300.0f;      // ダッシュの総移動距離。0ならダッシュできない。
-	float dashSpeed = 1500.0f;        // ダッシュの平均の速さ。蹴った瞬間はこの2倍で、だんだん遅くなる。
-	float dashAnimSpeed = 1.5f;       // 一蹴りのアニメーション（0.3秒）の再生速度（倍）。距離÷速さ（0.2秒）で蹴り切るよう合わせる。
+	float dashSpeed = 1000.0f;        // ダッシュの平均の速さ。蹴った瞬間はこの2倍で、だんだん遅くなる。
+	float dashAnimSpeed = 1.0f;       // 一蹴りのアニメーション（0.3秒）の再生速度（倍）。距離÷速さの時間で流し終わるよう合わせる。
 	float dashAnimBlendSeconds = 0.05f; // ダッシュに入るときのアニメーションの補間時間。短いほど一気に前へ出る。
+	float dashExitBlendSeconds = 0.4f;  // ダッシュから次の動きへ移るときの補間時間。長いほど飛び出したポーズが残る。
 	float moveThreshold = 0.1f;       // 移動入力の長さがこれより小さければ立ち止まっているとみなす。
 	float animBlendSeconds = 0.2f;    // アニメーションを切り替えるときの補間時間。
 	float walkAnimMoveSpeed = 0.0f;   // 歩くアニメーションを等速で再生したとき、足が地面を送る速さ。0なら等速で再生する。
@@ -47,11 +48,16 @@ struct PlayerStateContext
 	ModelRender* modelRender = nullptr;
 	const StatusEffects* statusEffects = nullptr;
 	PlayerStateSettings settings;
+	// 次の PlayAnimation だけで使う補間時間。0より小さければ animBlendSeconds を使う。
+	// 前のステートが Exit で入れておく（例: ダッシュのあとは長めにして、ポーズを残す）。
+	mutable float nextBlendSeconds = -1.0f;
 
 	// アニメーションを切り替えて、speed 倍の速さで再生する。
 	void PlayAnimation(int animClip, float speed = 1.0f) const
 	{
-		modelRender->PlayAnimation(animClip, settings.animBlendSeconds);
+		const float blend = nextBlendSeconds >= 0.0f ? nextBlendSeconds : settings.animBlendSeconds;
+		nextBlendSeconds = -1.0f;
+		modelRender->PlayAnimation(animClip, blend);
 		modelRender->SetAnimationSpeed(speed);
 	}
 };
