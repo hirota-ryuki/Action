@@ -4,7 +4,7 @@
 
 // 空中にいる。ジャンプボタンで入ったときは跳び、足場から落ちたときはそのまま落ちる。
 // 空中でも入力の方向へ動ける（走る入力なら走る速さ）。
-//   ラッシュボタン → Rush
+//   ダッシュボタン → Dash
 //   着地           → 入力に合わせて Idle / Walk / Run
 class PlayerAirState : public PlayerState
 {

@@ -9,7 +9,7 @@
 //   移動        左スティック / WASD
 //   走る        左Shift
 //   ジャンプ    Aボタン / J
-//   ラッシュ    Xボタン / L
+//   ダッシュ    Xボタン / L
 //   発射        マウス左ボタン / Yボタン / I
 //   魔法切替    LB・RB / Q・E
 class PlayerInputSource : public IInputSource

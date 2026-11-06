@@ -51,7 +51,7 @@
     <ClCompile Include="Source\PlayerState\PlayerAirState.cpp">
       <Filter>Source\PlayerState</Filter>
     </ClCompile>
-    <ClCompile Include="Source\PlayerState\PlayerRushState.cpp">
+    <ClCompile Include="Source\PlayerState\PlayerDashState.cpp">
       <Filter>Source\PlayerState</Filter>
     </ClCompile>
     <ClCompile Include="Source\PlayerState\PlayerFrozenState.cpp">
@@ -146,7 +146,7 @@
     <ClInclude Include="Source\PlayerState\PlayerAirState.h">
       <Filter>Source\PlayerState</Filter>
     </ClInclude>
-    <ClInclude Include="Source\PlayerState\PlayerRushState.h">
+    <ClInclude Include="Source\PlayerState\PlayerDashState.h">
       <Filter>Source\PlayerState</Filter>
     </ClInclude>
     <ClInclude Include="Source\PlayerState\PlayerFrozenState.h">

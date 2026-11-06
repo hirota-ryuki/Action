@@ -11,7 +11,7 @@ enum class PlayerStateId
 	Walk,    // 歩いている
 	Run,     // 走っている
 	Air,     // 空中にいる（跳んだ・足場から落ちた）
-	Rush,    // ラッシュ中（決まった距離を一気に進む）
+	Dash,    // ダッシュ中（決まった距離を一気に進む）
 	Frozen,  // 凍結などで行動できない
 	Num,
 };
@@ -29,9 +29,9 @@ enum EnPlayerAnimClip
 // ステートの調整用の数値。歩く・走る・跳ぶ速さは CharacterMoveSettings にある。
 struct PlayerStateSettings
 {
-	float rushDistance = 300.0f;      // ラッシュの総移動距離。0ならラッシュできない。
-	float rushSpeed = 1500.0f;        // ラッシュ中の移動速度。
-	float rushPoseTime = 0.23f;       // ラッシュ中に止めておく、ランアニメーションの再生位置（秒）。
+	float dashDistance = 300.0f;      // ダッシュの総移動距離。0ならダッシュできない。
+	float dashSpeed = 1500.0f;        // ダッシュ中の移動速度。
+	float dashPoseTime = 0.23f;       // ダッシュ中に止めておく、ランアニメーションの再生位置（秒）。
 	float moveThreshold = 0.1f;       // 移動入力の長さがこれより小さければ立ち止まっているとみなす。
 	float animBlendSeconds = 0.2f;    // アニメーションを切り替えるときの補間時間。
 	float walkAnimMoveSpeed = 0.0f;   // 歩くアニメーションを等速で再生したとき、足が地面を送る速さ。0なら等速で再生する。

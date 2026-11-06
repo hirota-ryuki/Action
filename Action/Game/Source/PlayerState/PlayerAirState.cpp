@@ -15,8 +15,8 @@ void PlayerAirState::Enter(PlayerStateContext& context, const CharacterInput& in
 
 PlayerStateId PlayerAirState::CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const
 {
-	if (input.rush.isTrigger && context.settings.rushDistance > 0.0f) {
-		return PlayerStateId::Rush;
+	if (input.dash.isTrigger && context.settings.dashDistance > 0.0f) {
+		return PlayerStateId::Dash;
 	}
 	if (context.mover->IsOnGround()) {
 		return PlayerGroundState::SelectByInput(context, input);
