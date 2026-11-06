@@ -96,14 +96,14 @@
     "lift_ramp_start": 3,
     "lift_cm": -8.0,
     "angle_deg": {
-     "J_Bip_L_UpperLeg": -172.0,
-     "J_Bip_L_LowerLeg": -178.0,
-     "J_Bip_R_UpperLeg": -25.0,
-     "J_Bip_R_LowerLeg": -105.0,
-     "J_Bip_L_UpperArm": -60.0,
-     "J_Bip_L_LowerArm": -20.0,
-     "J_Bip_R_UpperArm": 150.0,
-     "J_Bip_R_LowerArm": 175.0
+     "J_Bip_L_UpperLeg": -130.0,
+     "J_Bip_L_LowerLeg": -150.0,
+     "J_Bip_R_UpperLeg": -30.0,
+     "J_Bip_R_LowerLeg": -110.0,
+     "J_Bip_L_UpperArm": -55.0,
+     "J_Bip_L_LowerArm": 15.0,
+     "J_Bip_R_UpperArm": -135.0,
+     "J_Bip_R_LowerArm": -70.0
     }
    },
    "blend_from": {
@@ -128,14 +128,14 @@
     "lift_ramp_start": 3,
     "lift_cm": -8.0,
     "angle_deg": {
-     "J_Bip_R_UpperLeg": -172.0,
-     "J_Bip_R_LowerLeg": -178.0,
-     "J_Bip_L_UpperLeg": -25.0,
-     "J_Bip_L_LowerLeg": -105.0,
-     "J_Bip_R_UpperArm": -60.0,
-     "J_Bip_R_LowerArm": -20.0,
-     "J_Bip_L_UpperArm": 150.0,
-     "J_Bip_L_LowerArm": 175.0
+     "J_Bip_R_UpperLeg": -130.0,
+     "J_Bip_R_LowerLeg": -150.0,
+     "J_Bip_L_UpperLeg": -30.0,
+     "J_Bip_L_LowerLeg": -110.0,
+     "J_Bip_R_UpperArm": -55.0,
+     "J_Bip_R_LowerArm": 15.0,
+     "J_Bip_L_UpperArm": -135.0,
+     "J_Bip_L_LowerArm": -70.0
     }
    },
    "blend_from": {
@@ -212,18 +212,15 @@
   }
  ],
  "pitch_deg": {
-  "J_Bip_C_Hips": 24.0,
-  "J_Bip_L_UpperLeg": 8.0,
-  "J_Bip_R_UpperLeg": 8.0,
-  "J_Bip_C_Spine": 8.0,
-  "J_Bip_C_Chest": 8.0,
-  "J_Bip_C_UpperChest": 6.0,
-  "J_Bip_C_Neck": -22.0,
-  "J_Bip_C_Head": -20.0
+  "J_Bip_C_Hips": 6.0,
+  "J_Bip_L_UpperLeg": 0.0,
+  "J_Bip_R_UpperLeg": 0.0,
+  "J_Bip_C_Spine": 5.0,
+  "J_Bip_C_Chest": 4.0,
+  "J_Bip_C_UpperChest": 3.0,
+  "J_Bip_C_Neck": -8.0,
+  "J_Bip_C_Head": -6.0
  },
- "swing_scale": {
-  "J_Bip_L_UpperLeg": 1.15,
-  "J_Bip_R_UpperLeg": 1.15
- },
+ "swing_scale": {},
  "keep_feet_on_ground": true
 }
