@@ -74,6 +74,27 @@
     "leg_lean_deg": 6.0,
     "tuck_knee_deg": 125.0,
     "head_pitch_deg": -30.0
+   },
+   "crouch_after_rotoscope": true,
+   "crouch": {
+    "lower_cm": 6.0,
+    "weights": [
+     0.0,
+     0.0,
+     0.3,
+     0.8,
+     1.0,
+     0.6,
+     0.2,
+     0.0,
+     0.0,
+     0.3,
+     0.8,
+     1.0,
+     0.6,
+     0.2,
+     0.0
+    ]
    }
   }
  ]

@@ -939,7 +939,9 @@ def main():
                 trim(anim, frames["start"], frames["count"], frames.get("hold", 0))
             # crouch_after_pose なら、決めたポーズへ寄せてから腰を落とす（しゃがんだポーズで、さらに沈み込むとき）。
             after = clip.get("crouch_after_pose", False)
-            if clip.get("crouch") and not after:
+            # crouch_after_rotoscope なら、ロトスコープでポーズを作ってから腰を落とす（走りで足を踏み込むとき）。
+            after_roto = clip.get("crouch_after_rotoscope", False)
+            if clip.get("crouch") and not after and not after_roto:
                 crouch(anim, clip["crouch"])
             if clip.get("pose_to"):
                 pose_to(anim, clip["pose_to"])
@@ -947,6 +949,8 @@ def main():
                 crouch(anim, clip["crouch"])
             if clip.get("rotoscope"):
                 rotoscope(anim, clip["rotoscope"], base)
+            if clip.get("crouch") and after_roto:
+                crouch(anim, clip["crouch"])
             if clip.get("blend_from"):
                 blend_from(anim, clip["blend_from"], work + "/Anim")
             if clip.get("log_frames"):
