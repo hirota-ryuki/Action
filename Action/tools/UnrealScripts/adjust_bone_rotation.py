@@ -327,14 +327,17 @@ def adjust(anim, pitch_deg, swing_scale, keep_feet_on_ground=False):
         log(label, "head - hips forward(cm) =", round(forward_cm, 2), "lean(deg) =", round(lean_deg, 1))
 
 
-def trim(anim, start, count):
-    """start から count コマだけを残す。最後のコマ（ループなら先頭と同じ姿勢）を越えたら先頭へ戻る。"""
+def trim(anim, start, count, hold=0):
+    """start から count コマだけを残す。最後のコマ（ループなら先頭と同じ姿勢）を越えたら先頭へ戻る。
+    hold を指定すると、最後のコマを hold コマ分くり返して足す（ポーズで止まる間を作る）。"""
     P = unreal.AnimPoseExtensions
     L = unreal.AnimPoseSpaces.LOCAL
     opts = eval_options()
     num_keys = unreal.AnimationLibrary.get_num_frames(anim) + 1
     period = num_keys - 1
     src = [(start + i) % period for i in range(count)]
+    src += [src[-1]] * hold
+    count = len(src)
     log("trim frames", src)
 
     names = P.get_bone_names(P.get_anim_pose_at_frame(anim, 0, opts))
@@ -410,12 +413,13 @@ def pose_to(anim, cfg):
     targets = cfg.get("angle_deg", {})
     lift = cfg.get("lift_cm", 0.0)
     ramp_start = cfg.get("ramp_start", 0)
+    ramp_end = cfg.get("ramp_end", last)  # このコマで目標に着き、あとはそのまま。
 
     # start までは 0、最後のコマで 1（smoothstep）。
     def make_weights(start):
         ws = []
         for f in range(num_keys):
-            u = 1.0 if last <= start else max(0.0, min(1.0, (f - start) / float(last - start)))
+            u = 1.0 if ramp_end <= start else max(0.0, min(1.0, (f - start) / float(ramp_end - start)))
             ws.append(u * u * (3.0 - 2.0 * u))
         return ws
     weights = make_weights(ramp_start)
@@ -622,6 +626,63 @@ def crouch(anim, cfg):
         log(row)
 
 
+def blend_from(anim, cfg, anim_dir):
+    """最初のコマを、別のクリップの最後のコマのポーズから始める（つなぎ目をなめらかにする）。
+    cfg = {"clip": "DashCrouchL", "weights": [1.0, 0.7, 0.4, 0.15]}
+    clip は同じ実行の中で先に作ったクリップの名前。weights はコマごとに、そのポーズをどれだけ混ぜるか
+    （先頭のコマから。足りないコマは 0）。全ボーンのローカルの回転と位置を混ぜる。
+    混ぜたコマで、つま先が ground_toe_cm（省略すると 0.5cm）より下になったら、その分だけ腰を上げる。"""
+    P = unreal.AnimPoseExtensions
+    L = unreal.AnimPoseSpaces.LOCAL
+    opts = eval_options()
+    src = unreal.load_asset(anim_dir + "/A_" + cfg["clip"])
+    src_pose = P.get_anim_pose_at_frame(src, unreal.AnimationLibrary.get_num_frames(src), opts)
+    num_keys = unreal.AnimationLibrary.get_num_frames(anim) + 1
+    weights = list(cfg["weights"]) + [0.0] * num_keys
+    names = [str(n) for n in P.get_bone_names(P.get_anim_pose_at_frame(anim, 0, opts))]
+    tracks = {n: {"pos": [], "rot": [], "scl": []} for n in names}
+    for f in range(num_keys):
+        pose = P.get_anim_pose_at_frame(anim, f, opts)
+        w = weights[f]
+        for n in names:
+            a = P.get_bone_pose(pose, n, L)
+            b = P.get_bone_pose(src_pose, n, L)
+            q, r = a.rotation, b.rotation
+            sign = 1.0 if q_dot(q, r) >= 0.0 else -1.0
+            rot = q_normalize(unreal.Quat(q.x * (1 - w) + r.x * w * sign, q.y * (1 - w) + r.y * w * sign,
+                                          q.z * (1 - w) + r.z * w * sign, q.w * (1 - w) + r.w * w * sign))
+            tracks[n]["pos"].append(a.translation * (1 - w) + b.translation * w)
+            tracks[n]["rot"].append(rot)
+            tracks[n]["scl"].append(a.scale3d)
+    c = get_controller(anim)
+    c.open_bracket(unreal.Text("blend_from"), False)
+    for n, t in tracks.items():
+        c.set_bone_track_keys(n, t["pos"], t["rot"], t["scl"], False)
+    c.close_bracket(False)
+
+    W = unreal.AnimPoseSpaces.WORLD
+    ground = cfg.get("ground_toe_cm", 0.5)
+    t = tracks[HIPS]
+    raised = []
+    for f in range(num_keys):
+        if weights[f] <= 0.0:
+            break
+        pose = P.get_anim_pose_at_frame(anim, f, opts)
+        toe = min(P.get_bone_pose(pose, "J_Bip_%s_ToeBase" % sd, W).translation.z for sd in "LR")
+        if toe < ground:
+            local = P.get_bone_pose(pose, HIPS, L)
+            world = P.get_bone_pose(pose, HIPS, W)
+            parent_rot = q_mul(world.rotation, q_inv(local.rotation))
+            t["pos"][f] = t["pos"][f] + q_rotate(q_inv(parent_rot), unreal.Vector(0.0, 0.0, ground - toe))
+            raised.append((f, round(ground - toe, 1)))
+    if raised:
+        c.open_bracket(unreal.Text("blend_from_ground"), False)
+        c.set_bone_track_keys(HIPS, t["pos"], t["rot"], t["scl"], False)
+        c.close_bracket(False)
+    unreal.EditorAssetLibrary.save_loaded_asset(anim)
+    log("blend_from", cfg["clip"], "weights", cfg["weights"], "raised hips", raised)
+
+
 def log_frames(anim, label):
     """コマごとの脚の向き・膝の曲がり・つま先と腰の高さを書き出す（形を決めるときの確かめ用）。"""
     P = unreal.AnimPoseExtensions
@@ -674,11 +735,17 @@ def main():
                    clip.get("keep_feet_on_ground", cfg.get("keep_feet_on_ground", False)))
             frames = clip.get("frames")
             if frames:
-                trim(anim, frames["start"], frames["count"])
-            if clip.get("crouch"):
+                trim(anim, frames["start"], frames["count"], frames.get("hold", 0))
+            # crouch_after_pose なら、決めたポーズへ寄せてから腰を落とす（しゃがんだポーズで、さらに沈み込むとき）。
+            after = clip.get("crouch_after_pose", False)
+            if clip.get("crouch") and not after:
                 crouch(anim, clip["crouch"])
             if clip.get("pose_to"):
                 pose_to(anim, clip["pose_to"])
+            if clip.get("crouch") and after:
+                crouch(anim, clip["crouch"])
+            if clip.get("blend_from"):
+                blend_from(anim, clip["blend_from"], work + "/Anim")
             if clip.get("log_frames"):
                 log_frames(anim, name)
             if clip.get("out_skip"):

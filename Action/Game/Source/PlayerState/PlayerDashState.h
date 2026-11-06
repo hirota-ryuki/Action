@@ -3,7 +3,8 @@
 #include "PlayerState.h"
 
 // ダッシュ中。入った瞬間の移動方向（入力がなければ正面）へ、地面を一蹴りして dashDistance だけ飛び出す。
-// 地面から出すときは、蹴る前に dashCrouchSeconds だけしゃがみ込む（DashCrouchL / DashCrouchR）。その間は dashCrouchSpeed で進む。
+// 地面から出すときは、蹴る前に dashCrouchSeconds だけしゃがみ込み、底で踏ん張ってから一気に飛び出す（DashCrouchL / DashCrouchR）。
+// しゃがむ間は dashCrouchSpeed から0までゆっくり遅くなる。
 // かかる時間は dashDistance ÷ dashSpeed。蹴った瞬間がいちばん速く、だんだん遅くなって止まる（ease-out）。
 // 途中で向きは変えられない。重力はかかるので、空中で出すと落ちながら進む。
 // アニメーションは、体全体を前へ倒した「一蹴り」（DashL / DashR、ループしない）を1回流し、宙へ飛び出したポーズで止める。
@@ -33,7 +34,7 @@ private:
 	// 1回分のダッシュを始める。方向を決め直し、蹴る足を入れ替える。アニメーションは流さない。
 	void Begin(PlayerStateContext& context, const CharacterInput& input);
 	// 蹴るアニメーションを流す。
-	void PlayKick(PlayerStateContext& context, float blendSeconds);
+	void PlayKick(PlayerStateContext& context, float blendSeconds, float startTime = 0.0f);
 	// しゃがみ込んでいる間か。
 	bool IsCrouching() const
 	{

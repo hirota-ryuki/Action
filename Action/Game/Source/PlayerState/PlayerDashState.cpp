@@ -29,7 +29,7 @@ void PlayerDashState::Enter(PlayerStateContext& context, const CharacterInput& i
 	if (s.dashCrouchSeconds > 0.0f && m_duration > 0.0f && context.mover->IsOnGround()) {
 		m_crouchRemaining = s.dashCrouchSeconds;
 		const int clip = m_isLeftKick ? enPlayerAnimClip_DashCrouchL : enPlayerAnimClip_DashCrouchR;
-		context.modelRender->PlayAnimation(clip, s.dashAnimBlendSeconds);
+		context.modelRender->PlayAnimation(clip, s.dashCrouchBlendSeconds);
 		context.modelRender->SetAnimationSpeed(1.0f);
 		return;
 	}
@@ -56,13 +56,13 @@ void PlayerDashState::Begin(PlayerStateContext& context, const CharacterInput& i
 	m_isLeftKick = !m_isLeftKick;
 }
 
-void PlayerDashState::PlayKick(PlayerStateContext& context, float blendSeconds)
+void PlayerDashState::PlayKick(PlayerStateContext& context, float blendSeconds, float startTime)
 {
 	// 一蹴りのアニメーションを1回流す（ループしないので、終わると宙へ飛び出したポーズで止まる）。
 	// 蹴る足を毎回入れ替えるので、連打しても別のクリップへの切り替えになり、最初から流れる。
 	// 連打すると、飛び出したポーズから次の蹴りの着地へ dashAnimBlendSeconds で移り、左右交互に蹴って進む。
 	const int clip = m_isLeftKick ? enPlayerAnimClip_DashL : enPlayerAnimClip_DashR;
-	context.modelRender->PlayAnimation(clip, blendSeconds);
+	context.modelRender->PlayAnimationFromTime(clip, blendSeconds, startTime);
 	context.modelRender->SetAnimationSpeed(context.settings.dashAnimSpeed);
 }
 
@@ -87,14 +87,16 @@ void PlayerDashState::Update(PlayerStateContext& context, const CharacterInput& 
 	if (IsKickFinished() && m_isNextDashQueued) {
 		m_isNextDashQueued = false;
 		Begin(context, input);
-		PlayKick(context, context.settings.dashAnimBlendSeconds);
+		// 一蹴りはしゃがんだポーズから始まるので、宙からは脚が伸びたところから流す。
+		PlayKick(context, context.settings.dashAnimBlendSeconds, context.settings.dashChainKickStartTime);
 	}
 
 	const PlayerStateSettings& s = context.settings;
 	Vector3 velocity = Vector3::Zero;
 	if (IsCrouching()) {
-		// しゃがみ込む間は、ゆっくり前へ進む。しゃがみ終わったら、脚を伸ばしながら蹴り出す。
-		velocity = m_direction * s.dashCrouchSpeed;
+		// しゃがみ込む間は、だんだん遅くなって止まる（踏ん張る）。しゃがみ終わったら、脚を伸ばしながら一気に蹴り出す。
+		const float rate = s.dashCrouchSeconds > 0.0f ? m_crouchRemaining / s.dashCrouchSeconds : 0.0f;
+		velocity = m_direction * (s.dashCrouchSpeed * rate);
 		m_crouchRemaining -= deltaTime;
 		if (!IsCrouching()) {
 			m_crouchRemaining = 0.0f;
