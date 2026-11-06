@@ -45,6 +45,7 @@ struct PlayerStateSettings
 	float dashKickBlendSeconds = 0.03f; // しゃがんだポーズから一蹴りへ移るときの補間時間。一蹴りはしゃがんだポーズから始まるので短くてよい。
 	float dashChainKickStartTime = 0.0f; // 連打で続けて蹴るとき、一蹴りをどこから流すか（秒）。しゃがんだところを飛ばす。
 	float dashLandSeconds = 0.0f;     // 着地の長さ（秒）。0なら着地せず、すぐ次の動きへ移る。
+	float dashLandAnimSpeed = 1.0f;   // 着地のアニメーションの再生速度（倍）。dashLandSeconds で流し終わるよう合わせる。
 	float dashLandBlendSeconds = 0.08f; // 飛び出したポーズから着地へ移るときの補間時間。
 	float dashAnimSpeed = 1.0f;       // 一蹴りのアニメーション（0.3秒）の再生速度（倍）。距離÷速さの時間で流し終わるよう合わせる。
 	float dashAnimBlendSeconds = 0.05f; // ダッシュに入るときのアニメーションの補間時間。短いほど一気に前へ出る。

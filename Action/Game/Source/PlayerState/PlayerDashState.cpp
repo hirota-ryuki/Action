@@ -137,7 +137,7 @@ void PlayerDashState::BeginLanding(PlayerStateContext& context)
 	// 蹴った足と反対の足（前に出している足）で、膝を曲げて着地する。
 	const int clip = m_isLeftKick ? enPlayerAnimClip_DashLandL : enPlayerAnimClip_DashLandR;
 	context.modelRender->PlayAnimation(clip, context.settings.dashLandBlendSeconds);
-	context.modelRender->SetAnimationSpeed(1.0f);
+	context.modelRender->SetAnimationSpeed(context.settings.dashLandAnimSpeed);
 }
 
 void PlayerDashState::Exit(PlayerStateContext& context)
