@@ -68,7 +68,9 @@ namespace
 		desc.scale = 1.128f;
 		// Idle・Walk は Mixamo のモーションを UE で SK_Player にリターゲットしたもの。
 		// Jump はまだ SK_Player 用が無いので、暫定で run を入れておく。
-		const AnimClipDesc run = { "Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx", true };
+		// Run は ThirdPersonRunPlayer_Run の骨盤を 15° 起こしたもの（tools/UnrealScripts/run_pelvis.json）。
+		// 元のままだと骨盤が前へ倒れすぎて、お尻が上がって見える。上半身と脚の向きは元のまま。
+		const AnimClipDesc run = { "Assets/modelData/player/Animation/Run.fbx", true };
 		desc.clips.resize(enPlayerAnimClip_Num);
 		desc.clips[enPlayerAnimClip_Idle] = { "Assets/modelData/player/Animation/Idle.fbx", true };
 		desc.clips[enPlayerAnimClip_Walk] = { "Assets/modelData/player/Animation/Walk.fbx", true };

@@ -694,7 +694,14 @@ def log_frames(anim, label):
     for f in range(num_keys):
         pose = P.get_anim_pose_at_frame(anim, f, opts)
         hips = P.get_bone_pose(pose, HIPS, W).translation
-        row = "%s f%02d hips z=%.1f" % (label, f, hips.z)
+
+        def seg(a_, b_):
+            d = P.get_bone_pose(pose, b_, W).translation - P.get_bone_pose(pose, a_, W).translation
+            return math.degrees(math.atan2(d.z, d.dot(fwd)))
+        # 骨盤の向き（腰 → 背骨の付け根）と、背骨（付け根 → 首）の向き。差が大きいほど骨盤が前へ傾き、お尻が上がる。
+        pelvis = seg(HIPS, "J_Bip_C_Spine")
+        spine = seg("J_Bip_C_Spine", "J_Bip_C_Neck")
+        row = "%s f%02d hips z=%.1f pelvis=%.0f spine=%.0f tilt=%.0f" % (label, f, hips.z, pelvis, spine, wrap180(spine - pelvis))
         for s in "LR":
             th = segment_angle(pose, "J_Bip_%s_UpperLeg" % s, fwd)
             sh = segment_angle(pose, "J_Bip_%s_LowerLeg" % s, fwd)
