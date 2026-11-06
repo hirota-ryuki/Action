@@ -35,8 +35,10 @@ namespace
 		settings.dashEndSpeed = 480.0f;  // 終わりは走る速さ。蹴った瞬間は 1520 になる。
 		settings.dashAnimSpeed = 1.0f;   // 0.3秒の一蹴りを、ダッシュの0.3秒でそのまま流す（速く流すとバタバタして見える）。
 		settings.dashAnimBlendSeconds = 0.05f;
-		settings.dashCrouchSeconds = 8.0f / 30.0f; // しゃがみ込むクリップ（沈む4コマ＋底で踏ん張る4コマ）の長さ。
-		settings.dashCrouchBlendSeconds = 0.12f;
+		// しゃがみ込むクリップ（沈む4コマ＋底で踏ん張る4コマ、0.27秒）を2.5倍で流し、一瞬（約0.1秒）で溜めて飛び出す。
+		settings.dashCrouchAnimSpeed = 2.5f;
+		settings.dashCrouchSeconds = 8.0f / 30.0f / 2.5f;
+		settings.dashCrouchBlendSeconds = 0.05f;
 		settings.dashCrouchSpeed = 200.0f;     // 入った勢いで少し進み、踏ん張って止まってから飛び出す。
 		settings.dashKickBlendSeconds = 0.03f;
 		settings.dashChainKickStartTime = 2.0f / 30.0f; // 一蹴りの f02 から（脚が伸び切ったところ）。

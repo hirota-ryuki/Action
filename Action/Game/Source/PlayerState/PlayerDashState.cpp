@@ -30,7 +30,7 @@ void PlayerDashState::Enter(PlayerStateContext& context, const CharacterInput& i
 		m_crouchRemaining = s.dashCrouchSeconds;
 		const int clip = m_isLeftKick ? enPlayerAnimClip_DashCrouchL : enPlayerAnimClip_DashCrouchR;
 		context.modelRender->PlayAnimation(clip, s.dashCrouchBlendSeconds);
-		context.modelRender->SetAnimationSpeed(1.0f);
+		context.modelRender->SetAnimationSpeed(s.dashCrouchAnimSpeed);
 		return;
 	}
 	PlayKick(context, s.dashAnimBlendSeconds);

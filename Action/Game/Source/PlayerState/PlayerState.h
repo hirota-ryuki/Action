@@ -39,6 +39,7 @@ struct PlayerStateSettings
 	float dashSpeed = 1000.0f;        // ダッシュの平均の速さ。蹴った瞬間がいちばん速く、だんだん dashEndSpeed まで遅くなる。
 	float dashEndSpeed = 0.0f;        // ダッシュの終わりの速さ。着地の間もこの速さで進む（走りへ勢いをつなぐ）。dashSpeed 以下。
 	float dashCrouchSeconds = 0.0f;   // 蹴る前にしゃがみ込む長さ（秒）。0ならしゃがまずにすぐ蹴る。地面にいるときの最初の1回だけ。
+	float dashCrouchAnimSpeed = 1.0f; // しゃがみ込みのアニメーションの再生速度（倍）。dashCrouchSeconds で流し終わるよう合わせる。
 	float dashCrouchBlendSeconds = 0.12f; // しゃがみ込みに入るときの補間時間。長いほどなめらかに沈む。
 	float dashCrouchSpeed = 0.0f;     // しゃがみ込み始めの進む速さ。しゃがみ終わりで0になる（踏ん張って止まる）。
 	float dashKickBlendSeconds = 0.03f; // しゃがんだポーズから一蹴りへ移るときの補間時間。一蹴りはしゃがんだポーズから始まるので短くてよい。
