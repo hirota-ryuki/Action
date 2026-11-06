@@ -95,12 +95,12 @@
    "pose_to": {
     "ramp_start": 0,
     "ramp_end": 3,
-    "ground_toe_cm": 15.0,
+    "ground_toe_cm": 25.0,
     "angle_deg": {
      "J_Bip_L_UpperLeg": -143.0,
      "J_Bip_L_LowerLeg": -147.0,
-     "J_Bip_R_UpperLeg": -35.0,
-     "J_Bip_R_LowerLeg": -105.0,
+     "J_Bip_R_UpperLeg": -10.0,
+     "J_Bip_R_LowerLeg": -100.0,
      "J_Bip_L_UpperArm": -55.0,
      "J_Bip_L_LowerArm": 30.0,
      "J_Bip_R_UpperArm": 175.0,
@@ -138,12 +138,12 @@
    "pose_to": {
     "ramp_start": 0,
     "ramp_end": 3,
-    "ground_toe_cm": 15.0,
+    "ground_toe_cm": 25.0,
     "angle_deg": {
      "J_Bip_R_UpperLeg": -143.0,
      "J_Bip_R_LowerLeg": -147.0,
-     "J_Bip_L_UpperLeg": -35.0,
-     "J_Bip_L_LowerLeg": -105.0,
+     "J_Bip_L_UpperLeg": -10.0,
+     "J_Bip_L_LowerLeg": -100.0,
      "J_Bip_R_UpperArm": -55.0,
      "J_Bip_R_LowerArm": 30.0,
      "J_Bip_L_UpperArm": 175.0,
