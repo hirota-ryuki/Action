@@ -31,16 +31,19 @@ namespace
 	{
 		PlayerStateSettings settings;
 		settings.dashDistance = 300.0f;  // ダッシュスキルの総移動距離。
-		settings.dashSpeed = 1000.0f;    // ダッシュの平均の速さ（走りの約2倍）。300 を 0.3秒で進む。蹴った瞬間はこの2倍。
+		settings.dashSpeed = 1000.0f;    // ダッシュの平均の速さ（走りの約2倍）。300 を 0.3秒で進む。
+		settings.dashEndSpeed = 480.0f;  // 終わりは走る速さ。蹴った瞬間は 1520 になる。
 		settings.dashAnimSpeed = 1.0f;   // 0.3秒の一蹴りを、ダッシュの0.3秒でそのまま流す（速く流すとバタバタして見える）。
 		settings.dashAnimBlendSeconds = 0.05f;
-		settings.dashExitBlendSeconds = 0.5f;  // ダッシュのあと、走りへゆっくり移ってポーズを残す。
-		// ダッシュのあとの走り・歩きの始め。Run（30fps・19コマ）と Walk（30fps・36コマ）で足の位置を測って決めた。
-		// 左足で蹴ったあと（右足が前・宙）: Run f04、Walk f22。右足で蹴ったあと（左足が前・宙）: Run f13、Walk f04。
-		settings.dashLToRunStartTime = 4.0f / 30.0f;
-		settings.dashRToRunStartTime = 13.0f / 30.0f;
-		settings.dashLToWalkStartTime = 22.0f / 30.0f;
-		settings.dashRToWalkStartTime = 4.0f / 30.0f;
+		settings.dashLandSeconds = 0.2f;       // 着地のクリップ（7コマ）の長さ。前の足の膝を曲げて受け止める。
+		settings.dashLandBlendSeconds = 0.08f;
+		settings.dashExitBlendSeconds = 0.25f; // 着地から走りへ。足の位置は合わせてあるので、ふつうより少し長めで足りる。
+		// 着地のあとの走り・歩きの始め。Run（30fps・19コマ）と Walk（30fps・36コマ）で足の位置を測って決めた。
+		// 着地の最後と同じ形のところ。左足で蹴ったあと: Run f10、Walk f00。右足で蹴ったあと: Run f01、Walk f17。
+		settings.dashLToRunStartTime = 10.0f / 30.0f;
+		settings.dashRToRunStartTime = 1.0f / 30.0f;
+		settings.dashLToWalkStartTime = 0.0f;
+		settings.dashRToWalkStartTime = 17.0f / 30.0f;
 		settings.moveThreshold = 0.1f;   // 移動入力がこれより小さければ立ち止まる。
 		settings.animBlendSeconds = 0.2f;
 		// Walk.fbx（Mixamo の Female Walk）の足が地面を送る速さ。UE で足のボーンを測った 115/秒 × モデルの大きさ 1.128。
@@ -68,6 +71,9 @@ namespace
 		// tools/UnrealScripts/dash_lean.json で作る。ループしないので、終わると飛び出したポーズ（後ろ足を伸ばし、片腕を前へ）で止まる。
 		desc.clips[enPlayerAnimClip_DashL] = { "Assets/modelData/player/Animation/DashL.fbx", false };
 		desc.clips[enPlayerAnimClip_DashR] = { "Assets/modelData/player/Animation/DashR.fbx", false };
+		// 着地。Run を少し前へ倒し、前の足が着地して踏むまでの7コマで、腰を落として膝を曲げたもの。
+		desc.clips[enPlayerAnimClip_DashLandL] = { "Assets/modelData/player/Animation/DashLandL.fbx", false };
+		desc.clips[enPlayerAnimClip_DashLandR] = { "Assets/modelData/player/Animation/DashLandR.fbx", false };
 		return desc;
 	}
 

@@ -25,6 +25,8 @@ enum EnPlayerAnimClip
 	enPlayerAnimClip_Jump,
 	enPlayerAnimClip_DashL,  // ダッシュの一蹴り（左足で蹴る）
 	enPlayerAnimClip_DashR,  // ダッシュの一蹴り（右足で蹴る）
+	enPlayerAnimClip_DashLandL,  // 左足で蹴ったあとの着地（右足で、膝を曲げて受け止める）
+	enPlayerAnimClip_DashLandR,  // 右足で蹴ったあとの着地（左足で受け止める）
 	enPlayerAnimClip_Num,
 };
 
@@ -32,14 +34,17 @@ enum EnPlayerAnimClip
 struct PlayerStateSettings
 {
 	float dashDistance = 300.0f;      // ダッシュの総移動距離。0ならダッシュできない。
-	float dashSpeed = 1000.0f;        // ダッシュの平均の速さ。蹴った瞬間はこの2倍で、だんだん遅くなる。
+	float dashSpeed = 1000.0f;        // ダッシュの平均の速さ。蹴った瞬間がいちばん速く、だんだん dashEndSpeed まで遅くなる。
+	float dashEndSpeed = 0.0f;        // ダッシュの終わりの速さ。着地の間もこの速さで進む（走りへ勢いをつなぐ）。dashSpeed 以下。
+	float dashLandSeconds = 0.0f;     // 着地の長さ（秒）。0なら着地せず、すぐ次の動きへ移る。
+	float dashLandBlendSeconds = 0.08f; // 飛び出したポーズから着地へ移るときの補間時間。
 	float dashAnimSpeed = 1.0f;       // 一蹴りのアニメーション（0.3秒）の再生速度（倍）。距離÷速さの時間で流し終わるよう合わせる。
 	float dashAnimBlendSeconds = 0.05f; // ダッシュに入るときのアニメーションの補間時間。短いほど一気に前へ出る。
 	float dashExitBlendSeconds = 0.5f;  // ダッシュから次の動きへ移るときの補間時間。長いほど飛び出したポーズが残る。
-	// ダッシュのあと、走り・歩きをどこから始めるか（秒）。ダッシュの最後と前後の足が同じで、前の足がまだ宙にあるところ。
+	// ダッシュ（着地まで）のあと、走り・歩きをどこから始めるか（秒）。着地の最後と前後の足が同じところ。
 	// 最初から始めると前後の足が逆で、補間の間に足が入れ替わってつまずいたように見える。
-	float dashLToRunStartTime = 0.0f;   // 左足で蹴ったあと（右足が前）。
-	float dashRToRunStartTime = 0.0f;   // 右足で蹴ったあと（左足が前）。
+	float dashLToRunStartTime = 0.0f;   // 左足で蹴ったあと（右足で着地）。
+	float dashRToRunStartTime = 0.0f;   // 右足で蹴ったあと（左足で着地）。
 	float dashLToWalkStartTime = 0.0f;
 	float dashRToWalkStartTime = 0.0f;
 	float moveThreshold = 0.1f;       // 移動入力の長さがこれより小さければ立ち止まっているとみなす。

@@ -502,6 +502,114 @@ def pose_to(anim, cfg):
     log("pose_to lift", lift, "lowest toe at end(cm)", round(toe, 1))
 
 
+def crouch(anim, cfg):
+    """足の位置を動かさずに腰を落とす（膝を曲げて着地を受け止める形にする）。
+    cfg = {"lower_cm": 12, "weights": [0.6, 0.8, 1, 1, 0.7, 0.3, 0]}
+    weights はコマごとの割合（コマ数と同じ長さ）。腰を lower_cm × 割合だけ下げ、
+    両足とも、足首（Foot）の位置が元と同じになるよう、太ももとすねの向きを2本の骨の IK で決める。
+    膝は前へ曲げる。向きは左右の軸まわりの回転だけで合わせるので、測り直して3回くり返す。"""
+    P = unreal.AnimPoseExtensions
+    W = unreal.AnimPoseSpaces.WORLD
+    L = unreal.AnimPoseSpaces.LOCAL
+    opts = eval_options()
+    num_keys = unreal.AnimationLibrary.get_num_frames(anim) + 1
+    axis = side_axis(P.get_reference_pose(anim.get_editor_property("skeleton")))
+    fwd = unreal.Vector(0.0, 0.0, 1.0).cross(axis) * -1.0
+    lower = cfg.get("lower_cm", 0.0)
+    weights = cfg["weights"]
+    if len(weights) != num_keys:
+        raise RuntimeError("crouch weights must have %d values" % num_keys)
+
+    legs = []
+    for side in "LR":
+        legs.append(("J_Bip_%s_UpperLeg" % side, "J_Bip_%s_LowerLeg" % side, "J_Bip_%s_Foot" % side))
+    # 足（Foot）は、太もも・すねを回した分を逆に回して、地面に対する向きを元のままにする（つま先がめり込まないように）。
+    bones = [HIPS] + [b for leg in legs for b in leg]
+
+    def planar(v):
+        return (v.dot(fwd), v.z)
+
+    orig = {b: {"pos": [], "rot": [], "scl": [], "axis": [], "parent": []} for b in bones}
+    goals = []  # コマごと、足ごとの太もも・すねの向きの目標（度）。
+    for f in range(num_keys):
+        pose = P.get_anim_pose_at_frame(anim, f, opts)
+        for b in bones:
+            local = P.get_bone_pose(pose, b, L)
+            world = P.get_bone_pose(pose, b, W)
+            parent_rot = q_mul(world.rotation, q_inv(local.rotation))
+            o = orig[b]
+            o["pos"].append(local.translation)
+            o["rot"].append(local.rotation)
+            o["scl"].append(local.scale3d)
+            o["axis"].append(q_rotate(q_inv(parent_rot), axis))
+            o["parent"].append(parent_rot)
+        g = {}
+        for thigh, shin, foot in legs:
+            hf, hz = planar(P.get_bone_pose(pose, thigh, W).translation)
+            kf, kz = planar(P.get_bone_pose(pose, shin, W).translation)
+            af, az = planar(P.get_bone_pose(pose, foot, W).translation)
+            l1 = math.hypot(kf - hf, kz - hz)
+            l2 = math.hypot(af - kf, az - kz)
+            hz -= lower * weights[f]
+            df, dz = af - hf, az - hz
+            dist = min(math.hypot(df, dz), (l1 + l2) * 0.999)
+            dist = max(dist, abs(l1 - l2) + 0.01)
+            cos_a = (l1 * l1 + dist * dist - l2 * l2) / (2.0 * l1 * dist)
+            alpha = math.degrees(math.acos(max(-1.0, min(1.0, cos_a))))
+            thigh_deg = math.degrees(math.atan2(dz, df)) + alpha  # 膝を前へ出す側
+            nkf = hf + l1 * math.cos(math.radians(thigh_deg))
+            nkz = hz + l1 * math.sin(math.radians(thigh_deg))
+            g[thigh] = thigh_deg
+            g[shin] = math.degrees(math.atan2(az - nkz, af - nkf))
+        goals.append(g)
+
+    pitch = {b: [0.0] * num_keys for b in bones}
+
+    def write():
+        c = get_controller(anim)
+        c.open_bracket(unreal.Text("crouch"), False)
+        for b in bones:
+            o = orig[b]
+            rots, poss = [], []
+            for f in range(num_keys):
+                half = math.radians(pitch[b][f]) * 0.5
+                sn = math.sin(half)
+                a = o["axis"][f]
+                rots.append(q_mul(unreal.Quat(a.x * sn, a.y * sn, a.z * sn, math.cos(half)), o["rot"][f]))
+                p = o["pos"][f]
+                if b == HIPS:
+                    p = p + q_rotate(q_inv(o["parent"][f]), unreal.Vector(0.0, 0.0, -lower * weights[f]))
+                poss.append(p)
+            c.set_bone_track_keys(b, poss, rots, o["scl"], False)
+        c.close_bracket(False)
+
+    write()  # 先に腰だけ下げる（向きは、下げたあとの角度との差で合わせる）。
+    for it in range(3):
+        for f in range(num_keys):
+            if weights[f] <= 0.0:
+                continue
+            pose = P.get_anim_pose_at_frame(anim, f, opts)
+            for thigh, shin, foot in legs:
+                d_thigh = -wrap180(goals[f][thigh] - segment_angle(pose, thigh, fwd))
+                d_shin = -wrap180(goals[f][shin] - segment_angle(pose, shin, fwd)) - d_thigh
+                pitch[thigh][f] += d_thigh
+                pitch[shin][f] += d_shin
+                pitch[foot][f] = -(pitch[thigh][f] + pitch[shin][f])
+        write()
+    unreal.EditorAssetLibrary.save_loaded_asset(anim)
+
+    # 確かめ: 膝の曲がり（太もも − すね）と、つま先の高さ。
+    for f in range(num_keys):
+        pose = P.get_anim_pose_at_frame(anim, f, opts)
+        row = "crouch f%02d w=%.2f" % (f, weights[f])
+        for thigh, shin, foot in legs:
+            bend = wrap180(segment_angle(pose, thigh, fwd) - segment_angle(pose, shin, fwd))
+            toe = P.get_bone_pose(pose, foot.replace("Foot", "ToeBase"), W).translation.z
+            row += "  %s knee=%.0f toe=%.1f" % (thigh[6], bend, toe)
+        row += "  hips=%.1f" % P.get_bone_pose(pose, HIPS, W).translation.z
+        log(row)
+
+
 def main():
     cfg_path = sys.argv[-1]
     cfg = json.load(open(cfg_path, encoding="utf-8"))
@@ -523,10 +631,14 @@ def main():
             name = os.path.splitext(os.path.basename(clip["out"]))[0]
             anim = import_fbx(path(clip["in"]), work + "/Anim", "A_" + name, skeleton)
             log("clip", name, "len", anim.get_play_length())
-            adjust(anim, cfg["pitch_deg"], cfg.get("swing_scale", {}), cfg.get("keep_feet_on_ground", False))
+            # pitch_deg・swing_scale・keep_feet_on_ground は、クリップごとに上書きできる。
+            adjust(anim, clip.get("pitch_deg", cfg["pitch_deg"]), clip.get("swing_scale", cfg.get("swing_scale", {})),
+                   clip.get("keep_feet_on_ground", cfg.get("keep_feet_on_ground", False)))
             frames = clip.get("frames")
             if frames:
                 trim(anim, frames["start"], frames["count"])
+            if clip.get("crouch"):
+                crouch(anim, clip["crouch"])
             if clip.get("pose_to"):
                 pose_to(anim, clip["pose_to"])
             export_fbx(anim, path(clip["out"]))

@@ -17,7 +17,21 @@
        "J_Bip_R_UpperLeg": -172.0, "J_Bip_R_LowerLeg": -178.0,
        "J_Bip_L_UpperLeg": -25.0, "J_Bip_L_LowerLeg": -105.0,
        "J_Bip_R_UpperArm": -60.0, "J_Bip_R_LowerArm": -20.0,
-       "J_Bip_L_UpperArm": 150.0, "J_Bip_L_LowerArm": 175.0}}}
+       "J_Bip_L_UpperArm": 150.0, "J_Bip_L_LowerArm": 175.0}}},
+    {"in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
+     "out": "../../Game/Assets/modelData/player/Animation/DashLandL.fbx",
+     "frames": {"start": 4, "count": 7},
+     "pitch_deg": {"J_Bip_C_Hips": 14.0, "J_Bip_C_Spine": 3.0, "J_Bip_C_Chest": 3.0, "J_Bip_C_UpperChest": 2.0,
+                   "J_Bip_C_Neck": -8.0, "J_Bip_C_Head": -6.0},
+     "swing_scale": {},
+     "crouch": {"lower_cm": 12.0, "weights": [0.4, 0.7, 0.95, 1.0, 0.75, 0.4, 0.1]}},
+    {"in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
+     "out": "../../Game/Assets/modelData/player/Animation/DashLandR.fbx",
+     "frames": {"start": 13, "count": 7},
+     "pitch_deg": {"J_Bip_C_Hips": 14.0, "J_Bip_C_Spine": 3.0, "J_Bip_C_Chest": 3.0, "J_Bip_C_UpperChest": 2.0,
+                   "J_Bip_C_Neck": -8.0, "J_Bip_C_Head": -6.0},
+     "swing_scale": {},
+     "crouch": {"lower_cm": 12.0, "weights": [0.4, 0.7, 0.95, 1.0, 0.75, 0.4, 0.1]}}
   ],
   "pitch_deg": {
     "J_Bip_C_Hips": 32.0,
