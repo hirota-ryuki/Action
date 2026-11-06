@@ -22,6 +22,7 @@ namespace
 		NpcInputSource::Settings settings;
 		settings.searchRange = 900.0f;   // この距離以内に入ると追跡を開始する。
 		settings.stopDistance = 90.0f;   // この距離まで近づいたら停止する（近づきすぎ防止）。
+		settings.moveRate = 0.0f;        // 今は動かさない（その場で向きを変えて撃つだけ）。追わせるときは 1 に戻す。
 		settings.canFire = true;
 		settings.fireRange = 700.0f;
 		settings.fireInterval = 4.0f;    // 凍結(2.5秒)より長くして、凍らされ続けないようにする。
