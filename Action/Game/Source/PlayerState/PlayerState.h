@@ -57,6 +57,9 @@ struct PlayerStateSettings
 	float stopSlideSeconds = 0.0f;      // 勢いで滑る長さ（秒）。走る速さからだんだん遅くなって0になる。
 	float stopBlendSeconds = 0.1f;      // 走りから止まるクリップへの補間時間。
 	float stopExitBlendSeconds = 0.3f;  // 止まるクリップから次の動きへの補間時間。
+	// 走りから歩きに移ってこの時間（秒）のうちに移動の入力を離しても、止まる動きにする。
+	// 走るボタンを移動キーより少し先に離したとき（ほぼ同時に離したとき）にも滑って止まるように。
+	float stopAfterRunSeconds = 0.0f;
 	// どちらの足で踏ん張るかは、止まった瞬間の走りの位置で決める。走りの中で、その足がちょうど前に着くところ（秒）。
 	float runAnimSeconds = 0.0f;        // 走りのクリップの1周期の長さ（秒）。
 	float stopLRunTime = 0.0f;          // 左足が前に着くところ。ここに近ければ StopL。
@@ -78,6 +81,8 @@ struct PlayerStateContext
 	mutable float nextBlendSeconds = -1.0f;
 	// 次の PlayAnimation で、クリップごとに再生を始める位置（秒）。0より小さければ最初から。使ったら全部消す。
 	mutable float nextStartTimes[enPlayerAnimClip_Num] = {};
+	// ひとつ前のステート。Enter の中で、どこから来たかを見るのに使う。PlayerStateMachine が入れる。
+	PlayerStateId previousId = PlayerStateId::Idle;
 	// 走りのアニメーションの今の位置（秒、ループ前の通算）。Run が毎フレーム書き、Stop が踏ん張る足を決めるのに使う。
 	float runAnimTime = 0.0f;
 

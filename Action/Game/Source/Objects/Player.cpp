@@ -55,6 +55,7 @@ namespace
 		settings.stopSlideSeconds = 14.0f / 30.0f; // 走る速さ（480）から 0.47秒で止まる。約112 滑る。
 		settings.stopBlendSeconds = 0.1f;
 		settings.stopExitBlendSeconds = 0.3f;
+		settings.stopAfterRunSeconds = 0.2f;       // 左Shift を移動キーより 0.2秒まで先に離しても滑って止まる。
 		// Run（15コマ、最後は最初と同じ）で、前の足が地面に着くところ。右足 f02、左足 f09。
 		settings.runAnimSeconds = 14.0f / 30.0f;
 		settings.stopLRunTime = 9.0f / 30.0f;
@@ -97,7 +98,7 @@ namespace
 	MagicCaster::Settings MakeCasterSettings()
 	{
 		MagicCaster::Settings settings;
-		settings.castHeight = 70.0f;   // 三人称時、足元からこの高さで撃つ（胸のあたり）。
+		settings.castHeight = 140.0f;   // 三人称時、足元からこの高さで撃つ（胸のあたり）。
 		settings.castForward = 60.0f;  // 自分のカプセル(半径20)に当たらないよう前に出して撃つ。
 		return settings;
 	}

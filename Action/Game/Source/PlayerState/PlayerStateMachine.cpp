@@ -55,6 +55,7 @@ void PlayerStateMachine::ChangeState(PlayerStateId next, const CharacterInput& i
 {
 	if (m_current != nullptr) {
 		m_current->Exit(m_context);
+		m_context.previousId = m_current->GetId();
 	}
 	m_current = m_states[static_cast<int>(next)].get();
 	m_current->Enter(m_context, input);
