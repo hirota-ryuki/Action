@@ -11,8 +11,10 @@
 # 使い方:
 #   -Mode notify : 通知を送る（フックから呼ぶ）
 #   -Mode topic  : トピック名を表示する（スマホで購読するときに手で実行）
+#   -Topic <名前> : 送り先のトピックを変える。動作確認はこれで使い捨てのトピックへ送り、
+#                   作業の途中でユーザーのスマホに通知が届かないようにする。
 
-param([ValidateSet('notify', 'topic')][string]$Mode = 'notify')
+param([ValidateSet('notify', 'topic')][string]$Mode = 'notify', [string]$Topic = '')
 
 $ErrorActionPreference = 'Continue'
 
@@ -61,7 +63,7 @@ function Get-Topic {
     return $t
 }
 
-$topic = Get-Topic
+$topic = if ($Topic) { $Topic } else { Get-Topic }
 
 if ($Mode -eq 'topic') {
     Write-Output $topic
@@ -112,7 +114,9 @@ function Get-Headline([string]$reply) {
 
 $body = Get-Headline (Get-LastReply)
 if (-not $body) { $body = 'Claude の返答が終わりました' }
-$title = "Action（$env:COMPUTERNAME）"
+# どのフォルダー（Action / Action-try など）の Claude が終わったか分かるように、題名にフォルダー名を入れる。
+$folder = if ($env:CLAUDE_PROJECT_DIR) { Split-Path $env:CLAUDE_PROJECT_DIR -Leaf } else { 'Action' }
+$title = "$folder（$env:COMPUTERNAME）"
 # ヘッダーには日本語をそのまま入れられないので、RFC 2047 の形にする（ntfy が対応している）。
 $titleEnc = '=?UTF-8?B?' + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($title)) + '?='
 try {
