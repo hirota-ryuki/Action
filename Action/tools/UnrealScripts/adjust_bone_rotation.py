@@ -12,11 +12,16 @@ config.json（ファイルのパスは、絶対パスか config.json からの�
   "work_dir": "/Game/05_Adjust",                         # 作る資産の置き場
   "mesh_fbx": "../../Game/Assets/modelData/player/Model/SK_Player.FBX",  # 骨格の元（メッシュ付きの FBX）
   "clips": [
-    {"in": "Idle.fbx", "out": "Idle.fbx"}                # in と out は同じでもよい
+    {"in": "Idle.fbx", "out": "Idle.fbx"},               # in と out は同じでもよい
+    {"in": "Run.fbx", "out": "Kick.fbx",                 # frames: 省略可。start から count コマだけを切り出す。
+     "frames": {"start": 10, "count": 10}}               #   ループのクリップなら、最後のコマを越えると先頭へ戻る
   ],
   "pitch_deg": {                                         # 正 = 前に倒す、負 = 後ろに起こす（度）
     "J_Bip_C_Spine": 3.0,
     "J_Bip_C_Head": -3.0
+  },
+  "swing_scale": {                                       # 省略可。ボーンの振り幅を、平均の向きを中心に何倍にするか
+    "J_Bip_L_UpperLeg": 1.3
   },
   "log": "C:/.../result.txt"                             # 省略すると %TEMP%/adjust_bone_rotation.txt
 }
@@ -25,6 +30,7 @@ config.json（ファイルのパスは、絶対パスか config.json からの�
 
 角度は「キャラクターの左右の軸」まわりで、全フレームに同じだけ足す（リターゲットポーズを直すのと同じ）。
 左右の軸は、0フレーム目のつま先とかかとの位置からキャラクターの前を求めて決める。
+振り幅（swing_scale）は角度を足す前に、元のローカルの回転に対してかける。
 """
 import json
 import math
@@ -156,7 +162,44 @@ def side_axis(pose):
     return axis
 
 
-def adjust(anim, pitch_deg):
+def q_dot(a, b):
+    return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w
+
+
+def q_normalize(q):
+    n = math.sqrt(q_dot(q, q))
+    return unreal.Quat(q.x / n, q.y / n, q.z / n, q.w / n)
+
+
+def q_mean(quats):
+    """回転の平均（向きをそろえて足し、正規化する）。回転の差が小さいときの近似。"""
+    ref = quats[0]
+    x = y = z = w = 0.0
+    for q in quats:
+        sign = 1.0 if q_dot(q, ref) >= 0.0 else -1.0
+        x += q.x * sign
+        y += q.y * sign
+        z += q.z * sign
+        w += q.w * sign
+    return q_normalize(unreal.Quat(x, y, z, w))
+
+
+def q_scale_from(q, center, k):
+    """center から q への回転を k 倍にした回転を返す（振り幅を k 倍にする）。"""
+    d = q_mul(q, q_inv(center))
+    if d.w < 0.0:
+        d = unreal.Quat(-d.x, -d.y, -d.z, -d.w)
+    angle = 2.0 * math.acos(max(-1.0, min(1.0, d.w)))
+    s = math.sin(angle * 0.5)
+    if s < 1e-6:
+        return q
+    ax, ay, az = d.x / s, d.y / s, d.z / s
+    half = angle * k * 0.5
+    sk = math.sin(half)
+    return q_mul(unreal.Quat(ax * sk, ay * sk, az * sk, math.cos(half)), center)
+
+
+def adjust(anim, pitch_deg, swing_scale):
     P = unreal.AnimPoseExtensions
     W = unreal.AnimPoseSpaces.WORLD
     L = unreal.AnimPoseSpaces.LOCAL
@@ -167,31 +210,46 @@ def adjust(anim, pitch_deg):
     axis = side_axis(P.get_reference_pose(anim.get_editor_property("skeleton")))
 
     # 先に全フレームの元の値を読む（書き換えると、あとのフレームの評価が変わるため）。
+    bones = list(dict.fromkeys(list(swing_scale) + list(pitch_deg)))
     tracks = {}
-    for bone in pitch_deg:
-        tracks[bone] = {"pos": [], "rot": [], "scl": []}
+    for bone in bones:
+        tracks[bone] = {"pos": [], "rot": [], "scl": [], "axis": []}
     for f in range(num_keys):
         pose = P.get_anim_pose_at_frame(anim, f, opts)
-        for bone, deg in pitch_deg.items():
+        for bone in bones:
             t = tracks[bone]
             local = P.get_bone_pose(pose, bone, L)
             world = P.get_bone_pose(pose, bone, W)
             # 親のワールドの向き = 自分のワールドの向き × ローカルの向きの逆。
             parent_rot = q_mul(world.rotation, q_inv(local.rotation))
-            # ワールドの左右の軸を、親の向きで見た軸に直してから、ローカルの回転の前に掛ける。
-            axis_in_parent = q_rotate(q_inv(parent_rot), axis)
-            half = math.radians(deg) * 0.5
-            s = math.sin(half)
-            q = unreal.Quat(axis_in_parent.x * s, axis_in_parent.y * s, axis_in_parent.z * s, math.cos(half))
+            # ワールドの左右の軸を、親の向きで見た軸に直しておく（角度を足すときに使う）。
+            t["axis"].append(q_rotate(q_inv(parent_rot), axis))
             t["pos"].append(local.translation)
-            t["rot"].append(q_mul(q, local.rotation))
+            t["rot"].append(local.rotation)
             t["scl"].append(local.scale3d)
+
+    # 振り幅を変える（平均の向きを中心に k 倍）。
+    for bone, k in swing_scale.items():
+        t = tracks[bone]
+        center = q_mean(t["rot"])
+        t["rot"] = [q_scale_from(q, center, k) for q in t["rot"]]
+
+    # 左右の軸まわりの回転を、ローカルの回転の前に掛ける。
+    for bone, deg in pitch_deg.items():
+        t = tracks[bone]
+        half = math.radians(deg) * 0.5
+        s = math.sin(half)
+        rots = []
+        for a, r in zip(t["axis"], t["rot"]):
+            q = unreal.Quat(a.x * s, a.y * s, a.z * s, math.cos(half))
+            rots.append(q_mul(q, r))
+        t["rot"] = rots
 
     c = get_controller(anim)
     c.open_bracket(unreal.Text("adjust"), False)
     for bone, t in tracks.items():
         ok = c.set_bone_track_keys(bone, t["pos"], t["rot"], t["scl"], False)
-        log("set", bone, "deg", pitch_deg[bone], "keys", num_keys, ok)
+        log("set", bone, "deg", pitch_deg.get(bone, 0.0), "swing", swing_scale.get(bone, 1.0), "keys", num_keys, ok)
     c.close_bracket(False)
     unreal.EditorAssetLibrary.save_loaded_asset(anim)
 
@@ -207,6 +265,38 @@ def adjust(anim, pitch_deg):
         # 腰→頭の線が、まっすぐ上から前へ何度倒れているか。
         lean_deg = math.degrees(math.atan2(forward_cm, up_cm))
         log(label, "head - hips forward(cm) =", round(forward_cm, 2), "lean(deg) =", round(lean_deg, 1))
+
+
+def trim(anim, start, count):
+    """start から count コマだけを残す。最後のコマ（ループなら先頭と同じ姿勢）を越えたら先頭へ戻る。"""
+    P = unreal.AnimPoseExtensions
+    L = unreal.AnimPoseSpaces.LOCAL
+    opts = eval_options()
+    num_keys = unreal.AnimationLibrary.get_num_frames(anim) + 1
+    period = num_keys - 1
+    src = [(start + i) % period for i in range(count)]
+    log("trim frames", src)
+
+    names = P.get_bone_names(P.get_anim_pose_at_frame(anim, 0, opts))
+    tracks = {n: {"pos": [], "rot": [], "scl": []} for n in names}
+    for f in src:
+        pose = P.get_anim_pose_at_frame(anim, f, opts)
+        for n in names:
+            local = P.get_bone_pose(pose, n, L)
+            tracks[n]["pos"].append(local.translation)
+            tracks[n]["rot"].append(local.rotation)
+            tracks[n]["scl"].append(local.scale3d)
+
+    c = get_controller(anim)
+    c.open_bracket(unreal.Text("trim"), False)
+    c.set_number_of_frames(unreal.FrameNumber(count - 1), False)
+    failed = 0
+    for n, t in tracks.items():
+        if not c.set_bone_track_keys(n, t["pos"], t["rot"], t["scl"], False):
+            failed += 1
+    c.close_bracket(False)
+    unreal.EditorAssetLibrary.save_loaded_asset(anim)
+    log("trim bones", len(names), "failed", failed, "len", anim.get_play_length())
 
 
 def main():
@@ -226,10 +316,14 @@ def main():
             mesh = import_fbx(path(cfg["mesh_fbx"]), work, "SK_Player")
         skeleton = mesh.skeleton
         for clip in cfg["clips"]:
-            name = os.path.splitext(os.path.basename(clip["in"]))[0]
+            # 資産の名前は書き出す方の名前にする（同じ in から複数のクリップを作れるように）。
+            name = os.path.splitext(os.path.basename(clip["out"]))[0]
             anim = import_fbx(path(clip["in"]), work + "/Anim", "A_" + name, skeleton)
             log("clip", name, "len", anim.get_play_length())
-            adjust(anim, cfg["pitch_deg"])
+            adjust(anim, cfg["pitch_deg"], cfg.get("swing_scale", {}))
+            frames = clip.get("frames")
+            if frames:
+                trim(anim, frames["start"], frames["count"])
             export_fbx(anim, path(clip["out"]))
         log("DONE")
     except Exception as e:

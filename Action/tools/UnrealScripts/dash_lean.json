@@ -3,7 +3,11 @@
   "mesh_fbx": "../../Game/Assets/modelData/player/Model/SK_Player.FBX",
   "clips": [
     {"in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
-     "out": "../../Game/Assets/modelData/player/Animation/Dash.fbx"}
+     "out": "../../Game/Assets/modelData/player/Animation/DashR.fbx",
+     "frames": {"start": 1, "count": 10}},
+    {"in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
+     "out": "../../Game/Assets/modelData/player/Animation/DashL.fbx",
+     "frames": {"start": 10, "count": 10}}
   ],
   "pitch_deg": {
     "J_Bip_C_Hips": 20.0,
@@ -14,5 +18,9 @@
     "J_Bip_C_UpperChest": 11.0,
     "J_Bip_C_Neck": -22.0,
     "J_Bip_C_Head": -20.0
+  },
+  "swing_scale": {
+    "J_Bip_L_UpperLeg": 1.3,
+    "J_Bip_R_UpperLeg": 1.3
   }
 }

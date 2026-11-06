@@ -31,8 +31,8 @@ namespace
 	{
 		PlayerStateSettings settings;
 		settings.dashDistance = 300.0f;  // ダッシュスキルの総移動距離。
-		settings.dashSpeed = 1500.0f;    // ダッシュ中の移動速度（通常の5倍）。
-		settings.dashAnimSpeed = 1.5f;   // 走るより速く足を回して、疾走感を出す。
+		settings.dashSpeed = 1500.0f;    // ダッシュの平均の速さ（通常の約3倍）。300 を 0.2秒で進む。
+		settings.dashAnimSpeed = 1.5f;   // 0.3秒の一蹴りを、ダッシュの0.2秒で蹴り切る。
 		settings.dashAnimBlendSeconds = 0.05f;
 		settings.moveThreshold = 0.1f;   // 移動入力がこれより小さければ立ち止まる。
 		settings.animBlendSeconds = 0.2f;
@@ -57,8 +57,10 @@ namespace
 		desc.clips[enPlayerAnimClip_Walk] = { "Assets/modelData/player/Animation/Walk.fbx", true };
 		desc.clips[enPlayerAnimClip_Run] = run;
 		desc.clips[enPlayerAnimClip_Jump] = run;
-		// Dash は Run の体全体を前へ倒したもの（tools/UnrealScripts/dash_lean.json で作る）。
-		desc.clips[enPlayerAnimClip_Dash] = { "Assets/modelData/player/Animation/Dash.fbx", true };
+		// DashL・DashR は、Run の体全体を前へ倒して一蹴り（着地→蹴り切り）だけを切り出したもの。
+		// tools/UnrealScripts/dash_lean.json で作る。ループしないので、終わると蹴り切ったポーズで止まる。
+		desc.clips[enPlayerAnimClip_DashL] = { "Assets/modelData/player/Animation/DashL.fbx", false };
+		desc.clips[enPlayerAnimClip_DashR] = { "Assets/modelData/player/Animation/DashR.fbx", false };
 		return desc;
 	}
 

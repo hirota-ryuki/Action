@@ -23,7 +23,8 @@ enum EnPlayerAnimClip
 	enPlayerAnimClip_Walk,
 	enPlayerAnimClip_Run,
 	enPlayerAnimClip_Jump,
-	enPlayerAnimClip_Dash,
+	enPlayerAnimClip_DashL,  // ダッシュの一蹴り（左足で蹴る）
+	enPlayerAnimClip_DashR,  // ダッシュの一蹴り（右足で蹴る）
 	enPlayerAnimClip_Num,
 };
 
@@ -31,8 +32,8 @@ enum EnPlayerAnimClip
 struct PlayerStateSettings
 {
 	float dashDistance = 300.0f;      // ダッシュの総移動距離。0ならダッシュできない。
-	float dashSpeed = 1500.0f;        // ダッシュ中の移動速度。
-	float dashAnimSpeed = 1.5f;       // ダッシュのアニメーションの再生速度（倍）。
+	float dashSpeed = 1500.0f;        // ダッシュの平均の速さ。蹴った瞬間はこの2倍で、だんだん遅くなる。
+	float dashAnimSpeed = 1.5f;       // 一蹴りのアニメーション（0.3秒）の再生速度（倍）。距離÷速さ（0.2秒）で蹴り切るよう合わせる。
 	float dashAnimBlendSeconds = 0.05f; // ダッシュに入るときのアニメーションの補間時間。短いほど一気に前へ出る。
 	float moveThreshold = 0.1f;       // 移動入力の長さがこれより小さければ立ち止まっているとみなす。
 	float animBlendSeconds = 0.2f;    // アニメーションを切り替えるときの補間時間。

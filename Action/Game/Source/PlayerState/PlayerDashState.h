@@ -2,9 +2,11 @@
 
 #include "PlayerState.h"
 
-// ダッシュ中。入った瞬間の移動方向（入力がなければ正面）へ、dashDistance の距離を dashSpeed で一気に進む。
-// 途中で向きは変えられない。アニメーションは体全体を前へ倒した Dash を、dashAnimSpeed 倍で流す。
-// 重力はかかるので、空中で出すと落ちながら進む。
+// ダッシュ中。入った瞬間の移動方向（入力がなければ正面）へ、地面を一蹴りして dashDistance だけ飛び出す。
+// かかる時間は dashDistance ÷ dashSpeed。蹴った瞬間がいちばん速く、だんだん遅くなって止まる（ease-out）。
+// 途中で向きは変えられない。重力はかかるので、空中で出すと落ちながら進む。
+// アニメーションは、体全体を前へ倒した「一蹴り」（DashL / DashR、ループしない）を1回流し、蹴り切ったポーズで止める。
+// 1回ごとに蹴る足を左右入れ替える。
 // ダッシュ中にもう一度ダッシュボタンを押すと覚えておき、進み切ったらすぐ次のダッシュを出す（連打で続けて出る）。
 //   進み切った → もう一度押していれば次のダッシュ、そうでなければ入力と足場に合わせて Idle / Walk / Run / Air
 //   （ボタンを押しっぱなしなら Run になる）
@@ -26,11 +28,18 @@ public:
 	void Exit(PlayerStateContext& context) override;
 
 private:
-	// 1回分のダッシュを始める。方向と残りの距離を決め直す。
+	// 1回分のダッシュを始める。方向を決め直し、蹴るアニメーションを流す。
 	void Begin(PlayerStateContext& context, const CharacterInput& input);
+	// 1回分のダッシュが終わったか。
+	bool IsFinished() const
+	{
+		return m_elapsed >= m_duration;
+	}
 
 	Vector3 m_direction = Vector3::AxisZ;  // 進む方向（水平・正規化済み）。
-	float m_remainingDistance = 0.0f;      // 残りの距離。0になったら終わり。
+	float m_duration = 0.0f;               // 1回分のダッシュにかかる時間。0ならダッシュしない。
+	float m_elapsed = 0.0f;                // 1回分のダッシュを始めてからの時間。
+	bool m_isLeftKick = false;             // 今回、左足で蹴るか。ダッシュのたびに入れ替える（ステートを出ても覚えておく）。
 	bool m_isNextDashQueued = false;       // ダッシュ中にもう一度押された。進み切ったら次のダッシュを出す。
 	bool m_isFirstFrame = false;           // 入ったフレーム。入るきっかけになった押下を、次のダッシュの予約と数えないため。
 };
