@@ -364,12 +364,14 @@ SEGMENT_CHILD = {}
 for _s in "LR":
     SEGMENT_CHILD["J_Bip_%s_UpperLeg" % _s] = "J_Bip_%s_LowerLeg" % _s
     SEGMENT_CHILD["J_Bip_%s_LowerLeg" % _s] = "J_Bip_%s_Foot" % _s
+    SEGMENT_CHILD["J_Bip_%s_Foot" % _s] = "J_Bip_%s_ToeBase" % _s
     SEGMENT_CHILD["J_Bip_%s_UpperArm" % _s] = "J_Bip_%s_LowerArm" % _s
     SEGMENT_CHILD["J_Bip_%s_LowerArm" % _s] = "J_Bip_%s_Hand" % _s
 # 向きを合わせるときに、先に回した親の分を差し引くための親子関係（SEGMENT_CHILD の中だけ）。
 SEGMENT_PARENT = {}
 for _s in "LR":
     SEGMENT_PARENT["J_Bip_%s_LowerLeg" % _s] = "J_Bip_%s_UpperLeg" % _s
+    SEGMENT_PARENT["J_Bip_%s_Foot" % _s] = "J_Bip_%s_LowerLeg" % _s
     SEGMENT_PARENT["J_Bip_%s_LowerArm" % _s] = "J_Bip_%s_UpperArm" % _s
 
 
@@ -392,6 +394,8 @@ def pose_to(anim, cfg):
     lift_cm を指定すると、腰を上下させる（正 = 持ち上げて宙に浮く、負 = 下げて低く飛ぶ）。
     腰は lift_ramp_start（省略すると ramp_start）のコマから寄せる。接地しているコマで下げると足がめり込むため、
     足が離れるコマを指定する。
+    ground_toe_cm を指定すると、lift_cm の代わりに、最後のコマで一番低いつま先がその高さになるよう腰を上下させる
+    （しゃがんだポーズで、足を地面に着けるとき）。
     cfg = {"ramp_start": 1, "lift_ramp_start": 3, "lift_cm": -8, "angle_deg": {"J_Bip_L_UpperArm": -60, ...}}
     角度は segment_angle と同じ測り方。左右の軸まわりにしか回さないので、横へ開いた腕などは少しずれる。
     そのため、測り直して残りの差を足すのを3回くり返す。"""
@@ -492,6 +496,14 @@ def pose_to(anim, cfg):
         if fixed == 0:
             break
         write()
+
+    ground = cfg.get("ground_toe_cm")
+    if ground is not None:
+        for it in range(2):
+            end_pose = P.get_anim_pose_at_frame(anim, last, opts)
+            toe = min(P.get_bone_pose(end_pose, "J_Bip_%s_ToeBase" % s, W).translation.z for s in "LR")
+            lift += ground - toe
+            write()
 
     end_pose = P.get_anim_pose_at_frame(anim, last, opts)
     for b in targets:
@@ -610,6 +622,32 @@ def crouch(anim, cfg):
         log(row)
 
 
+def log_frames(anim, label):
+    """コマごとの脚の向き・膝の曲がり・つま先と腰の高さを書き出す（形を決めるときの確かめ用）。"""
+    P = unreal.AnimPoseExtensions
+    W = unreal.AnimPoseSpaces.WORLD
+    opts = eval_options()
+    num_keys = unreal.AnimationLibrary.get_num_frames(anim) + 1
+    axis = side_axis(P.get_reference_pose(anim.get_editor_property("skeleton")))
+    fwd = unreal.Vector(0.0, 0.0, 1.0).cross(axis) * -1.0
+    for f in range(num_keys):
+        pose = P.get_anim_pose_at_frame(anim, f, opts)
+        hips = P.get_bone_pose(pose, HIPS, W).translation
+        row = "%s f%02d hips z=%.1f" % (label, f, hips.z)
+        for s in "LR":
+            th = segment_angle(pose, "J_Bip_%s_UpperLeg" % s, fwd)
+            sh = segment_angle(pose, "J_Bip_%s_LowerLeg" % s, fwd)
+            ankle = P.get_bone_pose(pose, "J_Bip_%s_Foot" % s, W).translation - hips
+            toe = P.get_bone_pose(pose, "J_Bip_%s_ToeBase" % s, W).translation.z
+            ft = segment_angle(pose, "J_Bip_%s_Foot" % s, fwd)
+            row += "  %s thigh=%.0f shin=%.0f knee=%.0f foot=%.0f ankle(fwd=%.0f) toe=%.1f" % (
+                s, th, sh, wrap180(th - sh), ft, ankle.dot(fwd), toe)
+        for s in "LR":
+            row += "  %s arm=%.0f/%.0f" % (s, segment_angle(pose, "J_Bip_%s_UpperArm" % s, fwd),
+                                            segment_angle(pose, "J_Bip_%s_LowerArm" % s, fwd))
+        log(row)
+
+
 def main():
     cfg_path = sys.argv[-1]
     cfg = json.load(open(cfg_path, encoding="utf-8"))
@@ -641,6 +679,10 @@ def main():
                 crouch(anim, clip["crouch"])
             if clip.get("pose_to"):
                 pose_to(anim, clip["pose_to"])
+            if clip.get("log_frames"):
+                log_frames(anim, name)
+            if clip.get("out_skip"):
+                continue
             export_fbx(anim, path(clip["out"]))
         log("DONE")
     except Exception as e:

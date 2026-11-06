@@ -35,6 +35,9 @@ namespace
 		settings.dashEndSpeed = 480.0f;  // 終わりは走る速さ。蹴った瞬間は 1520 になる。
 		settings.dashAnimSpeed = 1.0f;   // 0.3秒の一蹴りを、ダッシュの0.3秒でそのまま流す（速く流すとバタバタして見える）。
 		settings.dashAnimBlendSeconds = 0.05f;
+		settings.dashCrouchSeconds = 0.15f;    // しゃがみ込むクリップ（4コマ＝0.13秒）を流し、底で少しだけ止める。
+		settings.dashCrouchSpeed = 150.0f;     // しゃがむ間も少しだけ前へ進み、ぴたっと止まって見えないようにする。
+		settings.dashKickBlendSeconds = 0.1f;
 		settings.dashLandSeconds = 0.2f;       // 着地のクリップ（7コマ）の長さ。前の足の膝を曲げて受け止める。
 		settings.dashLandBlendSeconds = 0.08f;
 		settings.dashExitBlendSeconds = 0.25f; // 着地から走りへ。足の位置は合わせてあるので、ふつうより少し長めで足りる。
@@ -74,6 +77,9 @@ namespace
 		// 着地。Run を少し前へ倒し、前の足が着地して踏むまでの7コマで、腰を落として膝を曲げたもの。
 		desc.clips[enPlayerAnimClip_DashLandL] = { "Assets/modelData/player/Animation/DashLandL.fbx", false };
 		desc.clips[enPlayerAnimClip_DashLandR] = { "Assets/modelData/player/Animation/DashLandR.fbx", false };
+		// 蹴る前のしゃがみ込み。蹴る足を前に出し、腰を約30cm落として膝を深く曲げ、反対の腕を前へ出したポーズで止まる。
+		desc.clips[enPlayerAnimClip_DashCrouchL] = { "Assets/modelData/player/Animation/DashCrouchL.fbx", false };
+		desc.clips[enPlayerAnimClip_DashCrouchR] = { "Assets/modelData/player/Animation/DashCrouchR.fbx", false };
 		return desc;
 	}
 

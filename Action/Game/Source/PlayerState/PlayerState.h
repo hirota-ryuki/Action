@@ -27,6 +27,8 @@ enum EnPlayerAnimClip
 	enPlayerAnimClip_DashR,  // ダッシュの一蹴り（右足で蹴る）
 	enPlayerAnimClip_DashLandL,  // 左足で蹴ったあとの着地（右足で、膝を曲げて受け止める）
 	enPlayerAnimClip_DashLandR,  // 右足で蹴ったあとの着地（左足で受け止める）
+	enPlayerAnimClip_DashCrouchL,  // 左足で蹴る前に、しゃがみ込む（左足を前に、膝を深く曲げる）
+	enPlayerAnimClip_DashCrouchR,  // 右足で蹴る前に、しゃがみ込む
 	enPlayerAnimClip_Num,
 };
 
@@ -36,6 +38,9 @@ struct PlayerStateSettings
 	float dashDistance = 300.0f;      // ダッシュの総移動距離。0ならダッシュできない。
 	float dashSpeed = 1000.0f;        // ダッシュの平均の速さ。蹴った瞬間がいちばん速く、だんだん dashEndSpeed まで遅くなる。
 	float dashEndSpeed = 0.0f;        // ダッシュの終わりの速さ。着地の間もこの速さで進む（走りへ勢いをつなぐ）。dashSpeed 以下。
+	float dashCrouchSeconds = 0.0f;   // 蹴る前にしゃがみ込む長さ（秒）。0ならしゃがまずにすぐ蹴る。地面にいるときの最初の1回だけ。
+	float dashCrouchSpeed = 0.0f;     // しゃがみ込む間に進む速さ。
+	float dashKickBlendSeconds = 0.1f;  // しゃがんだポーズから一蹴りへ移るときの補間時間。この間に脚が伸びて飛び出す。
 	float dashLandSeconds = 0.0f;     // 着地の長さ（秒）。0なら着地せず、すぐ次の動きへ移る。
 	float dashLandBlendSeconds = 0.08f; // 飛び出したポーズから着地へ移るときの補間時間。
 	float dashAnimSpeed = 1.0f;       // 一蹴りのアニメーション（0.3秒）の再生速度（倍）。距離÷速さの時間で流し終わるよう合わせる。

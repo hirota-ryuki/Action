@@ -31,7 +31,25 @@
      "pitch_deg": {"J_Bip_C_Hips": 14.0, "J_Bip_C_Spine": 3.0, "J_Bip_C_Chest": 3.0, "J_Bip_C_UpperChest": 2.0,
                    "J_Bip_C_Neck": -8.0, "J_Bip_C_Head": -6.0},
      "swing_scale": {},
-     "crouch": {"lower_cm": 12.0, "weights": [0.4, 0.7, 0.95, 1.0, 0.75, 0.4, 0.1]}}
+     "crouch": {"lower_cm": 12.0, "weights": [0.4, 0.7, 0.95, 1.0, 0.75, 0.4, 0.1]}},
+    {"in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
+     "out": "../../Game/Assets/modelData/player/Animation/DashCrouchL.fbx",
+     "frames": {"start": 10, "count": 5},
+     "pose_to": {"ramp_start": 0, "ground_toe_cm": 0.5, "angle_deg": {
+       "J_Bip_L_UpperLeg": -15.0, "J_Bip_L_LowerLeg": -100.0,
+       "J_Bip_R_UpperLeg": -115.0, "J_Bip_R_LowerLeg": -160.0,
+       "J_Bip_R_UpperArm": -85.0, "J_Bip_R_LowerArm": -45.0,
+       "J_Bip_L_UpperArm": 165.0, "J_Bip_L_LowerArm": -165.0,
+       "J_Bip_L_Foot": -12.0, "J_Bip_R_Foot": -50.0}}},
+    {"in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
+     "out": "../../Game/Assets/modelData/player/Animation/DashCrouchR.fbx",
+     "frames": {"start": 1, "count": 5},
+     "pose_to": {"ramp_start": 0, "ground_toe_cm": 0.5, "angle_deg": {
+       "J_Bip_R_UpperLeg": -15.0, "J_Bip_R_LowerLeg": -100.0,
+       "J_Bip_L_UpperLeg": -115.0, "J_Bip_L_LowerLeg": -160.0,
+       "J_Bip_L_UpperArm": -85.0, "J_Bip_L_LowerArm": -45.0,
+       "J_Bip_R_UpperArm": 165.0, "J_Bip_R_LowerArm": -165.0,
+       "J_Bip_R_Foot": -12.0, "J_Bip_L_Foot": -50.0}}}
   ],
   "pitch_deg": {
     "J_Bip_C_Hips": 32.0,

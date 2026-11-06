@@ -3,6 +3,7 @@
 #include "PlayerState.h"
 
 // ダッシュ中。入った瞬間の移動方向（入力がなければ正面）へ、地面を一蹴りして dashDistance だけ飛び出す。
+// 地面から出すときは、蹴る前に dashCrouchSeconds だけしゃがみ込む（DashCrouchL / DashCrouchR）。その間は dashCrouchSpeed で進む。
 // かかる時間は dashDistance ÷ dashSpeed。蹴った瞬間がいちばん速く、だんだん遅くなって止まる（ease-out）。
 // 途中で向きは変えられない。重力はかかるので、空中で出すと落ちながら進む。
 // アニメーションは、体全体を前へ倒した「一蹴り」（DashL / DashR、ループしない）を1回流し、宙へ飛び出したポーズで止める。
@@ -29,8 +30,15 @@ public:
 	void Exit(PlayerStateContext& context) override;
 
 private:
-	// 1回分のダッシュを始める。方向を決め直し、蹴るアニメーションを流す。
+	// 1回分のダッシュを始める。方向を決め直し、蹴る足を入れ替える。アニメーションは流さない。
 	void Begin(PlayerStateContext& context, const CharacterInput& input);
+	// 蹴るアニメーションを流す。
+	void PlayKick(PlayerStateContext& context, float blendSeconds);
+	// しゃがみ込んでいる間か。
+	bool IsCrouching() const
+	{
+		return m_crouchRemaining > 0.0f;
+	}
 	// 蹴って飛ぶところ（進む距離が決まっているところ）が終わったか。
 	bool IsKickFinished() const
 	{
@@ -48,6 +56,7 @@ private:
 	float m_duration = 0.0f;               // 1回分のダッシュにかかる時間。0ならダッシュしない。
 	float m_elapsed = 0.0f;                // 1回分のダッシュを始めてからの時間。
 	float m_landElapsed = 0.0f;            // 着地を始めてからの時間。
+	float m_crouchRemaining = 0.0f;        // しゃがみ込みの残り時間。0になったら蹴る。
 	bool m_isLanding = false;              // 着地中。
 	bool m_isLeftKick = false;             // 今回、左足で蹴るか。ダッシュのたびに入れ替える（ステートを出ても覚えておく）。
 	bool m_isNextDashQueued = false;       // ダッシュ中にもう一度押された。進み切ったら次のダッシュを出す。
