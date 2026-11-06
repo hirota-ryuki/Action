@@ -35,6 +35,12 @@ namespace
 		settings.dashAnimSpeed = 1.0f;   // 0.3秒の一蹴りを、ダッシュの0.3秒でそのまま流す（速く流すとバタバタして見える）。
 		settings.dashAnimBlendSeconds = 0.05f;
 		settings.dashExitBlendSeconds = 0.5f;  // ダッシュのあと、走りへゆっくり移ってポーズを残す。
+		// ダッシュのあとの走り・歩きの始め。Run（30fps・19コマ）と Walk（30fps・36コマ）で足の位置を測って決めた。
+		// 左足で蹴ったあと（右足が前・宙）: Run f04、Walk f22。右足で蹴ったあと（左足が前・宙）: Run f13、Walk f04。
+		settings.dashLToRunStartTime = 4.0f / 30.0f;
+		settings.dashRToRunStartTime = 13.0f / 30.0f;
+		settings.dashLToWalkStartTime = 22.0f / 30.0f;
+		settings.dashRToWalkStartTime = 4.0f / 30.0f;
 		settings.moveThreshold = 0.1f;   // 移動入力がこれより小さければ立ち止まる。
 		settings.animBlendSeconds = 0.2f;
 		// Walk.fbx（Mixamo の Female Walk）の足が地面を送る速さ。UE で足のボーンを測った 115/秒 × モデルの大きさ 1.128。

@@ -62,6 +62,24 @@ namespace nsK2EngineLow {
 			}
 		}
 		/// <summary>
+		/// アニメーションを、startTime 秒の位置から再生する。前のアニメーションからは interpolateTime 秒で補間する。
+		/// 歩き・走りを、前の動きと足の位置が合うところから始めたいときに使う。
+		/// </summary>
+		/// <param name="clipNo">アニメーションクリップの番号。</param>
+		/// <param name="interpolateTime">補完時間(単位：秒)</param>
+		/// <param name="startTime">再生を始める位置(単位：秒)</param>
+		void PlayFromTime(int clipNo, float interpolateTime, float startTime)
+		{
+			if (clipNo < 0 || clipNo >= static_cast<int>(m_animationClips.size())) {
+				return;
+			}
+			PlayCommon(m_animationClips[clipNo], interpolateTime);
+			const int index = GetLastAnimationControllerIndex();
+			if (m_animationPlayController[index].GetAnimClip() == m_animationClips[clipNo]) {
+				m_animationPlayController[index].SetTime(startTime);
+			}
+		}
+		/// <summary>
 		/// 指定時間のポーズを再生する。
 		/// </summary>
 		/// <param name="clipNo">アニメーションクリップ番号。</param>

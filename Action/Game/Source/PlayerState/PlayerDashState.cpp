@@ -92,6 +92,10 @@ void PlayerDashState::Exit(PlayerStateContext& context)
 	// ここで戻すと、凍結で止めたアニメーションが動き出してしまう。
 	// 次のアニメーションへは長めに補間して、飛び出したポーズが少し残るようにする。
 	context.nextBlendSeconds = context.settings.dashExitBlendSeconds;
+	// 走り・歩きは、最後に蹴った足に合わせて、前後の足が同じところから始める。
+	const PlayerStateSettings& s = context.settings;
+	context.nextStartTimes[enPlayerAnimClip_Run] = m_isLeftKick ? s.dashLToRunStartTime : s.dashRToRunStartTime;
+	context.nextStartTimes[enPlayerAnimClip_Walk] = m_isLeftKick ? s.dashLToWalkStartTime : s.dashRToWalkStartTime;
 	m_elapsed = m_duration;
 	m_isNextDashQueued = false;
 }
