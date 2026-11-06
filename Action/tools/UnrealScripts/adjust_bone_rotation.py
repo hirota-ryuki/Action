@@ -202,7 +202,11 @@ def adjust(anim, pitch_deg):
         head = P.get_bone_pose(pose, "J_Bip_C_Head", W).translation
         hips = P.get_bone_pose(pose, "J_Bip_C_Hips", W).translation
         d = head - hips
-        log(label, "head - hips forward(cm) =", round(d.dot(fwd), 2))
+        forward_cm = d.dot(fwd)
+        up_cm = d.z
+        # 腰→頭の線が、まっすぐ上から前へ何度倒れているか。
+        lean_deg = math.degrees(math.atan2(forward_cm, up_cm))
+        log(label, "head - hips forward(cm) =", round(forward_cm, 2), "lean(deg) =", round(lean_deg, 1))
 
 
 def main():

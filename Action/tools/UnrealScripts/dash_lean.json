@@ -1,0 +1,18 @@
+{
+  "work_dir": "/Game/05_Adjust",
+  "mesh_fbx": "../../Game/Assets/modelData/player/Model/SK_Player.FBX",
+  "clips": [
+    {"in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
+     "out": "../../Game/Assets/modelData/player/Animation/Dash.fbx"}
+  ],
+  "pitch_deg": {
+    "J_Bip_C_Hips": 8.0,
+    "J_Bip_L_UpperLeg": -4.0,
+    "J_Bip_R_UpperLeg": -4.0,
+    "J_Bip_C_Spine": 4.0,
+    "J_Bip_C_Chest": 3.0,
+    "J_Bip_C_UpperChest": 3.0,
+    "J_Bip_C_Neck": -8.0,
+    "J_Bip_C_Head": -5.0
+  }
+}

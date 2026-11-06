@@ -16,9 +16,10 @@ void PlayerDashState::Enter(PlayerStateContext& context, const CharacterInput& i
 	m_isFirstFrame = true;
 	Begin(context, input);
 
-	// 疾走ポーズで止める。
-	context.modelRender->PlayAnimationAtTime(enPlayerAnimClip_Run, context.settings.dashPoseTime);
-	context.modelRender->SetAnimationSpeed(0.0f);
+	// 体全体を前へ倒した走りを、速めに流す。補間を短くして、一気に前へ出たように見せる。
+	// 連打で続けて出るときはステートを出ないので、ここは通らず、同じモーションが途切れずに続く。
+	context.modelRender->PlayAnimation(enPlayerAnimClip_Dash, context.settings.dashAnimBlendSeconds);
+	context.modelRender->SetAnimationSpeed(context.settings.dashAnimSpeed);
 }
 
 void PlayerDashState::Begin(PlayerStateContext& context, const CharacterInput& input)
