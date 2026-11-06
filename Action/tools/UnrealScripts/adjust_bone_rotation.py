@@ -23,6 +23,7 @@ config.json（ファイルのパスは、絶対パスか config.json からの�
   "swing_scale": {                                       # 省略可。ボーンの振り幅を、平均の向きを中心に何倍にするか
     "J_Bip_L_UpperLeg": 1.3
   },
+  "keep_feet_on_ground": true,                           # 省略可。つま先の一番低い高さが元と同じになるよう腰を上下させる
   "log": "C:/.../result.txt"                             # 省略すると %TEMP%/adjust_bone_rotation.txt
 }
 
@@ -199,7 +200,38 @@ def q_scale_from(q, center, k):
     return q_mul(unreal.Quat(ax * sk, ay * sk, az * sk, math.cos(half)), center)
 
 
-def adjust(anim, pitch_deg, swing_scale):
+HIPS = "J_Bip_C_Hips"
+
+
+def body_shape(anim, fwd):
+    """全フレームの平均で、体の形を測る（度。前へ倒れているほど大きい）。
+    torso: 腰→首の線の前傾。leg: 両足の真ん中→腰の線の前傾（足が腰より後ろにあれば正）。
+    torso - leg が「体の折れ」。大きいほど腰で「く」の字に曲がり、お尻が突き出て見える。
+    toe_min: つま先の一番低い高さ（cm）。"""
+    P = unreal.AnimPoseExtensions
+    W = unreal.AnimPoseSpaces.WORLD
+    opts = eval_options()
+    num_keys = unreal.AnimationLibrary.get_num_frames(anim) + 1
+    torso = leg = 0.0
+    toe_min = 1e9
+    for f in range(num_keys):
+        pose = P.get_anim_pose_at_frame(anim, f, opts)
+
+        def pos(b):
+            return P.get_bone_pose(pose, b, W).translation
+
+        hips, neck = pos(HIPS), pos("J_Bip_C_Neck")
+        lf, rf = pos("J_Bip_L_Foot"), pos("J_Bip_R_Foot")
+        feet = (lf + rf) * 0.5
+        d = neck - hips
+        torso += math.degrees(math.atan2(d.dot(fwd), d.z))
+        d = hips - feet
+        leg += math.degrees(math.atan2(d.dot(fwd), d.z))
+        toe_min = min(toe_min, pos("J_Bip_L_ToeBase").z, pos("J_Bip_R_ToeBase").z)
+    return {"torso": torso / num_keys, "leg": leg / num_keys, "toe_min": toe_min}
+
+
+def adjust(anim, pitch_deg, swing_scale, keep_feet_on_ground=False):
     P = unreal.AnimPoseExtensions
     W = unreal.AnimPoseSpaces.WORLD
     L = unreal.AnimPoseSpaces.LOCAL
@@ -210,7 +242,7 @@ def adjust(anim, pitch_deg, swing_scale):
     axis = side_axis(P.get_reference_pose(anim.get_editor_property("skeleton")))
 
     # 先に全フレームの元の値を読む（書き換えると、あとのフレームの評価が変わるため）。
-    bones = list(dict.fromkeys(list(swing_scale) + list(pitch_deg)))
+    bones = list(dict.fromkeys(list(swing_scale) + list(pitch_deg) + ([HIPS] if keep_feet_on_ground else [])))
     tracks = {}
     for bone in bones:
         tracks[bone] = {"pos": [], "rot": [], "scl": [], "axis": []}
@@ -245,17 +277,45 @@ def adjust(anim, pitch_deg, swing_scale):
             rots.append(q_mul(q, r))
         t["rot"] = rots
 
+    fwd = unreal.Vector(0.0, 0.0, 1.0).cross(axis) * -1.0
+    before_shape = body_shape(anim, fwd)
+
     c = get_controller(anim)
     c.open_bracket(unreal.Text("adjust"), False)
     for bone, t in tracks.items():
         ok = c.set_bone_track_keys(bone, t["pos"], t["rot"], t["scl"], False)
         log("set", bone, "deg", pitch_deg.get(bone, 0.0), "swing", swing_scale.get(bone, 1.0), "keys", num_keys, ok)
     c.close_bracket(False)
+
+    # 足を地面に合わせる: 脚ごと倒すと足が浮くので、つま先の一番低い高さが元と同じになるまで腰を下げる。
+    if keep_feet_on_ground:
+        after_shape = body_shape(anim, fwd)
+        drop = after_shape["toe_min"] - before_shape["toe_min"]
+        log("toe min before", round(before_shape["toe_min"], 2), "after", round(after_shape["toe_min"], 2), "lower hips(cm)", round(drop, 2))
+        if abs(drop) > 0.01:
+            t = tracks[HIPS]
+            pos = []
+            for f in range(num_keys):
+                pose = P.get_anim_pose_at_frame(anim, f, opts)
+                local = P.get_bone_pose(pose, HIPS, L)
+                world = P.get_bone_pose(pose, HIPS, W)
+                parent_rot = q_mul(world.rotation, q_inv(local.rotation))
+                # ワールドで真下へ drop だけ動かす量を、親の向きで見た量に直す。
+                offset = q_rotate(q_inv(parent_rot), unreal.Vector(0.0, 0.0, -drop))
+                pos.append(t["pos"][f] + offset)
+            t["pos"] = pos
+            c.open_bracket(unreal.Text("ground"), False)
+            c.set_bone_track_keys(HIPS, t["pos"], t["rot"], t["scl"], False)
+            c.close_bracket(False)
     unreal.EditorAssetLibrary.save_loaded_asset(anim)
+
+    after_shape = body_shape(anim, fwd)
+    for label, sh in (("before", before_shape), ("after", after_shape)):
+        log(label, "shape: torso lean(deg) =", round(sh["torso"], 1), "leg lean(deg) =", round(sh["leg"], 1),
+            "bend(deg) =", round(sh["torso"] - sh["leg"], 1), "toe min(cm) =", round(sh["toe_min"], 2))
 
     # 確かめ: 頭と腰の前後の差（0フレーム目、前が正）。
     after = P.get_anim_pose_at_frame(anim, 0, opts)
-    fwd = unreal.Vector(0.0, 0.0, 1.0).cross(axis) * -1.0
     for label, pose in (("before", first), ("after", after)):
         head = P.get_bone_pose(pose, "J_Bip_C_Head", W).translation
         hips = P.get_bone_pose(pose, "J_Bip_C_Hips", W).translation
@@ -320,7 +380,7 @@ def main():
             name = os.path.splitext(os.path.basename(clip["out"]))[0]
             anim = import_fbx(path(clip["in"]), work + "/Anim", "A_" + name, skeleton)
             log("clip", name, "len", anim.get_play_length())
-            adjust(anim, cfg["pitch_deg"], cfg.get("swing_scale", {}))
+            adjust(anim, cfg["pitch_deg"], cfg.get("swing_scale", {}), cfg.get("keep_feet_on_ground", False))
             frames = clip.get("frames")
             if frames:
                 trim(anim, frames["start"], frames["count"])
