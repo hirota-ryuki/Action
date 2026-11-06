@@ -698,7 +698,9 @@ def rotoscope(anim, cfg, base_dir):
         targets.append(t)
 
     limbs = [b for b in targets[0] if b.startswith("J_Bip_") and b in SEGMENT_CHILD]
-    bones = TORSO_CHAIN + ["J_Bip_C_Neck"] + limbs
+    bones = TORSO_CHAIN + ["J_Bip_C_Neck", "J_Bip_C_Head"] + limbs
+    # head_pitch_deg: 頭だけに足す角度（正 = うつむく、負 = 顔を起こす）。首の線は変えずに、顔の向きだけを変える。
+    head_pitch = cfg.get("head_pitch_deg", 0.0)
     orig = {b: {"pos": [], "rot": [], "scl": [], "axis": [], "parent": []} for b in bones}
     for f in range(num_keys):
         pose = P.get_anim_pose_at_frame(anim, f, opts)
@@ -728,6 +730,8 @@ def rotoscope(anim, cfg, base_dir):
             return T * split[TORSO_CHAIN.index(b)]
         if b == "J_Bip_C_Neck":
             return t.get("neck", 0.0) - T
+        if b == "J_Bip_C_Head":
+            return head_pitch
         par = parent_of[b]
         base = T * split[0] if par == "hips" else (T if par == "torso" else t.get(par, 0.0))
         return t.get(b, 0.0) - base

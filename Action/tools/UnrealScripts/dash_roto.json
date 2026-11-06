@@ -24,7 +24,8 @@
      "b": "R"
     },
     "lean_deg": 8.0,
-    "leg_lean_deg": 5.0
+    "leg_lean_deg": 5.0,
+    "head_pitch_deg": -12.0
    }
   },
   {
@@ -46,7 +47,8 @@
      "b": "L"
     },
     "lean_deg": 8.0,
-    "leg_lean_deg": 5.0
+    "leg_lean_deg": 5.0,
+    "head_pitch_deg": -12.0
    }
   },
   {
@@ -70,7 +72,8 @@
     "height": "hips",
     "lean_deg": 10.0,
     "leg_lean_deg": 6.0,
-    "tuck_knee_deg": 125.0
+    "tuck_knee_deg": 125.0,
+    "head_pitch_deg": -12.0
    }
   }
  ]
