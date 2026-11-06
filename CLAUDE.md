@@ -49,6 +49,14 @@
   - 最後に使ったのがこのPCなら何もしない（VSCode が自分でタブを戻すため）。同じ記録では2回開かない
   - 別のPCで30分以内に使っていたときは、開く前に確認を出す
   - 初回は VSCode が「自動タスクを許可するか」を聞くので「許可」を選んでもらう（`Tasks: Manage Automatic Tasks` で変えられる）
+- アーカイブの引き継ぎ（`claude-sessions.ps1` と `.claude/scripts/vscode-state.ps1`）
+  - アーカイブしたかどうかは会話ファイルではなく、PCごとの VSCode の保存領域（`%APPDATA%\Code\User\globalStorage\state.vscdb` の Claude 拡張の `hiddenSessionIds`）にある
+  - push のたびに、このリポジトリの会話のアーカイブ状態が変わっていたら、変わった時刻と一緒に「アーカイブの記録」（`%APPDATA%\claude-sessions\archive-Action\<PC名>.json`）に書き、個人用 OneDrive の `01_ClaudeSessions/Action-archive/` へ送る
+  - 反映（`-Mode archive-apply`）は、全PCの記録から会話ごとにいちばん新しい状態を選んで書き込む。VSCode が開いている間は拡張に上書きされるので、**VSCode を閉じているときだけ**書き込む
+    - セッション開始時・終了時に、VSCode が閉じるのを待つ係を裏で起動し（同時に1つだけ）、閉じたらその時点で届いている記録を反映する（最長1日待つ）
+    - VSCode を開いていないとき（ターミナルの Claude など）は、セッション開始時の pull で反映する
+  - そのため、別のPCでしたアーカイブは、そのあとこのPCで VSCode を閉じたときに書き込まれ、次に開いたときに一覧に出る
+  - 書き込む前の保存領域の控えを `%APPDATA%\claude-sessions\state.vscdb.before-archive-apply` に残す
 - 「バックアップがまだ設定されていません」と出たPCでは、ユーザーに `.claude\scripts\setup-sessions.cmd` を1回実行してもらう（rclone のインストールと、ブラウザでの個人アカウントの許可）。
 - やめるとき
   - そのPCだけ: `.claude\scripts\remove-sessions.cmd`（rclone の設定と本体を消す）
