@@ -1,10 +1,14 @@
 """detect_pose.py の結果を、横から見た角度（前 = 画面の右 = 0°、真上 = 90°、真下 = -90°）に直す。
-使い方: python pose_to_angles.py <detect_pose の出力.json> <出力.json>
+使い方: python pose_to_angles.py <detect_pose の出力.json> <出力.json> [flip]
+flip を付けると左右を反転して読む（キャラクターが画面の左へ進む場面）。
 A・B は脚（太もも・すね・足と、脚の長さを1としたつま先の高さ）、a・b は腕、torso は腰 → 肩、neck は肩 → 耳。
 読み取りで左右の脚・腕が入れ替わったコマは、前のコマに近い方へそろえる。地面は、全コマで一番低い足の位置とする。
 """
 import json, math, sys
 res=json.load(open(sys.argv[1]))
+if len(sys.argv)>3 and sys.argv[3]=='flip':
+    for r in res:
+        if r['pts']: r['pts']=[(-x,y,v) for x,y,v in r['pts']]
 def ang(a,b):
     return math.degrees(math.atan2(-(b[1]-a[1]), b[0]-a[0]))
 def wrap(d): return (d+180)%360-180

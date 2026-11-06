@@ -49,6 +49,17 @@ namespace
 		settings.dashRToRunStartTime = 12.0f / 30.0f;
 		settings.dashLToWalkStartTime = 0.0f;
 		settings.dashRToWalkStartTime = 17.0f / 30.0f;
+		// 走りから止まる。StopL / StopR（原神の動画の 29.78〜30.89秒、30fps・34コマ）に合わせる。
+		//   f00〜f04 前の足を着いて腰を落とす、f04〜f14 突っ張って低く滑る、f14〜f33 起き上がって立つ。
+		settings.stopSeconds = 30.0f / 30.0f;      // 立ち上がったところ（f30）で Idle へ移る。
+		settings.stopSlideSeconds = 14.0f / 30.0f; // 走る速さ（480）から 0.47秒で止まる。約112 滑る。
+		settings.stopBlendSeconds = 0.1f;
+		settings.stopExitBlendSeconds = 0.3f;
+		settings.stopAfterRunSeconds = 0.2f;       // 左Shift を移動キーより 0.2秒まで先に離しても滑って止まる。
+		// Run（15コマ、最後は最初と同じ）で、前の足が地面に着くところ。右足 f02、左足 f09。
+		settings.runAnimSeconds = 14.0f / 30.0f;
+		settings.stopLRunTime = 9.0f / 30.0f;
+		settings.stopRRunTime = 2.0f / 30.0f;
 		settings.moveThreshold = 0.1f;   // 移動入力がこれより小さければ立ち止まる。
 		settings.animBlendSeconds = 0.2f;
 		// Walk.fbx（Mixamo の Female Walk）の足が地面を送る速さ。UE で足のボーンを測った 115/秒 × モデルの大きさ 1.128。
@@ -77,13 +88,17 @@ namespace
 		// DashL・DashR は「しゃがむ → 蹴って低く滑る → 着地」の通し（33.41〜33.94秒、L・R は蹴る足）。
 		desc.clips[enPlayerAnimClip_DashL] = { "Assets/modelData/player/Animation/DashL.fbx", false };
 		desc.clips[enPlayerAnimClip_DashR] = { "Assets/modelData/player/Animation/DashR.fbx", false };
+		// StopL・StopR は走りから止まる「前の足を突っ張って滑る → 起き上がる」の通し（29.78〜30.89秒、L・R は突っ張る足。
+		// tools/UnrealScripts/stop_roto.json）。
+		desc.clips[enPlayerAnimClip_StopL] = { "Assets/modelData/player/Animation/StopL.fbx", false };
+		desc.clips[enPlayerAnimClip_StopR] = { "Assets/modelData/player/Animation/StopR.fbx", false };
 		return desc;
 	}
 
 	MagicCaster::Settings MakeCasterSettings()
 	{
 		MagicCaster::Settings settings;
-		settings.castHeight = 70.0f;   // 三人称時、足元からこの高さで撃つ（胸のあたり）。
+		settings.castHeight = 140.0f;   // 三人称時、足元からこの高さで撃つ（胸のあたり）。
 		settings.castForward = 60.0f;  // 自分のカプセル(半径20)に当たらないよう前に出して撃つ。
 		return settings;
 	}

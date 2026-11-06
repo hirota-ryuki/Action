@@ -7,6 +7,7 @@
 #include "PlayerRunState.h"
 #include "PlayerAirState.h"
 #include "PlayerDashState.h"
+#include "PlayerStopState.h"
 #include "PlayerFrozenState.h"
 
 PlayerStateMachine::PlayerStateMachine()
@@ -16,6 +17,7 @@ PlayerStateMachine::PlayerStateMachine()
 	m_states[static_cast<int>(PlayerStateId::Run)] = std::make_unique<PlayerRunState>();
 	m_states[static_cast<int>(PlayerStateId::Air)] = std::make_unique<PlayerAirState>();
 	m_states[static_cast<int>(PlayerStateId::Dash)] = std::make_unique<PlayerDashState>();
+	m_states[static_cast<int>(PlayerStateId::Stop)] = std::make_unique<PlayerStopState>();
 	m_states[static_cast<int>(PlayerStateId::Frozen)] = std::make_unique<PlayerFrozenState>();
 }
 
@@ -53,6 +55,7 @@ void PlayerStateMachine::ChangeState(PlayerStateId next, const CharacterInput& i
 {
 	if (m_current != nullptr) {
 		m_current->Exit(m_context);
+		m_context.previousId = m_current->GetId();
 	}
 	m_current = m_states[static_cast<int>(next)].get();
 	m_current->Enter(m_context, input);

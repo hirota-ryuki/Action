@@ -12,6 +12,7 @@ enum class PlayerStateId
 	Run,     // 走っている
 	Air,     // 空中にいる（跳んだ・足場から落ちた）
 	Dash,    // ダッシュ中（決まった距離を一気に進む）
+	Stop,    // 走っていて入力を離した。勢いで滑りながら踏ん張って止まる
 	Frozen,  // 凍結などで行動できない
 	Num,
 };
@@ -25,6 +26,8 @@ enum EnPlayerAnimClip
 	enPlayerAnimClip_Jump,
 	enPlayerAnimClip_DashL,  // ダッシュ（しゃがむ → 左足で蹴って低く滑る → 右足で着地）を通しで1本
 	enPlayerAnimClip_DashR,  // ダッシュ（右足で蹴る）
+	enPlayerAnimClip_StopL,  // 走りから止まる（左足を前へ突っ張り、腰を落として滑る → 起き上がる）
+	enPlayerAnimClip_StopR,  // 走りから止まる（右足を前へ突っ張る）
 	enPlayerAnimClip_Num,
 };
 
@@ -49,6 +52,18 @@ struct PlayerStateSettings
 	float dashRToRunStartTime = 0.0f;   // 右足で蹴ったあと（左足で着地）。
 	float dashLToWalkStartTime = 0.0f;
 	float dashRToWalkStartTime = 0.0f;
+	// 走りから止まる（Stop）。クリップは「前の足を突っ張って滑る → 起き上がって立つ」の通しの1本。
+	float stopSeconds = 0.0f;           // 止まるクリップを流す長さ（秒）。0なら滑らずにすぐ立ち止まる。
+	float stopSlideSeconds = 0.0f;      // 勢いで滑る長さ（秒）。走る速さからだんだん遅くなって0になる。
+	float stopBlendSeconds = 0.1f;      // 走りから止まるクリップへの補間時間。
+	float stopExitBlendSeconds = 0.3f;  // 止まるクリップから次の動きへの補間時間。
+	// 走りから歩きに移ってこの時間（秒）のうちに移動の入力を離しても、止まる動きにする。
+	// 走るボタンを移動キーより少し先に離したとき（ほぼ同時に離したとき）にも滑って止まるように。
+	float stopAfterRunSeconds = 0.0f;
+	// どちらの足で踏ん張るかは、止まった瞬間の走りの位置で決める。走りの中で、その足がちょうど前に着くところ（秒）。
+	float runAnimSeconds = 0.0f;        // 走りのクリップの1周期の長さ（秒）。
+	float stopLRunTime = 0.0f;          // 左足が前に着くところ。ここに近ければ StopL。
+	float stopRRunTime = 0.0f;          // 右足が前に着くところ。ここに近ければ StopR。
 	float moveThreshold = 0.1f;       // 移動入力の長さがこれより小さければ立ち止まっているとみなす。
 	float animBlendSeconds = 0.2f;    // アニメーションを切り替えるときの補間時間。
 	float walkAnimMoveSpeed = 0.0f;   // 歩くアニメーションを等速で再生したとき、足が地面を送る速さ。0なら等速で再生する。
@@ -66,6 +81,10 @@ struct PlayerStateContext
 	mutable float nextBlendSeconds = -1.0f;
 	// 次の PlayAnimation で、クリップごとに再生を始める位置（秒）。0より小さければ最初から。使ったら全部消す。
 	mutable float nextStartTimes[enPlayerAnimClip_Num] = {};
+	// ひとつ前のステート。Enter の中で、どこから来たかを見るのに使う。PlayerStateMachine が入れる。
+	PlayerStateId previousId = PlayerStateId::Idle;
+	// 走りのアニメーションの今の位置（秒、ループ前の通算）。Run が毎フレーム書き、Stop が踏ん張る足を決めるのに使う。
+	float runAnimTime = 0.0f;
 
 	PlayerStateContext()
 	{
