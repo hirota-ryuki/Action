@@ -70,6 +70,42 @@ namespace nsK2EngineLow {
 			CalcBoneMatrixInRootBoneSpace(*childBone, mBoneInRootSpace);
 		}
 	}
+	namespace
+	{
+		// ボーンのローカル行列を、平行移動・拡大・回転に分けて t（0〜1）で補間する。
+		// Animation::UpdateGlobalPose のクリップ同士の補間と同じ分け方。
+		Matrix InterpolateBoneMatrix(const Matrix& m0, const Matrix& m1, float t)
+		{
+			Vector3 pos;
+			pos.Lerp(t, *(const Vector3*)m0.m[3], *(const Vector3*)m1.m[3]);
+			Matrix r[2] = { m0, m1 };
+			Vector3 scale[2];
+			Quaternion rot[2];
+			for (int i = 0; i < 2; i++) {
+				Matrix& m = r[i];
+				m.m[3][0] = m.m[3][1] = m.m[3][2] = 0.0f;
+				scale[i].x = (*(Vector3*)m.m[0]).Length();
+				scale[i].y = (*(Vector3*)m.m[1]).Length();
+				scale[i].z = (*(Vector3*)m.m[2]).Length();
+				for (int c = 0; c < 3; c++) {
+					m.m[0][c] /= scale[i].x;
+					m.m[1][c] /= scale[i].y;
+					m.m[2][c] /= scale[i].z;
+				}
+				rot[i].SetRotation(m);
+			}
+			Vector3 s;
+			s.Lerp(t, scale[0], scale[1]);
+			Quaternion q;
+			q.Slerp(t, rot[0], rot[1]);
+			Matrix scaleMatrix, rotMatrix, transMatrix;
+			scaleMatrix.MakeScaling(s);
+			rotMatrix.MakeRotationFromQuaternion(q);
+			transMatrix.MakeTranslation(pos);
+			return scaleMatrix * rotMatrix * transMatrix;
+		}
+	}
+
 	void AnimationPlayController::SamplingBoneMatrixFromAnimationClip()
 	{
 		const auto& keyFramePtrListArray = m_animationClip->GetKeyFramePtrListArray();
@@ -77,8 +113,19 @@ namespace nsK2EngineLow {
 			if (keyFrameList.size() == 0) {
 				continue;
 			}
-			//現在再生中のキーフレームを取ってくる。
+			//現在再生中のキーフレーム（今の時間より後で一番近いもの）を取ってくる。
 			KeyFrame* keyframe = keyFrameList.at(m_currentKeyFrameNo);
+			// 1つ前のキーフレームとの間を、今の時間で補間する。
+			// キーフレームの間隔（30fps など）より細かく描画しても、ポーズがカクカク切り替わらないように。
+			if (m_currentKeyFrameNo > 0) {
+				KeyFrame* prev = keyFrameList.at(m_currentKeyFrameNo - 1);
+				const float span = keyframe->time - prev->time;
+				if (span > FLT_EPSILON) {
+					const float t = max(0.0f, min(1.0f, (m_time - prev->time) / span));
+					m_boneMatrix[keyframe->boneIndex] = InterpolateBoneMatrix(prev->transform, keyframe->transform, t);
+					continue;
+				}
+			}
 			m_boneMatrix[keyframe->boneIndex] = keyframe->transform;
 		}
 	}
@@ -148,8 +195,14 @@ namespace nsK2EngineLow {
 			if (m_currentKeyFrameNo >= (int)topBoneKeyFrameList.size()) {
 				//終端まで行った。
 				if (m_animationClip->IsLoop()) {
-					//ループ。
+					//ループ。最後のキーフレームを越えた分は、次の周回へ持ち越す（補間するので、捨てるとつなぎ目でつまずく）。
+					const float length = topBoneKeyFrameList.back()->time;
+					const float over = m_time - length;
 					StartLoop();
+					if (length > FLT_EPSILON && over > 0.0f && over < length) {
+						m_time = over;
+						continue;
+					}
 				}
 				else {
 					//ワンショット再生。
