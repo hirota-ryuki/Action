@@ -72,7 +72,10 @@ namespace nsK2EngineLow {
 			if (m_interpolateEndTime <= 0.0f) {
 				return 1.0f;
 			}
-			return min(1.0f, m_interpolateTime / m_interpolateEndTime);
+			// 補間の始めと終わりをゆっくりにする（smoothstep）。
+			// まっすぐ（線形）だと、補間の始まりと終わりで動きの速さが急に変わり、カクッと見える。
+			const float t = min(1.0f, m_interpolateTime / m_interpolateEndTime);
+			return t * t * (3.0f - 2.0f * t);
 		}
 		
 		/// <summary>
