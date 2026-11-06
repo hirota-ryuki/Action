@@ -1,0 +1,15 @@
+{
+  "work_dir": "/Game/05_Adjust",
+  "mesh_fbx": "../../Game/Assets/modelData/player/Model/SK_Player.FBX",
+  "clips": [
+    {"in": "../../Game/Assets/modelData/player/Animation/Walk.fbx",
+     "out": "../../Game/Assets/modelData/player/Animation/Walk.fbx"}
+  ],
+  "pitch_deg": {
+    "J_Bip_C_Spine": 5.0,
+    "J_Bip_C_Chest": 6.0,
+    "J_Bip_C_UpperChest": 9.0,
+    "J_Bip_C_Neck": -8.0,
+    "J_Bip_C_Head": 6.0
+  }
+}
