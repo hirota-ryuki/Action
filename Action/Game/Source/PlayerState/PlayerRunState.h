@@ -22,7 +22,13 @@ public:
 	{
 		// 再生を始める位置は、PlayAnimation が使ったら消すので、先に読んでおく。
 		const float startTime = context.nextStartTimes[enPlayerAnimClip_Run];
-		context.runAnimTime = startTime >= 0.0f ? startTime : 0.0f;
+		if (startTime >= 0.0f) {
+			context.runAnimTime = startTime;
+		}
+		else if (context.previousId != PlayerStateId::Dash) {
+			// ダッシュの着地の間に走りへ補間してあれば、走りはもう流れている。位置はダッシュが入れてある。
+			context.runAnimTime = 0.0f;
+		}
 		PlayerGroundState::Enter(context, input);
 	}
 	PlayerStateId CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const override

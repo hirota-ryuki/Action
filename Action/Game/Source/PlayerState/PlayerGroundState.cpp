@@ -32,7 +32,8 @@ PlayerStateId PlayerGroundState::SelectByInput(const PlayerStateContext& context
 	if (input.moveDirection.Length() < context.settings.moveThreshold) {
 		return PlayerStateId::Idle;
 	}
-	if (input.isRun && context.mover->GetSettings().runSpeedMultiplier != 1.0f) {
+	// ダッシュのあとは、走るボタンを離していても、移動の入力を離すまで走る。
+	if ((input.isRun || context.keepRunAfterDash) && context.mover->GetSettings().runSpeedMultiplier != 1.0f) {
 		return PlayerStateId::Run;
 	}
 	return PlayerStateId::Walk;

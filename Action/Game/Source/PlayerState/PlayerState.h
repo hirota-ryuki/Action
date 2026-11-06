@@ -52,6 +52,12 @@ struct PlayerStateSettings
 	float dashRToRunStartTime = 0.0f;   // 右足で蹴ったあと（左足で着地）。
 	float dashLToWalkStartTime = 0.0f;
 	float dashRToWalkStartTime = 0.0f;
+	// true なら、着地に入ったとき走るボタンを押していれば、着地の間に走りのアニメーションへ補間しておく（見た目だけ）。
+	// false なら着地を最後まで流してから補間する（ダッシュのクリップが最後のポーズで止まってから補間するので、一瞬止まって見える）。
+	bool dashLandIntoRun = false;
+	bool dashCanChain = true;      // ダッシュ中にもう一度押すと、着地のあとすぐ次のダッシュを出す。false なら着地まで入力を受け付けない。
+	bool dashEndWithStop = false;  // ダッシュのあと移動の入力がなければ、Idle ではなく Stop（勢いで滑って止まる）へ移る。
+	bool dashKeepRun = false;      // ダッシュのあとは、走るボタンを離していても、移動の入力を離すまで走り続ける。
 	// 走りから止まる（Stop）。クリップは「前の足を突っ張って滑る → 起き上がって立つ」の通しの1本。
 	float stopSeconds = 0.0f;           // 止まるクリップを流す長さ（秒）。0なら滑らずにすぐ立ち止まる。
 	float stopSlideSeconds = 0.0f;      // 勢いで滑る長さ（秒）。走る速さからだんだん遅くなって0になる。
@@ -83,6 +89,9 @@ struct PlayerStateContext
 	mutable float nextStartTimes[enPlayerAnimClip_Num] = {};
 	// ひとつ前のステート。Enter の中で、どこから来たかを見るのに使う。PlayerStateMachine が入れる。
 	PlayerStateId previousId = PlayerStateId::Idle;
+	// ダッシュのあと、移動の入力を離すまで走り続ける（走るボタンを押していなくても Run）。
+	// Dash が立て（dashKeepRun のとき）、PlayerStateMachine が移動の入力がないフレームで下ろす。
+	bool keepRunAfterDash = false;
 	// 走りのアニメーションの今の位置（秒、ループ前の通算）。Run が毎フレーム書き、Stop が踏ん張る足を決めるのに使う。
 	float runAnimTime = 0.0f;
 

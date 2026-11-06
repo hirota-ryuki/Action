@@ -27,6 +27,7 @@ PlayerStateId PlayerAirState::CheckTransition(const PlayerStateContext& context,
 void PlayerAirState::Update(PlayerStateContext& context, const CharacterInput& input, float deltaTime)
 {
 	const CharacterMoveSettings& settings = context.mover->GetSettings();
-	const float speed = input.isRun ? settings.walkSpeed * settings.runSpeedMultiplier : settings.walkSpeed;
+	const bool isRun = input.isRun || context.keepRunAfterDash;
+	const float speed = isRun ? settings.walkSpeed * settings.runSpeedMultiplier : settings.walkSpeed;
 	context.mover->MoveByInput(input, speed, deltaTime);
 }

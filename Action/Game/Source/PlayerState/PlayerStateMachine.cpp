@@ -44,6 +44,11 @@ void PlayerStateMachine::Update(const CharacterInput& input, float deltaTime)
 		return;
 	}
 
+	// 移動の入力を離したら、ダッシュのあとの「走り続ける」を終える。
+	if (input.moveDirection.Length() < m_context.settings.moveThreshold) {
+		m_context.keepRunAfterDash = false;
+	}
+
 	const PlayerStateId next = CanAct() ? m_current->CheckTransition(m_context, input) : PlayerStateId::Frozen;
 	if (next != m_current->GetId()) {
 		ChangeState(next, input);
