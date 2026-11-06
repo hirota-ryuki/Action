@@ -7,6 +7,7 @@
 #include "PlayerRunState.h"
 #include "PlayerAirState.h"
 #include "PlayerDashState.h"
+#include "PlayerStopState.h"
 #include "PlayerFrozenState.h"
 
 PlayerStateMachine::PlayerStateMachine()
@@ -16,6 +17,7 @@ PlayerStateMachine::PlayerStateMachine()
 	m_states[static_cast<int>(PlayerStateId::Run)] = std::make_unique<PlayerRunState>();
 	m_states[static_cast<int>(PlayerStateId::Air)] = std::make_unique<PlayerAirState>();
 	m_states[static_cast<int>(PlayerStateId::Dash)] = std::make_unique<PlayerDashState>();
+	m_states[static_cast<int>(PlayerStateId::Stop)] = std::make_unique<PlayerStopState>();
 	m_states[static_cast<int>(PlayerStateId::Frozen)] = std::make_unique<PlayerFrozenState>();
 }
 

@@ -1,0 +1,57 @@
+{
+ "work_dir": "/Game/05_Adjust",
+ "mesh_fbx": "../../Game/Assets/modelData/player/Model/SK_Player.FBX",
+ "pitch_deg": {},
+ "swing_scale": {},
+ "keep_feet_on_ground": false,
+ "clips": [
+  {
+   "in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
+   "out": "../../Game/Assets/modelData/player/Animation/StopL.fbx",
+   "frames": {
+    "start": 0,
+    "count": 1,
+    "hold": 33
+   },
+   "rotoscope": {
+    "data": "genshin_stop_pose.json",
+    "start": 6,
+    "count": 34,
+    "map": {
+     "A": "R",
+     "B": "L",
+     "a": "R",
+     "b": "L"
+    },
+    "toe_offset_cm": 0.5,
+    "lean_deg": 10.0,
+    "leg_lean_deg": 0.0,
+    "head_pitch_deg": -30.0
+   }
+  },
+  {
+   "in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
+   "out": "../../Game/Assets/modelData/player/Animation/StopR.fbx",
+   "frames": {
+    "start": 0,
+    "count": 1,
+    "hold": 33
+   },
+   "rotoscope": {
+    "data": "genshin_stop_pose.json",
+    "start": 6,
+    "count": 34,
+    "map": {
+     "A": "L",
+     "B": "R",
+     "a": "L",
+     "b": "R"
+    },
+    "toe_offset_cm": 0.5,
+    "lean_deg": 10.0,
+    "leg_lean_deg": 0.0,
+    "head_pitch_deg": -30.0
+   }
+  }
+ ]
+}

@@ -54,6 +54,9 @@
     <ClCompile Include="Source\PlayerState\PlayerDashState.cpp">
       <Filter>Source\PlayerState</Filter>
     </ClCompile>
+    <ClCompile Include="Source\PlayerState\PlayerStopState.cpp">
+      <Filter>Source\PlayerState</Filter>
+    </ClCompile>
     <ClCompile Include="Source\PlayerState\PlayerFrozenState.cpp">
       <Filter>Source\PlayerState</Filter>
     </ClCompile>
@@ -147,6 +150,9 @@
       <Filter>Source\PlayerState</Filter>
     </ClInclude>
     <ClInclude Include="Source\PlayerState\PlayerDashState.h">
+      <Filter>Source\PlayerState</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PlayerState\PlayerStopState.h">
       <Filter>Source\PlayerState</Filter>
     </ClInclude>
     <ClInclude Include="Source\PlayerState\PlayerFrozenState.h">
