@@ -665,7 +665,9 @@ def rotoscope(anim, cfg, base_dir):
     # コマごとの目標（このキャラクターのボーン名で）。
     targets = []
     for r in rows:
-        t = {"torso": r["torso"], "neck": r["neck"]}
+        # lean_deg: 胴体と首を、データよりさらに前へ倒す角度（正 = 前へ）。
+        lean = cfg.get("lean_deg", 0.0)
+        t = {"torso": r["torso"] - lean, "neck": r["neck"] - lean}
         for src in "AB":
             sd = m[src]
             t["J_Bip_%s_UpperLeg" % sd] = r[src + "thigh"]
