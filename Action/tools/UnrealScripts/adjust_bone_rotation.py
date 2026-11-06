@@ -668,11 +668,27 @@ def rotoscope(anim, cfg, base_dir):
         # lean_deg: 胴体と首を、データよりさらに前へ倒す角度（正 = 前へ）。
         lean = cfg.get("lean_deg", 0.0)
         t = {"torso": r["torso"] - lean, "neck": r["neck"] - lean}
+        # leg_lean_deg: 脚（太もも・すね・足）もこの角度だけ前へ倒す（体全体を一本の線で倒し、足が腰の下に着くように）。
+        # tuck_knee_deg: 振り戻す脚が腰の下を通るとき（足が浮いていて、太ももが -95°〜-35°）、膝をこの角度以上に曲げて、
+        # かかとをお尻へたたむ（太ももがまだ後ろにあるうちにたたむと、かかとが高く跳ね上がるので -95° から）。すねを回した分だけ足も回し、つま先の向きは崩さない。
+        leg_lean = cfg.get("leg_lean_deg", 0.0)
+        tuck = cfg.get("tuck_knee_deg", 0.0)
         for src in "AB":
             sd = m[src]
-            t["J_Bip_%s_UpperLeg" % sd] = r[src + "thigh"]
-            t["J_Bip_%s_LowerLeg" % sd] = r[src + "shin"]
-            t["J_Bip_%s_Foot" % sd] = r[src + "foot"]
+            thigh, shin, foot = r[src + "thigh"], r[src + "shin"], r[src + "foot"]
+            if tuck > 0.0 and r["toe" + src] > 0.12:
+                def ramp(x, a, b):
+                    u = max(0.0, min(1.0, (x - a) / (b - a)))
+                    return u * u * (3.0 - 2.0 * u)
+                w = ramp(thigh, -95.0, -80.0) * (1.0 - ramp(thigh, -50.0, -35.0))
+                knee = wrap180(thigh - shin)
+                if knee < tuck and w > 0.0:
+                    new_shin = thigh - (knee + (tuck - knee) * w)
+                    foot += new_shin - shin
+                    shin = new_shin
+            t["J_Bip_%s_UpperLeg" % sd] = thigh - leg_lean
+            t["J_Bip_%s_LowerLeg" % sd] = shin - leg_lean
+            t["J_Bip_%s_Foot" % sd] = foot - leg_lean
         for src in "ab":
             sd = m[src]
             t["J_Bip_%s_UpperArm" % sd] = r[src + "upper"]
@@ -774,6 +790,20 @@ def rotoscope(anim, cfg, base_dir):
             lift = [x + shift for x in lift]
             for t in targets:
                 t["hip_cm"] += shift
+            # 動画で足が地面に着いているコマ（つま先の高さが脚の長さの 0.08 未満）は、浮いた分だけ腰を下げて足を着ける。
+            # 1コマで腰が跳ねないよう、下げる量を前後のコマへなだらかに広げる（ループなので端はつなげる。最後のコマ = 最初のコマ）。
+            if it == 1:
+                n = num_keys - 1
+                corr = [0.0] * n
+                for f in range(n):
+                    gap = toes[f] + shift - 0.5
+                    if (rows[f]["toeA"] < 0.08 or rows[f]["toeB"] < 0.08) and gap > 0.0:
+                        corr[f] = gap
+                for _ in range(3):
+                    corr = [max(corr[f], 0.25 * corr[f - 1] + 0.5 * corr[f] + 0.25 * corr[(f + 1) % n]) for f in range(n)]
+                    corr = [0.25 * corr[f - 1] + 0.5 * corr[f] + 0.25 * corr[(f + 1) % n] for f in range(n)]
+                for f in range(num_keys):
+                    lift[f] -= corr[f % n]
         write()
     unreal.EditorAssetLibrary.save_loaded_asset(anim)
 
