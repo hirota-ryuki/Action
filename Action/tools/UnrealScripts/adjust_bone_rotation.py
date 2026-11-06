@@ -523,6 +523,90 @@ def pose_to(anim, cfg):
     log("pose_to lift", lift, "lowest toe at end(cm)", round(toe, 1))
 
 
+def shift_feet(anim, cfg):
+    """足首を前後にずらす（腰は動かさない）。太もも・すねの向きを2本の骨の IK（膝は前）で決め、足は地面に対する向きを元のままにする。
+    cfg = {"L": [コマごとの前へのずれ(cm)], "R": [...]}。届かないときは脚を伸ばし切ったところで止まる。"""
+    P = unreal.AnimPoseExtensions
+    W = unreal.AnimPoseSpaces.WORLD
+    L = unreal.AnimPoseSpaces.LOCAL
+    opts = eval_options()
+    num_keys = unreal.AnimationLibrary.get_num_frames(anim) + 1
+    axis = side_axis(P.get_reference_pose(anim.get_editor_property("skeleton")))
+    fwd = unreal.Vector(0.0, 0.0, 1.0).cross(axis) * -1.0
+    legs = [(sd, "J_Bip_%s_UpperLeg" % sd, "J_Bip_%s_LowerLeg" % sd, "J_Bip_%s_Foot" % sd) for sd in "LR" if sd in cfg]
+    bones = [b for leg in legs for b in leg[1:]]
+
+    def planar(v):
+        return (v.dot(fwd), v.z)
+
+    orig = {b: {"pos": [], "rot": [], "scl": [], "axis": []} for b in bones}
+    goals = []
+    for f in range(num_keys):
+        pose = P.get_anim_pose_at_frame(anim, f, opts)
+        for b in bones:
+            local = P.get_bone_pose(pose, b, L)
+            world = P.get_bone_pose(pose, b, W)
+            parent_rot = q_mul(world.rotation, q_inv(local.rotation))
+            o = orig[b]
+            o["pos"].append(local.translation)
+            o["rot"].append(local.rotation)
+            o["scl"].append(local.scale3d)
+            o["axis"].append(q_rotate(q_inv(parent_rot), axis))
+        g = {}
+        for sd, thigh, shin, foot in legs:
+            hf, hz = planar(P.get_bone_pose(pose, thigh, W).translation)
+            kf, kz = planar(P.get_bone_pose(pose, shin, W).translation)
+            af, az = planar(P.get_bone_pose(pose, foot, W).translation)
+            l1 = math.hypot(kf - hf, kz - hz)
+            l2 = math.hypot(af - kf, az - kz)
+            af += cfg[sd][f]
+            df, dz = af - hf, az - hz
+            dist = min(math.hypot(df, dz), (l1 + l2) * 0.999)
+            dist = max(dist, abs(l1 - l2) + 0.01)
+            cos_a = (l1 * l1 + dist * dist - l2 * l2) / (2.0 * l1 * dist)
+            alpha = math.degrees(math.acos(max(-1.0, min(1.0, cos_a))))
+            base = math.degrees(math.atan2(dz, df))
+            thigh_deg = base + alpha
+            nkf = hf + l1 * math.cos(math.radians(thigh_deg))
+            nkz = hz + l1 * math.sin(math.radians(thigh_deg))
+            # 届かないときは、目標の方向へ伸ばし切る。
+            reach = min(1.0, dist / max(1e-3, math.hypot(df, dz)))
+            g[thigh] = thigh_deg
+            g[shin] = math.degrees(math.atan2(hz + dz * reach - nkz, hf + df * reach - nkf))
+        goals.append(g)
+
+    pitch = {b: [0.0] * num_keys for b in bones}
+
+    def write():
+        c = get_controller(anim)
+        c.open_bracket(unreal.Text("shift_feet"), False)
+        for b in bones:
+            o = orig[b]
+            rots = []
+            for f in range(num_keys):
+                half = math.radians(pitch[b][f]) * 0.5
+                sn = math.sin(half)
+                a = o["axis"][f]
+                rots.append(q_mul(unreal.Quat(a.x * sn, a.y * sn, a.z * sn, math.cos(half)), o["rot"][f]))
+            c.set_bone_track_keys(b, o["pos"], rots, o["scl"], False)
+        c.close_bracket(False)
+
+    for it in range(3):
+        for f in range(num_keys):
+            pose = P.get_anim_pose_at_frame(anim, f, opts)
+            for sd, thigh, shin, foot in legs:
+                if abs(cfg[sd][f]) < 1e-6:
+                    continue
+                d_thigh = -wrap180(goals[f][thigh] - segment_angle(pose, thigh, fwd))
+                d_shin = -wrap180(goals[f][shin] - segment_angle(pose, shin, fwd)) - d_thigh
+                pitch[thigh][f] += d_thigh
+                pitch[shin][f] += d_shin
+                pitch[foot][f] = -(pitch[thigh][f] + pitch[shin][f])
+        write()
+    unreal.EditorAssetLibrary.save_loaded_asset(anim)
+    log("shift_feet", cfg)
+
+
 def crouch(anim, cfg):
     """足の位置を動かさずに腰を落とす（膝を曲げて着地を受け止める形にする）。
     cfg = {"lower_cm": 12, "weights": [0.6, 0.8, 1, 1, 0.7, 0.3, 0]}
@@ -951,6 +1035,8 @@ def main():
                 rotoscope(anim, clip["rotoscope"], base)
             if clip.get("crouch") and after_roto:
                 crouch(anim, clip["crouch"])
+            if clip.get("shift_feet"):
+                shift_feet(anim, clip["shift_feet"])
             if clip.get("blend_from"):
                 blend_from(anim, clip["blend_from"], work + "/Anim")
             if clip.get("log_frames"):
