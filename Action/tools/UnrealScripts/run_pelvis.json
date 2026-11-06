@@ -4,22 +4,15 @@
  "clips": [
   {
    "in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
-   "out": "../../Game/Assets/modelData/player/Animation/Run.fbx"
+   "out": "../../Game/Assets/modelData/player/Animation/Run.fbx",
+   "log_frames": true
   }
  ],
  "pitch_deg": {
-  "J_Bip_C_Hips": 12.0,
-  "J_Bip_L_UpperLeg": -8.0,
-  "J_Bip_R_UpperLeg": -8.0,
-  "J_Bip_C_Spine": -4.0,
-  "J_Bip_C_Chest": 9.0,
-  "J_Bip_C_UpperChest": 7.0,
-  "J_Bip_C_Neck": -9.0,
-  "J_Bip_C_Head": -9.0
+  "J_Bip_C_Hips": -15.0,
+  "J_Bip_L_UpperLeg": 15.0,
+  "J_Bip_R_UpperLeg": 15.0,
+  "J_Bip_C_Spine": 15.0
  },
- "keep_feet_on_ground": true,
- "swing_scale": {
-  "J_Bip_L_UpperLeg": 1.25,
-  "J_Bip_R_UpperLeg": 1.25
- }
+ "keep_feet_on_ground": true
 }
