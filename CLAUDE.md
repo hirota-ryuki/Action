@@ -51,3 +51,11 @@
   - そのPCだけ: `.claude\scripts\remove-sessions.cmd`（rclone の設定と本体を消す）
   - 全PCまとめて: https://account.live.com/consent/Manage で rclone の許可を取り消す
 - 同じ会話を2台のPCで同時に進めない（新しい方で上書きされ、もう片方の続きが消える）。
+
+## スマホへの通知
+
+- Claude の返答が終わるたびに、`.claude/settings.json` の Stop フック → `.claude/scripts/notify-phone.ps1` が ntfy.sh へ通知を送り、スマホの ntfy アプリに届く。PC の画面を見ているときも送る。
+- トピック名（ntfy アプリで購読する名前）はリポジトリに入れない（公開リポジトリのため）。各PCの `%APPDATA%\claude-notify\ntfy-topic.txt` と、個人用 OneDrive の `01_ClaudeSessions/ntfy-topic.txt` に置く。新しいPCでは、最初の通知のときに OneDrive から自動で取ってくる。
+- ntfy.sh はトピック名を知っていれば誰でも読めるので、通知の文面に作業の内容を書かない。
+- トピック名を確かめるとき: `powershell -ExecutionPolicy Bypass -File .claude\scripts\notify-phone.ps1 -Mode topic`
+- Claude の PushNotification ツールは使わない（PC の画面を見ているときは送られないため）。
