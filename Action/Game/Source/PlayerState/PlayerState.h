@@ -23,12 +23,8 @@ enum EnPlayerAnimClip
 	enPlayerAnimClip_Walk,
 	enPlayerAnimClip_Run,
 	enPlayerAnimClip_Jump,
-	enPlayerAnimClip_DashL,  // ダッシュの一蹴り（左足で蹴る）
-	enPlayerAnimClip_DashR,  // ダッシュの一蹴り（右足で蹴る）
-	enPlayerAnimClip_DashLandL,  // 左足で蹴ったあとの着地（右足で、膝を曲げて受け止める）
-	enPlayerAnimClip_DashLandR,  // 右足で蹴ったあとの着地（左足で受け止める）
-	enPlayerAnimClip_DashCrouchL,  // 左足で蹴る前に、しゃがみ込む（左足を前に、膝を深く曲げる）
-	enPlayerAnimClip_DashCrouchR,  // 右足で蹴る前に、しゃがみ込む
+	enPlayerAnimClip_DashL,  // ダッシュ（しゃがむ → 左足で蹴って低く滑る → 右足で着地）を通しで1本
+	enPlayerAnimClip_DashR,  // ダッシュ（右足で蹴る）
 	enPlayerAnimClip_Num,
 };
 
@@ -38,16 +34,13 @@ struct PlayerStateSettings
 	float dashDistance = 300.0f;      // ダッシュの総移動距離。0ならダッシュできない。
 	float dashSpeed = 1000.0f;        // ダッシュの平均の速さ。蹴った瞬間がいちばん速く、だんだん dashEndSpeed まで遅くなる。
 	float dashEndSpeed = 0.0f;        // ダッシュの終わりの速さ。着地の間もこの速さで進む（走りへ勢いをつなぐ）。dashSpeed 以下。
-	float dashCrouchSeconds = 0.0f;   // 蹴る前にしゃがみ込む長さ（秒）。0ならしゃがまずにすぐ蹴る。地面にいるときの最初の1回だけ。
-	float dashCrouchAnimSpeed = 1.0f; // しゃがみ込みのアニメーションの再生速度（倍）。dashCrouchSeconds で流し終わるよう合わせる。
-	float dashCrouchBlendSeconds = 0.12f; // しゃがみ込みに入るときの補間時間。長いほどなめらかに沈む。
-	float dashCrouchSpeed = 0.0f;     // しゃがみ込み始めの進む速さ。しゃがみ終わりで0になる（踏ん張って止まる）。
-	float dashKickBlendSeconds = 0.03f; // しゃがんだポーズから一蹴りへ移るときの補間時間。一蹴りはしゃがんだポーズから始まるので短くてよい。
-	float dashChainKickStartTime = 0.0f; // 連打で続けて蹴るとき、一蹴りをどこから流すか（秒）。しゃがんだところを飛ばす。
+	// ダッシュのクリップは「しゃがむ → 蹴って飛ぶ → 着地」を通しで1本にしてある。各区間の長さはクリップに合わせる。
+	float dashCrouchSeconds = 0.0f;   // しゃがむ長さ（秒）。0ならしゃがまずにすぐ蹴る。地面にいるときの最初の1回だけ。
+	float dashCrouchBlendSeconds = 0.1f; // ダッシュのクリップに入るときの補間時間（しゃがむとき）。
+	float dashCrouchSpeed = 0.0f;     // しゃがみ始めの進む速さ。しゃがみ終わりで0になる。
+	float dashKickStartTime = 0.0f;   // クリップの中で、蹴って飛び始めるところ（秒）。しゃがまないときは、ここから流す。
 	float dashLandSeconds = 0.0f;     // 着地の長さ（秒）。0なら着地せず、すぐ次の動きへ移る。
-	float dashLandAnimSpeed = 1.0f;   // 着地のアニメーションの再生速度（倍）。dashLandSeconds で流し終わるよう合わせる。
-	float dashLandBlendSeconds = 0.08f; // 飛び出したポーズから着地へ移るときの補間時間。
-	float dashAnimSpeed = 1.0f;       // 一蹴りのアニメーション（0.3秒）の再生速度（倍）。距離÷速さの時間で流し終わるよう合わせる。
+	float dashAnimSpeed = 1.0f;       // ダッシュのアニメーションの再生速度（倍）。
 	float dashAnimBlendSeconds = 0.05f; // ダッシュに入るときのアニメーションの補間時間。短いほど一気に前へ出る。
 	float dashExitBlendSeconds = 0.5f;  // ダッシュから次の動きへ移るときの補間時間。長いほど飛び出したポーズが残る。
 	// ダッシュ（着地まで）のあと、走り・歩きをどこから始めるか（秒）。着地の最後と前後の足が同じところ。

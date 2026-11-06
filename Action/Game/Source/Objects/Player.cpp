@@ -31,27 +31,22 @@ namespace
 	{
 		PlayerStateSettings settings;
 		settings.dashDistance = 300.0f;  // ダッシュスキルの総移動距離。
-		// ダッシュの時間は、はじめの 0.3秒の 3/4（0.225秒）。
-		settings.dashSpeed = 300.0f / 0.225f; // ダッシュの平均の速さ（約1333）。
-		settings.dashEndSpeed = 480.0f;  // 終わりは走る速さ。蹴った瞬間は約2190 になる。
-		settings.dashAnimSpeed = 0.3f / 0.225f; // 0.3秒の一蹴りを約1.33倍で流し、ダッシュの0.225秒で流し終える。
+		// ダッシュのクリップ（原神の動画の 33.41〜33.94秒、30fps・17コマ）の区間に合わせる。
+		//   しゃがむ f00〜f04（4コマ）、蹴って低く滑る f04〜f11（7コマ）、着地 f11〜f16（5コマ）。
+		settings.dashSpeed = 300.0f / (7.0f / 30.0f); // 300 を 7コマ（約0.233秒）で進む（平均 約1286）。
+		settings.dashEndSpeed = 480.0f;  // 終わりは走る速さ。蹴った瞬間は約2090 になる。
+		settings.dashAnimSpeed = 1.0f;   // 動画と同じ速さで流す。
 		settings.dashAnimBlendSeconds = 0.05f;
-		// しゃがみ込むクリップ（沈む4コマ＋底で踏ん張る4コマ、0.27秒）を1.8倍で流し、約0.15秒で溜めて飛び出す。
-		// 2.5倍・補間 0.05秒では、録画で見ると1コマでしゃがみ終わり、沈み込む動きが見えなかった。
-		settings.dashCrouchAnimSpeed = 1.8f;
-		settings.dashCrouchSeconds = 8.0f / 30.0f / 1.8f;
+		settings.dashCrouchSeconds = 4.0f / 30.0f;
 		settings.dashCrouchBlendSeconds = 0.1f;
-		settings.dashCrouchSpeed = 200.0f;     // 入った勢いで少し進み、踏ん張って止まってから飛び出す。
-		settings.dashKickBlendSeconds = 0.03f;
-		settings.dashChainKickStartTime = 2.0f / 30.0f; // 一蹴りの f02 から（脚が伸び切ったところ）。
-		settings.dashLandAnimSpeed = 0.2f / 0.25f; // 着地のクリップ（7コマ、0.2秒）を0.8倍で流す。低い姿勢のまま足を着き、だんだん起きる。
-		settings.dashLandSeconds = 0.25f;      // 着地のクリップを流し終える長さ。0.15秒では一気に起き上がって見えた。
-		settings.dashLandBlendSeconds = 0.05f;
-		settings.dashExitBlendSeconds = 0.25f; // 着地から走りへ。足の位置は合わせてあるので、ふつうより少し長めで足りる。
-		// 着地のあとの走り・歩きの始め。Run（30fps・19コマ）と Walk（30fps・36コマ）で足の位置を測って決めた。
-		// 着地の最後と同じ形のところ。左足で蹴ったあと: Run f10、Walk f00。右足で蹴ったあと: Run f01、Walk f17。
-		settings.dashLToRunStartTime = 10.0f / 30.0f;
-		settings.dashRToRunStartTime = 1.0f / 30.0f;
+		settings.dashCrouchSpeed = 200.0f;     // 入った勢いで少し進み、止まってから飛び出す。
+		settings.dashKickStartTime = 4.0f / 30.0f;
+		settings.dashLandSeconds = 5.0f / 30.0f;
+		settings.dashExitBlendSeconds = 0.15f; // ダッシュの最後と走りの始めは同じ形なので、短くてよい。
+		// ダッシュのあとの走り・歩きの始め。ダッシュの最後（原神の動画の 33.94秒）と同じ足の形のところ。
+		// Run（原神の走りの1周期、30fps・15コマ）: 左足で蹴ったあと f05、右足で蹴ったあと f12。
+		settings.dashLToRunStartTime = 5.0f / 30.0f;
+		settings.dashRToRunStartTime = 12.0f / 30.0f;
 		settings.dashLToWalkStartTime = 0.0f;
 		settings.dashRToWalkStartTime = 17.0f / 30.0f;
 		settings.moveThreshold = 0.1f;   // 移動入力がこれより小さければ立ち止まる。
@@ -71,25 +66,17 @@ namespace
 		desc.scale = 1.128f;
 		// Idle・Walk は Mixamo のモーションを UE で SK_Player にリターゲットしたもの。
 		// Jump はまだ SK_Player 用が無いので、暫定で run を入れておく。
-		// Run は ThirdPersonRunPlayer_Run の骨盤を 15° 起こしたもの（tools/UnrealScripts/run_pelvis.json）。
-		// 元のままだと骨盤が前へ倒れすぎて、お尻が上がって見える。上半身と脚の向きは元のまま。
+		// Run・DashL・DashR は、原神の動画から MediaPipe で関節の位置を読み取り、その角度で SK_Player のポーズを作ったもの
+		// （tools/UnrealScripts/dash_roto.json）。Run は走りの1周期（34.25〜34.72秒）。
 		const AnimClipDesc run = { "Assets/modelData/player/Animation/Run.fbx", true };
 		desc.clips.resize(enPlayerAnimClip_Num);
 		desc.clips[enPlayerAnimClip_Idle] = { "Assets/modelData/player/Animation/Idle.fbx", true };
 		desc.clips[enPlayerAnimClip_Walk] = { "Assets/modelData/player/Animation/Walk.fbx", true };
 		desc.clips[enPlayerAnimClip_Run] = run;
 		desc.clips[enPlayerAnimClip_Jump] = run;
-		// DashL・DashR は、Run の体全体を前へ倒し、片足で蹴って宙へ飛び出す1歩だけにしたもの（L・R は蹴る足）。
-		// tools/UnrealScripts/dash_lean.json で作る。ループしないので、終わると飛び出したポーズ（後ろ足を伸ばし、片腕を前へ）で止まる。
+		// DashL・DashR は「しゃがむ → 蹴って低く滑る → 着地」の通し（33.41〜33.94秒、L・R は蹴る足）。
 		desc.clips[enPlayerAnimClip_DashL] = { "Assets/modelData/player/Animation/DashL.fbx", false };
 		desc.clips[enPlayerAnimClip_DashR] = { "Assets/modelData/player/Animation/DashR.fbx", false };
-		// 着地。Run を少し前へ倒し、前の足が着地して踏むまでの7コマで、腰を落として膝を曲げたもの。
-		desc.clips[enPlayerAnimClip_DashLandL] = { "Assets/modelData/player/Animation/DashLandL.fbx", false };
-		desc.clips[enPlayerAnimClip_DashLandR] = { "Assets/modelData/player/Animation/DashLandR.fbx", false };
-		// 蹴る前のしゃがみ込み。蹴る足を前に出し、腰を約30cm落として膝を深く曲げ、反対の腕を前へ出す。
-		// 底でさらに 6cm 沈んで踏ん張り、そのポーズで止まる。一蹴り（DashL・DashR）はこのポーズから始まる。
-		desc.clips[enPlayerAnimClip_DashCrouchL] = { "Assets/modelData/player/Animation/DashCrouchL.fbx", false };
-		desc.clips[enPlayerAnimClip_DashCrouchR] = { "Assets/modelData/player/Animation/DashCrouchR.fbx", false };
 		return desc;
 	}
 

@@ -1,0 +1,70 @@
+{
+ "work_dir": "/Game/05_Adjust",
+ "mesh_fbx": "../../Game/Assets/modelData/player/Model/SK_Player.FBX",
+ "pitch_deg": {},
+ "swing_scale": {},
+ "keep_feet_on_ground": false,
+ "clips": [
+  {
+   "in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
+   "out": "../../Game/Assets/modelData/player/Animation/DashL.fbx",
+   "frames": {
+    "start": 0,
+    "count": 1,
+    "hold": 16
+   },
+   "rotoscope": {
+    "data": "genshin_dash_pose.json",
+    "start": 4,
+    "count": 17,
+    "map": {
+     "A": "L",
+     "B": "R",
+     "a": "L",
+     "b": "R"
+    }
+   }
+  },
+  {
+   "in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
+   "out": "../../Game/Assets/modelData/player/Animation/DashR.fbx",
+   "frames": {
+    "start": 0,
+    "count": 1,
+    "hold": 16
+   },
+   "rotoscope": {
+    "data": "genshin_dash_pose.json",
+    "start": 4,
+    "count": 17,
+    "map": {
+     "A": "R",
+     "B": "L",
+     "a": "R",
+     "b": "L"
+    }
+   }
+  },
+  {
+   "in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
+   "out": "../../Game/Assets/modelData/player/Animation/Run.fbx",
+   "frames": {
+    "start": 0,
+    "count": 1,
+    "hold": 14
+   },
+   "rotoscope": {
+    "data": "genshin_run_pose.json",
+    "start": 0,
+    "count": 15,
+    "map": {
+     "A": "R",
+     "B": "L",
+     "a": "R",
+     "b": "L"
+    },
+    "height": "hips"
+   }
+  }
+ ]
+}

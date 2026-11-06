@@ -631,6 +631,151 @@ def crouch(anim, cfg):
         log(row)
 
 
+TORSO_CHAIN = ["J_Bip_C_Hips", "J_Bip_C_Spine", "J_Bip_C_Chest", "J_Bip_C_UpperChest"]
+
+
+def rotoscope(anim, cfg, base_dir):
+    """動画から読み取った角度で、コマごとにポーズを作る（ロトスコープ）。
+    cfg = {"data": "genshin_dash_pose.json", "start": 4, "count": 17,
+           "map": {"A": "L", "B": "R", "a": "L", "b": "R"},
+           "torso_split": [0.4, 0.2, 0.2, 0.2], "toe_offset_cm": 0}
+    data はコマごとの角度（前 0°・真上 90°・真下 -90°）。A・B は脚（thigh・shin・foot、toeA・toeB は脚の長さを1とした
+    つま先の高さ）、a・b は腕（upper・fore）、torso は腰 → 肩、neck は肩 → 耳。map で、どれをこのキャラクターの左右に当てるか決める。
+    クリップはあらかじめ count コマにしておく（frames で切り出す）。目標の向きになるよう、左右の軸まわりの角度を
+    親から順に求め、測り直して3回くり返す。最後に、コマごとに一番低いつま先が toe（× 脚の長さ）になるよう腰を上下させる。"""
+    P = unreal.AnimPoseExtensions
+    W = unreal.AnimPoseSpaces.WORLD
+    L = unreal.AnimPoseSpaces.LOCAL
+    opts = eval_options()
+    data = json.load(open(os.path.join(base_dir, cfg["data"]), encoding="utf-8"))
+    rows = data[cfg["start"]:cfg["start"] + cfg["count"]]
+    num_keys = unreal.AnimationLibrary.get_num_frames(anim) + 1
+    if len(rows) != num_keys:
+        raise RuntimeError("rotoscope: %d rows for %d keys" % (len(rows), num_keys))
+    skel_ref = P.get_reference_pose(anim.get_editor_property("skeleton"))
+    axis = side_axis(skel_ref)
+    fwd = unreal.Vector(0.0, 0.0, 1.0).cross(axis) * -1.0
+    m = cfg["map"]
+
+    def dist(a, b):
+        return (P.get_bone_pose(skel_ref, a, W).translation - P.get_bone_pose(skel_ref, b, W).translation).length()
+    leg_cm = dist("J_Bip_L_UpperLeg", "J_Bip_L_LowerLeg") + dist("J_Bip_L_LowerLeg", "J_Bip_L_Foot")
+    log("rotoscope leg length(cm)", round(leg_cm, 1))
+
+    # コマごとの目標（このキャラクターのボーン名で）。
+    targets = []
+    for r in rows:
+        t = {"torso": r["torso"], "neck": r["neck"]}
+        for src in "AB":
+            sd = m[src]
+            t["J_Bip_%s_UpperLeg" % sd] = r[src + "thigh"]
+            t["J_Bip_%s_LowerLeg" % sd] = r[src + "shin"]
+            t["J_Bip_%s_Foot" % sd] = r[src + "foot"]
+        for src in "ab":
+            sd = m[src]
+            t["J_Bip_%s_UpperArm" % sd] = r[src + "upper"]
+            t["J_Bip_%s_LowerArm" % sd] = r[src + "fore"]
+        t["toe_cm"] = min(r["toeA"], r["toeB"]) * leg_cm + cfg.get("toe_offset_cm", 0.0)
+        t["hip_cm"] = r["hipH"] * leg_cm
+        targets.append(t)
+
+    limbs = [b for b in targets[0] if b.startswith("J_Bip_") and b in SEGMENT_CHILD]
+    bones = TORSO_CHAIN + ["J_Bip_C_Neck"] + limbs
+    orig = {b: {"pos": [], "rot": [], "scl": [], "axis": [], "parent": []} for b in bones}
+    for f in range(num_keys):
+        pose = P.get_anim_pose_at_frame(anim, f, opts)
+        for b in bones:
+            local = P.get_bone_pose(pose, b, L)
+            world = P.get_bone_pose(pose, b, W)
+            parent_rot = q_mul(world.rotation, q_inv(local.rotation))
+            o = orig[b]
+            o["pos"].append(local.translation)
+            o["rot"].append(local.rotation)
+            o["scl"].append(local.scale3d)
+            o["axis"].append(q_rotate(q_inv(parent_rot), axis))
+            o["parent"].append(parent_rot)
+
+    split = cfg.get("torso_split", [0.4, 0.2, 0.2, 0.2])
+    # 鎖ごとの合計の回転（正 = 前へ倒す）。ボーン自身の回転 = 自分の合計 − 親の合計。
+    tot = [dict() for _ in range(num_keys)]
+    lift = [0.0] * num_keys
+    parent_of = {}
+    for b in limbs:
+        parent_of[b] = SEGMENT_PARENT.get(b, "torso" if "Arm" in b else "hips")
+
+    def own(f, b):
+        t = tot[f]
+        T = t.get("torso", 0.0)
+        if b in TORSO_CHAIN:
+            return T * split[TORSO_CHAIN.index(b)]
+        if b == "J_Bip_C_Neck":
+            return t.get("neck", 0.0) - T
+        par = parent_of[b]
+        base = T * split[0] if par == "hips" else (T if par == "torso" else t.get(par, 0.0))
+        return t.get(b, 0.0) - base
+
+    def write():
+        c = get_controller(anim)
+        c.open_bracket(unreal.Text("rotoscope"), False)
+        for b in bones:
+            o = orig[b]
+            rots, poss = [], []
+            for f in range(num_keys):
+                half = math.radians(own(f, b)) * 0.5
+                sn = math.sin(half)
+                a = o["axis"][f]
+                rots.append(q_mul(unreal.Quat(a.x * sn, a.y * sn, a.z * sn, math.cos(half)), o["rot"][f]))
+                p = o["pos"][f]
+                if b == HIPS:
+                    p = p + q_rotate(q_inv(o["parent"][f]), unreal.Vector(0.0, 0.0, lift[f]))
+                poss.append(p)
+            c.set_bone_track_keys(b, poss, rots, o["scl"], False)
+        c.close_bracket(False)
+
+    def seg(pose, a, b):
+        d = P.get_bone_pose(pose, b, W).translation - P.get_bone_pose(pose, a, W).translation
+        return math.degrees(math.atan2(d.z, d.dot(fwd)))
+
+    for it in range(4):
+        worst = 0.0
+        for f in range(num_keys):
+            pose = P.get_anim_pose_at_frame(anim, f, opts)
+            t = tot[f]
+            # 胴体（腰 → 首）と首（首 → 頭）。
+            for key, a, b in (("torso", HIPS, "J_Bip_C_Neck"), ("neck", "J_Bip_C_Neck", "J_Bip_C_Head")):
+                r = wrap180(targets[f][key] - seg(pose, a, b))
+                t[key] = t.get(key, 0.0) - r
+                worst = max(worst, abs(r))
+            for b in limbs:
+                r = wrap180(targets[f][b] - segment_angle(pose, b, fwd))
+                t[b] = t.get(b, 0.0) - r
+                worst = max(worst, abs(r))
+        write()
+        log("rotoscope pass", it, "worst residual(deg)", round(worst, 1))
+
+    # 高さ: "toe" はコマごとに一番低いつま先を合わせる。"hips" は腰の高さの動きを動画に合わせ、
+    # クリップ全体で一番低いつま先が 0.5cm になるよう全体を上下させる（走りのように、両足が浮くコマで跳ね上がらないように）。
+    mode = cfg.get("height", "toe")
+    for it in range(2):
+        toes = []
+        for f in range(num_keys):
+            pose = P.get_anim_pose_at_frame(anim, f, opts)
+            toe = min(P.get_bone_pose(pose, "J_Bip_%s_ToeBase" % sd, W).translation.z for sd in "LR")
+            if mode == "hips":
+                hz = P.get_bone_pose(pose, HIPS, W).translation.z
+                lift[f] += targets[f]["hip_cm"] - hz
+                toes.append(toe + targets[f]["hip_cm"] - hz)
+            else:
+                lift[f] += targets[f]["toe_cm"] - toe
+        if mode == "hips":
+            shift = 0.5 - min(toes)
+            lift = [x + shift for x in lift]
+            for t in targets:
+                t["hip_cm"] += shift
+        write()
+    unreal.EditorAssetLibrary.save_loaded_asset(anim)
+
+
 def blend_from(anim, cfg, anim_dir):
     """最初のコマを、別のクリップの最後のコマのポーズから始める（つなぎ目をなめらかにする）。
     cfg = {"clip": "DashCrouchL", "weights": [1.0, 0.7, 0.4, 0.15]}
@@ -764,6 +909,8 @@ def main():
                 pose_to(anim, clip["pose_to"])
             if clip.get("crouch") and after:
                 crouch(anim, clip["crouch"])
+            if clip.get("rotoscope"):
+                rotoscope(anim, clip["rotoscope"], base)
             if clip.get("blend_from"):
                 blend_from(anim, clip["blend_from"], work + "/Anim")
             if clip.get("log_frames"):
