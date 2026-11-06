@@ -36,15 +36,16 @@ namespace
 		settings.dashEndSpeed = 480.0f;  // 終わりは走る速さ。蹴った瞬間は約2190 になる。
 		settings.dashAnimSpeed = 0.3f / 0.225f; // 0.3秒の一蹴りを約1.33倍で流し、ダッシュの0.225秒で流し終える。
 		settings.dashAnimBlendSeconds = 0.05f;
-		// しゃがみ込むクリップ（沈む4コマ＋底で踏ん張る4コマ、0.27秒）を2.5倍で流し、一瞬（約0.1秒）で溜めて飛び出す。
-		settings.dashCrouchAnimSpeed = 2.5f;
-		settings.dashCrouchSeconds = 8.0f / 30.0f / 2.5f;
-		settings.dashCrouchBlendSeconds = 0.05f;
+		// しゃがみ込むクリップ（沈む4コマ＋底で踏ん張る4コマ、0.27秒）を1.8倍で流し、約0.15秒で溜めて飛び出す。
+		// 2.5倍・補間 0.05秒では、録画で見ると1コマでしゃがみ終わり、沈み込む動きが見えなかった。
+		settings.dashCrouchAnimSpeed = 1.8f;
+		settings.dashCrouchSeconds = 8.0f / 30.0f / 1.8f;
+		settings.dashCrouchBlendSeconds = 0.1f;
 		settings.dashCrouchSpeed = 200.0f;     // 入った勢いで少し進み、踏ん張って止まってから飛び出す。
 		settings.dashKickBlendSeconds = 0.03f;
 		settings.dashChainKickStartTime = 2.0f / 30.0f; // 一蹴りの f02 から（脚が伸び切ったところ）。
-		settings.dashLandAnimSpeed = 0.2f / 0.15f; // 着地のクリップ（7コマ、0.2秒）を約1.33倍で流す。低い姿勢から膝を曲げて受け止める。
-		settings.dashLandSeconds = 0.15f;      // 着地のクリップを流し終える長さ（はじめの 0.2秒の 3/4）。
+		settings.dashLandAnimSpeed = 0.2f / 0.25f; // 着地のクリップ（7コマ、0.2秒）を0.8倍で流す。低い姿勢のまま足を着き、だんだん起きる。
+		settings.dashLandSeconds = 0.25f;      // 着地のクリップを流し終える長さ。0.15秒では一気に起き上がって見えた。
 		settings.dashLandBlendSeconds = 0.05f;
 		settings.dashExitBlendSeconds = 0.25f; // 着地から走りへ。足の位置は合わせてあるので、ふつうより少し長めで足りる。
 		// 着地のあとの走り・歩きの始め。Run（30fps・19コマ）と Walk（30fps・36コマ）で足の位置を測って決めた。

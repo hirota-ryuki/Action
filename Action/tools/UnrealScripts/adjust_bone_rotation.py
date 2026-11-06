@@ -424,10 +424,14 @@ def pose_to(anim, cfg):
         return ws
     weights = make_weights(ramp_start)
     lift_weights = make_weights(cfg.get("lift_ramp_start", ramp_start))
+    # drift_deg: ramp_end のコマで目標に着いたあと、最後のコマまでに少しずつ足す角度（正 = 前へ倒す。どのボーンでもよい）。
+    # 止まったポーズにせず、ゆっくり動き続けるようにする。
+    drift = cfg.get("drift_deg", {})
+    drift_w = [0.0 if f <= ramp_end or last <= ramp_end else (f - ramp_end) / float(last - ramp_end) for f in range(num_keys)]
 
     # 元の値を読む。膝は反らないように抑えるので、両足のすねも読んでおく。
     shins = ["J_Bip_%s_LowerLeg" % s for s in "LR"]
-    bones = list(dict.fromkeys(list(targets) + [HIPS] + shins))
+    bones = list(dict.fromkeys(list(targets) + [HIPS] + shins + list(drift)))
     extra = {b: [0.0] * num_keys for b in shins}  # コマごとに足す角度（膝が反らないようにする分）。
     orig = {b: {"pos": [], "rot": [], "scl": [], "axis": [], "parent": []} for b in bones}
     for f in range(num_keys):
@@ -443,7 +447,7 @@ def pose_to(anim, cfg):
             o["axis"].append(q_rotate(q_inv(parent_rot), axis))
             o["parent"].append(parent_rot)
 
-    end_pose = P.get_anim_pose_at_frame(anim, last, opts)
+    end_pose = P.get_anim_pose_at_frame(anim, ramp_end, opts)
     before = {b: segment_angle(end_pose, b, fwd) for b in targets}
     pitch = {b: 0.0 for b in targets}  # 最後のコマで足す角度（正 = 前へ倒す）。
 
@@ -454,7 +458,8 @@ def pose_to(anim, cfg):
             o = orig[b]
             rots, poss = [], []
             for f in range(num_keys):
-                deg = pitch.get(b, 0.0) * weights[f] + (extra[b][f] if b in extra else 0.0)
+                deg = (pitch.get(b, 0.0) * weights[f] + (extra[b][f] if b in extra else 0.0)
+                       + drift.get(b, 0.0) * drift_w[f])
                 half = math.radians(deg) * 0.5
                 s = math.sin(half)
                 a = o["axis"][f]
@@ -467,7 +472,7 @@ def pose_to(anim, cfg):
         c.close_bracket(False)
 
     for it in range(3):
-        end_pose = P.get_anim_pose_at_frame(anim, last, opts)
+        end_pose = P.get_anim_pose_at_frame(anim, ramp_end, opts)
         # 親から順に、残りの差を足す。前へ回すと角度は小さくなるので、差の符号を反転して足す。
         # 親の角度を変えると子も同じだけ回るので、子は親に足した分を差し引く。
         added = {}
@@ -504,12 +509,12 @@ def pose_to(anim, cfg):
     ground = cfg.get("ground_toe_cm")
     if ground is not None:
         for it in range(2):
-            end_pose = P.get_anim_pose_at_frame(anim, last, opts)
+            end_pose = P.get_anim_pose_at_frame(anim, ramp_end, opts)
             toe = min(P.get_bone_pose(end_pose, "J_Bip_%s_ToeBase" % s, W).translation.z for s in "LR")
             lift += ground - toe
             write()
 
-    end_pose = P.get_anim_pose_at_frame(anim, last, opts)
+    end_pose = P.get_anim_pose_at_frame(anim, ramp_end, opts)
     for b in targets:
         log("pose_to", b, "before", round(before[b], 1), "target", targets[b],
             "after", round(segment_angle(end_pose, b, fwd), 1), "pitch", round(pitch[b], 1))

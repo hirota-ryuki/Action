@@ -95,7 +95,7 @@
    "pose_to": {
     "ramp_start": 0,
     "ramp_end": 2,
-    "ground_toe_cm": 5.0,
+    "ground_toe_cm": 6.0,
     "angle_deg": {
      "J_Bip_L_UpperLeg": -150.0,
      "J_Bip_L_LowerLeg": -158.0,
@@ -105,6 +105,18 @@
      "J_Bip_L_LowerArm": 30.0,
      "J_Bip_R_UpperArm": 175.0,
      "J_Bip_R_LowerArm": 178.0
+    },
+    "drift_deg": {
+     "J_Bip_R_UpperLeg": -15.0,
+     "J_Bip_R_LowerLeg": -5.0,
+     "J_Bip_L_UpperLeg": -10.0,
+     "J_Bip_L_LowerLeg": 10.0,
+     "J_Bip_L_UpperArm": -15.0,
+     "J_Bip_L_LowerArm": 15.0,
+     "J_Bip_R_UpperArm": 10.0,
+     "J_Bip_R_LowerArm": -10.0,
+     "J_Bip_C_Spine": -6.0,
+     "J_Bip_C_Neck": 3.0
     }
    },
    "blend_from": {
@@ -123,8 +135,8 @@
     "J_Bip_C_Spine": 2.0,
     "J_Bip_C_Chest": 3.0,
     "J_Bip_C_UpperChest": 3.0,
-    "J_Bip_C_Neck": 3.0,
-    "J_Bip_C_Head": 11.0
+    "J_Bip_C_Neck": -7.0,
+    "J_Bip_C_Head": -3.0
    },
    "swing_scale": {}
   },
@@ -139,7 +151,7 @@
    "pose_to": {
     "ramp_start": 0,
     "ramp_end": 2,
-    "ground_toe_cm": 5.0,
+    "ground_toe_cm": 6.0,
     "angle_deg": {
      "J_Bip_R_UpperLeg": -150.0,
      "J_Bip_R_LowerLeg": -158.0,
@@ -149,6 +161,18 @@
      "J_Bip_R_LowerArm": 30.0,
      "J_Bip_L_UpperArm": 175.0,
      "J_Bip_L_LowerArm": 178.0
+    },
+    "drift_deg": {
+     "J_Bip_L_UpperLeg": -15.0,
+     "J_Bip_L_LowerLeg": -5.0,
+     "J_Bip_R_UpperLeg": -10.0,
+     "J_Bip_R_LowerLeg": 10.0,
+     "J_Bip_R_UpperArm": -15.0,
+     "J_Bip_R_LowerArm": 15.0,
+     "J_Bip_L_UpperArm": 10.0,
+     "J_Bip_L_LowerArm": -10.0,
+     "J_Bip_C_Spine": -6.0,
+     "J_Bip_C_Neck": 3.0
     }
    },
    "blend_from": {
@@ -167,8 +191,8 @@
     "J_Bip_C_Spine": 2.0,
     "J_Bip_C_Chest": 3.0,
     "J_Bip_C_UpperChest": 3.0,
-    "J_Bip_C_Neck": 3.0,
-    "J_Bip_C_Head": 11.0
+    "J_Bip_C_Neck": -7.0,
+    "J_Bip_C_Head": -3.0
    },
    "swing_scale": {}
   },
@@ -206,11 +230,11 @@
     "clip": "DashL",
     "weights": [
      1.0,
-     0.75,
-     0.5,
-     0.3,
-     0.15,
-     0.05
+     0.9,
+     0.7,
+     0.45,
+     0.25,
+     0.1
     ],
     "bend_knees": true
    }
@@ -249,11 +273,11 @@
     "clip": "DashR",
     "weights": [
      1.0,
-     0.75,
-     0.5,
-     0.3,
-     0.15,
-     0.05
+     0.9,
+     0.7,
+     0.45,
+     0.25,
+     0.1
     ],
     "bend_knees": true
    }
