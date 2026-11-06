@@ -236,7 +236,7 @@
     <ClCompile Include="Source\PlayerState\PlayerStateMachine.cpp" />
     <ClCompile Include="Source\PlayerState\PlayerGroundState.cpp" />
     <ClCompile Include="Source\PlayerState\PlayerAirState.cpp" />
-    <ClCompile Include="Source\PlayerState\PlayerRushState.cpp" />
+    <ClCompile Include="Source\PlayerState\PlayerDashState.cpp" />
     <ClCompile Include="Source\PlayerState\PlayerFrozenState.cpp" />
     <ClCompile Include="Source\Character\StatusEffects.cpp" />
     <ClCompile Include="Source\Magic\MagicCaster.cpp" />
@@ -273,7 +273,7 @@
     <ClInclude Include="Source\PlayerState\PlayerWalkState.h" />
     <ClInclude Include="Source\PlayerState\PlayerRunState.h" />
     <ClInclude Include="Source\PlayerState\PlayerAirState.h" />
-    <ClInclude Include="Source\PlayerState\PlayerRushState.h" />
+    <ClInclude Include="Source\PlayerState\PlayerDashState.h" />
     <ClInclude Include="Source\PlayerState\PlayerFrozenState.h" />
     <ClInclude Include="Source\Character\StatusEffects.h" />
     <ClInclude Include="Source\Magic\MagicCaster.h" />

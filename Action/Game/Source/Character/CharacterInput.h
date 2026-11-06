@@ -26,7 +26,7 @@ struct CharacterInput
 	Vector3 lookDirection = Vector3::Zero;  // 向きたい方向。ゼロなら移動方向を向く。
 	bool isRun = false;
 	ButtonState jump;
-	ButtonState rush;
+	ButtonState dash;
 	ButtonState fire;                       // 選んでいる魔法を撃つ。
 	ButtonState subFire;                    // サブの魔法（MagicCaster::SetSubMagic）を撃つ。
 	int magicSwitch = 0;                    // -1: 前の魔法へ、+1: 次の魔法へ、0: 切り替えない。

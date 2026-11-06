@@ -13,7 +13,7 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 	input.lookDirection = Vector3::Zero;
 	input.isRun = false;
 	input.jump.Update(false);
-	input.rush.Update(false);
+	input.dash.Update(false);
 	input.magicSwitch = 0;
 	input.hasAim = false;
 

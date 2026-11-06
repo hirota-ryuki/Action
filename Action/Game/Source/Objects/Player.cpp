@@ -30,9 +30,9 @@ namespace
 	PlayerStateSettings MakeStateSettings()
 	{
 		PlayerStateSettings settings;
-		settings.rushDistance = 300.0f;  // ラッシュスキルの総移動距離。
-		settings.rushSpeed = 1500.0f;    // ラッシュ中の移動速度（通常の5倍）。
-		settings.rushPoseTime = 0.23f;   // ランアニメーションの疾走ポーズに合った時刻。
+		settings.dashDistance = 300.0f;  // ダッシュスキルの総移動距離。
+		settings.dashSpeed = 1500.0f;    // ダッシュ中の移動速度（通常の5倍）。
+		settings.dashPoseTime = 0.23f;   // ランアニメーションの疾走ポーズに合った時刻。
 		settings.moveThreshold = 0.1f;   // 移動入力がこれより小さければ立ち止まる。
 		settings.animBlendSeconds = 0.2f;
 		// Walk.fbx（Mixamo の Female Walk）の足が地面を送る速さ。UE で足のボーンを測った 115/秒 × モデルの大きさ 1.128。

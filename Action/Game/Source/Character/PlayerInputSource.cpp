@@ -23,11 +23,11 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 
 	// ジャンプはスペース（パッドは A）。パッド未接続時は A ボタンが J キーに割り当てられているので、J でも跳べる。
 	input.jump.Update(IsKeyPressed(VK_SPACE) || pad.IsPress(enButtonA));
-	// 左Shift（パッドは X）: 押した瞬間にラッシュ、押しっぱなしで走る。
-	// 走るのはラッシュが終わったあとなので、単押しを繰り返すとラッシュが続けて出る。
+	// 左Shift（パッドは X）: 押した瞬間にダッシュ、押しっぱなしで走る。
+	// 走るのはダッシュが終わったあとなので、単押しを繰り返すとダッシュが続けて出る。
 	// パッド未接続時は X ボタンが L キーに割り当てられているので、L でも同じ動きになる。
 	const bool isDashPress = IsKeyPressed(VK_LSHIFT) || pad.IsPress(enButtonX);
-	input.rush.Update(isDashPress);
+	input.dash.Update(isDashPress);
 	input.isRun = isDashPress;
 	input.fire.Update((IsGameWindowActive() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
 	// パッド未接続時は右トリガー(RB2)が8キーに割り当てられている。
