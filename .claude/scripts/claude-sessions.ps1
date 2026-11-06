@@ -5,6 +5,8 @@
 #   -Mode push   : 個人用 OneDrive へ会話を送る（やりとりの区切りでフックが実行）
 #   -Mode restore: 別のPCで最近使っていた会話を、タブで開き直す（フォルダーを開いたときに .vscode/tasks.json が実行）
 #   -Mode remove : このPCから rclone の設定と rclone 本体を消す（手で実行）
+#   -Mode archive-apply : ほかのPCでのアーカイブを、このPCの VSCode に反映する（VSCode を閉じているときだけ）
+#                         -Wait を付けると、VSCode が閉じるまで待ってから反映する（SessionEnd で自動で起動する）
 #
 # 会話ファイルの場所: <Claude の設定フォルダ>\projects\<リポジトリのパスを変換した名前>\
 # 送り先          : 個人用 OneDrive の 01_ClaudeSessions\Action\（どのPCでも同じ）
@@ -13,12 +15,19 @@
 # タブの記録: Stop フック（やりとりの区切り）で、その会話の ID と時刻を
 #   %APPDATA%\claude-sessions\tabs-Action\<PC名>.json に書き、個人用 OneDrive の 01_ClaudeSessions\Action-tabs\ へ送る。
 #   restore では、いちばん最近使われたPCの記録から、最後のやりとりの $TabWindowHours 時間前までに使った会話を開く。
+#
+# アーカイブの記録: アーカイブしたかどうかは会話ファイルではなく、PCごとの VSCode の保存領域にある（vscode-state.ps1 を参照）。
+#   push のたびに、このリポジトリの会話のアーカイブ状態が変わっていたら、変わった時刻と一緒に
+#   %APPDATA%\claude-sessions\archive-Action\<PC名>.json に書き、個人用 OneDrive の 01_ClaudeSessions\Action-archive\ へ送る。
+#   archive-apply では、全PCの記録から会話ごとにいちばん新しい状態を選び、このPCの VSCode に書き込む。
+#   VSCode が開いている間は書き込めない（拡張が上書きする）ので、VSCode が閉じてから書き込む。
 
 param(
-    [ValidateSet('setup', 'pull', 'push', 'restore', 'remove')]
+    [ValidateSet('setup', 'pull', 'push', 'restore', 'remove', 'archive-apply')]
     [string]$Mode = 'pull',
     [string]$RepoDir = $env:CLAUDE_PROJECT_DIR,
-    [double]$TabWindowHours = 3
+    [double]$TabWindowHours = 3,
+    [switch]$Wait
 )
 
 # フックから呼ばれたときは、標準入力にフックの情報（JSON）が来る。最初に読んでおく。
@@ -53,6 +62,13 @@ $PcName       = $env:COMPUTERNAME
 $MyTabFile    = Join-Path $LocalTabs "$PcName.json"
 # restore で最後に開いた記録（同じ記録で何度も開かないため）
 $RestoredFile = Join-Path $env:APPDATA 'claude-sessions\restored-Action.txt'
+
+# アーカイブの記録。これもPCごとに別のファイル。
+$RemoteArchive = "${RemoteName}:01_ClaudeSessions/Action-archive"
+$LocalArchive  = Join-Path $env:APPDATA 'claude-sessions\archive-Action'
+$MyArchiveFile = Join-Path $LocalArchive "$PcName.json"
+
+. (Join-Path $PSScriptRoot 'vscode-state.ps1')
 
 function Get-NowUnix { return [int64]([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()) }
 
@@ -118,6 +134,156 @@ function Invoke-Copy([string]$rclone, [string]$from, [string]$to) {
 function Enter-Lock {
     $lockPath = Join-Path $env:TEMP ('claude-sessions-' + ($RepoDir -replace '[^A-Za-z0-9]', '-') + '.lock')
     try { return [System.IO.File]::Open($lockPath, 'OpenOrCreate', 'ReadWrite', 'None') } catch { return $null }
+}
+
+# ---- アーカイブの記録 ----
+
+# 1つのPCのアーカイブ記録を読む。返り値: @{ 会話ID = @{ archived = $true/$false; at = 変わった時刻(Unix秒) } }
+function Read-ArchiveFile([string]$path) {
+    $map = @{}
+    if (-not (Test-Path $path)) { return $map }
+    try {
+        $obj = Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json
+        foreach ($p in $obj.sessions.PSObject.Properties) {
+            $map[$p.Name] = @{ archived = [bool]$p.Value.archived; at = [int64]$p.Value.at }
+        }
+    } catch { }
+    return $map
+}
+
+function Write-ArchiveFile($map) {
+    $sessions = [ordered]@{}
+    foreach ($k in ($map.Keys | Sort-Object)) {
+        $sessions[$k] = [ordered]@{ archived = $map[$k].archived; at = $map[$k].at }
+    }
+    New-Item -ItemType Directory -Force -Path $LocalArchive | Out-Null
+    $json = [ordered]@{ pc = $PcName; sessions = $sessions } | ConvertTo-Json -Depth 4
+    [System.IO.File]::WriteAllText($MyArchiveFile, $json, (New-Object System.Text.UTF8Encoding $false))
+}
+
+# このPCにある、このリポジトリの会話の ID
+function Get-LocalSessionIds {
+    $set = New-Object 'System.Collections.Generic.HashSet[string]'
+    foreach ($f in Get-ChildItem $LocalDir -Filter *.jsonl -ErrorAction SilentlyContinue) { [void]$set.Add($f.BaseName) }
+    return ,$set
+}
+
+# VSCode の保存領域から、アーカイブしている会話の ID と、アーカイブを戻した時刻(Unix秒)を取り出す
+function Get-ArchiveState($ext) {
+    $hidden = New-Object 'System.Collections.Generic.HashSet[string]'
+    $unarchivedAt = @{}
+    if ($ext.State.ContainsKey('hiddenSessionIds')) {
+        foreach ($id in @($ext.State['hiddenSessionIds'])) { if ($id) { [void]$hidden.Add([string]$id) } }
+    }
+    if ($ext.State.ContainsKey('sessionUnarchivedAt') -and $ext.State['sessionUnarchivedAt'] -is [System.Collections.IDictionary]) {
+        foreach ($k in $ext.State['sessionUnarchivedAt'].Keys) {
+            try { $unarchivedAt[$k] = [int64]([double]$ext.State['sessionUnarchivedAt'][$k] / 1000) } catch { }
+        }
+    }
+    return @{ Hidden = $hidden; UnarchivedAt = $unarchivedAt }
+}
+
+# このPCのアーカイブ状態を見て、前回の記録から変わった会話だけ時刻を付けて記録し直す。返り値: 記録
+function Update-ArchiveRecord($ext) {
+    $now = Get-NowUnix
+    $st = Get-ArchiveState $ext
+    $map = Read-ArchiveFile $MyArchiveFile
+    $changed = $false
+    foreach ($id in (Get-LocalSessionIds)) {
+        $cur = $st.Hidden.Contains($id)
+        $prev = $map[$id]
+        if (-not $prev) {
+            # 記録がなく、アーカイブもしていない会話は書かない（何もしていない＝アーカイブしていない）
+            if ($cur) { $map[$id] = @{ archived = $true; at = $now }; $changed = $true }
+        } elseif ($prev.archived -ne $cur) {
+            $at = $now
+            if (-not $cur -and $st.UnarchivedAt.ContainsKey($id) -and $st.UnarchivedAt[$id] -gt $prev.at) { $at = $st.UnarchivedAt[$id] }
+            $map[$id] = @{ archived = $cur; at = $at }
+            $changed = $true
+        }
+    }
+    if ($changed -or -not (Test-Path $MyArchiveFile)) { Write-ArchiveFile $map }
+    return $map
+}
+
+# push のついでに、このPCのアーカイブ状態を記録して送る（VSCode が開いていても読むだけなのでよい）
+function Push-ArchiveRecord([string]$rclone) {
+    try {
+        $ext = Get-ClaudeExtensionState
+        if (-not $ext) { return }
+        [void](Update-ArchiveRecord $ext)
+        & $rclone copyto $MyArchiveFile "$RemoteArchive/$PcName.json" --retries 2 --low-level-retries 3 --log-level ERROR
+    } catch {
+        Write-Output "$tag アーカイブの記録: $($_.Exception.Message)"
+    }
+}
+
+# 全PCの記録を合わせて、このPCの VSCode に書き込む。VSCode が開いていたら何もしない。
+function Invoke-ArchiveApply([string]$rclone) {
+    if (Test-VscodeRunning) { return }
+    New-Item -ItemType Directory -Force -Path $LocalArchive | Out-Null
+    # 自分の記録は自分のPCの方が正しいので、取ってこない。フォルダーがまだないときの失敗は無視する。
+    & $rclone copy $RemoteArchive $LocalArchive --update --exclude "$PcName.json" --retries 2 --low-level-retries 3 --log-level ERROR 2>$null
+
+    $ext = Get-ClaudeExtensionState
+    if (-not $ext) { return }
+    $mine = Update-ArchiveRecord $ext
+
+    # 会話ごとに、いちばん新しい記録を選ぶ（同じ時刻ならこのPCの記録を優先）
+    $winner = @{}
+    foreach ($id in $mine.Keys) { $winner[$id] = $mine[$id] }
+    foreach ($f in Get-ChildItem $LocalArchive -Filter *.json -ErrorAction SilentlyContinue) {
+        if ($f.BaseName -eq $PcName) { continue }
+        $other = Read-ArchiveFile $f.FullName
+        foreach ($id in $other.Keys) {
+            if (-not $winner.ContainsKey($id) -or $other[$id].at -gt $winner[$id].at) { $winner[$id] = $other[$id] }
+        }
+    }
+
+    $st = Get-ArchiveState $ext
+    $local = Get-LocalSessionIds
+    $toArchive = @(); $toUnarchive = @()
+    foreach ($id in @($winner.Keys)) {
+        if (-not $local.Contains($id)) { continue }   # 会話ファイルがまだ届いていないものは次の機会に
+        $cur = $st.Hidden.Contains($id)
+        if ($winner[$id].archived -and -not $cur) { $toArchive += $id }
+        elseif (-not $winner[$id].archived -and $cur) { $toUnarchive += $id }
+        $mine[$id] = $winner[$id]
+    }
+
+    if ($toArchive.Count -gt 0 -or $toUnarchive.Count -gt 0) {
+        $list = New-Object 'System.Collections.Generic.List[object]'
+        if ($ext.State.ContainsKey('hiddenSessionIds')) {
+            foreach ($id in @($ext.State['hiddenSessionIds'])) { if ($id -and $toUnarchive -notcontains $id) { $list.Add($id) } }
+        }
+        foreach ($id in $toArchive) { $list.Add($id) }
+        $ext.State['hiddenSessionIds'] = $list.ToArray()
+        if ($toUnarchive.Count -gt 0) {
+            # 戻した時刻も入れておく（拡張の「しばらく使っていない会話の自動アーカイブ」がすぐにアーカイブし直さないように）
+            $ua = $null
+            if ($ext.State.ContainsKey('sessionUnarchivedAt')) { $ua = $ext.State['sessionUnarchivedAt'] }
+            if ($ua -isnot [System.Collections.IDictionary]) { $ua = New-Object 'System.Collections.Generic.Dictionary[string,object]' }
+            foreach ($id in $toUnarchive) { $ua[$id] = [int64]$winner[$id].at * 1000 }
+            $ext.State['sessionUnarchivedAt'] = $ua
+        }
+        if (Test-VscodeRunning) { return }   # 書く直前にもう一度確かめる
+        Copy-Item $VscodeStateDb (Join-Path $env:APPDATA 'claude-sessions\state.vscdb.before-archive-apply') -Force
+        Set-ClaudeExtensionState $ext
+        Write-Output "$tag アーカイブを反映しました（アーカイブ $($toArchive.Count) 件、戻す $($toUnarchive.Count) 件）。"
+    }
+    Write-ArchiveFile $mine
+    & $rclone copyto $MyArchiveFile "$RemoteArchive/$PcName.json" --retries 2 --low-level-retries 3 --log-level ERROR
+}
+
+# VSCode が閉じるのを待ってから反映する係を、裏で1つだけ動かす。
+# VSCode と一緒に終わらされないように、WMI 経由で VSCode とは関係のないプロセスとして起動する。
+function Start-ArchiveWaiter {
+    $cmd = 'powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "{0}" -Mode archive-apply -Wait -RepoDir "{1}"' -f $PSCommandPath, $RepoDir
+    try {
+        [void](Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmd })
+    } catch {
+        Write-Output "$tag アーカイブ反映の待機を始められませんでした: $($_.Exception.Message)"
+    }
 }
 
 switch ($Mode) {
@@ -211,6 +377,10 @@ switch ($Mode) {
             if (-not (Test-Path $LocalDir)) { New-Item -ItemType Directory -Force -Path $LocalDir | Out-Null }
             if ($Mode -eq 'pull') {
                 Invoke-Copy $rclone $RemotePath $LocalDir
+                # ターミナルの Claude など、VSCode を開いていないときはここで反映できる。
+                # 開いているときは、閉じたあとに反映する係を起こしておく（VSCode を閉じると SessionEnd が来ないことがあるため）
+                if (Test-VscodeRunning) { Start-ArchiveWaiter }
+                else { try { Invoke-ArchiveApply $rclone } catch { Write-Output "$tag アーカイブの反映: $($_.Exception.Message)" } }
             } else {
                 Invoke-Copy $rclone $LocalDir $RemotePath
                 # 会話ファイルを送ったあとにタブの記録を送る（記録だけ先に届いて会話がない、を避ける）
@@ -220,6 +390,9 @@ switch ($Mode) {
                 if (Test-Path $MyTabFile) {
                     & $rclone copyto $MyTabFile "$RemoteTabs/$PcName.json" --retries 2 --low-level-retries 3 --log-level ERROR
                 }
+                Push-ArchiveRecord $rclone
+                # セッションを閉じたとき（VSCode を閉じたときも含む）は、VSCode が閉じたあとに反映する係を起こす
+                if ($hookInput -and $hookInput.hook_event_name -eq 'SessionEnd') { Start-ArchiveWaiter }
             }
         } catch {
             Write-Output "$tag $($_.Exception.Message)"
@@ -308,5 +481,36 @@ switch ($Mode) {
         Write-Output "$tag 全部のPCをまとめて止めるには、次のページで rclone の許可を取り消してください:"
         Write-Output '  https://account.live.com/consent/Manage'
         Write-Output "$tag 会話ファイル（このPCと個人用 OneDrive の 01_ClaudeSessions）は消していません。"
+    }
+
+    'archive-apply' {
+        $rclone = Find-Rclone
+        if (-not $rclone -or (Get-RemoteDriveType $rclone) -ne 'personal') { exit 0 }
+        # 待つ係は1つだけにする
+        $mutex = New-Object System.Threading.Mutex($false, ('Global\claude-archive-apply-' + ($RepoDir -replace '[^A-Za-z0-9]', '-')))
+        if (-not $mutex.WaitOne(0)) { exit 0 }
+        try {
+            if ($Wait) {
+                # VSCode が閉じるまで待つ（最長1日）。閉じかけで残るプロセスもあるので、2回続けていなければ閉じたとみなす
+                $deadline = (Get-Date).AddDays(1); $quiet = 0
+                while ($quiet -lt 2) {
+                    if ((Get-Date) -gt $deadline) { exit 0 }
+                    Start-Sleep -Seconds 10
+                    if (Test-VscodeRunning) { $quiet = 0 } else { $quiet++ }
+                }
+            }
+            $lock = $null
+            for ($i = 0; $i -lt 30 -and -not $lock; $i++) { $lock = Enter-Lock; if (-not $lock) { Start-Sleep -Seconds 2 } }
+            if (-not $lock) { exit 0 }
+            try {
+                Invoke-ArchiveApply $rclone
+            } catch {
+                Write-Output "$tag アーカイブの反映: $($_.Exception.Message)"
+            } finally {
+                $lock.Dispose()
+            }
+        } finally {
+            $mutex.ReleaseMutex()
+        }
     }
 }
