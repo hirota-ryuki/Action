@@ -6,13 +6,13 @@
      "out": "../../Game/Assets/modelData/player/Animation/Dash.fbx"}
   ],
   "pitch_deg": {
-    "J_Bip_C_Hips": 8.0,
-    "J_Bip_L_UpperLeg": -4.0,
-    "J_Bip_R_UpperLeg": -4.0,
-    "J_Bip_C_Spine": 4.0,
-    "J_Bip_C_Chest": 3.0,
-    "J_Bip_C_UpperChest": 3.0,
-    "J_Bip_C_Neck": -8.0,
-    "J_Bip_C_Head": -5.0
+    "J_Bip_C_Hips": 20.0,
+    "J_Bip_L_UpperLeg": -14.0,
+    "J_Bip_R_UpperLeg": -14.0,
+    "J_Bip_C_Spine": 12.0,
+    "J_Bip_C_Chest": 12.0,
+    "J_Bip_C_UpperChest": 11.0,
+    "J_Bip_C_Neck": -22.0,
+    "J_Bip_C_Head": -20.0
   }
 }
