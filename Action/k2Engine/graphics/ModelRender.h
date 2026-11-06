@@ -104,6 +104,13 @@ namespace nsK2Engine {
 			m_animation.Play(animNo, interpolateTime);
 		}
 		/// <summary>
+		/// アニメーションを、startTime 秒の位置から、interpolateTime 秒の補間つきで再生する。
+		/// </summary>
+		void PlayAnimationFromTime(int animNo, float interpolateTime, float startTime)
+		{
+			m_animation.PlayFromTime(animNo, interpolateTime, startTime);
+		}
+		/// <summary>
 		/// 指定時間のアニメーションポーズを再生する。
 		/// </summary>
 		void PlayAnimationAtTime(int animNo, float time)

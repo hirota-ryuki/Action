@@ -23,6 +23,8 @@ enum EnPlayerAnimClip
 	enPlayerAnimClip_Walk,
 	enPlayerAnimClip_Run,
 	enPlayerAnimClip_Jump,
+	enPlayerAnimClip_DashL,  // ダッシュ（しゃがむ → 左足で蹴って低く滑る → 右足で着地）を通しで1本
+	enPlayerAnimClip_DashR,  // ダッシュ（右足で蹴る）
 	enPlayerAnimClip_Num,
 };
 
@@ -30,8 +32,23 @@ enum EnPlayerAnimClip
 struct PlayerStateSettings
 {
 	float dashDistance = 300.0f;      // ダッシュの総移動距離。0ならダッシュできない。
-	float dashSpeed = 1500.0f;        // ダッシュ中の移動速度。
-	float dashPoseTime = 0.23f;       // ダッシュ中に止めておく、ランアニメーションの再生位置（秒）。
+	float dashSpeed = 1000.0f;        // ダッシュの平均の速さ。蹴った瞬間がいちばん速く、だんだん dashEndSpeed まで遅くなる。
+	float dashEndSpeed = 0.0f;        // ダッシュの終わりの速さ。着地の間もこの速さで進む（走りへ勢いをつなぐ）。dashSpeed 以下。
+	// ダッシュのクリップは「しゃがむ → 蹴って飛ぶ → 着地」を通しで1本にしてある。各区間の長さはクリップに合わせる。
+	float dashCrouchSeconds = 0.0f;   // しゃがむ長さ（秒）。0ならしゃがまずにすぐ蹴る。地面にいるときの最初の1回だけ。
+	float dashCrouchBlendSeconds = 0.1f; // ダッシュのクリップに入るときの補間時間（しゃがむとき）。
+	float dashCrouchSpeed = 0.0f;     // しゃがみ始めの進む速さ。しゃがみ終わりで0になる。
+	float dashKickStartTime = 0.0f;   // クリップの中で、蹴って飛び始めるところ（秒）。しゃがまないときは、ここから流す。
+	float dashLandSeconds = 0.0f;     // 着地の長さ（秒）。0なら着地せず、すぐ次の動きへ移る。
+	float dashAnimSpeed = 1.0f;       // ダッシュのアニメーションの再生速度（倍）。
+	float dashAnimBlendSeconds = 0.05f; // ダッシュに入るときのアニメーションの補間時間。短いほど一気に前へ出る。
+	float dashExitBlendSeconds = 0.5f;  // ダッシュから次の動きへ移るときの補間時間。長いほど飛び出したポーズが残る。
+	// ダッシュ（着地まで）のあと、走り・歩きをどこから始めるか（秒）。着地の最後と前後の足が同じところ。
+	// 最初から始めると前後の足が逆で、補間の間に足が入れ替わってつまずいたように見える。
+	float dashLToRunStartTime = 0.0f;   // 左足で蹴ったあと（右足で着地）。
+	float dashRToRunStartTime = 0.0f;   // 右足で蹴ったあと（左足で着地）。
+	float dashLToWalkStartTime = 0.0f;
+	float dashRToWalkStartTime = 0.0f;
 	float moveThreshold = 0.1f;       // 移動入力の長さがこれより小さければ立ち止まっているとみなす。
 	float animBlendSeconds = 0.2f;    // アニメーションを切り替えるときの補間時間。
 	float walkAnimMoveSpeed = 0.0f;   // 歩くアニメーションを等速で再生したとき、足が地面を送る速さ。0なら等速で再生する。
@@ -44,11 +61,36 @@ struct PlayerStateContext
 	ModelRender* modelRender = nullptr;
 	const StatusEffects* statusEffects = nullptr;
 	PlayerStateSettings settings;
+	// 次の PlayAnimation だけで使う補間時間。0より小さければ animBlendSeconds を使う。
+	// 前のステートが Exit で入れておく（例: ダッシュのあとは長めにして、ポーズを残す）。
+	mutable float nextBlendSeconds = -1.0f;
+	// 次の PlayAnimation で、クリップごとに再生を始める位置（秒）。0より小さければ最初から。使ったら全部消す。
+	mutable float nextStartTimes[enPlayerAnimClip_Num] = {};
+
+	PlayerStateContext()
+	{
+		ClearNextStartTimes();
+	}
+	void ClearNextStartTimes() const
+	{
+		for (float& time : nextStartTimes) {
+			time = -1.0f;
+		}
+	}
 
 	// アニメーションを切り替えて、speed 倍の速さで再生する。
 	void PlayAnimation(int animClip, float speed = 1.0f) const
 	{
-		modelRender->PlayAnimation(animClip, settings.animBlendSeconds);
+		const float blend = nextBlendSeconds >= 0.0f ? nextBlendSeconds : settings.animBlendSeconds;
+		const float startTime = (animClip >= 0 && animClip < enPlayerAnimClip_Num) ? nextStartTimes[animClip] : -1.0f;
+		nextBlendSeconds = -1.0f;
+		ClearNextStartTimes();
+		if (startTime >= 0.0f) {
+			modelRender->PlayAnimationFromTime(animClip, blend, startTime);
+		}
+		else {
+			modelRender->PlayAnimation(animClip, blend);
+		}
 		modelRender->SetAnimationSpeed(speed);
 	}
 };

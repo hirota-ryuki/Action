@@ -8,17 +8,31 @@ namespace
 {
 	// 移動入力のデッドゾーン閾値（二乗値）。これ以下なら正面へダッシュする。
 	constexpr float kMoveDeadZoneSq = 0.01f;
+
+	// 進んだ割合（0〜1）。時間の割合 t に対して ease-out（最初が速く、だんだん遅くなる）。
+	// endRatio は、終わりの速さ ÷ 平均の速さ（0〜1）。速さは平均の (2 - endRatio) 倍から endRatio 倍へ、まっすぐ下がる。
+	// endRatio が 0 なら、蹴った瞬間は平均の2倍で、終わりで止まる。
+	float CalcDashProgress(float t, float endRatio)
+	{
+		return endRatio * t + (1.0f - endRatio) * (2.0f * t - t * t);
+	}
 }
 
 void PlayerDashState::Enter(PlayerStateContext& context, const CharacterInput& input)
 {
 	m_isNextDashQueued = false;
 	m_isFirstFrame = true;
+	m_crouchRemaining = 0.0f;
 	Begin(context, input);
-
-	// 疾走ポーズで止める。
-	context.modelRender->PlayAnimationAtTime(enPlayerAnimClip_Run, context.settings.dashPoseTime);
-	context.modelRender->SetAnimationSpeed(0.0f);
+	// 地面から出すときは、蹴る前に一度しゃがみ込む。
+	const PlayerStateSettings& s = context.settings;
+	if (s.dashCrouchSeconds > 0.0f && m_duration > 0.0f && context.mover->IsOnGround()) {
+		m_crouchRemaining = s.dashCrouchSeconds;
+		PlayKick(context, s.dashCrouchBlendSeconds, 0.0f);
+		return;
+	}
+	// 空中では、しゃがむところを飛ばして蹴るところから流す。
+	PlayKick(context, s.dashAnimBlendSeconds, s.dashKickStartTime);
 }
 
 void PlayerDashState::Begin(PlayerStateContext& context, const CharacterInput& input)
@@ -29,18 +43,31 @@ void PlayerDashState::Begin(PlayerStateContext& context, const CharacterInput& i
 		m_direction = context.mover->GetForward();
 		m_direction.y = 0.0f;
 	}
-	m_remainingDistance = 0.0f;
-	if (m_direction.LengthSq() > FLT_EPSILON) {
+	m_elapsed = 0.0f;
+	m_duration = 0.0f;
+	m_isLanding = false;
+	if (m_direction.LengthSq() > FLT_EPSILON && context.settings.dashSpeed > 0.0f) {
 		m_direction.Normalize();
-		m_remainingDistance = context.settings.dashDistance;
+		m_duration = context.settings.dashDistance / context.settings.dashSpeed;
 		context.mover->FaceTo(m_direction);
 	}
+	// 蹴る足を毎回入れ替える。
+	m_isLeftKick = !m_isLeftKick;
+}
+
+void PlayerDashState::PlayKick(PlayerStateContext& context, float blendSeconds, float startTime)
+{
+	// ダッシュの通しのクリップを1回流す（ループしないので、終わると着地して走り出すポーズで止まる）。
+	// 蹴る足を毎回入れ替えるので、連打しても別のクリップへの切り替えになり、指定したところから流れる。
+	const int clip = m_isLeftKick ? enPlayerAnimClip_DashL : enPlayerAnimClip_DashR;
+	context.modelRender->PlayAnimationFromTime(clip, blendSeconds, startTime);
+	context.modelRender->SetAnimationSpeed(context.settings.dashAnimSpeed);
 }
 
 PlayerStateId PlayerDashState::CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const
 {
 	// 進み切っていない、または次のダッシュを予約している間はダッシュのまま。
-	if (m_remainingDistance > 0.0f || m_isNextDashQueued || input.dash.isTrigger) {
+	if (!IsFinished() || m_isNextDashQueued || input.dash.isTrigger) {
 		return PlayerStateId::Dash;
 	}
 	return PlayerGroundState::SelectByInput(context, input);
@@ -54,27 +81,68 @@ void PlayerDashState::Update(PlayerStateContext& context, const CharacterInput& 
 	}
 	m_isFirstFrame = false;
 
-	// 進み切っていて予約があれば、そのときの入力の方向へ次のダッシュを始める。
-	if (m_remainingDistance <= 0.0f && m_isNextDashQueued) {
+	// 飛び終わっていて予約があれば（着地中でも）、そのときの入力の方向へ次のダッシュを始める。
+	if (IsKickFinished() && m_isNextDashQueued) {
 		m_isNextDashQueued = false;
 		Begin(context, input);
+		// 続けて出すときは、しゃがむところを飛ばして蹴るところから流す。
+		PlayKick(context, context.settings.dashAnimBlendSeconds, context.settings.dashKickStartTime);
 	}
 
+	const PlayerStateSettings& s = context.settings;
 	Vector3 velocity = Vector3::Zero;
-	if (m_remainingDistance > 0.0f && deltaTime > FLT_EPSILON) {
-		// 今フレームの移動距離が残り距離を超えないよう、小さい方の値を使う。
-		const float maxDistance = context.settings.dashSpeed * deltaTime;
-		const float distance = maxDistance < m_remainingDistance ? maxDistance : m_remainingDistance;
+	if (IsCrouching()) {
+		// しゃがむ間は、だんだん遅くなって止まる。しゃがみ終わったら蹴り出す（アニメーションは通しで流れ続ける）。
+		const float rate = s.dashCrouchSeconds > 0.0f ? m_crouchRemaining / s.dashCrouchSeconds : 0.0f;
+		velocity = m_direction * (s.dashCrouchSpeed * rate);
+		m_crouchRemaining -= deltaTime;
+		if (!IsCrouching()) {
+			m_crouchRemaining = 0.0f;
+		}
+	}
+	else if (!IsKickFinished() && deltaTime > FLT_EPSILON) {
+		// 前のフレームまでに進んだ割合と、今フレームの終わりの割合の差だけ進む。
+		// 最後は割合が1で止まるので、フレームレートによらず dashDistance ちょうど進む。
+		const float endRatio = s.dashSpeed > 0.0f ? max(0.0f, min(1.0f, s.dashEndSpeed / s.dashSpeed)) : 0.0f;
+		const float before = CalcDashProgress(m_elapsed / m_duration, endRatio);
+		m_elapsed = min(m_elapsed + deltaTime, m_duration);
+		const float after = CalcDashProgress(m_elapsed / m_duration, endRatio);
+		const float distance = (after - before) * s.dashDistance;
 		velocity = m_direction * (distance / deltaTime);
-		m_remainingDistance -= distance;
+		if (IsKickFinished() && !m_isNextDashQueued && !input.dash.isTrigger) {
+			BeginLanding();
+		}
+	}
+	else if (m_isLanding && s.dashLandSeconds > 0.0f) {
+		// 着地の間は、終わりの速さのまま進む。
+		velocity = m_direction * s.dashEndSpeed;
+		m_landElapsed += deltaTime;
+		if (m_landElapsed >= s.dashLandSeconds) {
+			m_isLanding = false;
+		}
 	}
 	context.mover->Move(velocity, deltaTime);
+}
+
+void PlayerDashState::BeginLanding()
+{
+	// アニメーションは通しのクリップのまま流れ続け、着地のところへ進む。ここでは進み方だけを変える。
+	m_isLanding = true;
+	m_landElapsed = 0.0f;
 }
 
 void PlayerDashState::Exit(PlayerStateContext& context)
 {
 	// アニメーションの速さは、次のステートの Enter で戻す。
 	// ここで戻すと、凍結で止めたアニメーションが動き出してしまう。
-	m_remainingDistance = 0.0f;
+	// 次のアニメーションへは長めに補間して、飛び出したポーズが少し残るようにする。
+	context.nextBlendSeconds = context.settings.dashExitBlendSeconds;
+	// 走り・歩きは、最後に蹴った足に合わせて、前後の足が同じところから始める。
+	const PlayerStateSettings& s = context.settings;
+	context.nextStartTimes[enPlayerAnimClip_Run] = m_isLeftKick ? s.dashLToRunStartTime : s.dashRToRunStartTime;
+	context.nextStartTimes[enPlayerAnimClip_Walk] = m_isLeftKick ? s.dashLToWalkStartTime : s.dashRToWalkStartTime;
+	m_elapsed = m_duration;
+	m_isLanding = false;
+	m_crouchRemaining = 0.0f;
 	m_isNextDashQueued = false;
 }

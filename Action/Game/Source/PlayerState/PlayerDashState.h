@@ -2,9 +2,14 @@
 
 #include "PlayerState.h"
 
-// ダッシュ中。入った瞬間の移動方向（入力がなければ正面）へ、dashDistance の距離を dashSpeed で一気に進む。
-// 途中で向きは変えられない。ランアニメーションの疾走ポーズで止めておく。
-// 重力はかかるので、空中で出すと落ちながら進む。
+// ダッシュ中。入った瞬間の移動方向（入力がなければ正面）へ、地面を一蹴りして dashDistance だけ飛び出す。
+// アニメーションは、原神の動画から関節の角度を読み取って作った「しゃがむ → 蹴って低く滑る → 着地」の通しの1本
+// （DashL / DashR、L・R は蹴る足）。途中でクリップを切り替えず、区間（しゃがむ・飛ぶ・着地）は進み方だけを変える。
+// 地面から出すときは、dashCrouchSeconds だけしゃがむ。その間は dashCrouchSpeed から0までゆっくり遅くなる。
+// かかる時間は dashDistance ÷ dashSpeed。蹴った瞬間がいちばん速く、だんだん遅くなって止まる（ease-out）。
+// 途中で向きは変えられない。重力はかかるので、空中で出すと落ちながら進む。
+// 1回ごとに蹴る足を左右入れ替える。
+// 飛んだあとは着地（dashLandSeconds）。着地の間は dashEndSpeed で進む。
 // ダッシュ中にもう一度ダッシュボタンを押すと覚えておき、進み切ったらすぐ次のダッシュを出す（連打で続けて出る）。
 //   進み切った → もう一度押していれば次のダッシュ、そうでなければ入力と足場に合わせて Idle / Walk / Run / Air
 //   （ボタンを押しっぱなしなら Run になる）
@@ -26,11 +31,35 @@ public:
 	void Exit(PlayerStateContext& context) override;
 
 private:
-	// 1回分のダッシュを始める。方向と残りの距離を決め直す。
+	// 1回分のダッシュを始める。方向を決め直し、蹴る足を入れ替える。アニメーションは流さない。
 	void Begin(PlayerStateContext& context, const CharacterInput& input);
+	// ダッシュのアニメーションを、startTime（秒）から流す。
+	void PlayKick(PlayerStateContext& context, float blendSeconds, float startTime = 0.0f);
+	// しゃがみ込んでいる間か。
+	bool IsCrouching() const
+	{
+		return m_crouchRemaining > 0.0f;
+	}
+	// 蹴って飛ぶところ（進む距離が決まっているところ）が終わったか。
+	bool IsKickFinished() const
+	{
+		return m_elapsed >= m_duration;
+	}
+	// 着地まで終わったか。
+	bool IsFinished() const
+	{
+		return IsKickFinished() && !m_isLanding;
+	}
+	// 着地を始める。
+	void BeginLanding();
 
 	Vector3 m_direction = Vector3::AxisZ;  // 進む方向（水平・正規化済み）。
-	float m_remainingDistance = 0.0f;      // 残りの距離。0になったら終わり。
+	float m_duration = 0.0f;               // 1回分のダッシュにかかる時間。0ならダッシュしない。
+	float m_elapsed = 0.0f;                // 1回分のダッシュを始めてからの時間。
+	float m_landElapsed = 0.0f;            // 着地を始めてからの時間。
+	float m_crouchRemaining = 0.0f;        // しゃがみ込みの残り時間。0になったら蹴る。
+	bool m_isLanding = false;              // 着地中。
+	bool m_isLeftKick = false;             // 今回、左足で蹴るか。ダッシュのたびに入れ替える（ステートを出ても覚えておく）。
 	bool m_isNextDashQueued = false;       // ダッシュ中にもう一度押された。進み切ったら次のダッシュを出す。
 	bool m_isFirstFrame = false;           // 入ったフレーム。入るきっかけになった押下を、次のダッシュの予約と数えないため。
 };

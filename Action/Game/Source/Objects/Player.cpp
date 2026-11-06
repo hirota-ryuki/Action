@@ -31,8 +31,24 @@ namespace
 	{
 		PlayerStateSettings settings;
 		settings.dashDistance = 300.0f;  // ダッシュスキルの総移動距離。
-		settings.dashSpeed = 1500.0f;    // ダッシュ中の移動速度（通常の5倍）。
-		settings.dashPoseTime = 0.23f;   // ランアニメーションの疾走ポーズに合った時刻。
+		// ダッシュのクリップ（原神の動画の 33.41〜33.94秒、30fps・17コマ）の区間に合わせる。
+		//   しゃがむ f00〜f04（4コマ）、蹴って低く滑る f04〜f11（7コマ）、着地 f11〜f16（5コマ）。
+		settings.dashSpeed = 300.0f / (7.0f / 30.0f); // 300 を 7コマ（約0.233秒）で進む（平均 約1286）。
+		settings.dashEndSpeed = 480.0f;  // 終わりは走る速さ。蹴った瞬間は約2090 になる。
+		settings.dashAnimSpeed = 1.0f;   // 動画と同じ速さで流す。
+		settings.dashAnimBlendSeconds = 0.05f;
+		settings.dashCrouchSeconds = 4.0f / 30.0f;
+		settings.dashCrouchBlendSeconds = 0.1f;
+		settings.dashCrouchSpeed = 200.0f;     // 入った勢いで少し進み、止まってから飛び出す。
+		settings.dashKickStartTime = 4.0f / 30.0f;
+		settings.dashLandSeconds = 5.0f / 30.0f;
+		settings.dashExitBlendSeconds = 0.15f; // ダッシュの最後と走りの始めは同じ形なので、短くてよい。
+		// ダッシュのあとの走り・歩きの始め。ダッシュの最後（原神の動画の 33.94秒）と同じ足の形のところ。
+		// Run（原神の走りの1周期、30fps・15コマ）: 左足で蹴ったあと f05、右足で蹴ったあと f12。
+		settings.dashLToRunStartTime = 5.0f / 30.0f;
+		settings.dashRToRunStartTime = 12.0f / 30.0f;
+		settings.dashLToWalkStartTime = 0.0f;
+		settings.dashRToWalkStartTime = 17.0f / 30.0f;
 		settings.moveThreshold = 0.1f;   // 移動入力がこれより小さければ立ち止まる。
 		settings.animBlendSeconds = 0.2f;
 		// Walk.fbx（Mixamo の Female Walk）の足が地面を送る速さ。UE で足のボーンを測った 115/秒 × モデルの大きさ 1.128。
@@ -50,12 +66,17 @@ namespace
 		desc.scale = 1.128f;
 		// Idle・Walk は Mixamo のモーションを UE で SK_Player にリターゲットしたもの。
 		// Jump はまだ SK_Player 用が無いので、暫定で run を入れておく。
-		const AnimClipDesc run = { "Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx", true };
+		// Run・DashL・DashR は、原神の動画から MediaPipe で関節の位置を読み取り、その角度で SK_Player のポーズを作ったもの
+		// （tools/UnrealScripts/dash_roto.json）。Run は走りの1周期（34.25〜34.72秒）。
+		const AnimClipDesc run = { "Assets/modelData/player/Animation/Run.fbx", true };
 		desc.clips.resize(enPlayerAnimClip_Num);
 		desc.clips[enPlayerAnimClip_Idle] = { "Assets/modelData/player/Animation/Idle.fbx", true };
 		desc.clips[enPlayerAnimClip_Walk] = { "Assets/modelData/player/Animation/Walk.fbx", true };
 		desc.clips[enPlayerAnimClip_Run] = run;
 		desc.clips[enPlayerAnimClip_Jump] = run;
+		// DashL・DashR は「しゃがむ → 蹴って低く滑る → 着地」の通し（33.41〜33.94秒、L・R は蹴る足）。
+		desc.clips[enPlayerAnimClip_DashL] = { "Assets/modelData/player/Animation/DashL.fbx", false };
+		desc.clips[enPlayerAnimClip_DashR] = { "Assets/modelData/player/Animation/DashR.fbx", false };
 		return desc;
 	}
 

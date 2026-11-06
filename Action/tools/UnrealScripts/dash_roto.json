@@ -1,0 +1,137 @@
+{
+ "work_dir": "/Game/05_Adjust",
+ "mesh_fbx": "../../Game/Assets/modelData/player/Model/SK_Player.FBX",
+ "pitch_deg": {},
+ "swing_scale": {},
+ "keep_feet_on_ground": false,
+ "clips": [
+  {
+   "in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
+   "out": "../../Game/Assets/modelData/player/Animation/DashL.fbx",
+   "frames": {
+    "start": 0,
+    "count": 1,
+    "hold": 16
+   },
+   "rotoscope": {
+    "data": "genshin_dash_pose.json",
+    "start": 4,
+    "count": 17,
+    "map": {
+     "A": "L",
+     "B": "R",
+     "a": "L",
+     "b": "R"
+    },
+    "lean_deg": 8.0,
+    "leg_lean_deg": 5.0,
+    "head_pitch_deg": -30.0
+   }
+  },
+  {
+   "in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
+   "out": "../../Game/Assets/modelData/player/Animation/DashR.fbx",
+   "frames": {
+    "start": 0,
+    "count": 1,
+    "hold": 16
+   },
+   "rotoscope": {
+    "data": "genshin_dash_pose.json",
+    "start": 4,
+    "count": 17,
+    "map": {
+     "A": "R",
+     "B": "L",
+     "a": "R",
+     "b": "L"
+    },
+    "lean_deg": 8.0,
+    "leg_lean_deg": 5.0,
+    "head_pitch_deg": -30.0
+   }
+  },
+  {
+   "in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
+   "out": "../../Game/Assets/modelData/player/Animation/Run.fbx",
+   "frames": {
+    "start": 0,
+    "count": 1,
+    "hold": 14
+   },
+   "rotoscope": {
+    "data": "genshin_run_pose.json",
+    "start": 0,
+    "count": 15,
+    "map": {
+     "A": "R",
+     "B": "L",
+     "a": "R",
+     "b": "L"
+    },
+    "height": "hips",
+    "lean_deg": 10.0,
+    "leg_lean_deg": 0.0,
+    "tuck_knee_deg": 125.0,
+    "head_pitch_deg": -30.0
+   },
+   "crouch_after_rotoscope": true,
+   "crouch": {
+    "lower_cm": 6.0,
+    "weights": [
+     0.0,
+     0.0,
+     0.3,
+     0.8,
+     1.0,
+     0.6,
+     0.2,
+     0.0,
+     0.0,
+     0.3,
+     0.8,
+     1.0,
+     0.6,
+     0.2,
+     0.0
+    ]
+   },
+   "shift_feet": {
+    "R": [
+     6.0,
+     12.0,
+     16.0,
+     12.0,
+     7.0,
+     2.0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     6.0
+    ],
+    "L": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     6.0,
+     12.0,
+     16.0,
+     12.0,
+     7.0,
+     2.0,
+     0,
+     0
+    ]
+   }
+  }
+ ]
+}
