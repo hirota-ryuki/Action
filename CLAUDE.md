@@ -56,6 +56,8 @@
 
 - Claude の返答が終わるたびに、`.claude/settings.json` の Stop フック → `.claude/scripts/notify-phone.ps1` が ntfy.sh へ通知を送り、スマホの ntfy アプリに届く。PC の画面を見ているときも送る。
 - トピック名（ntfy アプリで購読する名前）はリポジトリに入れない（公開リポジトリのため）。各PCの `%APPDATA%\claude-notify\ntfy-topic.txt` と、個人用 OneDrive の `01_ClaudeSessions/ntfy-topic.txt` に置く。新しいPCでは、最初の通知のときに OneDrive から自動で取ってくる。
-- ntfy.sh はトピック名を知っていれば誰でも読めるので、通知の文面に作業の内容を書かない。
+- 通知の文面は、その回の返答の1行目（最初の「。」まで）になる。題名は `Action（PC名）`。
+- そのため、作業を終えたときの返答は、1行目に「何が終わったか」を日本語の1文で書く（例: `炎魔法の実装が完了しました。`、`ダッシュのアニメを直して main に push しました。`）。前置きや「〇〇を確認します」のような途中の文から始めない。
+- ntfy.sh はトピック名を知っていれば誰でも読めるので、返答の1行目にパスワードや個人情報を書かない。
 - トピック名を確かめるとき: `powershell -ExecutionPolicy Bypass -File .claude\scripts\notify-phone.ps1 -Mode topic`
 - Claude の PushNotification ツールは使わない（PC の画面を見ているときは送られないため）。
