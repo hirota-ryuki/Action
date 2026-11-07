@@ -803,6 +803,24 @@ def rotoscope(anim, cfg, base_dir):
                 t += g
             sm.append(max(cfg.get("elbow_min_deg", 5.0), s / t))
         elbows[src] = sm
+    # tuck_knee_deg でたたむのは、太ももが一番後ろから一番前まで振られていく間だけ（振り戻す脚）。
+    # 一番前まで出て戻り始めた脚は、着地しようとしているのでたたまない（たたむと、着地の1コマ前に膝が折れ、
+    # 着地で一気に伸びて、すねがばたついて見えた）。ループのクリップ（最後のコマ = 最初のコマ）は1周を輪にして数える。
+    swing = {}
+    if cfg.get("tuck_knee_deg", 0.0) > 0.0:
+        for src in "AB":
+            th = [r[src + "thigh"] for r in rows]
+            cycle = len(th) - 1 if len(th) > 1 and abs(th[0] - th[-1]) < 1e-6 else len(th)
+            back = min(range(cycle), key=lambda k: th[k])
+            front = max(range(cycle), key=lambda k: th[k])
+            frames = set()
+            k = back
+            while True:
+                frames.add(k)
+                if k == front:
+                    break
+                k = (k + 1) % cycle
+            swing[src] = (frames, cycle)
     targets = []
     for i, r in enumerate(rows):
         # lean_deg: 胴体と首を、データよりさらに前へ倒す角度（正 = 前へ）。
@@ -825,7 +843,7 @@ def rotoscope(anim, cfg, base_dir):
             if thigh_max is not None and thigh > thigh_max - thigh_soft:
                 knee0 = thigh_max - thigh_soft
                 thigh = knee0 + thigh_soft * math.tanh((thigh - knee0) / thigh_soft)
-            if tuck > 0.0 and r["toe" + src] > 0.12:
+            if tuck > 0.0 and r["toe" + src] > 0.12 and (i % swing[src][1]) in swing[src][0]:
                 def ramp(x, a, b):
                     u = max(0.0, min(1.0, (x - a) / (b - a)))
                     return u * u * (3.0 - 2.0 * u)
