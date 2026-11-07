@@ -785,7 +785,17 @@ def rotoscope(anim, cfg, base_dir):
     bones = TORSO_CHAIN + ["J_Bip_C_Neck", "J_Bip_C_Head"] + limbs
     # head_pitch_deg: 頭だけに足す角度（正 = うつむく、負 = 顔を起こす）。首の線は変えずに、顔の向きだけを変える。
     head_pitch = cfg.get("head_pitch_deg", 0.0)
-    orig = {b: {"pos": [], "rot": [], "scl": [], "axis": [], "parent": []} for b in bones}
+    # head_pitch_to_deg と head_pitch_frames [a, b]: a コマ目から b コマ目へ、頭の角度を head_pitch_deg から
+    # head_pitch_to_deg へ smoothstep で移す（止まるで、起き上がったら顔をまっすぐ前へ戻す）。
+    head_to = cfg.get("head_pitch_to_deg", head_pitch)
+    head_a, head_b = cfg.get("head_pitch_frames", [0, 0])
+
+    def head_pitch_at(f):
+        if head_b <= head_a:
+            return head_pitch
+        u = max(0.0, min(1.0, (f - head_a) / float(head_b - head_a)))
+        return head_pitch + (head_to - head_pitch) * u * u * (3.0 - 2.0 * u)
+    orig ={b: {"pos": [], "rot": [], "scl": [], "axis": [], "parent": []} for b in bones}
     for f in range(num_keys):
         pose = P.get_anim_pose_at_frame(anim, f, opts)
         for b in bones:
@@ -815,7 +825,7 @@ def rotoscope(anim, cfg, base_dir):
         if b == "J_Bip_C_Neck":
             return t.get("neck", 0.0) - T
         if b == "J_Bip_C_Head":
-            return head_pitch
+            return head_pitch_at(f)
         par = parent_of[b]
         base = T * split[0] if par == "hips" else (T if par == "torso" else t.get(par, 0.0))
         return t.get(b, 0.0) - base
