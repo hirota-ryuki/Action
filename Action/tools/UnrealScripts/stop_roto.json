@@ -31,7 +31,7 @@
     "face_frames": [4, 26],
     "neck_add_deg": 25.0,
     "neck_add_frames": [14, 30],
-    "arm_smooth": {"a": 2.5}
+    "arm_smooth": {"a": 4.0}
    },
    "skirt_follow": {
     "follow": {"Front": 0.5, "Back": 0.25, "Side": 0.5}
@@ -63,7 +63,7 @@
     "face_frames": [4, 26],
     "neck_add_deg": 25.0,
     "neck_add_frames": [14, 30],
-    "arm_smooth": {"a": 2.5}
+    "arm_smooth": {"a": 4.0}
    },
    "skirt_follow": {
     "follow": {"Front": 0.5, "Back": 0.25, "Side": 0.5}
