@@ -29,8 +29,8 @@ config.json（ファイルのパスは、絶対パスか config.json からの�
 
 注意: in と out を同じにすると、実行するたびに角度が足されていく。リターゲットし直した直後に1回だけ実行する。
 
-角度は「キャラクターの左右の軸」まわりで、全フレームに同じだけ足す（リターゲットポーズを直すのと同じ）。
-左右の軸は、0フレーム目のつま先とかかとの位置からキャラクターの前を求めて決める。
+角度は「キャラクターの左右の軸」まわりで、全コマに同じだけ足す（リターゲットポーズを直すのと同じ）。
+左右の軸は、0コマ目のつま先とかかとの位置からキャラクターの前を求めて決める。
 振り幅（swing_scale）は角度を足す前に、元のローカルの回転に対してかける。
 """
 import json
@@ -204,7 +204,7 @@ HIPS = "J_Bip_C_Hips"
 
 
 def body_shape(anim, fwd):
-    """全フレームの平均で、体の形を測る（度。前へ倒れているほど大きい）。
+    """全コマの平均で、体の形を測る（度。前へ倒れているほど大きい）。
     torso: 腰→首の線の前傾。leg: 両足の真ん中→腰の線の前傾（足が腰より後ろにあれば正）。
     torso - leg が「体の折れ」。大きいほど腰で「く」の字に曲がり、お尻が突き出て見える。
     toe_min: つま先の一番低い高さ（cm）。"""
@@ -241,7 +241,7 @@ def adjust(anim, pitch_deg, swing_scale, keep_feet_on_ground=False):
     first = P.get_anim_pose_at_frame(anim, 0, opts)
     axis = side_axis(P.get_reference_pose(anim.get_editor_property("skeleton")))
 
-    # 先に全フレームの元の値を読む（書き換えると、あとのフレームの評価が変わるため）。
+    # 先に全コマの元の値を読む（書き換えると、あとのコマの評価が変わるため）。
     bones = list(dict.fromkeys(list(swing_scale) + list(pitch_deg) + ([HIPS] if keep_feet_on_ground else [])))
     tracks = {}
     for bone in bones:
@@ -314,7 +314,7 @@ def adjust(anim, pitch_deg, swing_scale, keep_feet_on_ground=False):
         log(label, "shape: torso lean(deg) =", round(sh["torso"], 1), "leg lean(deg) =", round(sh["leg"], 1),
             "bend(deg) =", round(sh["torso"] - sh["leg"], 1), "toe min(cm) =", round(sh["toe_min"], 2))
 
-    # 確かめ: 頭と腰の前後の差（0フレーム目、前が正）。
+    # 確かめ: 頭と腰の前後の差（0コマ目、前が正）。
     after = P.get_anim_pose_at_frame(anim, 0, opts)
     for label, pose in (("before", first), ("after", after)):
         head = P.get_bone_pose(pose, "J_Bip_C_Head", W).translation

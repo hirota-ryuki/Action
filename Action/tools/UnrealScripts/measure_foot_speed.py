@@ -22,7 +22,7 @@ def main():
     opts = unreal.AnimPoseEvaluationOptions()
     lines = ["%s length=%.3f" % (anim_path, length)]
 
-    # 足ごとに、各フレームの位置を取る。
+    # 足ごとに、各コマの位置を取る。
     samples = {foot: [] for foot in FEET}
     n = int(length * FPS) + 1
     for i in range(n):
@@ -32,8 +32,8 @@ def main():
             p = unreal.AnimPoseExtensions.get_bone_pose(pose, foot, unreal.AnimPoseSpaces.WORLD).translation
             samples[foot].append((t, p))
 
-    # 足が低い（接地している）フレームの間の、水平方向の速さの中央値を取る。
-    # 平均にすると、かかとが着く・つま先が離れる瞬間の遅いフレームに引っぱられて小さく出る。
+    # 足が低い（接地している）コマの間の、水平方向の速さの中央値を取る。
+    # 平均にすると、かかとが着く・つま先が離れる瞬間の遅いコマに引っぱられて小さく出る。
     speeds = []
     for foot in FEET:
         pts = samples[foot]
@@ -46,7 +46,7 @@ def main():
         speeds.sort()
         lines.append("接地中の足の速さ(中央値) = %.1f cm/秒（%d 区間）" % (speeds[len(speeds) // 2], len(speeds)))
     else:
-        lines.append("接地しているフレームが見つかりませんでした")
+        lines.append("接地しているコマが見つかりませんでした")
     open(out_path, "w", encoding="utf-8").write("\n".join(lines))
 
 
