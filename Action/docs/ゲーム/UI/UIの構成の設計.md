@@ -47,16 +47,17 @@ Game ──作る・SetPlayer・ShowBoss / HideBoss──▶ UIManager（IGameOb
 
 ```
 UIElement（基底）… 位置・表示する／しない・透明度。Update(deltaTime)・Draw(rc)
- ├ Gauge   … 横向きのバー。SetRate(0〜1)。遅れて減るバーをオンにできる。位置はバーの左端の中央
+ ├ Gauge   … 横向きのバー。SetRate(0〜1)。枠・遅れて減るバーを付けられる。位置はバーの左端の中央（枠は含まない）
  ├ Icon    … 画像1枚。位置は画像の中央
- └ Text    … 文字。値が変わったときだけ書き換える。位置は文字の中央
+ └ Text    … 文字。値が変わったときだけ書き換える。位置は、横は Align（左端・中央・右端）、縦は文字の中央。影（縁取り）を付けられる
 ```
 
 - **UIElement を継承するのは、画面に出る部品だけ。** `PlayerHud`・`BossHud` は自分では何も描かないので、継承しないふつうのクラス。
 - 座標は画面の中心が原点で、右が +x、上が +y（画面は 1920 × 1080）。
 - `Draw()` は、見えない（`SetVisible(false)` か透明度 0）ときは何もせず、見えるときだけ派生クラスの `OnDraw()` を呼ぶ。
 - 透明度は `ApplyAlpha()` で各部品の色のアルファに掛ける。フェードはこれで行う。
-- 画像がまだないものは、4×4 の白い画像（`Assets/sprite/white.dds`）に `SetMulColor` で色を付けて使う。
+- 画像がまだないものは、4×4 の白い画像（`Assets/sprite/white.dds`）に `SetMulColor` で色を付けて使う。ゲージの中身は、上が白く下へ少し暗くなる 4×16 の画像（`Assets/sprite/gauge.dds`）に色を付けて、立体感を出す。
+- エンジンの文字（`Font`）は、pivot を割合ではなく「文字の左上からのピクセル数」として扱う。そのため `Text` は pivot で寄せず、`Font::MeasureString()` で測った幅だけ位置をずらして寄せる。
 - `Button`（押されたら登録した処理を呼ぶ）は、メニュー画面を作るときに作る。
 
 ---
