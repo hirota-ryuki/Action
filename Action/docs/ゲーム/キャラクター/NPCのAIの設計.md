@@ -1,7 +1,7 @@
 # NPCのAIの設計
 
 作成日: 2026-11-07（[入力の設計](入力の設計.md) から分けた）
-対象: [NpcInputSource.cpp](../../../Game/Source/Character/NpcInputSource.cpp)
+対象: [NpcInputSource.cpp](../../../Game/Source/Character/Input/NpcInputSource.cpp)
 経緯: [入力の経緯](入力の経緯.md)
 
 NPC の AI は、プレイヤーと同じ `CharacterInput` を作る入力元（`NpcInputSource`）です。
