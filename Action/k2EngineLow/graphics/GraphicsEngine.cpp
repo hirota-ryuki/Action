@@ -211,6 +211,7 @@ namespace nsK2EngineLow {
 		IDXGIAdapter* adapterMaxVideoMemory = nullptr;				//最大ビデオメモリのアダプタ。
 		IDXGIAdapter* useAdapter = nullptr;							//最終的に使用するアダプタ。
 		SIZE_T videoMemorySize = 0;
+		SIZE_T venderVideoMemory[Num_GPUVender] = { 0 };				//各ベンダーで選んだアダプターのビデオメモリ。
 		for (int i = 0; dxgiFactory->EnumAdapters(i, &adapterTmp) != DXGI_ERROR_NOT_FOUND; i++) {
 			DXGI_ADAPTER_DESC desc;
 			adapterTmp->GetDesc(&desc);
@@ -223,6 +224,14 @@ namespace nsK2EngineLow {
 				adapterMaxVideoMemory->AddRef();
 				videoMemorySize = desc.DedicatedVideoMemory;
 			}
+			// 同じメーカーの GPU が複数あるとき（CPU 内蔵の GPU と、専用の GPU など）は、専用のビデオメモリが多い方を使う。
+			// 先に見つけた方の方が多ければ、あとから見つけた方では置き換えない。
+			auto isBetter = [&](int vender) {
+				if (adapterVender[vender] == nullptr) {
+					return true;
+				}
+				return desc.DedicatedVideoMemory > venderVideoMemory[vender];
+			};
 			if (wcsstr(desc.Description, L"NVIDIA") != nullptr) {
 				//NVIDIA製
 #ifdef ENABLE_DXR_ON_RTX_ONLY
@@ -235,27 +244,36 @@ namespace nsK2EngineLow {
 #else // #ifdef ENABLE_DXR_ON_RTX_ONLY
 				m_isPossibleRaytracing = true;
 #endif // #ifdef ENABLE_DXR_ON_RTX_ONLY
-				if (adapterVender[GPU_VenderNvidia]) {
-					adapterVender[GPU_VenderNvidia]->Release();
+				if (isBetter(GPU_VenderNvidia)) {
+					if (adapterVender[GPU_VenderNvidia]) {
+						adapterVender[GPU_VenderNvidia]->Release();
+					}
+					adapterVender[GPU_VenderNvidia] = adapterTmp;
+					adapterVender[GPU_VenderNvidia]->AddRef();
+					venderVideoMemory[GPU_VenderNvidia] = desc.DedicatedVideoMemory;
 				}
-				adapterVender[GPU_VenderNvidia] = adapterTmp;
-				adapterVender[GPU_VenderNvidia]->AddRef();
 			}
 			else if (wcsstr(desc.Description, L"AMD") != nullptr) {
 				//AMD製
-				if (adapterVender[GPU_VenderAMD]) {
-					adapterVender[GPU_VenderAMD]->Release();
+				if (isBetter(GPU_VenderAMD)) {
+					if (adapterVender[GPU_VenderAMD]) {
+						adapterVender[GPU_VenderAMD]->Release();
+					}
+					adapterVender[GPU_VenderAMD] = adapterTmp;
+					adapterVender[GPU_VenderAMD]->AddRef();
+					venderVideoMemory[GPU_VenderAMD] = desc.DedicatedVideoMemory;
 				}
-				adapterVender[GPU_VenderAMD] = adapterTmp;
-				adapterVender[GPU_VenderAMD]->AddRef();
 			}
 			else if (wcsstr(desc.Description, L"Intel") != nullptr) {
 				//Intel製
-				if (adapterVender[GPU_VenderIntel]) {
-					adapterVender[GPU_VenderIntel]->Release();
+				if (isBetter(GPU_VenderIntel)) {
+					if (adapterVender[GPU_VenderIntel]) {
+						adapterVender[GPU_VenderIntel]->Release();
+					}
+					adapterVender[GPU_VenderIntel] = adapterTmp;
+					adapterVender[GPU_VenderIntel]->AddRef();
+					venderVideoMemory[GPU_VenderIntel] = desc.DedicatedVideoMemory;
 				}
-				adapterVender[GPU_VenderIntel] = adapterTmp;
-				adapterVender[GPU_VenderIntel]->AddRef();
 			}
 			adapterTmp->Release();
 		}
