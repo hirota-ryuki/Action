@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "PlayerAnimator.h"
+#include "State.h"
 
 class CharacterMover;
 class StatusEffects;
@@ -68,39 +69,12 @@ struct PlayerStateContext
 	PlayerAnimator* animator = nullptr;
 	const StatusEffects* statusEffects = nullptr;
 	PlayerStateSettings settings;
-	// ひとつ前のステート。Enter の中で、どこから来たかを見るのに使う。PlayerStateMachine が入れる。
+	// ひとつ前のステート。Enter の中で、どこから来たかを見るのに使う。StateMachine が入れる。
 	PlayerStateId previousId = PlayerStateId::Idle;
 	// ダッシュのあと、移動の入力を離すまで走り続ける（走るボタンを押していなくても Run）。
 	// Dash が立て（dashKeepRun のとき）、PlayerStateMachine が移動の入力がないフレームで下ろす。
 	bool keepRunAfterDash = false;
 };
 
-// プレイヤーのステートの基底クラス。
-// PlayerStateMachine が毎フレーム次の順に呼ぶ。
-//   1. CheckTransition: 次にどのステートへ移るかを決める
-//   2. 移るなら、今のステートの Exit → 次のステートの Enter
-//   3. Update: そのステートの動き
-// ステートは自分の中だけで動き方と遷移を決める。ほかのステートの中身は知らない。
-class PlayerState
-{
-public:
-	virtual ~PlayerState() = default;
-
-	virtual PlayerStateId GetId() const = 0;
-	// デバッグ表示用の名前。
-	virtual const char* GetName() const = 0;
-
-	// このステートに入ったとき。アニメーションの切り替えなど。
-	virtual void Enter(PlayerStateContext& context, const CharacterInput& input)
-	{
-	}
-	// 次のステートを返す。移らないなら GetId() を返す。
-	// 凍結（行動できない）への遷移は、どのステートからでも PlayerStateMachine が行うので、ここでは見なくてよい。
-	virtual PlayerStateId CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const = 0;
-	// 1フレームの動き。CharacterMover の Move 系の関数を1回だけ呼ぶこと（重力はそこでかかる）。
-	virtual void Update(PlayerStateContext& context, const CharacterInput& input, float deltaTime) = 0;
-	// このステートから出るとき。
-	virtual void Exit(PlayerStateContext& context)
-	{
-	}
-};
+// プレイヤーのステートの基底クラス。中身は共通の State（Character/StateMachine/State.h）にある。
+using PlayerState = State<PlayerStateId, PlayerStateContext>;

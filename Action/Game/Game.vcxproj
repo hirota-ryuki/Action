@@ -98,7 +98,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>$(ProjectDir)Source;$(ProjectDir)Source\App;$(ProjectDir)Source\Core;$(ProjectDir)Source\Objects;$(ProjectDir)Source\System;$(ProjectDir)Source\Actor;$(ProjectDir)Source\Character;$(ProjectDir)Source\Character\Input;$(ProjectDir)Source\Character\Components;$(ProjectDir)Source\Player;$(ProjectDir)Source\Player\State;$(ProjectDir)Source\Enemy;$(ProjectDir)Source\Magic;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)Source;$(ProjectDir)Source\App;$(ProjectDir)Source\Core;$(ProjectDir)Source\Objects;$(ProjectDir)Source\System;$(ProjectDir)Source\Actor;$(ProjectDir)Source\Character;$(ProjectDir)Source\Character\Input;$(ProjectDir)Source\Character\Components;$(ProjectDir)Source\Character\StateMachine;$(ProjectDir)Source\Player;$(ProjectDir)Source\Player\State;$(ProjectDir)Source\Enemy;$(ProjectDir)Source\Enemy\State;$(ProjectDir)Source\Magic;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
@@ -226,6 +226,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Enemy\State\EnemyStateMachine.cpp" />
+    <ClCompile Include="Source\Enemy\State\EnemyFrozenState.cpp" />
+    <ClCompile Include="Source\Enemy\State\EnemyGroundState.cpp" />
     <ClCompile Include="Source\Character\Components\WeaponAttachment.cpp" />
     <ClCompile Include="Source\Player\PlayerConfig.cpp" />
     <ClCompile Include="Source\Character\Character.cpp" />
@@ -264,6 +267,14 @@
     <ClCompile Include="Source\System\system.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Enemy\State\EnemyStateMachine.h" />
+    <ClInclude Include="Source\Enemy\State\EnemyFrozenState.h" />
+    <ClInclude Include="Source\Enemy\State\EnemyMoveState.h" />
+    <ClInclude Include="Source\Enemy\State\EnemyIdleState.h" />
+    <ClInclude Include="Source\Enemy\State\EnemyGroundState.h" />
+    <ClInclude Include="Source\Enemy\State\EnemyState.h" />
+    <ClInclude Include="Source\Character\StateMachine\StateMachine.h" />
+    <ClInclude Include="Source\Character\StateMachine\State.h" />
     <ClInclude Include="Source\Character\Components\FallRespawn.h" />
     <ClInclude Include="Source\Character\Components\WeaponAttachment.h" />
     <ClInclude Include="Source\Player\PlayerConfig.h" />
