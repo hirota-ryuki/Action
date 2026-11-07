@@ -90,6 +90,9 @@
     <ClCompile Include="Source\UI\Hud\BossHud.cpp">
       <Filter>Source\UI\Hud</Filter>
     </ClCompile>
+    <ClCompile Include="Source\UI\Hud\DebugHud.cpp">
+      <Filter>Source\UI\Hud</Filter>
+    </ClCompile>
     <ClCompile Include="Source\UI\Elements\Gauge.cpp">
       <Filter>Source\UI\Elements</Filter>
     </ClCompile>
@@ -240,6 +243,9 @@
       <Filter>Source\UI\Hud</Filter>
     </ClInclude>
     <ClInclude Include="Source\UI\Hud\BossHud.h">
+      <Filter>Source\UI\Hud</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\UI\Hud\DebugHud.h">
       <Filter>Source\UI\Hud</Filter>
     </ClInclude>
     <ClInclude Include="Source\UI\Elements\UIElement.h">

@@ -2,6 +2,7 @@
 
 #include "PlayerHud.h"
 #include "BossHud.h"
+#include "DebugHud.h"
 
 class Player;
 class Character;
@@ -34,4 +35,5 @@ public:
 private:
 	PlayerHud m_playerHud;
 	BossHud m_bossHud;
+	DebugHud m_debugHud;  // 開発用の表示（FPS）。いちばん上に描く。
 };
