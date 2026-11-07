@@ -39,3 +39,14 @@ HUD は数種類なので案Aにした。
 - 最初は、まとめて動かす・透明にするために `PlayerHud`・`BossHud` も UIElement を継承する形にしていた。
 - 「部品を持つだけなら継承しなくてよいのでは」という指摘を受けて、ふつうのクラスにした。自分では何も描かず、フェードは中の部品2つに同じ透明度を入れれば済む。
 - 逆に、Hud をなくして UIManager が部品を直接持つ形はやめた。UIManager に全キャラクターの読み方が入って太るため。
+
+---
+
+## 2026-11-08: 実装した
+
+- `Game/Source/UI/` に、UIManager・`Hud/`（PlayerHud・BossHud）・`Elements/`（UIElement・Gauge・Icon・Text）を作った。Button はメニュー画面を作るときに回した。
+- ゲーム側には、UI が読むための const の getter（`Status::GetHpRate`、`Character` の const の `GetStatus`・`GetStatusEffects`）だけを足した。
+- **Boss は作らなかった。** Enemy を継承するか Character から作るかが決まっていないため。そのため `BossHud` は、設計の `const Boss*` ではなく `const Character*` と名前を受け取る形にした。Boss を作るときに直す。
+- 画像がないので、4×4 の白い DDS（`Assets/sprite/white.dds`）を作り、色を付けてゲージとアイコンにした。
+- 確かめたこと: 一時的に今の敵を `ShowBoss` し、起動して8秒後に敵へ40、Player へ25のダメージを与え、Player を凍らせて画面を撮った。ダメージの前は両方のゲージが満タン、あとは Player 75%・ボス 60% になり、凍結のアイコンが出た。白いバーが遅れて縮むところは撮れていない。
+- 撮った画面で、Player の HPゲージが左上の FPS の表示と重なり、ボスの名前の下の端がゲージにかかっていたので、ゲージを上端から 130 に下げ、名前をゲージの 55 上に上げた（直したあとの画面は撮っていない）。
