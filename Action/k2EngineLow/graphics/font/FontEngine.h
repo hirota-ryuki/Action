@@ -50,6 +50,15 @@ namespace nsK2EngineLow {
 		/// 描画終了。
 		/// </summary>
 		void EndDraw(RenderContext& rc);
+		/// <summary>
+		/// 文字列を大きさ 1 で描いたときの幅と高さ（ピクセル）を測る。右寄せ・中央寄せに使う。
+		/// </summary>
+		Vector2 MeasureString(const wchar_t* text) const
+		{
+			DirectX::XMFLOAT2 size;
+			DirectX::XMStoreFloat2(&size, m_spriteFont->MeasureString(text));
+			return Vector2(size.x, size.y);
+		}
 	private:
 		std::unique_ptr<DirectX::SpriteBatch> m_spriteBatch;	//スプライトバッチ。
 		std::unique_ptr<DirectX::SpriteFont>	m_spriteFont;	//スプライトフォント。
