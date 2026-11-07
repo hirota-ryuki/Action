@@ -237,6 +237,7 @@
     <ClCompile Include="Source\UI\UIManager.cpp" />
     <ClCompile Include="Source\UI\Hud\PlayerHud.cpp" />
     <ClCompile Include="Source\UI\Hud\BossHud.cpp" />
+    <ClCompile Include="Source\UI\Hud\DebugHud.cpp" />
     <ClCompile Include="Source\UI\Elements\Gauge.cpp" />
     <ClCompile Include="Source\UI\Elements\Icon.cpp" />
     <ClCompile Include="Source\UI\Elements\Text.cpp" />
@@ -293,6 +294,7 @@
     <ClInclude Include="Source\UI\UIManager.h" />
     <ClInclude Include="Source\UI\Hud\PlayerHud.h" />
     <ClInclude Include="Source\UI\Hud\BossHud.h" />
+    <ClInclude Include="Source\UI\Hud\DebugHud.h" />
     <ClInclude Include="Source\UI\Elements\UIElement.h" />
     <ClInclude Include="Source\UI\Elements\UISprite.h" />
     <ClInclude Include="Source\UI\Elements\Gauge.h" />

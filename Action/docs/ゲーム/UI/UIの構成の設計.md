@@ -18,7 +18,8 @@ HUD の中身（Player 用・Boss 用に何を出すか）は [HUDの設計](HUD
 ```
 Game ──作る・SetPlayer・ShowBoss / HideBoss──▶ UIManager（IGameObject。1つだけ）
                                                  ├ PlayerHud ──読む（const）──▶ Player
-                                                 └ BossHud   ──読む（const）──▶ ボスにする Character
+                                                 ├ BossHud   ──読む（const）──▶ ボスにする Character
+                                                 └ DebugHud  … 開発用（FPS）。いちばん上に描く
                                                        │ 値を入れる
                                                        ▼
                                                  部品（UIElement の派生）: Gauge・Icon・Text
@@ -30,7 +31,7 @@ Game ──作る・SetPlayer・ShowBoss / HideBoss──▶ UIManager（IGameOb
 | 段 | クラス | 受け持つこと | 知っているもの |
 |---|---|---|---|
 | まとめ役 | `UIManager` | HUD を持ち、順に更新して描く。Game からの指示（ボスを出す・消す）を受ける | 各 Hud |
-| 係 | `PlayerHud`・`BossHud` | キャラクターの値を読み、自分の部品に入れる | 自分のキャラクター（const）と部品 |
+| 係 | `PlayerHud`・`BossHud`・`DebugHud` | キャラクターなどの値を読み、自分の部品に入れる | 自分のキャラクター（const）と部品 |
 | 部品 | `Gauge`・`Icon`・`Text` | 言われた値を描く | エンジンの描画だけ。キャラクターは知らない |
 
 ソースのフォルダ:
@@ -38,7 +39,7 @@ Game ──作る・SetPlayer・ShowBoss / HideBoss──▶ UIManager（IGameOb
 | フォルダ | 中身 |
 |---|---|
 | [UI/](../../../Game/Source/UI/) | [UIManager.h](../../../Game/Source/UI/UIManager.h) |
-| [UI/Hud/](../../../Game/Source/UI/Hud/) | [PlayerHud.h](../../../Game/Source/UI/Hud/PlayerHud.h)、[BossHud.h](../../../Game/Source/UI/Hud/BossHud.h) |
+| [UI/Hud/](../../../Game/Source/UI/Hud/) | [PlayerHud.h](../../../Game/Source/UI/Hud/PlayerHud.h)、[BossHud.h](../../../Game/Source/UI/Hud/BossHud.h)、[DebugHud.h](../../../Game/Source/UI/Hud/DebugHud.h)（[FPSの表示の設計](FPSの表示の設計.md)） |
 | [UI/Elements/](../../../Game/Source/UI/Elements/) | [UIElement.h](../../../Game/Source/UI/Elements/UIElement.h)、[Gauge.h](../../../Game/Source/UI/Elements/Gauge.h)、[Icon.h](../../../Game/Source/UI/Elements/Icon.h)、[Text.h](../../../Game/Source/UI/Elements/Text.h)、[UISprite.h](../../../Game/Source/UI/Elements/UISprite.h)（画像のパス） |
 
 ---
