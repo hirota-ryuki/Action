@@ -23,6 +23,7 @@ config.json（ファイルのパスは、絶対パスか config.json からの�
   "out_deg": {                                           # 省略可。前後の軸まわりに回して体の外へ開く（度、正 = 外）。
     "J_Bip_L_UpperArm": 8.0                              #   左右とも正で外へ開く
   },
+  "motion_scale": 0.5,                                   # 省略可。体全体の動きを、平均のポーズを中心に何倍にするか
   "swing_scale": {                                       # 省略可。ボーンの振り幅を、平均の向きを中心に何倍にするか
     "J_Bip_L_UpperLeg": 1.3
   },
@@ -234,7 +235,7 @@ def body_shape(anim, fwd):
     return {"torso": torso / num_keys, "leg": leg / num_keys, "toe_min": toe_min}
 
 
-def adjust(anim, pitch_deg, swing_scale, keep_feet_on_ground=False, out_deg=None):
+def adjust(anim, pitch_deg, swing_scale, keep_feet_on_ground=False, out_deg=None, motion_scale=1.0):
     P = unreal.AnimPoseExtensions
     W = unreal.AnimPoseSpaces.WORLD
     L = unreal.AnimPoseSpaces.LOCAL
@@ -254,7 +255,12 @@ def adjust(anim, pitch_deg, swing_scale, keep_feet_on_ground=False, out_deg=None
         out_axis[bone] = unreal.Vector(0.0, 0.0, -1.0).cross(side).normal()
 
     # 先に全コマの元の値を読む（書き換えると、あとのコマの評価が変わるため）。
-    bones = list(dict.fromkeys(list(swing_scale) + list(pitch_deg) + list(out_deg) +
+    # motion_scale: 体全体の動きを、全コマの平均のポーズを中心に k 倍にする（全ボーンの回転と位置）。
+    # 全部の関節を同じ割合で縮めるので、地面に着いた足はほぼその場に残る（Idle の横揺れを抑えるときに使う）。
+    scaled = []
+    if motion_scale != 1.0:
+        scaled = [str(n) for n in P.get_bone_names(first)]
+    bones = list(dict.fromkeys(scaled + list(swing_scale) + list(pitch_deg) + list(out_deg) +
                                ([HIPS] if keep_feet_on_ground else [])))
     tracks = {}
     for bone in bones:
@@ -274,6 +280,14 @@ def adjust(anim, pitch_deg, swing_scale, keep_feet_on_ground=False, out_deg=None
             t["pos"].append(local.translation)
             t["rot"].append(local.rotation)
             t["scl"].append(local.scale3d)
+
+    for bone in scaled:
+        t = tracks[bone]
+        center = q_mean(t["rot"])
+        t["rot"] = [q_scale_from(q, center, motion_scale) for q in t["rot"]]
+        n = float(len(t["pos"]))
+        mean = unreal.Vector(sum(p.x for p in t["pos"]) / n, sum(p.y for p in t["pos"]) / n, sum(p.z for p in t["pos"]) / n)
+        t["pos"] = [mean + (p - mean) * motion_scale for p in t["pos"]]
 
     # 振り幅を変える（平均の向きを中心に k 倍）。
     for bone, k in swing_scale.items():
@@ -1083,7 +1097,8 @@ def main():
             # pitch_deg・swing_scale・keep_feet_on_ground は、クリップごとに上書きできる。
             adjust(anim, clip.get("pitch_deg", cfg["pitch_deg"]), clip.get("swing_scale", cfg.get("swing_scale", {})),
                    clip.get("keep_feet_on_ground", cfg.get("keep_feet_on_ground", False)),
-                   clip.get("out_deg", cfg.get("out_deg", {})))
+                   clip.get("out_deg", cfg.get("out_deg", {})),
+                   clip.get("motion_scale", cfg.get("motion_scale", 1.0)))
             frames = clip.get("frames")
             if frames:
                 trim(anim, frames["start"], frames["count"], frames.get("hold", 0))

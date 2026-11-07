@@ -14,7 +14,8 @@
     "J_Bip_R_LowerArm": 18.0
   },
   "out_deg": {
-    "J_Bip_L_UpperArm": 8.0,
-    "J_Bip_R_UpperArm": 8.0
-  }
+    "J_Bip_L_UpperArm": 11.0,
+    "J_Bip_R_UpperArm": 11.0
+  },
+  "motion_scale": 0.5
 }
