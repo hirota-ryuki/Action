@@ -10,7 +10,7 @@ void PlayerAirState::Enter(PlayerStateContext& context, const CharacterInput& in
 		// 地面にいなければ（足場から落ちて入ったときなど）跳ばない。
 		context.mover->Jump(context.mover->GetSettings().jumpSpeed);
 	}
-	context.PlayAnimation(enPlayerAnimClip_Jump);
+	context.animator->Play(enPlayerAnimClip_Jump);
 }
 
 PlayerStateId PlayerAirState::CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const

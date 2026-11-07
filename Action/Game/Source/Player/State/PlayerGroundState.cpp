@@ -5,7 +5,7 @@
 
 void PlayerGroundState::Enter(PlayerStateContext& context, const CharacterInput& input)
 {
-	context.PlayAnimation(GetAnimClip(), GetAnimSpeed(context));
+	context.animator->Play(GetAnimClip(), GetAnimSpeed(context));
 }
 
 PlayerStateId PlayerGroundState::CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const

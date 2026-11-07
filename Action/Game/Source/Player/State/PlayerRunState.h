@@ -5,7 +5,7 @@
 
 // 走っている。walkSpeed × runSpeedMultiplier の速さで、入力の方向へ進む。
 // 移動の入力を離したら、すぐ立ち止まらずに Stop（勢いで滑りながら踏ん張って止まる）へ移る。
-// 走りのアニメーションの位置を context.runAnimTime に書いておく（Stop が踏ん張る足を決めるのに使う）。
+// 走りのアニメーションの位置を PlayerAnimator の走りの位置に書いておく（Stop が踏ん張る足を決めるのに使う）。
 class PlayerRunState : public PlayerGroundState
 {
 public:
@@ -20,14 +20,14 @@ public:
 
 	void Enter(PlayerStateContext& context, const CharacterInput& input) override
 	{
-		// 再生を始める位置は、PlayAnimation が使ったら消すので、先に読んでおく。
-		const float startTime = context.nextStartTimes[enPlayerAnimClip_Run];
+		// 再生を始める位置は、Play が使ったら消すので、先に読んでおく。
+		const float startTime = context.animator->GetNextStartTime(enPlayerAnimClip_Run);
 		if (startTime >= 0.0f) {
-			context.runAnimTime = startTime;
+			context.animator->SetRunTime(startTime);
 		}
 		else if (context.previousId != PlayerStateId::Dash) {
 			// ダッシュの着地の間に走りへ補間してあれば、走りはもう流れている。位置はダッシュが入れてある。
-			context.runAnimTime = 0.0f;
+			context.animator->SetRunTime(0.0f);
 		}
 		PlayerGroundState::Enter(context, input);
 	}
@@ -42,7 +42,7 @@ public:
 	void Update(PlayerStateContext& context, const CharacterInput& input, float deltaTime) override
 	{
 		PlayerGroundState::Update(context, input, deltaTime);
-		context.runAnimTime += deltaTime * GetAnimSpeed(context);
+		context.animator->AddRunTime(deltaTime * GetAnimSpeed(context));
 	}
 
 protected:

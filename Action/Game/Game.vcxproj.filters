@@ -4,64 +4,97 @@
     <Filter Include="Source">
       <UniqueIdentifier>{1a9fcd26-80d0-4d10-9934-bd566f401c8f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Actor">
+      <UniqueIdentifier>{1ee6f578-94ca-4b5c-be73-8461b096372b}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\App">
       <UniqueIdentifier>{ceaf8cdb-8b35-4506-bdb3-f1b198065356}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source\Core">
-      <UniqueIdentifier>{12b8394b-6a5d-41c7-8a9b-2cfd5acc71fc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source\Objects">
-      <UniqueIdentifier>{746964ec-ae1f-418c-a97c-a9ef78aaab8e}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Character">
       <UniqueIdentifier>{5b0c2f4e-8d1a-4c7e-9f3b-2a6d8e1c4b70}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Character\Components">
+      <UniqueIdentifier>{5db9e5ad-1d8a-44d7-8f08-716f4c31f9f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Character\Input">
+      <UniqueIdentifier>{7108363e-ebca-40a9-bccd-eeb2cdabf112}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Core">
+      <UniqueIdentifier>{12b8394b-6a5d-41c7-8a9b-2cfd5acc71fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Enemy">
+      <UniqueIdentifier>{be5f924a-a161-4e66-99aa-ae0cc6924c34}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\Magic">
       <UniqueIdentifier>{9e3a7c51-2f4d-4b8a-a6c1-7d0e5f9b3a28}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source\PlayerState">
-      <UniqueIdentifier>{c4e8a2d6-3b7f-4e91-8a5c-6d2f0b9e1a47}</UniqueIdentifier>
+    <Filter Include="Source\Objects">
+      <UniqueIdentifier>{746964ec-ae1f-418c-a97c-a9ef78aaab8e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Player">
+      <UniqueIdentifier>{84b0e54b-afe2-427a-9937-a20c5301d05b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Player\State">
+      <UniqueIdentifier>{41a108d6-43cf-482f-8e30-521ca2793622}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\System">
       <UniqueIdentifier>{22dd8095-74f9-46df-81a1-36675a040b1f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Source\Character\PlayerInputSource.cpp">
+    <ClCompile Include="Source\Character\Components\WeaponAttachment.cpp">
+      <Filter>Source\Character\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Player\PlayerConfig.cpp">
+      <Filter>Source\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Character\Character.cpp">
       <Filter>Source\Character</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Character\NpcInputSource.cpp">
-      <Filter>Source\Character</Filter>
+    <ClCompile Include="Source\Player\PlayerAnimator.cpp">
+      <Filter>Source\Player</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Character\HitTarget.cpp">
-      <Filter>Source\Character</Filter>
+    <ClCompile Include="Source\Enemy\Enemy.cpp">
+      <Filter>Source\Enemy</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Character\CharacterMover.cpp">
-      <Filter>Source\Character</Filter>
+    <ClCompile Include="Source\Objects\FireEffect.cpp">
+      <Filter>Source\Objects</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Character\CharacterModel.cpp">
-      <Filter>Source\Character</Filter>
+    <ClCompile Include="Source\Character\Input\PlayerInputSource.cpp">
+      <Filter>Source\Character\Input</Filter>
     </ClCompile>
-    <ClCompile Include="Source\PlayerState\PlayerStateMachine.cpp">
-      <Filter>Source\PlayerState</Filter>
+    <ClCompile Include="Source\Character\Input\NpcInputSource.cpp">
+      <Filter>Source\Character\Input</Filter>
     </ClCompile>
-    <ClCompile Include="Source\PlayerState\PlayerGroundState.cpp">
-      <Filter>Source\PlayerState</Filter>
+    <ClCompile Include="Source\Character\Components\HitTarget.cpp">
+      <Filter>Source\Character\Components</Filter>
     </ClCompile>
-    <ClCompile Include="Source\PlayerState\PlayerAirState.cpp">
-      <Filter>Source\PlayerState</Filter>
+    <ClCompile Include="Source\Character\Components\CharacterMover.cpp">
+      <Filter>Source\Character\Components</Filter>
     </ClCompile>
-    <ClCompile Include="Source\PlayerState\PlayerDashState.cpp">
-      <Filter>Source\PlayerState</Filter>
+    <ClCompile Include="Source\Character\Components\CharacterModel.cpp">
+      <Filter>Source\Character\Components</Filter>
     </ClCompile>
-    <ClCompile Include="Source\PlayerState\PlayerStopState.cpp">
-      <Filter>Source\PlayerState</Filter>
+    <ClCompile Include="Source\Player\State\PlayerStateMachine.cpp">
+      <Filter>Source\Player\State</Filter>
     </ClCompile>
-    <ClCompile Include="Source\PlayerState\PlayerFrozenState.cpp">
-      <Filter>Source\PlayerState</Filter>
+    <ClCompile Include="Source\Player\State\PlayerGroundState.cpp">
+      <Filter>Source\Player\State</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Character\StatusEffects.cpp">
-      <Filter>Source\Character</Filter>
+    <ClCompile Include="Source\Player\State\PlayerAirState.cpp">
+      <Filter>Source\Player\State</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Player\State\PlayerDashState.cpp">
+      <Filter>Source\Player\State</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Player\State\PlayerStopState.cpp">
+      <Filter>Source\Player\State</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Player\State\PlayerFrozenState.cpp">
+      <Filter>Source\Player\State</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Character\Components\StatusEffects.cpp">
+      <Filter>Source\Character\Components</Filter>
     </ClCompile>
     <ClCompile Include="Source\Magic\MagicCaster.cpp">
       <Filter>Source\Magic</Filter>
@@ -84,82 +117,106 @@
     <ClCompile Include="Source\Magic\BurningGround.cpp">
       <Filter>Source\Magic</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Objects\Enemy.cpp">
-      <Filter>Source\Objects</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\App\stdafx.cpp">
-      <Filter>Source\App</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\App\main.cpp">
-      <Filter>Source\App</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\System\system.cpp">
-      <Filter>Source\System</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Objects\GameCamera.cpp">
       <Filter>Source\Objects</Filter>
     </ClCompile>
     <ClCompile Include="Source\Core\Game.cpp">
       <Filter>Source\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Objects\Player.cpp">
-      <Filter>Source\Objects</Filter>
+    <ClCompile Include="Source\App\main.cpp">
+      <Filter>Source\App</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Objects\FireEffect.cpp">
-      <Filter>Source\Objects</Filter>
+    <ClCompile Include="Source\Player\Player.cpp">
+      <Filter>Source\Player</Filter>
     </ClCompile>
     <ClCompile Include="Source\Objects\Stage.cpp">
       <Filter>Source\Objects</Filter>
     </ClCompile>
+    <ClCompile Include="Source\App\stdafx.cpp">
+      <Filter>Source\App</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\System\system.cpp">
+      <Filter>Source\System</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\Character\PlayerInputSource.h">
+    <ClInclude Include="Source\Character\Components\FallRespawn.h">
+      <Filter>Source\Character\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\Components\WeaponAttachment.h">
+      <Filter>Source\Character\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Player\PlayerConfig.h">
+      <Filter>Source\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Player\PlayerStatus.h">
+      <Filter>Source\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\Character.h">
       <Filter>Source\Character</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Character\NpcInputSource.h">
+    <ClInclude Include="Source\Character\Status.h">
       <Filter>Source\Character</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Character\HitTarget.h">
-      <Filter>Source\Character</Filter>
+    <ClInclude Include="Source\Actor\Actor.h">
+      <Filter>Source\Actor</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Character\CharacterMover.h">
-      <Filter>Source\Character</Filter>
+    <ClInclude Include="Source\Player\PlayerAnimator.h">
+      <Filter>Source\Player</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Character\CharacterModel.h">
-      <Filter>Source\Character</Filter>
+    <ClInclude Include="Source\Enemy\Enemy.h">
+      <Filter>Source\Enemy</Filter>
     </ClInclude>
-    <ClInclude Include="Source\PlayerState\PlayerState.h">
-      <Filter>Source\PlayerState</Filter>
+    <ClInclude Include="Source\Objects\FireEffect.h">
+      <Filter>Source\Objects</Filter>
     </ClInclude>
-    <ClInclude Include="Source\PlayerState\PlayerStateMachine.h">
-      <Filter>Source\PlayerState</Filter>
+    <ClInclude Include="Source\Character\Input\PlayerInputSource.h">
+      <Filter>Source\Character\Input</Filter>
     </ClInclude>
-    <ClInclude Include="Source\PlayerState\PlayerGroundState.h">
-      <Filter>Source\PlayerState</Filter>
+    <ClInclude Include="Source\Character\Input\NpcInputSource.h">
+      <Filter>Source\Character\Input</Filter>
     </ClInclude>
-    <ClInclude Include="Source\PlayerState\PlayerIdleState.h">
-      <Filter>Source\PlayerState</Filter>
+    <ClInclude Include="Source\Character\Components\HitTarget.h">
+      <Filter>Source\Character\Components</Filter>
     </ClInclude>
-    <ClInclude Include="Source\PlayerState\PlayerWalkState.h">
-      <Filter>Source\PlayerState</Filter>
+    <ClInclude Include="Source\Character\Components\CharacterMover.h">
+      <Filter>Source\Character\Components</Filter>
     </ClInclude>
-    <ClInclude Include="Source\PlayerState\PlayerRunState.h">
-      <Filter>Source\PlayerState</Filter>
+    <ClInclude Include="Source\Character\Components\CharacterModel.h">
+      <Filter>Source\Character\Components</Filter>
     </ClInclude>
-    <ClInclude Include="Source\PlayerState\PlayerAirState.h">
-      <Filter>Source\PlayerState</Filter>
+    <ClInclude Include="Source\Player\State\PlayerState.h">
+      <Filter>Source\Player\State</Filter>
     </ClInclude>
-    <ClInclude Include="Source\PlayerState\PlayerDashState.h">
-      <Filter>Source\PlayerState</Filter>
+    <ClInclude Include="Source\Player\State\PlayerStateMachine.h">
+      <Filter>Source\Player\State</Filter>
     </ClInclude>
-    <ClInclude Include="Source\PlayerState\PlayerStopState.h">
-      <Filter>Source\PlayerState</Filter>
+    <ClInclude Include="Source\Player\State\PlayerGroundState.h">
+      <Filter>Source\Player\State</Filter>
     </ClInclude>
-    <ClInclude Include="Source\PlayerState\PlayerFrozenState.h">
-      <Filter>Source\PlayerState</Filter>
+    <ClInclude Include="Source\Player\State\PlayerIdleState.h">
+      <Filter>Source\Player\State</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Character\StatusEffects.h">
-      <Filter>Source\Character</Filter>
+    <ClInclude Include="Source\Player\State\PlayerWalkState.h">
+      <Filter>Source\Player\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Player\State\PlayerRunState.h">
+      <Filter>Source\Player\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Player\State\PlayerAirState.h">
+      <Filter>Source\Player\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Player\State\PlayerDashState.h">
+      <Filter>Source\Player\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Player\State\PlayerStopState.h">
+      <Filter>Source\Player\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Player\State\PlayerFrozenState.h">
+      <Filter>Source\Player\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\Components\StatusEffects.h">
+      <Filter>Source\Character\Components</Filter>
     </ClInclude>
     <ClInclude Include="Source\Magic\MagicCaster.h">
       <Filter>Source\Magic</Filter>
@@ -185,20 +242,11 @@
     <ClInclude Include="Source\Character\Faction.h">
       <Filter>Source\Character</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Character\CharacterInput.h">
-      <Filter>Source\Character</Filter>
+    <ClInclude Include="Source\Character\Input\CharacterInput.h">
+      <Filter>Source\Character\Input</Filter>
     </ClInclude>
     <ClInclude Include="Source\Magic\MagicBase.h">
       <Filter>Source\Magic</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Objects\Enemy.h">
-      <Filter>Source\Objects</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\App\stdafx.h">
-      <Filter>Source\App</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\System\system.h">
-      <Filter>Source\System</Filter>
     </ClInclude>
     <ClInclude Include="Source\Objects\GameCamera.h">
       <Filter>Source\Objects</Filter>
@@ -209,14 +257,17 @@
     <ClInclude Include="Source\Core\Game.h">
       <Filter>Source\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Objects\Player.h">
-      <Filter>Source\Objects</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Objects\FireEffect.h">
-      <Filter>Source\Objects</Filter>
+    <ClInclude Include="Source\Player\Player.h">
+      <Filter>Source\Player</Filter>
     </ClInclude>
     <ClInclude Include="Source\Objects\Stage.h">
       <Filter>Source\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\App\stdafx.h">
+      <Filter>Source\App</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\System\system.h">
+      <Filter>Source\System</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

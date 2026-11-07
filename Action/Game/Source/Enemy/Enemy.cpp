@@ -53,59 +53,32 @@ namespace
 }
 
 Enemy::Enemy()
-	: m_npcInputSource(MakeAiSettings())
+	: Character(Faction::Enemy)
+	, m_npcInputSource(MakeAiSettings())
 {
-
 }
 
-Enemy::~Enemy()
+CharacterConfig Enemy::MakeConfig() const
 {
-
+	CharacterConfig config;
+	config.move = MakeMoveSettings();
+	config.model = MakeModelDesc();
+	config.caster = MakeCasterSettings();
+	config.hitRadius = kHitRadius;
+	config.hitCenterHeight = kHitCenterHeight;
+	config.maxHp = 100.0f;
+	return config;
 }
 
-bool Enemy::Start()
+void Enemy::OnStart()
 {
-	m_mover.Init(MakeMoveSettings());
-
-	m_model.Init(MakeModelDesc());
-	m_model.SetTransform(m_mover.GetPosition(), m_mover.GetRotation());
 	m_model.PlayAnimation(enAnimClip_Idle);
-	m_model.Update();
-
-	m_statusEffects.Init(&m_model.GetModelRender());
-
-	m_hitTarget.Init(this, m_faction, kHitRadius, kHitCenterHeight);
-	m_hitTarget.SetStatusEffects(&m_statusEffects);
-	m_hitTarget.SetPosition(m_mover.GetPosition());
-
-	m_magicCaster.Init(this, m_faction, MakeCasterSettings());
 	m_magicCaster.AddMagic(std::make_unique<IceMagic>());
-
-	return true;
 }
 
-void Enemy::SetFaction(Faction faction)
+void Enemy::UpdateAction(float deltaTime)
 {
-	m_faction = faction;
-	m_hitTarget.SetFaction(faction);
-	m_magicCaster.SetFaction(faction);
-}
-
-void Enemy::Update()
-{
-	const float deltaTime = g_gameTime->GetFrameDeltaTime();
-
-	InputSourceContext context;
-	context.self = this;
-	context.faction = m_faction;
-	context.position = m_mover.GetPosition();
-	context.forward = m_mover.GetForward();
-	context.deltaTime = deltaTime;
-	m_inputSource->Update(context, m_input);
-
-	m_statusEffects.Update(deltaTime);
-	const bool canAct = m_statusEffects.CanAct();
-	if (canAct) {
+	if (m_statusEffects.CanAct()) {
 		m_mover.Update(m_input, deltaTime);
 		UpdateAnimation();
 	}
@@ -113,17 +86,6 @@ void Enemy::Update()
 		// 凍結中は入力を無視し、重力で落ちるだけにする。
 		m_mover.Update(CharacterInput(), deltaTime);
 	}
-	m_magicCaster.Update(m_input, m_mover.GetPosition(), m_mover.GetForward(), deltaTime, canAct);
-
-	m_hitTarget.SetPosition(m_mover.GetPosition());
-
-	m_model.SetTransform(m_mover.GetPosition(), m_mover.GetRotation());
-	m_model.Update();
-}
-
-void Enemy::Render(RenderContext& rc)
-{
-	m_model.Draw(rc);
 }
 
 void Enemy::UpdateAnimation()

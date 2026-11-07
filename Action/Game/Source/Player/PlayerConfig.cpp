@@ -1,11 +1,8 @@
 ﻿#include "stdafx.h"
-#include "Player.h"
-#include "IceMagic.h"
-#include "FireMagic.h"
+#include "PlayerConfig.h"
 
 namespace
 {
-	constexpr float kRespawnHeight = -1000.0f; // この高さを下回るとステージ外と判断してリスポーン。
 	const Vector3 kSwordOffset = Vector3(5.0f, -3.0f, 10.0f);   // 右手ボーンローカル空間での剣の位置オフセット。
 	const Vector3 kSwordScale = Vector3(1.35f, 1.35f, 1.35f);
 	constexpr float kSwordRotOffsetX = 0.0f;
@@ -27,7 +24,7 @@ namespace
 		return settings;
 	}
 
-	PlayerStateSettings MakeStateSettings()
+	PlayerStateSettings BuildStateSettings()
 	{
 		PlayerStateSettings settings;
 		settings.dashDistance = 390.0f;  // ダッシュスキルの総移動距離（はじめ 300、1.3倍にした）。
@@ -108,140 +105,32 @@ namespace
 	}
 }
 
-Player::Player()
+CharacterConfig PlayerConfig::MakeCharacterConfig()
 {
-
+	CharacterConfig config;
+	config.move = MakeMoveSettings();
+	config.model = MakeModelDesc();
+	config.caster = MakeCasterSettings();
+	config.hitRadius = kHitRadius;
+	config.hitCenterHeight = kHitCenterHeight;
+	config.maxHp = 100.0f;
+	return config;
 }
 
-Player::~Player()
+PlayerStateSettings PlayerConfig::MakeStateSettings()
 {
-
+	return BuildStateSettings();
 }
 
-bool Player::Start()
+WeaponAttachmentDesc PlayerConfig::MakeSwordDesc()
 {
-	m_respawnPosition = m_mover.GetPosition();
-	m_mover.Init(MakeMoveSettings());
-
-	m_model.Init(MakeModelDesc());
-	m_model.SetTransform(m_mover.GetPosition(), m_mover.GetRotation());
-	m_model.Update();
-
-	InitSword();
-
-	m_statusEffects.Init(&m_model.GetModelRender());
-
-	PlayerStateContext stateContext;
-	stateContext.mover = &m_mover;
-	stateContext.modelRender = &m_model.GetModelRender();
-	stateContext.statusEffects = &m_statusEffects;
-	stateContext.settings = MakeStateSettings();
-	m_stateMachine.Init(stateContext);  // Idle から始める。
-
-	m_hitTarget.Init(this, Faction::Player, kHitRadius, kHitCenterHeight);
-	m_hitTarget.SetStatusEffects(&m_statusEffects);
-	m_hitTarget.SetPosition(m_mover.GetPosition());
-
-	m_magicCaster.Init(this, Faction::Player, MakeCasterSettings());
-	m_magicCaster.AddMagic(std::make_unique<IceMagic>());
-	m_magicCaster.SetSubMagic(std::make_unique<FireMagic>());  // 右クリックで撃つ。
-
-	return true;
-}
-
-void Player::Update()
-{
-	const float deltaTime = g_gameTime->GetFrameDeltaTime();
-
-	InputSourceContext context;
-	context.self = this;
-	context.faction = Faction::Player;
-	context.position = m_mover.GetPosition();
-	context.forward = m_mover.GetForward();
-	context.deltaTime = deltaTime;
-	context.isFirstPerson = !m_isRenderBody;
-	m_inputSource->Update(context, m_input);
-
-	m_statusEffects.Update(deltaTime);
-	// 移動とアニメーションはステートが行う。凍結中は Frozen ステートになり、重力で落ちるだけになる。
-	m_stateMachine.Update(m_input, deltaTime);
-	m_magicCaster.Update(m_input, m_mover.GetPosition(), m_mover.GetForward(), deltaTime, m_statusEffects.CanAct());
-
-	RespawnIfNeeded();
-	m_hitTarget.SetPosition(m_mover.GetPosition());
-
-	m_model.SetTransform(m_mover.GetPosition(), m_mover.GetRotation());
-	m_model.Update();
-
-	UpdateSword();
-}
-
-void Player::Render(RenderContext& rc)
-{
-	if (!m_isRenderBody) {
-		return;
-	}
-
-	m_model.Draw(rc);
-	m_swordModelRender.Draw(rc);
-}
-
-void Player::InitSword()
-{
-	// 右手ボーンの名前はモデルのセットアップによって異なる。
-	// 1つ目で見つからなければ別名で再検索する。
-	m_rightHandBoneNo = m_model.GetModelRender().FindBoneID(L"Character1_RightHand");
-	if (m_rightHandBoneNo < 0) {
-		m_rightHandBoneNo = m_model.GetModelRender().FindBoneID(L"J_R_ForeArm_00_tw");
-	}
-
-	m_swordModelRender.Init("Assets/modelData/weapon/sowrd/sowrd.tkm");
-	m_swordModelRender.SetShadowCasterFlag(true);
-	UpdateSword();
-}
-
-void Player::UpdateSword()
-{
-	if (m_rightHandBoneNo < 0) {
-		return;
-	}
-
-	Bone* rightHandBone = m_model.GetModelRender().GetBone(m_rightHandBoneNo);
-	if (rightHandBone == nullptr) {
-		return;
-	}
-
-	Vector3 swordPosition;
-	Vector3 handScale;
-	Quaternion swordRotation;
-	rightHandBone->CalcWorldTRS(swordPosition, swordRotation, handScale);
-
-	Vector3 offset = kSwordOffset;
-	swordRotation.Apply(offset);
-	swordPosition += offset;
-
-	Quaternion offsetRotationX;
-	offsetRotationX.SetRotationDegX(kSwordRotOffsetX);
-	Quaternion offsetRotationY;
-	offsetRotationY.SetRotationDegY(kSwordRotOffsetY);
-	Quaternion offsetRotationZ;
-	offsetRotationZ.SetRotationDegZ(kSwordRotOffsetZ);
-	swordRotation = offsetRotationX * offsetRotationY * offsetRotationZ * swordRotation;
-
-	m_swordModelRender.SetTRS(swordPosition, swordRotation, kSwordScale);
-	m_swordModelRender.Update();
-}
-
-void Player::RespawnIfNeeded()
-{
-	if (m_mover.GetPosition().y < kRespawnHeight) {
-		Respawn();
-	}
-}
-
-void Player::Respawn()
-{
-	m_mover.SetPosition(m_respawnPosition);
-	m_mover.Stop();
-	m_stateMachine.Reset();
+	WeaponAttachmentDesc desc;
+	desc.modelPath = "Assets/modelData/weapon/sowrd/sowrd.tkm";
+	// 右手ボーンの名前はモデルのセットアップによって異なるので、2つの名前で探す。
+	desc.boneNames = { L"Character1_RightHand", L"J_R_ForeArm_00_tw" };
+	desc.offset = kSwordOffset;
+	desc.rotationOffsetDeg = Vector3(kSwordRotOffsetX, kSwordRotOffsetY, kSwordRotOffsetZ);
+	desc.scale = kSwordScale;
+	desc.isShadowCaster = true;
+	return desc;
 }

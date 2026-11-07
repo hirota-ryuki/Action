@@ -10,7 +10,7 @@ public:
 	PlayerStateMachine();
 	~PlayerStateMachine();
 
-	// mover・modelRender・statusEffects は初期化済みのものを渡す。Idle から始める。
+	// mover・animator・statusEffects は初期化済みのものを渡す。Idle から始める。
 	void Init(const PlayerStateContext& context);
 	void Update(const CharacterInput& input, float deltaTime);
 	// 最初のステートに戻す（リスポーン時など）。行動できないときは Frozen にする。
