@@ -29,7 +29,7 @@ namespace
 		PlayerStateSettings settings;
 		settings.dashDistance = 390.0f;  // ダッシュスキルの総移動距離（はじめ 300、1.3倍にした）。
 		// ダッシュのクリップ（原神の動画の 33.41〜33.94秒、30fps・17コマ）の区間に合わせる。
-		//   しゃがむ f00〜f04（4コマ）、蹴って低く滑る f04〜f11（7コマ）、着地 f11〜f16（5コマ）。
+		//   しゃがむ 0〜4コマ目（4コマ）、蹴って低く滑る 4〜11コマ目（7コマ）、着地 11〜16コマ目（5コマ）。コマは先頭を 0 と数える。
 		settings.dashSpeed = 390.0f / (7.0f / 30.0f); // 390 を 7コマ（約0.233秒）で進む（平均 約1671）。
 		settings.dashEndSpeed = 480.0f;  // 終わりは走る速さ。蹴った瞬間は約2860 になる。
 		settings.dashAnimSpeed = 1.0f;   // 動画と同じ速さで流す。
@@ -41,7 +41,7 @@ namespace
 		settings.dashLandSeconds = 5.0f / 30.0f;
 		settings.dashExitBlendSeconds = 0.15f; // ダッシュの最後と走りの始めは同じ形なので、短くてよい。
 		// ダッシュのあとの走り・歩きの始め。ダッシュの最後（原神の動画の 33.94秒）と同じ足の形のところ。
-		// Run（原神の走りの1周期、30fps・15コマ）: 左足で蹴ったあと f05、右足で蹴ったあと f12。
+		// Run（原神の走りの1周期、30fps・15コマ）: 左足で蹴ったあと Run の 5コマ目、右足で蹴ったあと 12コマ目。
 		settings.dashLToRunStartTime = 5.0f / 30.0f;
 		settings.dashRToRunStartTime = 12.0f / 30.0f;
 		settings.dashLToWalkStartTime = 0.0f;
@@ -51,13 +51,13 @@ namespace
 		settings.dashEndWithStop = true; // ダッシュのあと入力がなければ、勢いで滑って止まる。
 		settings.dashKeepRun = true;     // ダッシュのあとは、移動の入力を離すまで走り続ける（ちょこちょこ歩きに戻らない）。
 		// 走りから止まる。StopL / StopR（原神の動画の 29.78〜30.89秒、30fps・34コマ）に合わせる。
-		//   f00〜f04 前の足を着いて腰を落とす、f04〜f14 突っ張って低く滑る、f14〜f33 起き上がって立つ。
-		settings.stopSeconds = 30.0f / 30.0f;      // 立ち上がったところ（f30）で Idle へ移る。
+		//   0〜4コマ目 前の足を着いて腰を落とす、4〜14コマ目 突っ張って低く滑る、14〜33コマ目 起き上がって立つ。
+		settings.stopSeconds = 30.0f / 30.0f;      // 立ち上がったところ（Stop の 30コマ目）で Idle へ移る。
 		settings.stopSlideSeconds = 14.0f / 30.0f; // 走る速さ（480）から 0.47秒で止まる。約112 滑る。
 		settings.stopBlendSeconds = 0.1f;
 		settings.stopExitBlendSeconds = 0.3f;
 		settings.stopAfterRunSeconds = 0.2f;       // 左Shift を移動キーより 0.2秒まで先に離しても滑って止まる。
-		// Run（15コマ、最後は最初と同じ）で、前の足が地面に着くところ。右足 f02、左足 f09。
+		// Run（15コマ、最後は最初と同じ）で、前の足が地面に着くところ。右足は Run の 2コマ目、左足は 9コマ目。
 		settings.runAnimSeconds = 14.0f / 30.0f;
 		settings.stopLRunTime = 9.0f / 30.0f;
 		settings.stopRRunTime = 2.0f / 30.0f;
