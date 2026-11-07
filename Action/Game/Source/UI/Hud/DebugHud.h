@@ -4,7 +4,7 @@
 #include "Text.h"
 
 // 開発用の表示（今は FPS だけ）。ゲームの HUD とは分けて持つ。UIElement は継承しない。UIManager が持つ。
-// Debug・Preview ビルド（K2_DEBUG）のときだけ出す。Release では何も描かない。
+// FPS は Debug・Preview・Release のどのビルドでも出す（出すかどうかは DebugHud.cpp の kShowFps）。
 // FPS は画面の右上に小さく出す。毎フレームの値は揺れて読みにくいので、一定時間ごとの平均を出す。
 // FPS は実際の時間（steady_clock）で測る。ゲームの経過時間（GetFrameDeltaTime）は 1/30 秒で頭打ちになるため、
 // それで測ると 30 FPS より下が出せない。

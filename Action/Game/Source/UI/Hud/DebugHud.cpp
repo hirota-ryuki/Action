@@ -15,12 +15,9 @@ namespace
 	// この秒数ごとに、その間の平均の FPS に書き換える。
 	constexpr float kFpsAverageSeconds = 0.5f;
 
-	// K2_DEBUG（Debug・Preview ビルド）のときだけ出す。
-#ifdef K2_DEBUG
-	constexpr bool kIsDebugBuild = true;
-#else
-	constexpr bool kIsDebugBuild = false;
-#endif
+	// FPS を出すか。Release で速さを確かめるため、Debug・Preview・Release のどのビルドでも出す。
+	// 出したくないビルドがあれば、ここを #ifdef K2_DEBUG などで切り替える。
+	constexpr bool kShowFps = true;
 }
 
 void DebugHud::Init()
@@ -36,14 +33,14 @@ void DebugHud::Init()
 	m_fps.SetScale(kFpsScale);
 	m_fps.SetColor(kFpsColor);
 	m_fps.SetShadow(kFpsShadowOffset, kFpsShadowColor);
-	m_fps.SetVisible(kIsDebugBuild);
+	m_fps.SetVisible(kShowFps);
 	// 最初の平均が出るまでの表示。
 	m_fps.SetText(L"FPS --");
 }
 
 void DebugHud::Update(float deltaTime)
 {
-	if (!kIsDebugBuild) {
+	if (!kShowFps) {
 		return;
 	}
 	const Clock::time_point now = Clock::now();
