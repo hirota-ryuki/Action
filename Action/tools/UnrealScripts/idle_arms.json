@@ -8,13 +8,13 @@
     }
   ],
   "pitch_deg": {
-    "J_Bip_L_UpperArm": 6.0,
-    "J_Bip_R_UpperArm": 6.0,
-    "J_Bip_L_LowerArm": 15.0,
-    "J_Bip_R_LowerArm": 15.0
+    "J_Bip_L_UpperArm": 10.0,
+    "J_Bip_R_UpperArm": 10.0,
+    "J_Bip_L_LowerArm": 18.0,
+    "J_Bip_R_LowerArm": 18.0
   },
   "out_deg": {
-    "J_Bip_L_UpperArm": 10.0,
-    "J_Bip_R_UpperArm": 10.0
+    "J_Bip_L_UpperArm": 16.0,
+    "J_Bip_R_UpperArm": 16.0
   }
 }
