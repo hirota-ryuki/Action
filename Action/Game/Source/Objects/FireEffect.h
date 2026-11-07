@@ -27,11 +27,11 @@ private:
 	void PlayNext();
 	void ApplyTransform(Effect& effect);
 
-	static constexpr int kSlotCount = 2;
+	static constexpr int SLOT_COUNT = 2;
 
 	Vector3 m_position = Vector3::Zero;
 	Vector3 m_scale = Vector3::One;
-	Effect m_effects[kSlotCount];
+	Effect m_effects[SLOT_COUNT];
 	int m_nextSlot = 0;
 	int m_replayIntervalFrames = 0;   // 次の再生を重ねるまでのフレーム数。0以下なら重ねない（元エフェクトが無限ループ）。
 	int m_framesSinceLastPlay = 0;

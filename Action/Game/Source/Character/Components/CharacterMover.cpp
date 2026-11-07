@@ -5,7 +5,7 @@
 namespace
 {
 	// 移動入力のデッドゾーン閾値（二乗値）。sqrt を避けるため平方根前の値で比較。
-	constexpr float kMoveDeadZoneSq = 0.01f;
+	constexpr float MOVE_DEAD_ZONE_SQ = 0.01f;
 }
 
 void CharacterMover::Init(const CharacterMoveSettings& settings)
@@ -63,7 +63,7 @@ void CharacterMover::MoveByInput(const CharacterInput& input, float speed, float
 	if (lookDirection.LengthSq() > FLT_EPSILON) {
 		FaceTo(lookDirection);
 	}
-	else if (horizontalVelocity.LengthSq() > kMoveDeadZoneSq) {
+	else if (horizontalVelocity.LengthSq() > MOVE_DEAD_ZONE_SQ) {
 		FaceTo(horizontalVelocity);
 	}
 
@@ -79,7 +79,7 @@ void CharacterMover::Move(const Vector3& horizontalVelocity, float deltaTime)
 	m_moveSpeed.x = horizontalVelocity.x;
 	m_moveSpeed.z = horizontalVelocity.z;
 	m_moveSpeed.y -= m_settings.gravity * deltaTime;
-	m_isMoving = m_moveSpeed.x * m_moveSpeed.x + m_moveSpeed.z * m_moveSpeed.z > kMoveDeadZoneSq;
+	m_isMoving = m_moveSpeed.x * m_moveSpeed.x + m_moveSpeed.z * m_moveSpeed.z > MOVE_DEAD_ZONE_SQ;
 
 	m_position = m_charaCon.Execute(m_moveSpeed, deltaTime);
 

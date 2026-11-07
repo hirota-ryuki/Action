@@ -4,8 +4,8 @@
 
 namespace
 {
-	constexpr float kHitRadius = 45.0f;        // 弾に当たる球の半径。
-	constexpr float kHitCenterHeight = 60.0f;  // 足元から当たり判定の中心までの高さ。
+	constexpr float HIT_RADIUS = 45.0f;        // 弾に当たる球の半径。
+	constexpr float HIT_CENTER_HEIGHT = 60.0f;  // 足元から当たり判定の中心までの高さ。
 
 	CharacterMoveSettings MakeMoveSettings()
 	{
@@ -64,8 +64,8 @@ CharacterConfig Enemy::MakeConfig() const
 	config.move = MakeMoveSettings();
 	config.model = MakeModelDesc();
 	config.caster = MakeCasterSettings();
-	config.hitRadius = kHitRadius;
-	config.hitCenterHeight = kHitCenterHeight;
+	config.hitRadius = HIT_RADIUS;
+	config.hitCenterHeight = HIT_CENTER_HEIGHT;
 	config.maxHp = 100.0f;
 	return config;
 }

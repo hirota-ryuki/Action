@@ -7,16 +7,16 @@
 
 namespace
 {
-	constexpr int kGroundEffectId = static_cast<int>(EffectId::FireGround);
+	constexpr int GROUND_EFFECT_ID = static_cast<int>(EffectId::FireGround);
 	// fire_ground.efk は半径10の円に炎を出す。Scale 10 倍でワールドの半径100になる。
-	constexpr float kEffectRadiusAtScaleOne = 10.0f;
+	constexpr float EFFECT_RADIUS_AT_SCALE_ONE = 10.0f;
 
-	constexpr float kBurnSeconds = 1.5f;     // 範囲に入った相手を燃やす時間。範囲から出ても、この時間は燃え続ける。
-	constexpr float kBurnHeight = 150.0f;    // 床からこの高さまでに足元がある相手を燃やす（ジャンプで飛び越えられる）。
-	constexpr float kBurnDepth = 50.0f;      // 床よりこれだけ下に足元がある相手も燃やす（坂の下側など）。
-	constexpr float kTargetRadiusRate = 0.5f;  // 相手の当たり判定の半径のうち、範囲の判定に足す割合。
-	constexpr float kSpreadSeconds = 0.4f;     // 中心から最大の広さまで燃え広がる秒数。着弾の飛び散りに合わせる。
-	constexpr float kSpreadStartRate = 0.1f;   // 燃え始めの広さ（最大に対する割合）。
+	constexpr float BURN_SECONDS = 1.5f;     // 範囲に入った相手を燃やす時間。範囲から出ても、この時間は燃え続ける。
+	constexpr float BURN_HEIGHT = 150.0f;    // 床からこの高さまでに足元がある相手を燃やす（ジャンプで飛び越えられる）。
+	constexpr float BURN_DEPTH = 50.0f;      // 床よりこれだけ下に足元がある相手も燃やす（坂の下側など）。
+	constexpr float TARGET_RADIUS_RATE = 0.5f;  // 相手の当たり判定の半径のうち、範囲の判定に足す割合。
+	constexpr float SPREAD_SECONDS = 0.4f;     // 中心から最大の広さまで燃え広がる秒数。着弾の飛び散りに合わせる。
+	constexpr float SPREAD_START_RATE = 0.1f;   // 燃え始めの広さ（最大に対する割合）。
 }
 
 BurningGround::~BurningGround()
@@ -44,7 +44,7 @@ bool BurningGround::Start()
 		return true;
 	}
 
-	m_effect.Init(kGroundEffectId);
+	m_effect.Init(GROUND_EFFECT_ID);
 	m_effect.Play();
 	m_effect.SetPosition(m_position);
 	UpdateEffectScale();
@@ -63,7 +63,7 @@ void BurningGround::Update()
 		if (!m_isSpreadFinished) {
 			// 燃え広がっている間は、出ている炎ごと外へ広げる。最大の広さに達したフレームまで更新する。
 			UpdateEffectScale();
-			m_isSpreadFinished = m_elapsed >= kSpreadSeconds;
+			m_isSpreadFinished = m_elapsed >= SPREAD_SECONDS;
 		}
 		BurnTargetsInRange();
 		m_elapsed += g_gameTime->GetFrameDeltaTime();
@@ -97,33 +97,33 @@ void BurningGround::BurnTargetsInRange()
 
 		const Vector3& foot = target->GetFootPosition();
 		const float height = foot.y - m_position.y;
-		if (height < -kBurnDepth || height > kBurnHeight) {
+		if (height < -BURN_DEPTH || height > BURN_HEIGHT) {
 			continue;
 		}
 		const float dx = foot.x - m_position.x;
 		const float dz = foot.z - m_position.z;
-		const float range = GetCurrentRadius() + target->GetRadius() * kTargetRadiusRate;
+		const float range = GetCurrentRadius() + target->GetRadius() * TARGET_RADIUS_RATE;
 		if (dx * dx + dz * dz > range * range) {
 			continue;
 		}
-		statusEffects->Burn(kBurnSeconds);
+		statusEffects->Burn(BURN_SECONDS);
 	}
 }
 
 float BurningGround::GetCurrentRadius() const
 {
-	if (m_elapsed >= kSpreadSeconds) {
+	if (m_elapsed >= SPREAD_SECONDS) {
 		return m_radius;
 	}
 	// 最初に勢いよく広がり、最大に近づくにつれてゆっくりになる。
-	const float t = m_elapsed / kSpreadSeconds;
+	const float t = m_elapsed / SPREAD_SECONDS;
 	const float easeOut = 1.0f - (1.0f - t) * (1.0f - t);
-	return m_radius * (kSpreadStartRate + (1.0f - kSpreadStartRate) * easeOut);
+	return m_radius * (SPREAD_START_RATE + (1.0f - SPREAD_START_RATE) * easeOut);
 }
 
 void BurningGround::UpdateEffectScale()
 {
-	const float scale = GetCurrentRadius() / kEffectRadiusAtScaleOne;
+	const float scale = GetCurrentRadius() / EFFECT_RADIUS_AT_SCALE_ONE;
 	m_effect.SetScale(Vector3(scale, scale, scale));
 	m_effect.Update();
 }

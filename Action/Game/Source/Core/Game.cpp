@@ -12,14 +12,14 @@
 
 namespace
 {
-	constexpr float kSkyLuminance = 1.6f;     // スカイキューブ自体の輝度。IBLより高めにして空の映り込みを強調。
-	constexpr float kIblLuminance = 0.16f;    // 環境マップ由来の環境光の強度。強すぎると影が潰れる。
-	const Vector3 kMainLightDirection = { 1.0f, -1.0f, -1.0f };  // 正規化前の向き。Start()でNormalize()する。
-	const Vector3 kMainLightColor = { 2.0f, 2.0f, 2.0f };        // HDR値（1.0超）で太陽光の強さを表現。
-	const Vector3 kPlayerStartPosition = { 0.0f, 100.0f, 0.0f };
-	const Vector3 kEnemyStartPosition = { 320.0f, 100.0f, 320.0f };
-	const Vector3 kFirePosition = { -200.0f, 0.0f, 200.0f };
-	const Vector3 kFireScale = { 10.0f, 10.0f, 10.0f };  // Effekseerの1単位をワールド10単位に拡大。見た目に合わせて要調整。
+	constexpr float SKY_LUMINANCE = 1.6f;     // スカイキューブ自体の輝度。IBLより高めにして空の映り込みを強調。
+	constexpr float IBL_LUMINANCE = 0.16f;    // 環境マップ由来の環境光の強度。強すぎると影が潰れる。
+	const Vector3 MAIN_LIGHT_DIRECTION = { 1.0f, -1.0f, -1.0f };  // 正規化前の向き。Start()でNormalize()する。
+	const Vector3 MAIN_LIGHT_COLOR = { 2.0f, 2.0f, 2.0f };        // HDR値（1.0超）で太陽光の強さを表現。
+	const Vector3 PLAYER_START_POSITION = { 0.0f, 100.0f, 0.0f };
+	const Vector3 ENEMY_START_POSITION = { 320.0f, 100.0f, 320.0f };
+	const Vector3 FIRE_POSITION = { -200.0f, 0.0f, 200.0f };
+	const Vector3 FIRE_SCALE = { 10.0f, 10.0f, 10.0f };  // Effekseerの1単位をワールド10単位に拡大。見た目に合わせて要調整。
 }
 
 Game::Game()
@@ -38,11 +38,11 @@ Game::~Game()
 	DeleteGO(m_fireEffect);
 	DeleteGO(m_skyCube);
 	// キャラクターが撃った弾は Game が持っていないので、名前で探して消す。
-	QueryGOs<BulletBase>(BulletBase::kObjectName, [](BulletBase* bullet) {
+	QueryGOs<BulletBase>(BulletBase::OBJECT_NAME, [](BulletBase* bullet) {
 		DeleteGO(bullet);
 		return true;
 	});
-	QueryGOs<BurningGround>(BurningGround::kObjectName, [](BurningGround* ground) {
+	QueryGOs<BurningGround>(BurningGround::OBJECT_NAME, [](BurningGround* ground) {
 		DeleteGO(ground);
 		return true;
 	});
@@ -55,9 +55,9 @@ bool Game::Start()
 	// カスケードシャドウの各分割領域の近距離比率を設定。近くを細かく、遠くを粗くする。
 	g_renderingEngine->SetCascadeNearAreaRates(0.01f, 0.1f, 0.5f);
 
-	Vector3 mainLightDirection = kMainLightDirection;
+	Vector3 mainLightDirection = MAIN_LIGHT_DIRECTION;
 	mainLightDirection.Normalize();
-	g_renderingEngine->SetDirectionLight(0, mainLightDirection, kMainLightColor);
+	g_renderingEngine->SetDirectionLight(0, mainLightDirection, MAIN_LIGHT_COLOR);
 
 	// GameCamera::Start() が完了するまでの仮カメラ設定。
 	g_camera3D->SetPosition({ 0.0f, 180.0f, -600.0f });
@@ -67,21 +67,21 @@ bool Game::Start()
 	// 優先度0=ステージ（最初に配置）、優先度1=キャラ、優先度2=カメラ、優先度3=UI（キャラが動いたあとの値を出す）。
 	m_stage = NewGO<Stage>(0, "stage");
 	m_player = NewGO<Player>(1, "player");
-	m_player->SetPosition(kPlayerStartPosition);
+	m_player->SetPosition(PLAYER_START_POSITION);
 	m_enemy = NewGO<Enemy>(1, "enemy");
-	m_enemy->SetPosition(kEnemyStartPosition);
+	m_enemy->SetPosition(ENEMY_START_POSITION);
 	m_gameCamera = NewGO<GameCamera>(2, "gameCamera");
 	m_fireEffect = NewGO<FireEffect>(1, "fireEffect");
-	m_fireEffect->SetPosition(kFirePosition);
-	m_fireEffect->SetScale(kFireScale);
+	m_fireEffect->SetPosition(FIRE_POSITION);
+	m_fireEffect->SetScale(FIRE_SCALE);
 	m_uiManager = NewGO<UIManager>(3, "uiManager");
 	m_uiManager->SetPlayer(m_player);
 
 	// SkyCubeのテクスチャをIBLの環境マップとしても使い回す。
 	m_skyCube = NewGO<nsK2Engine::SkyCube>(0, "skyCube");
 	m_skyCube->SetType(nsK2Engine::enSkyCubeType_SunriseToon);
-	m_skyCube->SetLuminance(kSkyLuminance);
-	g_renderingEngine->SetAmbientByIBLTexture(m_skyCube->GetTextureFilePath(), kIblLuminance);
+	m_skyCube->SetLuminance(SKY_LUMINANCE);
+	g_renderingEngine->SetAmbientByIBLTexture(m_skyCube->GetTextureFilePath(), IBL_LUMINANCE);
 
 	return true;
 }

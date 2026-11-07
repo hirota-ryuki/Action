@@ -4,10 +4,10 @@
 
 namespace
 {
-	constexpr int kFireEffectId = static_cast<int>(EffectId::Fire);
-	constexpr const char16_t* kFireEffectPath = u"Assets/effect/fire.efk";  // Effekseer サンプル(01_Pierre01/Flame, CC-0)を書き出したもの。
+	constexpr int FIRE_EFFECT_ID = static_cast<int>(EffectId::Fire);
+	constexpr const char16_t* FIRE_EFFECT_PATH = u"Assets/effect/fire.efk";  // Effekseer サンプル(01_Pierre01/Flame, CC-0)を書き出したもの。
 	// エフェクトの長さがこれ以上なら無限ループとみなし、再生を重ねない（Effekseer は無限を INT_MAX 付近で表す）。
-	constexpr int kInfiniteTermThreshold = 60 * 60 * 60;
+	constexpr int INFINITE_TERM_THRESHOLD = 60 * 60 * 60;
 }
 
 FireEffect::FireEffect()
@@ -36,8 +36,8 @@ bool FireEffect::Start()
 	}
 
 	// 登録済みの番号は内部で無視されるので、複数生成しても読み込みは1回だけ。
-	effectEngine->ResistEffect(kFireEffectId, kFireEffectPath);
-	Effekseer::EffectRef effect = effectEngine->LoadEffect(kFireEffectId);
+	effectEngine->ResistEffect(FIRE_EFFECT_ID, FIRE_EFFECT_PATH);
+	Effekseer::EffectRef effect = effectEngine->LoadEffect(FIRE_EFFECT_ID);
 	if (effect == nullptr) {
 		// ファイルが無い・壊れているなど。毎フレーム空再生しないよう無効のまま終える。
 		K2_ASSERT(false, "炎エフェクト(Assets/effect/fire.efk)の読み込みに失敗しました。");
@@ -47,12 +47,12 @@ bool FireEffect::Start()
 	// 1つの再生が最も長く残るフレーム数の半分ごとに次を重ねる。
 	// 2枠を交互に使うので、枠を使い回す時点で前の再生は消え切っている。
 	const Effekseer::EffectTerm term = effect->CalculateTerm();
-	if (term.TermMax > 0 && term.TermMax < kInfiniteTermThreshold) {
+	if (term.TermMax > 0 && term.TermMax < INFINITE_TERM_THRESHOLD) {
 		m_replayIntervalFrames = (term.TermMax + 1) / 2;
 	}
 
 	for (Effect& slot : m_effects) {
-		slot.Init(kFireEffectId);
+		slot.Init(FIRE_EFFECT_ID);
 	}
 	m_isValid = true;
 	PlayNext();
@@ -90,7 +90,7 @@ void FireEffect::PlayNext()
 	// 新しいハンドルには行列が設定されていないので、再生直後に必ず設定する。
 	ApplyTransform(effect);
 
-	m_nextSlot = (m_nextSlot + 1) % kSlotCount;
+	m_nextSlot = (m_nextSlot + 1) % SLOT_COUNT;
 	m_framesSinceLastPlay = 0;
 }
 

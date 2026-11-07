@@ -6,32 +6,32 @@
 
 namespace
 {
-	constexpr float kCameraRotateSpeed = 2.0f;
+	constexpr float CAMERA_ROTATE_SPEED = 2.0f;
 	// マウスの感度。大きいほど少ない移動量で大きく回転する。
-	constexpr float kMouseCameraRotateSpeed = 0.12f;
+	constexpr float MOUSE_CAMERA_ROTATE_SPEED = 0.12f;
 	// 1フレームあたりのマウス回転量の上限。フレームレートの揺れによるカクつきを抑える。
-	constexpr float kMaxMouseCameraRotateDeg = 12.0f;
+	constexpr float MAX_MOUSE_CAMERA_ROTATE_DEG = 12.0f;
 	// カメラをプレイヤーに近づける代わりに画角を広げてプレイヤー全体が収まるようにしてある。
-	constexpr float kTargetHeight = 170.0f;          // 注視点をプレイヤーの足元でなく腰あたりに合わせる高さ。
-	constexpr float kTargetForwardOffset = 20.0f;    // 注視点をカメラ正面方向に少しずらして奥行き感を出す。
-	constexpr float kFirstPersonEyeHeight = 90.0f;   // 一人称カメラの目線の高さ（プレイヤー足元からのオフセット）。
-	constexpr float kViewAngleDeg = 90.0f;           // カメラを近づけた分、画角を通常の60度から広げる。
-	constexpr float kFirstPersonLookDistance = 1000.0f;
-	constexpr float kFirstPersonNear = 5.0f;         // 一人称時はNearを小さくして手元の銃モデルが見切れないようにする。
-	const Vector3 kFirstPersonGunOffset = Vector3(52.0f, -26.0f, 42.0f);  // カメラローカル空間での銃の位置。
-	const Vector3 kFirstPersonGunScale = Vector3(2.35f, 2.35f, 2.35f);
-	constexpr float kFirstPersonGunRotOffsetX = 0.0f;
-	constexpr float kFirstPersonGunRotOffsetY = -7.0f;  // 銃モデルの向きをカメラに対して微調整。
-	constexpr float kFirstPersonGunRotOffsetZ = 0.0f;
+	constexpr float TARGET_HEIGHT = 170.0f;          // 注視点をプレイヤーの足元でなく腰あたりに合わせる高さ。
+	constexpr float TARGET_FORWARD_OFFSET = 20.0f;    // 注視点をカメラ正面方向に少しずらして奥行き感を出す。
+	constexpr float FIRST_PERSON_EYE_HEIGHT = 90.0f;   // 一人称カメラの目線の高さ（プレイヤー足元からのオフセット）。
+	constexpr float VIEW_ANGLE_DEG = 90.0f;           // カメラを近づけた分、画角を通常の60度から広げる。
+	constexpr float FIRST_PERSON_LOOK_DISTANCE = 1000.0f;
+	constexpr float FIRST_PERSON_NEAR = 5.0f;         // 一人称時はNearを小さくして手元の銃モデルが見切れないようにする。
+	const Vector3 FIRST_PERSON_GUN_OFFSET = Vector3(52.0f, -26.0f, 42.0f);  // カメラローカル空間での銃の位置。
+	const Vector3 FIRST_PERSON_GUN_SCALE = Vector3(2.35f, 2.35f, 2.35f);
+	constexpr float FIRST_PERSON_GUN_ROT_OFFSET_X = 0.0f;
+	constexpr float FIRST_PERSON_GUN_ROT_OFFSET_Y = -7.0f;  // 銃モデルの向きをカメラに対して微調整。
+	constexpr float FIRST_PERSON_GUN_ROT_OFFSET_Z = 0.0f;
 
 	// マウス1フレームあたりの回転量を上限値で制限する。
 	float ClampMouseRotateDeg(float rotateDeg)
 	{
-		if (rotateDeg > kMaxMouseCameraRotateDeg) {
-			return kMaxMouseCameraRotateDeg;
+		if (rotateDeg > MAX_MOUSE_CAMERA_ROTATE_DEG) {
+			return MAX_MOUSE_CAMERA_ROTATE_DEG;
 		}
-		if (rotateDeg < -kMaxMouseCameraRotateDeg) {
-			return -kMaxMouseCameraRotateDeg;
+		if (rotateDeg < -MAX_MOUSE_CAMERA_ROTATE_DEG) {
+			return -MAX_MOUSE_CAMERA_ROTATE_DEG;
 		}
 		return rotateDeg;
 	}
@@ -59,7 +59,7 @@ bool GameCamera::Start()
 	m_defaultNear = g_camera3D->GetNear();
 	m_firstPersonForward = m_player->GetForward();
 
-	g_camera3D->SetViewAngle(Math::DegToRad(kViewAngleDeg));
+	g_camera3D->SetViewAngle(Math::DegToRad(VIEW_ANGLE_DEG));
 
 	InitFirstPersonGun();
 
@@ -106,7 +106,7 @@ void GameCamera::ToggleCameraMode()
 			m_firstPersonForward = m_player->GetForward();
 		}
 		m_firstPersonForward.Normalize();
-		g_camera3D->SetNear(kFirstPersonNear);
+		g_camera3D->SetNear(FIRST_PERSON_NEAR);
 	}
 	else {
 		m_cameraMode = EnCameraMode::ThirdPerson;
@@ -118,8 +118,8 @@ void GameCamera::ToggleCameraMode()
 void GameCamera::UpdateThirdPersonCamera()
 {
 	Vector3 target = m_player->GetPosition();
-	target.y += kTargetHeight;
-	target += g_camera3D->GetForward() * kTargetForwardOffset;
+	target.y += TARGET_HEIGHT;
+	target += g_camera3D->GetForward() * TARGET_FORWARD_OFFSET;
 
 	const Vector3 oldToCameraPos = m_toCameraPos;
 
@@ -157,9 +157,9 @@ void GameCamera::UpdateFirstPersonCamera()
 	RotateFirstPersonForward();
 
 	Vector3 eyePosition = m_player->GetPosition();
-	eyePosition.y += kFirstPersonEyeHeight;
+	eyePosition.y += FIRST_PERSON_EYE_HEIGHT;
 
-	const Vector3 target = eyePosition + m_firstPersonForward * kFirstPersonLookDistance;
+	const Vector3 target = eyePosition + m_firstPersonForward * FIRST_PERSON_LOOK_DISTANCE;
 	g_camera3D->SetPosition(eyePosition);
 	g_camera3D->SetTarget(target);
 	g_camera3D->Update();
@@ -184,22 +184,22 @@ void GameCamera::UpdateFirstPersonGun()
 	const Vector3 cameraUp(cameraRotationMatrix.m[1][0], cameraRotationMatrix.m[1][1], cameraRotationMatrix.m[1][2]);
 
 	Vector3 gunPosition = cameraPosition;
-	gunPosition += cameraRight * kFirstPersonGunOffset.x;
-	gunPosition += cameraUp * kFirstPersonGunOffset.y;  // カメラのローカル空間で揃えることで、ピッチ時も銃が画面上で固定されて見えるようにする。
-	gunPosition += cameraForward * kFirstPersonGunOffset.z;
+	gunPosition += cameraRight * FIRST_PERSON_GUN_OFFSET.x;
+	gunPosition += cameraUp * FIRST_PERSON_GUN_OFFSET.y;  // カメラのローカル空間で揃えることで、ピッチ時も銃が画面上で固定されて見えるようにする。
+	gunPosition += cameraForward * FIRST_PERSON_GUN_OFFSET.z;
 
 	Quaternion gunRotation;
 	gunRotation.SetRotation(cameraRotationMatrix);
 
 	Quaternion offsetRotationX;
-	offsetRotationX.SetRotationDegX(kFirstPersonGunRotOffsetX);
+	offsetRotationX.SetRotationDegX(FIRST_PERSON_GUN_ROT_OFFSET_X);
 	Quaternion offsetRotationY;
-	offsetRotationY.SetRotationDegY(kFirstPersonGunRotOffsetY);
+	offsetRotationY.SetRotationDegY(FIRST_PERSON_GUN_ROT_OFFSET_Y);
 	Quaternion offsetRotationZ;
-	offsetRotationZ.SetRotationDegZ(kFirstPersonGunRotOffsetZ);
+	offsetRotationZ.SetRotationDegZ(FIRST_PERSON_GUN_ROT_OFFSET_Z);
 	gunRotation = offsetRotationX * offsetRotationY * offsetRotationZ * gunRotation;
 
-	m_firstPersonGunRender.SetTRS(gunPosition, gunRotation, kFirstPersonGunScale);
+	m_firstPersonGunRender.SetTRS(gunPosition, gunRotation, FIRST_PERSON_GUN_SCALE);
 	m_firstPersonGunRender.Update();
 }
 
@@ -232,8 +232,8 @@ void GameCamera::RotateFirstPersonForward()
 
 void GameCamera::GetCameraRotationInput(float& yawDeg, float& pitchDeg)
 {
-	yawDeg = kCameraRotateSpeed * g_pad[0]->GetRStickXF();
-	pitchDeg = kCameraRotateSpeed * g_pad[0]->GetRStickYF();
+	yawDeg = CAMERA_ROTATE_SPEED * g_pad[0]->GetRStickXF();
+	pitchDeg = CAMERA_ROTATE_SPEED * g_pad[0]->GetRStickYF();
 
 	float mouseYawDeg = 0.0f;
 	float mousePitchDeg = 0.0f;
@@ -294,9 +294,9 @@ bool GameCamera::TryGetMouseRotationInput(float& yawDeg, float& pitchDeg)
 	// 毎フレーム中央にリセットして次フレームの移動量をデルタとして使う（無限スクロール方式）。
 	SetCursorPos(centerScreenPos.x, centerScreenPos.y);
 
-	yawDeg = ClampMouseRotateDeg(mouseDeltaX * kMouseCameraRotateSpeed);
+	yawDeg = ClampMouseRotateDeg(mouseDeltaX * MOUSE_CAMERA_ROTATE_SPEED);
 	// マウスは上方向がマイナスなので符号を反転してピッチに変換する。
-	pitchDeg = ClampMouseRotateDeg(-mouseDeltaY * kMouseCameraRotateSpeed);
+	pitchDeg = ClampMouseRotateDeg(-mouseDeltaY * MOUSE_CAMERA_ROTATE_SPEED);
 	return mouseDeltaX != 0.0f || mouseDeltaY != 0.0f;
 }
 

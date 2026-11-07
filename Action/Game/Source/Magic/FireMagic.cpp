@@ -5,8 +5,8 @@
 
 namespace
 {
-	constexpr float kFullPulseSpeed = 18.0f;  // 最大まで溜まった後に火の玉が脈打つ速さ（ラジアン/秒）。
-	constexpr float kFullPulseDepth = 0.12f;  // 脈打ちで大きさが変わる割合。
+	constexpr float FULL_PULSE_SPEED = 18.0f;  // 最大まで溜まった後に火の玉が脈打つ速さ（ラジアン/秒）。
+	constexpr float FULL_PULSE_DEPTH = 0.12f;  // 脈打ちで大きさが変わる割合。
 }
 
 FireMagic::FireMagic(float cooldown, float maxChargeSeconds)
@@ -74,7 +74,7 @@ void FireMagic::OnRelease(const MagicCastContext& context)
 	if (!m_isCharging) {
 		return;
 	}
-	FireBullet* bullet = NewGO<FireBullet>(1, BulletBase::kObjectName);
+	FireBullet* bullet = NewGO<FireBullet>(1, BulletBase::OBJECT_NAME);
 	bullet->SetCharge(GetChargeRate());
 	bullet->Init(context.origin, context.direction, context.caster, context.faction);
 	StartCooldown(m_cooldownSeconds);
@@ -105,7 +105,7 @@ void FireMagic::UpdateChargeEffect(const MagicCastContext& context)
 	Vector3 scale = FireBullet::GetBulletEffectScale(GetChargeRate());
 	if (m_isFullCharged) {
 		// 溜まり切った後は脈打たせて、撃てる状態だと分かるようにする。
-		scale *= 1.0f + kFullPulseDepth * sinf(m_fullElapsed * kFullPulseSpeed);
+		scale *= 1.0f + FULL_PULSE_DEPTH * sinf(m_fullElapsed * FULL_PULSE_SPEED);
 	}
 	m_chargeEffect.SetScale(scale);
 	m_chargeEffect.UpdateRoot();

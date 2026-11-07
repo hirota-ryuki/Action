@@ -8,13 +8,13 @@ namespace
 {
 	// エフェクトは Effekseer 用に自作したもの(Assets/effect/ice_*.efkproj が編集元)。
 	// テクスチャは Effekseer サンプル(01_NextSoft01, CC-0)のものを使用。
-	constexpr int kBulletEffectId = static_cast<int>(EffectId::IceBullet);
-	constexpr int kHitEffectId = static_cast<int>(EffectId::IceHit);
-	constexpr const char16_t* kBulletEffectPath = u"Assets/effect/ice_bullet.efk";
-	constexpr const char16_t* kHitEffectPath = u"Assets/effect/ice_hit.efk";
+	constexpr int BULLET_EFFECT_ID = static_cast<int>(EffectId::IceBullet);
+	constexpr int HIT_EFFECT_ID = static_cast<int>(EffectId::IceHit);
+	constexpr const char16_t* BULLET_EFFECT_PATH = u"Assets/effect/ice_bullet.efk";
+	constexpr const char16_t* HIT_EFFECT_PATH = u"Assets/effect/ice_hit.efk";
 
-	const Vector3 kEffectScale = { 10.0f, 10.0f, 10.0f };  // Effekseerの1単位をワールド10単位に拡大。
-	constexpr float kFreezeSeconds = 2.5f;                  // 命中した相手を凍らせる時間。
+	const Vector3 EFFECT_SCALE = { 10.0f, 10.0f, 10.0f };  // Effekseerの1単位をワールド10単位に拡大。
+	constexpr float FREEZE_SECONDS = 2.5f;                  // 命中した相手を凍らせる時間。
 
 	BulletSettings MakeSettings()
 	{
@@ -51,15 +51,15 @@ bool IceBullet::OnStart()
 	}
 
 	// 登録済みの番号は内部で無視されるので、弾を何発撃っても読み込みは1回だけ。
-	effectEngine->ResistEffect(kBulletEffectId, kBulletEffectPath);
-	effectEngine->ResistEffect(kHitEffectId, kHitEffectPath);
-	if (effectEngine->LoadEffect(kBulletEffectId) == nullptr || effectEngine->LoadEffect(kHitEffectId) == nullptr) {
+	effectEngine->ResistEffect(BULLET_EFFECT_ID, BULLET_EFFECT_PATH);
+	effectEngine->ResistEffect(HIT_EFFECT_ID, HIT_EFFECT_PATH);
+	if (effectEngine->LoadEffect(BULLET_EFFECT_ID) == nullptr || effectEngine->LoadEffect(HIT_EFFECT_ID) == nullptr) {
 		K2_ASSERT(false, "氷魔法のエフェクト(Assets/effect/ice_bullet.efk, ice_hit.efk)の読み込みに失敗しました。");
 		return false;
 	}
 
-	m_bulletEffect.Init(kBulletEffectId);
-	m_hitEffect.Init(kHitEffectId);
+	m_bulletEffect.Init(BULLET_EFFECT_ID);
+	m_hitEffect.Init(HIT_EFFECT_ID);
 	m_isEffectReady = true;
 
 	// 新しいハンドルには行列が設定されていないので、再生直後に OnMove() で必ず設定される。
@@ -71,7 +71,7 @@ void IceBullet::OnMove()
 {
 	m_bulletEffect.SetPosition(GetPosition());
 	m_bulletEffect.SetRotation(GetRotation());
-	m_bulletEffect.SetScale(kEffectScale);
+	m_bulletEffect.SetScale(EFFECT_SCALE);
 	// 全体ではなくルートだけを動かし、軌跡のパーティクルを発生した場所に残す。
 	m_bulletEffect.UpdateRoot();
 }
@@ -80,7 +80,7 @@ void IceBullet::OnHitTarget(HitTarget& target, const Vector3& hitPosition)
 {
 	(void)hitPosition;
 	if (StatusEffects* statusEffects = target.GetStatusEffects()) {
-		statusEffects->Freeze(kFreezeSeconds);
+		statusEffects->Freeze(FREEZE_SECONDS);
 	}
 }
 
@@ -92,7 +92,7 @@ void IceBullet::OnExplode(const Vector3& hitPosition)
 	m_hitEffect.Play();
 	m_hitEffect.SetPosition(hitPosition);
 	m_hitEffect.SetRotation(GetRotation());
-	m_hitEffect.SetScale(kEffectScale);
+	m_hitEffect.SetScale(EFFECT_SCALE);
 	m_hitEffect.Update();
 }
 

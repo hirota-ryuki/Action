@@ -6,21 +6,21 @@
 namespace
 {
 	// 左端の中央を基準にする（ピボットの x は 0 が左端、0.5 が中央）。
-	const Vector2 kLeftCenterPivot = { 0.0f, 0.5f };
+	const Vector2 LEFT_CENTER_PIVOT = { 0.0f, 0.5f };
 }
 
 void Gauge::Init(const Settings& settings)
 {
 	m_settings = settings;
 	const float border = m_settings.borderSize;
-	m_border.Init(UISprite::kWhitePath, m_settings.width + border * 2.0f, m_settings.height + border * 2.0f);
-	m_back.Init(UISprite::kWhitePath, m_settings.width, m_settings.height);
+	m_border.Init(UISprite::WHITE_PATH, m_settings.width + border * 2.0f, m_settings.height + border * 2.0f);
+	m_back.Init(UISprite::WHITE_PATH, m_settings.width, m_settings.height);
 	m_trail.Init(m_settings.barImagePath, m_settings.width, m_settings.height);
 	m_bar.Init(m_settings.barImagePath, m_settings.width, m_settings.height);
-	m_border.SetPivot(kLeftCenterPivot);
-	m_back.SetPivot(kLeftCenterPivot);
-	m_trail.SetPivot(kLeftCenterPivot);
-	m_bar.SetPivot(kLeftCenterPivot);
+	m_border.SetPivot(LEFT_CENTER_PIVOT);
+	m_back.SetPivot(LEFT_CENTER_PIVOT);
+	m_trail.SetPivot(LEFT_CENTER_PIVOT);
+	m_bar.SetPivot(LEFT_CENTER_PIVOT);
 }
 
 void Gauge::SetRate(float rate)

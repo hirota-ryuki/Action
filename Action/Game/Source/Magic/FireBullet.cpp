@@ -8,8 +8,8 @@ namespace
 {
 	// エフェクトは Effekseer 用に自作したもの(Assets/effect/fire_*.efkproj が編集元)。
 	// テクスチャは Effekseer サンプル(01_Pierre01, CC-0)のものを使用。
-	constexpr int kBulletEffectId = static_cast<int>(EffectId::FireBullet);
-	constexpr int kHitEffectId = static_cast<int>(EffectId::FireHit);
+	constexpr int BULLET_EFFECT_ID = static_cast<int>(EffectId::FireBullet);
+	constexpr int HIT_EFFECT_ID = static_cast<int>(EffectId::FireHit);
 
 	struct EffectEntry
 	{
@@ -17,7 +17,7 @@ namespace
 		const char16_t* path;
 	};
 	// 炎魔法で使うエフェクトの一覧。FireMagic・BurningGround もこの登録を使う。
-	constexpr EffectEntry kEffects[] = {
+	constexpr EffectEntry EFFECTS[] = {
 		{ EffectId::FireBullet, u"Assets/effect/fire_bullet.efk" },
 		{ EffectId::FireCharge, u"Assets/effect/fire_charge.efk" },
 		{ EffectId::FireCharged, u"Assets/effect/fire_charged.efk" },
@@ -26,23 +26,23 @@ namespace
 	};
 
 	// 溜めなし(0)〜最大まで溜めた(1)ときの値。間は線形に補間する。
-	constexpr float kMinRadius = 14.0f;               // 弾の当たり判定の半径。
-	constexpr float kMaxRadius = 45.0f;
-	constexpr float kMinBulletEffectScale = 8.0f;     // 弾のエフェクトの拡大率。
-	constexpr float kMaxBulletEffectScale = 26.0f;
-	constexpr float kMinHitEffectScale = 12.0f;       // 着弾エフェクトの拡大率。
-	constexpr float kMaxHitEffectScale = 26.0f;
-	constexpr float kMinGroundRadius = 130.0f;        // 燃える床の半径。
-	constexpr float kMaxGroundRadius = 300.0f;
+	constexpr float MIN_RADIUS = 14.0f;               // 弾の当たり判定の半径。
+	constexpr float MAX_RADIUS = 45.0f;
+	constexpr float MIN_BULLET_EFFECT_SCALE = 8.0f;     // 弾のエフェクトの拡大率。
+	constexpr float MAX_BULLET_EFFECT_SCALE = 26.0f;
+	constexpr float MIN_HIT_EFFECT_SCALE = 12.0f;       // 着弾エフェクトの拡大率。
+	constexpr float MAX_HIT_EFFECT_SCALE = 26.0f;
+	constexpr float MIN_GROUND_RADIUS = 130.0f;        // 燃える床の半径。
+	constexpr float MAX_GROUND_RADIUS = 300.0f;
 
-	constexpr float kSpeed = 1300.0f;
-	constexpr float kRange = 2000.0f;
-	constexpr float kGroundBurnSeconds = 4.0f;        // 床が燃えている時間。
+	constexpr float SPEED = 1300.0f;
+	constexpr float RANGE = 2000.0f;
+	constexpr float GROUND_BURN_SECONDS = 4.0f;        // 床が燃えている時間。
 
 	// 燃える床を置く場所を探すレイ。着弾点の少し手前・少し上から真下へ飛ばす。
-	constexpr float kFloorRayBackOff = 20.0f;         // 壁に当たったとき、壁にめり込まないよう手前に戻す距離。
-	constexpr float kFloorRayLift = 10.0f;
-	constexpr float kFloorSearchDepth = 400.0f;       // これより下に床がなければ床は燃えない。
+	constexpr float FLOOR_RAY_BACK_OFF = 20.0f;         // 壁に当たったとき、壁にめり込まないよう手前に戻す距離。
+	constexpr float FLOOR_RAY_LIFT = 10.0f;
+	constexpr float FLOOR_SEARCH_DEPTH = 400.0f;       // これより下に床がなければ床は燃えない。
 
 	float Lerp(float rate, float a, float b)
 	{
@@ -52,9 +52,9 @@ namespace
 	BulletSettings MakeSettings(float chargeRate)
 	{
 		BulletSettings settings;
-		settings.speed = kSpeed;
-		settings.range = kRange;
-		settings.radius = Lerp(chargeRate, kMinRadius, kMaxRadius);
+		settings.speed = SPEED;
+		settings.range = RANGE;
+		settings.radius = Lerp(chargeRate, MIN_RADIUS, MAX_RADIUS);
 		return settings;
 	}
 }
@@ -90,7 +90,7 @@ bool FireBullet::RegisterEffects()
 	}
 
 	// 登録済みの番号は内部で無視されるので、何度呼んでも読み込みは1回だけ。
-	for (const EffectEntry& entry : kEffects) {
+	for (const EffectEntry& entry : EFFECTS) {
 		const int id = static_cast<int>(entry.id);
 		effectEngine->ResistEffect(id, entry.path);
 		if (effectEngine->LoadEffect(id) == nullptr) {
@@ -103,7 +103,7 @@ bool FireBullet::RegisterEffects()
 
 Vector3 FireBullet::GetBulletEffectScale(float chargeRate)
 {
-	const float scale = Lerp(chargeRate, kMinBulletEffectScale, kMaxBulletEffectScale);
+	const float scale = Lerp(chargeRate, MIN_BULLET_EFFECT_SCALE, MAX_BULLET_EFFECT_SCALE);
 	return Vector3(scale, scale, scale);
 }
 
@@ -113,8 +113,8 @@ bool FireBullet::OnStart()
 		return false;
 	}
 
-	m_bulletEffect.Init(kBulletEffectId);
-	m_hitEffect.Init(kHitEffectId);
+	m_bulletEffect.Init(BULLET_EFFECT_ID);
+	m_hitEffect.Init(HIT_EFFECT_ID);
 	m_isEffectReady = true;
 
 	// 新しいハンドルには行列が設定されていないので、再生直後に OnMove() で必ず設定される。
@@ -144,7 +144,7 @@ void FireBullet::OnExplode(const Vector3& hitPosition)
 	// 弾本体は即座に消し、尾の炎と煙は寿命まで残す。
 	m_bulletEffect.StopRoot();
 
-	const float hitScale = Lerp(m_chargeRate, kMinHitEffectScale, kMaxHitEffectScale);
+	const float hitScale = Lerp(m_chargeRate, MIN_HIT_EFFECT_SCALE, MAX_HIT_EFFECT_SCALE);
 	m_hitEffect.Play();
 	m_hitEffect.SetPosition(hitPosition);
 	m_hitEffect.SetScale(Vector3(hitScale, hitScale, hitScale));
@@ -168,10 +168,10 @@ void FireBullet::SpawnBurningGround(const Vector3& hitPosition)
 
 	// 相手に当たったらその足元から、地形・射程切れなら着弾点の少し手前から、真下の床を探す。
 	// 地形のレイはキャラクターのカプセルにも当たるので、相手に当たったときは足元から調べる。
-	Vector3 rayStart = m_hasHitTarget ? m_hitFootPosition : hitPosition - GetDirection() * kFloorRayBackOff;
-	rayStart.y += kFloorRayLift;
+	Vector3 rayStart = m_hasHitTarget ? m_hitFootPosition : hitPosition - GetDirection() * FLOOR_RAY_BACK_OFF;
+	rayStart.y += FLOOR_RAY_LIFT;
 	Vector3 rayEnd = rayStart;
-	rayEnd.y -= kFloorSearchDepth;
+	rayEnd.y -= FLOOR_SEARCH_DEPTH;
 
 	Vector3 floorPosition;
 	if (!physicsWorld->RayTest(rayStart, rayEnd, floorPosition)) {
@@ -179,11 +179,11 @@ void FireBullet::SpawnBurningGround(const Vector3& hitPosition)
 		return;
 	}
 
-	BurningGround* ground = NewGO<BurningGround>(1, BurningGround::kObjectName);
+	BurningGround* ground = NewGO<BurningGround>(1, BurningGround::OBJECT_NAME);
 	ground->Init(
 		floorPosition,
-		Lerp(m_chargeRate, kMinGroundRadius, kMaxGroundRadius),
-		kGroundBurnSeconds,
+		Lerp(m_chargeRate, MIN_GROUND_RADIUS, MAX_GROUND_RADIUS),
+		GROUND_BURN_SECONDS,
 		GetOwner(),
 		GetFaction());
 }

@@ -14,5 +14,5 @@ namespace PlayerConfig
 	// 右手に持つ剣。
 	WeaponAttachmentDesc MakeSwordDesc();
 	// この高さを下回るとステージの外と判断して、最初の位置へ戻す。
-	constexpr float kRespawnHeight = -1000.0f;
+	constexpr float RESPAWN_HEIGHT = -1000.0f;
 }
