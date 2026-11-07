@@ -66,8 +66,8 @@ void FireEffect::Update()
 		return;
 	}
 
-	// EffectEngine は1ゲームフレームにつき1フレーム進めるので、こちらもフレームで数える。
-	m_framesSinceLastPlay++;
+	// エフェクトは経過時間をエフェクトのフレーム（1秒に EffectEngine::FRAMES_PER_SECOND）に直して進むので、こちらも同じ数え方にする。
+	m_framesSinceLastPlay += g_gameTime->GetFrameDeltaTime() * EffectEngine::FRAMES_PER_SECOND;
 	const bool isIntervalElapsed = m_replayIntervalFrames > 0 && m_framesSinceLastPlay >= m_replayIntervalFrames;
 	const bool isAllStopped = !m_effects[0].IsPlay() && !m_effects[1].IsPlay();
 	if (isIntervalElapsed || isAllStopped) {

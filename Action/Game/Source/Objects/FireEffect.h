@@ -34,7 +34,7 @@ private:
 	Effect m_effects[SLOT_COUNT];
 	int m_nextSlot = 0;
 	int m_replayIntervalFrames = 0;   // 次の再生を重ねるまでのフレーム数。0以下なら重ねない（元エフェクトが無限ループ）。
-	int m_framesSinceLastPlay = 0;
+	float m_framesSinceLastPlay = 0.0f;  // 前の再生からの経過時間（エフェクトのフレーム数）。
 	bool m_isValid = false;           // エフェクトを読み込めたか。
 	bool m_isTransformDirty = false;
 };
