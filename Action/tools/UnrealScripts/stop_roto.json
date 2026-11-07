@@ -24,7 +24,7 @@
      "b": "L"
     },
     "toe_offset_cm": 0.5,
-    "lean_deg": 10.0,
+    "lean_deg": 0.0,
     "leg_lean_deg": 0.0,
     "head_pitch_deg": -30.0
    }
@@ -48,7 +48,7 @@
      "b": "R"
     },
     "toe_offset_cm": 0.5,
-    "lean_deg": 10.0,
+    "lean_deg": 0.0,
     "leg_lean_deg": 0.0,
     "head_pitch_deg": -30.0
    }
