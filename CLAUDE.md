@@ -18,7 +18,8 @@
 
 ## コードの書き方
 
-- 定数（`const`・`constexpr` など）の名前の頭に `k` を付けない（`kShowFps` のような書き方をしない）。
+- 定数（`const`・`constexpr` など）の名前は、全部大文字を `_` でつなぐアッパースネークケースにする（例: `RESPAWN_HEIGHT`、`SHOW_FPS`）。k2EngineLow の `MAX_POINT_LIGHT` などと同じ書き方。
+- 頭に `k` を付けない（`kShowFps` のような書き方をしない）。
 
 ## 動作確認でゲームを起動するとき
 
