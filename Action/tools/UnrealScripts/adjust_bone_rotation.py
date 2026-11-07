@@ -762,9 +762,17 @@ def rotoscope(anim, cfg, base_dir):
         # かかとをお尻へたたむ（太ももがまだ後ろにあるうちにたたむと、かかとが高く跳ね上がるので -95° から）。すねを回した分だけ足も回し、つま先の向きは崩さない。
         leg_lean = cfg.get("leg_lean_deg", 0.0)
         tuck = cfg.get("tuck_knee_deg", 0.0)
+        # thigh_max_deg: 太ももを、この角度より上へ上げない（前 0°・真下 -90°）。上限の手前 thigh_soft_deg（省略すると 10°）から
+        # なだらかに寄せ、上限で急に止まらないようにする。すねはデータのままなので膝の曲がりが減り、腰は高さの合わせで上がる。
+        # 短いスカートのモデルで、太ももが水平まで上がってスカートを持ち上げないようにするために使う。
+        thigh_max = cfg.get("thigh_max_deg")
+        thigh_soft = cfg.get("thigh_soft_deg", 10.0)
         for src in "AB":
             sd = m[src]
             thigh, shin, foot = r[src + "thigh"], r[src + "shin"], r[src + "foot"]
+            if thigh_max is not None and thigh > thigh_max - thigh_soft:
+                knee0 = thigh_max - thigh_soft
+                thigh = knee0 + thigh_soft * math.tanh((thigh - knee0) / thigh_soft)
             if tuck > 0.0 and r["toe" + src] > 0.12:
                 def ramp(x, a, b):
                     u = max(0.0, min(1.0, (x - a) / (b - a)))
