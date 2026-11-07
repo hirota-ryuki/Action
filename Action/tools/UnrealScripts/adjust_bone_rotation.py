@@ -778,10 +778,29 @@ def rotoscope(anim, cfg, base_dir):
             t["J_Bip_%s_UpperLeg" % sd] = thigh - leg_lean
             t["J_Bip_%s_LowerLeg" % sd] = shin - leg_lean
             t["J_Bip_%s_Foot" % sd] = foot - leg_lean
+        # arm_hold: {"a": [上腕, 前腕], "b": [...], "frames": [a, b, c, d]}: 腕を決まったポーズで止める。
+        # a → b コマ目で読み取りの値からポーズへ寄せ（smoothstep）、b〜c コマ目は止め、c → d コマ目で読み取りの値へ戻す。
+        # 体に隠れた腕は読み取りが乱れてばたつくので、原神で腕が動かない区間（ダッシュの低く滑るところ）に使う。
+        hold = cfg.get("arm_hold")
+        hw = 0.0
+        if hold:
+            ha, hb, hc, hd = hold["frames"]
+            if hb <= i <= hc:
+                hw = 1.0
+            else:
+                u = (i - ha) / float(hb - ha) if i < hb else (hd - i) / float(hd - hc)
+                u = max(0.0, min(1.0, u))
+                hw = u * u * (3.0 - 2.0 * u)
         for src in "ab":
             sd = m[src]
-            t["J_Bip_%s_UpperArm" % sd] = r[src + "upper"]
-            t["J_Bip_%s_LowerArm" % sd] = r[src + "fore"]
+            up, fore = r[src + "upper"], r[src + "fore"]
+            if hw > 0.0 and src in hold:
+                # 読み取りの値を、止めるポーズに近い向きへそろえてから混ぜる（360° 回って見えないように）。
+                hu, hf = hold[src]
+                up = hu + wrap180(up - hu) * (1.0 - hw)
+                fore = hf + wrap180(fore - hf) * (1.0 - hw)
+            t["J_Bip_%s_UpperArm" % sd] = up
+            t["J_Bip_%s_LowerArm" % sd] = fore
         t["toe_cm"] = min(r["toeA"], r["toeB"]) * leg_cm + cfg.get("toe_offset_cm", 0.0)
         t["hip_cm"] = r["hipH"] * leg_cm
         targets.append(t)

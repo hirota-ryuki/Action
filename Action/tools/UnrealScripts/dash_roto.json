@@ -25,7 +25,12 @@
     },
     "lean_deg": 0.0,
     "leg_lean_deg": 0.0,
-    "head_pitch_deg": -30.0
+    "head_pitch_deg": -30.0,
+    "arm_hold": {
+     "a": [-66.0, 6.0],
+     "b": [-200.0, -180.0],
+     "frames": [3, 5, 13, 16]
+    }
    }
   },
   {
