@@ -23,8 +23,8 @@
      "a": "L",
      "b": "R"
     },
-    "lean_deg": 8.0,
-    "leg_lean_deg": 5.0,
+    "lean_deg": 0.0,
+    "leg_lean_deg": 0.0,
     "head_pitch_deg": -30.0
    }
   },
@@ -47,14 +47,14 @@
      "b": "L"
     },
     "height": "hips",
-    "lean_deg": 10.0,
+    "lean_deg": 0.0,
     "leg_lean_deg": 0.0,
     "tuck_knee_deg": 125.0,
     "head_pitch_deg": -30.0
    },
    "crouch_after_rotoscope": true,
    "crouch": {
-    "lower_cm": 6.0,
+    "lower_cm": 0.0,
     "weights": [
      0.0,
      0.0,
