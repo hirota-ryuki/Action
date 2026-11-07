@@ -787,6 +787,22 @@ def rotoscope(anim, cfg, base_dir):
     # smoothstep でデータより起こす（止まるの最後を Idle の首の角度にそろえ、Idle へ移るとき頭が後ろへ引かれないように）。
     neck_add = cfg.get("neck_add_deg", 0.0)
     na, nb = cfg.get("neck_add_frames", [0, 1])
+    # arm_smooth: {"a": 2.5}: その腕の肘の曲がり（前腕 − 上腕）を、前後のコマとガウスでならす（数字は幅のコマ数）。
+    # 読み取りで肘が数コマのうちに大きく曲げ伸ばしされ、腕を急に振ったように見えるのを抑える。上腕はならさない
+    # （始めと終わりの角度を変えず、前後のモーションとのつながりを保つ）。肘は elbow_min_deg（省略すると 5°）より伸ばさない。
+    elbows = {}
+    for src, sigma in cfg.get("arm_smooth", {}).items():
+        raw = [wrap180(r[src + "fore"] - r[src + "upper"]) for r in rows]
+        reach = int(3 * sigma) + 1
+        sm = []
+        for i in range(len(raw)):
+            s = t = 0.0
+            for j in range(-reach, reach + 1):
+                g = math.exp(-j * j / (2.0 * sigma * sigma))
+                s += g * raw[min(len(raw) - 1, max(0, i + j))]
+                t += g
+            sm.append(max(cfg.get("elbow_min_deg", 5.0), s / t))
+        elbows[src] = sm
     targets = []
     for i, r in enumerate(rows):
         # lean_deg: 胴体と首を、データよりさらに前へ倒す角度（正 = 前へ）。
@@ -798,9 +814,17 @@ def rotoscope(anim, cfg, base_dir):
         # かかとをお尻へたたむ（太ももがまだ後ろにあるうちにたたむと、かかとが高く跳ね上がるので -95° から）。すねを回した分だけ足も回し、つま先の向きは崩さない。
         leg_lean = cfg.get("leg_lean_deg", 0.0)
         tuck = cfg.get("tuck_knee_deg", 0.0)
+        # thigh_max_deg: 太ももを、この角度より上へ上げない（前 0°・真下 -90°）。上限の手前 thigh_soft_deg（省略すると 10°）から
+        # なだらかに寄せ、上限で急に止まらないようにする。すねはデータのままなので膝の曲がりが減り、腰は高さの合わせで上がる。
+        # 短いスカートのモデルで、太ももが水平まで上がってスカートを持ち上げないようにするために使う。
+        thigh_max = cfg.get("thigh_max_deg")
+        thigh_soft = cfg.get("thigh_soft_deg", 10.0)
         for src in "AB":
             sd = m[src]
             thigh, shin, foot = r[src + "thigh"], r[src + "shin"], r[src + "foot"]
+            if thigh_max is not None and thigh > thigh_max - thigh_soft:
+                knee0 = thigh_max - thigh_soft
+                thigh = knee0 + thigh_soft * math.tanh((thigh - knee0) / thigh_soft)
             if tuck > 0.0 and r["toe" + src] > 0.12:
                 def ramp(x, a, b):
                     u = max(0.0, min(1.0, (x - a) / (b - a)))
@@ -830,6 +854,8 @@ def rotoscope(anim, cfg, base_dir):
         for src in "ab":
             sd = m[src]
             up, fore = r[src + "upper"], r[src + "fore"]
+            if src in elbows:
+                fore = up + elbows[src][i]
             if hw > 0.0 and src in hold:
                 # 読み取りの値を、止めるポーズに近い向きへそろえてから混ぜる（360° 回って見えないように）。
                 hu, hf = hold[src]
@@ -973,6 +999,86 @@ def rotoscope(anim, cfg, base_dir):
                     lift[f] -= corr[f % n]
         write()
     unreal.EditorAssetLibrary.save_loaded_asset(anim)
+
+
+def skirt_follow(anim, cfg):
+    """スカートのボーン（J_Sec_*_Skirt*）が、親の回りに一部だけついていくようにする。
+    cfg = {"follow": {"Front": 0.5, "Back": 0.25, "Side": 0.5}, "copies": ["01", "02", "03"]}
+    SK_Player のスカートは前・後ろ（J_Sec_L/R_SkirtFront0・SkirtBack0）が太ももの子、横（SkirtSide0）が腰の子で、
+    モーションでは動かないので、太ももを上げると前と後ろの布がそのまま一緒に回ってめくれる。
+    親（太もも、横は腰 → 背骨の付け根の線）が基準のポーズから左右の軸まわりに回った角度を d とし、
+    スカートの根元を (1 - k) × d だけ戻す。k = 1 なら今までどおり、k = 0 なら基準のポーズのまま垂れる。"""
+    P = unreal.AnimPoseExtensions
+    W = unreal.AnimPoseSpaces.WORLD
+    L = unreal.AnimPoseSpaces.LOCAL
+    opts = eval_options()
+    num_keys = unreal.AnimationLibrary.get_num_frames(anim) + 1
+    ref = P.get_reference_pose(anim.get_editor_property("skeleton"))
+    axis = side_axis(ref)
+    fwd = unreal.Vector(0.0, 0.0, 1.0).cross(axis) * -1.0
+
+    def seg(pose, a, b):
+        d = P.get_bone_pose(pose, b, W).translation - P.get_bone_pose(pose, a, W).translation
+        return math.degrees(math.atan2(d.z, d.dot(fwd)))
+
+    # (スカートの根元, 親の線の始まり, 親の線の終わり, k, 測る線の終わり)
+    chains = []
+    for part, k in cfg["follow"].items():
+        for sd in "LR":
+            for cp in cfg.get("copies", ["01", "02", "03"]):
+                bone = "J_Sec_%s_Skirt%s0_%s" % (sd, part, cp)
+                tip = "J_Sec_%s_Skirt%s2_end_%s" % (sd, part, cp)
+                if part == "Side":
+                    pa, pb = HIPS, "J_Bip_C_Spine"
+                else:
+                    pa, pb = "J_Bip_%s_UpperLeg" % sd, "J_Bip_%s_LowerLeg" % sd
+                chains.append((bone, pa, pb, k, tip))
+    ref_parent = {(pa, pb): seg(ref, pa, pb) for _, pa, pb, _, _ in chains}
+
+    tracks = {c[0]: {"pos": [], "rot": [], "scl": []} for c in chains}
+    rows = []
+    for f in range(num_keys):
+        pose = P.get_anim_pose_at_frame(anim, f, opts)
+        row = []
+        for bone, pa, pb, k, tip in chains:
+            d = wrap180(seg(pose, pa, pb) - ref_parent[(pa, pb)])
+            local = P.get_bone_pose(pose, bone, L)
+            world = P.get_bone_pose(pose, bone, W)
+            parent_rot = q_mul(world.rotation, q_inv(local.rotation))
+            a = q_rotate(q_inv(parent_rot), axis)
+            # 正に回すと、下を向いた布の先は後ろへ動き、向きの角度は減る。親が d 回った分の (1 - k) を戻す。
+            half = math.radians((1.0 - k) * d) * 0.5
+            s = math.sin(half)
+            t = tracks[bone]
+            t["pos"].append(local.translation)
+            t["rot"].append(q_mul(unreal.Quat(a.x * s, a.y * s, a.z * s, math.cos(half)), local.rotation))
+            t["scl"].append(local.scale3d)
+            if bone.endswith("_01") and bone[6] == "L":
+                row.append((bone.split("_")[3][:-1], round(d), round(seg(pose, bone, tip))))
+        rows.append(row)
+
+    c = get_controller(anim)
+    c.open_bracket(unreal.Text("skirt_follow"), False)
+    for bone, t in tracks.items():
+        for add in ("add_bone_track", "add_bone_curve"):
+            fn = getattr(c, add, None)
+            if fn is not None:
+                try:
+                    fn(bone, False)
+                except Exception:
+                    pass
+                break
+        c.set_bone_track_keys(bone, t["pos"], t["rot"], t["scl"], False)
+    c.close_bracket(False)
+    unreal.EditorAssetLibrary.save_loaded_asset(anim)
+
+    # 確かめ用: 書いたあとの布の向き（根元 → 先、前 0°・真下 -90°）。
+    for f in range(num_keys):
+        pose = P.get_anim_pose_at_frame(anim, f, opts)
+        msg = "skirt f%02d" % f
+        for (part, d, before), (bone, pa, pb, k, tip) in zip(rows[f], [ch for ch in chains if ch[0].endswith("_01") and ch[0][6] == "L"]):
+            msg += "  %s parent=%+d before=%d after=%d" % (part, d, before, round(seg(pose, bone, tip)))
+        log(msg)
 
 
 def blend_from(anim, cfg, anim_dir):
@@ -1120,6 +1226,8 @@ def main():
                 shift_feet(anim, clip["shift_feet"])
             if clip.get("blend_from"):
                 blend_from(anim, clip["blend_from"], work + "/Anim")
+            if clip.get("skirt_follow"):
+                skirt_follow(anim, clip["skirt_follow"])
             if clip.get("log_frames"):
                 log_frames(anim, name)
             if clip.get("out_skip"):
