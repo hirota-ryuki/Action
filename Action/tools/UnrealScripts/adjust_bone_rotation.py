@@ -751,6 +751,22 @@ def rotoscope(anim, cfg, base_dir):
     # smoothstep でデータより起こす（止まるの最後を Idle の首の角度にそろえ、Idle へ移るとき頭が後ろへ引かれないように）。
     neck_add = cfg.get("neck_add_deg", 0.0)
     na, nb = cfg.get("neck_add_frames", [0, 1])
+    # arm_smooth: {"a": 2.5}: その腕の肘の曲がり（前腕 − 上腕）を、前後のコマとガウスでならす（数字は幅のコマ数）。
+    # 読み取りで肘が数コマのうちに大きく曲げ伸ばしされ、腕を急に振ったように見えるのを抑える。上腕はならさない
+    # （始めと終わりの角度を変えず、前後のモーションとのつながりを保つ）。肘は elbow_min_deg（省略すると 5°）より伸ばさない。
+    elbows = {}
+    for src, sigma in cfg.get("arm_smooth", {}).items():
+        raw = [wrap180(r[src + "fore"] - r[src + "upper"]) for r in rows]
+        reach = int(3 * sigma) + 1
+        sm = []
+        for i in range(len(raw)):
+            s = t = 0.0
+            for j in range(-reach, reach + 1):
+                g = math.exp(-j * j / (2.0 * sigma * sigma))
+                s += g * raw[min(len(raw) - 1, max(0, i + j))]
+                t += g
+            sm.append(max(cfg.get("elbow_min_deg", 5.0), s / t))
+        elbows[src] = sm
     targets = []
     for i, r in enumerate(rows):
         # lean_deg: 胴体と首を、データよりさらに前へ倒す角度（正 = 前へ）。
@@ -802,6 +818,8 @@ def rotoscope(anim, cfg, base_dir):
         for src in "ab":
             sd = m[src]
             up, fore = r[src + "upper"], r[src + "fore"]
+            if src in elbows:
+                fore = up + elbows[src][i]
             if hw > 0.0 and src in hold:
                 # 読み取りの値を、止めるポーズに近い向きへそろえてから混ぜる（360° 回って見えないように）。
                 hu, hf = hold[src]
