@@ -54,7 +54,7 @@
    },
    "crouch_after_rotoscope": true,
    "crouch": {
-    "lower_cm": 6.0,
+    "lower_cm": 0.0,
     "weights": [
      0.0,
      0.0,
