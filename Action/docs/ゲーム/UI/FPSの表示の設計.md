@@ -18,13 +18,14 @@
 UIManager（優先度 3）
  ├ PlayerHud
  ├ BossHud
- └ DebugHud  ── Text m_fps … 画面の右上に小さく、右寄せ。「FPS 60.0」
+ └ DebugHud  ── Text m_fps … 画面の右上に小さく。「FPS 60.0」
 ```
 
 | 項目 | 内容 |
 |---|---|
-| 値 | 0.5秒ごとに、その間のフレーム数 ÷ 経過秒数（平均）を出す。毎フレームの値は揺れて読みにくいため |
-| 場所 | 文字の右端が画面の右端から 20、文字の中央が上端から 20 |
+| 値 | 0.5秒ごとに、その間のフレーム数 ÷ 実際にかかった秒数（平均）を出す。毎フレームの値は揺れて読みにくいため |
+| 時間の測り方 | `std::chrono::steady_clock` で実際の時間を測る。ゲームの経過時間（`GetFrameDeltaTime()`）は 1/30 秒で頭打ちになるので、それで測ると 30 より下が出ない |
+| 場所 | 左寄せ。左端は「FPS 0000.0」が右端から 20 に収まる位置に固定。文字の中央が上端から 20 |
 | 起動した直後 | 最初の平均が出るまで「FPS --」と出す |
 
 ---
@@ -35,12 +36,14 @@ UIManager（優先度 3）
 void DebugHud::Update(float deltaTime)
 {
     if (!kIsDebugBuild) { return; }     // K2_DEBUG でなければ何もしない
-    m_elapsed += deltaTime;
+    const Clock::time_point now = Clock::now();   // 実際の時刻（steady_clock）
+    if (!m_isStarted) { m_averageStart = now; m_isStarted = true; }
     m_frameCount++;
-    if (m_elapsed >= kFpsAverageSeconds) {  // 0.5秒たったら、平均に書き換えて数え直す
-        swprintf_s(text, L"FPS %.1f", m_frameCount / m_elapsed);
+    const float elapsed = std::chrono::duration<float>(now - m_averageStart).count();
+    if (elapsed >= kFpsAverageSeconds) {          // 0.5秒たったら、平均に書き換えて数え直す
+        swprintf_s(text, L"FPS %.1f", m_frameCount / elapsed);
         m_fps.SetText(text);
-        m_elapsed = 0.0f;
+        m_averageStart = now;
         m_frameCount = 0;
     }
     m_fps.Update(deltaTime);
@@ -49,8 +52,9 @@ void DebugHud::Update(float deltaTime)
 
 | 書き方 | 理由 |
 |---|---|
+| 時間は `GetFrameDeltaTime()` でなく `steady_clock` で測る | ゲームの経過時間は、ロード直後などに物が大きく飛ばないよう 1/30 秒で頭打ちにしている（[フレームレートの設計](../../エンジン/フレームレートの設計.md)）。それを足すと、30 FPS を下回っても 30 と出てしまう |
+| 左寄せにし、左端を「FPS 0000.0」が収まる位置に固定する | 右寄せにすると、数字の幅が変わるたびに文字全体が左右に動いて、ガクガクして見える。左端を固定すれば「FPS」の文字は動かない |
 | `K2_DEBUG` を `constexpr bool` にして使う | `#ifdef` をクラスのあちこちに書かずに済む。Release では `Init()` で `SetVisible(false)` にし、`Update()` もすぐ戻る |
-| 文字は `Text`（`Align::Right`）で出す | 右端をそろえる処理を `Text` に任せる。文字の幅が変わっても右端が動かない |
 | 文字は 0.5秒に1回だけ書き換える | `Text::SetText` は値が変わったときだけ書き換えるので、毎フレームの文字の作り直しも減る |
 
 ### エンジン側で止めたところ
@@ -75,7 +79,7 @@ void DebugHud::Update(float deltaTime)
 |---|---|
 | 平均を取る間隔 | 0.5秒 |
 | 大きさ | 0.4 |
-| 右端・上端からの距離 | 20・20 |
+| 右端・上端からの距離 | 20・20（右端は「FPS 0000.0」の右端） |
 | 色 / 影 | 少し透けた白 / 黒、ずれ 1.5 |
 
 ---
@@ -84,3 +88,4 @@ void DebugHud::Update(float deltaTime)
 
 - 出す／消すをキーで切り替える方法はまだない。
 - エンジンの `m_fpsFont`・`m_fpsFontShadow` は、使っていないが作られたままになっている。
+- Debug ビルドでは、実際の FPS が 30 を下回っている。30 を下回ると、ゲームの経過時間が頭打ちになるので、ゲーム全体の進みがゆっくりになる（[フレームレートの設計](../../エンジン/フレームレートの設計.md) の既知の課題）。
