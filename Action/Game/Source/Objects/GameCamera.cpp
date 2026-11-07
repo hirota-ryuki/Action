@@ -6,7 +6,8 @@
 
 namespace
 {
-	constexpr float CAMERA_ROTATE_SPEED = 2.0f;
+	// 右スティックを倒し切ったときの回転の速さ（度/秒）。経過時間を掛けて、FPS によらず同じ速さにする。
+	constexpr float CAMERA_ROTATE_SPEED_DEG_PER_SEC = 120.0f;
 	// マウスの感度。大きいほど少ない移動量で大きく回転する。
 	constexpr float MOUSE_CAMERA_ROTATE_SPEED = 0.12f;
 	// 1フレームあたりのマウス回転量の上限。フレームレートの揺れによるカクつきを抑える。
@@ -232,8 +233,9 @@ void GameCamera::RotateFirstPersonForward()
 
 void GameCamera::GetCameraRotationInput(float& yawDeg, float& pitchDeg)
 {
-	yawDeg = CAMERA_ROTATE_SPEED * g_pad[0]->GetRStickXF();
-	pitchDeg = CAMERA_ROTATE_SPEED * g_pad[0]->GetRStickYF();
+	const float rotateDeg = CAMERA_ROTATE_SPEED_DEG_PER_SEC * g_gameTime->GetFrameDeltaTime();
+	yawDeg = rotateDeg * g_pad[0]->GetRStickXF();
+	pitchDeg = rotateDeg * g_pad[0]->GetRStickYF();
 
 	float mouseYawDeg = 0.0f;
 	float mousePitchDeg = 0.0f;

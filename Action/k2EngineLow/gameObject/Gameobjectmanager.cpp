@@ -46,7 +46,8 @@ namespace nsK2EngineLow {
 		}
 		
 		//物理エンジンのアップデートを呼び出す。
-		PhysicsWorld::GetInstance()->Update(1.0f / 60.0f);
+		// 実際の経過時間を渡す（物理エンジンの中で 1/60秒ずつに分けて進める）。
+		PhysicsWorld::GetInstance()->Update(g_gameTime->GetFrameDeltaTime());
 	}
 	void GameObjectManager::ExecuteRender(RenderContext& rc)
 	{

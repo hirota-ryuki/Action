@@ -79,7 +79,8 @@ namespace nsK2EngineLow {
 		EffekseerRendererDX12::BeginCommandList(m_commandList[backBufferNo], g_graphicsEngine->GetCommandList());
 		m_renderer[backBufferNo]->SetCommandList(m_commandList[backBufferNo]);
 
-		m_manager->Update();
+		// 経過時間をエフェクトのフレームに直して進める（FPS が変わっても、エフェクトの速さは変わらない）。
+		m_manager->Update(deltaTime * FRAMES_PER_SECOND);
 
 		//レンダラーにカメラ行列を設定。
 		m_renderer[backBufferNo]->SetCameraMatrix(*(const Effekseer::Matrix44*)&g_camera3D->GetViewMatrix());

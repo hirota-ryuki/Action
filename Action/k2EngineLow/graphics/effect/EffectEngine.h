@@ -16,6 +16,10 @@ namespace nsK2EngineLow {
 		std::map< int, Effekseer::EffectRef > m_effectMap;
 	public:
 		/// <summary>
+		/// エフェクト（Effekseer）の1秒あたりのフレーム数。エフェクトの時間は、このフレームで数える。
+		/// </summary>
+		static constexpr float FRAMES_PER_SECOND = 60.0f;
+		/// <summary>
 		/// インスタンスの作成。
 		/// </summary>
 		static void CreateInstance()
