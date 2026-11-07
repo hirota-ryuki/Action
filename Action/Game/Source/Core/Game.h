@@ -5,6 +5,7 @@ class Enemy;
 class GameCamera;
 class Stage;
 class FireEffect;
+class UIManager;
 
 namespace nsK2Engine {
 	class SkyCube;
@@ -27,5 +28,6 @@ private:
 	Enemy* m_enemy = nullptr;
 	GameCamera* m_gameCamera = nullptr;
 	FireEffect* m_fireEffect = nullptr;
+	UIManager* m_uiManager = nullptr;
 	nsK2Engine::SkyCube* m_skyCube = nullptr;  // IBLの環境マップ生成も兼ねる。
 };

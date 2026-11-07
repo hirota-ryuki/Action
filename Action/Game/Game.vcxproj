@@ -98,7 +98,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>$(ProjectDir)Source;$(ProjectDir)Source\App;$(ProjectDir)Source\Core;$(ProjectDir)Source\Objects;$(ProjectDir)Source\System;$(ProjectDir)Source\Actor;$(ProjectDir)Source\Character;$(ProjectDir)Source\Character\Input;$(ProjectDir)Source\Character\Components;$(ProjectDir)Source\Character\StateMachine;$(ProjectDir)Source\Player;$(ProjectDir)Source\Player\State;$(ProjectDir)Source\Enemy;$(ProjectDir)Source\Enemy\State;$(ProjectDir)Source\Magic;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)Source;$(ProjectDir)Source\App;$(ProjectDir)Source\Core;$(ProjectDir)Source\Objects;$(ProjectDir)Source\System;$(ProjectDir)Source\Actor;$(ProjectDir)Source\Character;$(ProjectDir)Source\Character\Input;$(ProjectDir)Source\Character\Components;$(ProjectDir)Source\Character\StateMachine;$(ProjectDir)Source\Player;$(ProjectDir)Source\Player\State;$(ProjectDir)Source\Enemy;$(ProjectDir)Source\Enemy\State;$(ProjectDir)Source\Magic;$(ProjectDir)Source\UI;$(ProjectDir)Source\UI\Hud;$(ProjectDir)Source\UI\Elements;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
@@ -234,6 +234,12 @@
     <ClCompile Include="Source\Character\Character.cpp" />
     <ClCompile Include="Source\Player\PlayerAnimator.cpp" />
     <ClCompile Include="Source\Enemy\Enemy.cpp" />
+    <ClCompile Include="Source\UI\UIManager.cpp" />
+    <ClCompile Include="Source\UI\Hud\PlayerHud.cpp" />
+    <ClCompile Include="Source\UI\Hud\BossHud.cpp" />
+    <ClCompile Include="Source\UI\Elements\Gauge.cpp" />
+    <ClCompile Include="Source\UI\Elements\Icon.cpp" />
+    <ClCompile Include="Source\UI\Elements\Text.cpp" />
     <ClCompile Include="Source\Objects\FireEffect.cpp" />
     <ClCompile Include="Source\Character\Input\PlayerInputSource.cpp" />
     <ClCompile Include="Source\Character\Input\NpcInputSource.cpp" />
@@ -284,6 +290,14 @@
     <ClInclude Include="Source\Actor\Actor.h" />
     <ClInclude Include="Source\Player\PlayerAnimator.h" />
     <ClInclude Include="Source\Enemy\Enemy.h" />
+    <ClInclude Include="Source\UI\UIManager.h" />
+    <ClInclude Include="Source\UI\Hud\PlayerHud.h" />
+    <ClInclude Include="Source\UI\Hud\BossHud.h" />
+    <ClInclude Include="Source\UI\Elements\UIElement.h" />
+    <ClInclude Include="Source\UI\Elements\UISprite.h" />
+    <ClInclude Include="Source\UI\Elements\Gauge.h" />
+    <ClInclude Include="Source\UI\Elements\Icon.h" />
+    <ClInclude Include="Source\UI\Elements\Text.h" />
     <ClInclude Include="Source\Objects\FireEffect.h" />
     <ClInclude Include="Source\Character\Input\PlayerInputSource.h" />
     <ClInclude Include="Source\Character\Input\NpcInputSource.h" />

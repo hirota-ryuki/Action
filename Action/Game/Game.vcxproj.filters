@@ -46,6 +46,15 @@
     <Filter Include="Source\System">
       <UniqueIdentifier>{22dd8095-74f9-46df-81a1-36675a040b1f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\UI">
+      <UniqueIdentifier>{6c2e8f14-3a7b-4d59-9e01-8b4f2c7d5a36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\UI\Hud">
+      <UniqueIdentifier>{0f9d4a27-8e3c-4b16-a5d2-71c6e3b8f049}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\UI\Elements">
+      <UniqueIdentifier>{b83a5e60-2d1f-4c97-8a4e-5f07d9c2e1b3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Enemy\State\EnemyStateMachine.cpp">
@@ -71,6 +80,24 @@
     </ClCompile>
     <ClCompile Include="Source\Enemy\Enemy.cpp">
       <Filter>Source\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\UI\UIManager.cpp">
+      <Filter>Source\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\UI\Hud\PlayerHud.cpp">
+      <Filter>Source\UI\Hud</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\UI\Hud\BossHud.cpp">
+      <Filter>Source\UI\Hud</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\UI\Elements\Gauge.cpp">
+      <Filter>Source\UI\Elements</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\UI\Elements\Icon.cpp">
+      <Filter>Source\UI\Elements</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\UI\Elements\Text.cpp">
+      <Filter>Source\UI\Elements</Filter>
     </ClCompile>
     <ClCompile Include="Source\Objects\FireEffect.cpp">
       <Filter>Source\Objects</Filter>
@@ -205,6 +232,30 @@
     </ClInclude>
     <ClInclude Include="Source\Enemy\Enemy.h">
       <Filter>Source\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\UI\UIManager.h">
+      <Filter>Source\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\UI\Hud\PlayerHud.h">
+      <Filter>Source\UI\Hud</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\UI\Hud\BossHud.h">
+      <Filter>Source\UI\Hud</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\UI\Elements\UIElement.h">
+      <Filter>Source\UI\Elements</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\UI\Elements\UISprite.h">
+      <Filter>Source\UI\Elements</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\UI\Elements\Gauge.h">
+      <Filter>Source\UI\Elements</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\UI\Elements\Icon.h">
+      <Filter>Source\UI\Elements</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\UI\Elements\Text.h">
+      <Filter>Source\UI\Elements</Filter>
     </ClInclude>
     <ClInclude Include="Source\Objects\FireEffect.h">
       <Filter>Source\Objects</Filter>

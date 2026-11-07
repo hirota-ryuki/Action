@@ -24,6 +24,14 @@ public:
 	{
 		return m_maxHp;
 	}
+	// 最大HPに対する今のHPの割合（0〜1）。HPゲージに使う。最大HPが 0 以下なら 0。
+	float GetHpRate() const
+	{
+		if (m_maxHp <= 0.0f) {
+			return 0.0f;
+		}
+		return min(1.0f, max(0.0f, m_hp / m_maxHp));
+	}
 	// HP を減らす。0 より下にはならない。
 	void Damage(float amount)
 	{
