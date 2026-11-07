@@ -226,6 +226,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Character\Components\WeaponAttachment.cpp" />
+    <ClCompile Include="Source\Player\PlayerConfig.cpp" />
+    <ClCompile Include="Source\Character\Character.cpp" />
     <ClCompile Include="Source\Player\PlayerAnimator.cpp" />
     <ClCompile Include="Source\Enemy\Enemy.cpp" />
     <ClCompile Include="Source\Objects\FireEffect.cpp" />
@@ -261,6 +264,13 @@
     <ClCompile Include="Source\System\system.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Character\Components\FallRespawn.h" />
+    <ClInclude Include="Source\Character\Components\WeaponAttachment.h" />
+    <ClInclude Include="Source\Player\PlayerConfig.h" />
+    <ClInclude Include="Source\Player\PlayerStatus.h" />
+    <ClInclude Include="Source\Character\Character.h" />
+    <ClInclude Include="Source\Character\Status.h" />
+    <ClInclude Include="Source\Actor\Actor.h" />
     <ClInclude Include="Source\Player\PlayerAnimator.h" />
     <ClInclude Include="Source\Enemy\Enemy.h" />
     <ClInclude Include="Source\Objects\FireEffect.h" />

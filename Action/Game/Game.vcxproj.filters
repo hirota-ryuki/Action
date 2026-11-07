@@ -4,6 +4,9 @@
     <Filter Include="Source">
       <UniqueIdentifier>{1a9fcd26-80d0-4d10-9934-bd566f401c8f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Actor">
+      <UniqueIdentifier>{1ee6f578-94ca-4b5c-be73-8461b096372b}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\App">
       <UniqueIdentifier>{ceaf8cdb-8b35-4506-bdb3-f1b198065356}</UniqueIdentifier>
     </Filter>
@@ -39,6 +42,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Character\Components\WeaponAttachment.cpp">
+      <Filter>Source\Character\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Player\PlayerConfig.cpp">
+      <Filter>Source\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Character\Character.cpp">
+      <Filter>Source\Character</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Player\PlayerAnimator.cpp">
       <Filter>Source\Player</Filter>
     </ClCompile>
@@ -128,6 +140,27 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Character\Components\FallRespawn.h">
+      <Filter>Source\Character\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\Components\WeaponAttachment.h">
+      <Filter>Source\Character\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Player\PlayerConfig.h">
+      <Filter>Source\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Player\PlayerStatus.h">
+      <Filter>Source\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\Character.h">
+      <Filter>Source\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\Status.h">
+      <Filter>Source\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Actor\Actor.h">
+      <Filter>Source\Actor</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Player\PlayerAnimator.h">
       <Filter>Source\Player</Filter>
     </ClInclude>
