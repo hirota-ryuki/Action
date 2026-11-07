@@ -32,7 +32,7 @@ struct PlayerStateSettings
 	float dashKickStartTime = 0.0f;   // クリップの中で、蹴って飛び始めるところ（秒）。しゃがまないときは、ここから流す。
 	float dashLandSeconds = 0.0f;     // 着地の長さ（秒）。0なら着地せず、すぐ次の動きへ移る。
 	float dashAnimSpeed = 1.0f;       // ダッシュのアニメーションの再生速度（倍）。
-	float dashAnimBlendSeconds = 0.05f; // ダッシュに入るときのアニメーションの補間時間。短いほど一気に前へ出る。
+	float dashAnimBlendSeconds = 0.05f; // しゃがまずに蹴るところから流すとき（連打で続けて出す・しゃがみを使わない）の補間時間。短いほど一気に前へ出る。
 	float dashExitBlendSeconds = 0.5f;  // ダッシュから次の動きへ移るときの補間時間。長いほど飛び出したポーズが残る。
 	// ダッシュ（着地まで）のあと、走り・歩きをどこから始めるか（秒）。着地の最後と前後の足が同じところ。
 	// 最初から始めると前後の足が逆で、補間の間に足が入れ替わってつまずいたように見える。

@@ -41,7 +41,7 @@ void PlayerStopState::Enter(PlayerStateContext& context, const CharacterInput& i
 
 PlayerStateId PlayerStopState::CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const
 {
-	if (input.dash.isTrigger && context.settings.dashDistance > 0.0f) {
+	if (input.dash.isTrigger && context.settings.dashDistance > 0.0f && context.mover->IsOnGround()) {
 		return PlayerStateId::Dash;
 	}
 	if (input.jump.isTrigger && context.mover->GetSettings().jumpSpeed > 0.0f && context.mover->IsOnGround()) {
