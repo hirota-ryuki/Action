@@ -3,13 +3,13 @@
 
 namespace
 {
-	const Vector3 kSwordOffset = Vector3(5.0f, -3.0f, 10.0f);   // 右手ボーンローカル空間での剣の位置オフセット。
-	const Vector3 kSwordScale = Vector3(1.35f, 1.35f, 1.35f);
-	constexpr float kSwordRotOffsetX = 0.0f;
-	constexpr float kSwordRotOffsetY = 0.0f;
-	constexpr float kSwordRotOffsetZ = -90.0f; // 剣モデルのZ軸が手の向きと90度ずれているため補正。
-	constexpr float kHitRadius = 45.0f;        // 弾に当たる球の半径。
-	constexpr float kHitCenterHeight = 70.0f;  // 足元から当たり判定の中心までの高さ（胸のあたり）。
+	const Vector3 SWORD_OFFSET = Vector3(5.0f, -3.0f, 10.0f);   // 右手ボーンローカル空間での剣の位置オフセット。
+	const Vector3 SWORD_SCALE = Vector3(1.35f, 1.35f, 1.35f);
+	constexpr float SWORD_ROT_OFFSET_X = 0.0f;
+	constexpr float SWORD_ROT_OFFSET_Y = 0.0f;
+	constexpr float SWORD_ROT_OFFSET_Z = -90.0f; // 剣モデルのZ軸が手の向きと90度ずれているため補正。
+	constexpr float HIT_RADIUS = 45.0f;        // 弾に当たる球の半径。
+	constexpr float HIT_CENTER_HEIGHT = 70.0f;  // 足元から当たり判定の中心までの高さ（胸のあたり）。
 
 	CharacterMoveSettings MakeMoveSettings()
 	{
@@ -108,8 +108,8 @@ CharacterConfig PlayerConfig::MakeCharacterConfig()
 	config.move = MakeMoveSettings();
 	config.model = MakeModelDesc();
 	config.caster = MakeCasterSettings();
-	config.hitRadius = kHitRadius;
-	config.hitCenterHeight = kHitCenterHeight;
+	config.hitRadius = HIT_RADIUS;
+	config.hitCenterHeight = HIT_CENTER_HEIGHT;
 	config.maxHp = 100.0f;
 	return config;
 }
@@ -125,9 +125,9 @@ WeaponAttachmentDesc PlayerConfig::MakeSwordDesc()
 	desc.modelPath = "Assets/modelData/weapon/sowrd/sowrd.tkm";
 	// 右手ボーンの名前はモデルのセットアップによって異なるので、2つの名前で探す。
 	desc.boneNames = { L"Character1_RightHand", L"J_R_ForeArm_00_tw" };
-	desc.offset = kSwordOffset;
-	desc.rotationOffsetDeg = Vector3(kSwordRotOffsetX, kSwordRotOffsetY, kSwordRotOffsetZ);
-	desc.scale = kSwordScale;
+	desc.offset = SWORD_OFFSET;
+	desc.rotationOffsetDeg = Vector3(SWORD_ROT_OFFSET_X, SWORD_ROT_OFFSET_Y, SWORD_ROT_OFFSET_Z);
+	desc.scale = SWORD_SCALE;
 	desc.isShadowCaster = true;
 	return desc;
 }

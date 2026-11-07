@@ -18,7 +18,7 @@ public:
 		Vector4 borderColor = { 0.0f, 0.0f, 0.0f, 0.8f };
 		Vector4 backColor = { 0.0f, 0.0f, 0.0f, 0.6f };     // 空きの部分。
 		Vector4 barColor = { 0.85f, 0.15f, 0.15f, 1.0f };   // 中身。
-		const char* barImagePath = UISprite::kWhitePath;     // 中身と遅れて減るバーの画像。色はこれに掛ける。
+		const char* barImagePath = UISprite::WHITE_PATH;     // 中身と遅れて減るバーの画像。色はこれに掛ける。
 		bool useTrail = false;                               // 遅れて減るバーを使うか。
 		Vector4 trailColor = { 1.0f, 1.0f, 1.0f, 0.9f };
 		float trailDelay = 0.5f;                             // 減ってから、遅れて減るバーが縮み始めるまでの秒数。

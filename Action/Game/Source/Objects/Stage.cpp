@@ -3,7 +3,7 @@
 
 namespace
 {
-	const char* kStageModelPath = "Assets/modelData/stage/kariAsiba.tkm";
+	const char* STAGE_MODEL_PATH = "Assets/modelData/stage/kariAsiba.tkm";
 }
 
 Stage::Stage()
@@ -18,7 +18,7 @@ Stage::~Stage()
 
 bool Stage::Start()
 {
-	m_modelRender.Init(kStageModelPath);
+	m_modelRender.Init(STAGE_MODEL_PATH);
 	m_modelRender.SetShadowCasterFlag(false);  // ステージ自体は影を落とさない。
 	m_modelRender.SetTRS(m_position, m_rotation, m_scale);
 	m_modelRender.Update();

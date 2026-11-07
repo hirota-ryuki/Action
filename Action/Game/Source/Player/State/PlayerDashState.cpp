@@ -7,7 +7,7 @@
 namespace
 {
 	// 移動入力のデッドゾーン閾値（二乗値）。これ以下なら正面へダッシュする。
-	constexpr float kMoveDeadZoneSq = 0.01f;
+	constexpr float MOVE_DEAD_ZONE_SQ = 0.01f;
 
 	// 進んだ割合（0〜1）。時間の割合 t に対して ease-out（最初が速く、だんだん遅くなる）。
 	// endRatio は、終わりの速さ ÷ 平均の速さ（0〜1）。速さは平均の (2 - endRatio) 倍から endRatio 倍へ、まっすぐ下がる。
@@ -50,7 +50,7 @@ void PlayerDashState::Begin(PlayerStateContext& context, const CharacterInput& i
 {
 	m_direction = input.moveDirection;
 	m_direction.y = 0.0f;
-	if (m_direction.LengthSq() <= kMoveDeadZoneSq) {
+	if (m_direction.LengthSq() <= MOVE_DEAD_ZONE_SQ) {
 		m_direction = context.mover->GetForward();
 		m_direction.y = 0.0f;
 	}

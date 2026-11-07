@@ -5,7 +5,7 @@ namespace
 {
 	// エンジンの Font は、pivot を割合ではなく「文字の左上からのピクセル数」として扱う（y は 1 - pivot.y になる）。
 	// { 0, 1 } を渡すと、位置が文字の左上になる。寄せるのは、測った幅で位置をずらして行う。
-	const Vector2 kTopLeftPivot = { 0.0f, 1.0f };
+	const Vector2 TOP_LEFT_PIVOT = { 0.0f, 1.0f };
 }
 
 void Text::SetText(const wchar_t* text)
@@ -36,7 +36,7 @@ void Text::Update(float deltaTime)
 	// 位置の y は文字の中央なので、上端は高さの半分だけ上。
 	const float top = m_position.y + height * 0.5f;
 
-	m_font.SetPivot(kTopLeftPivot);
+	m_font.SetPivot(TOP_LEFT_PIVOT);
 	m_font.SetScale(m_scale);
 	m_font.SetPosition(left, top, 0.0f);
 	m_font.SetColor(ApplyAlpha(m_color));

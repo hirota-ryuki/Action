@@ -16,7 +16,7 @@ CharacterConfig Player::MakeConfig() const
 
 void Player::OnStart()
 {
-	m_fallRespawn.Init(GetPosition(), PlayerConfig::kRespawnHeight);
+	m_fallRespawn.Init(GetPosition(), PlayerConfig::RESPAWN_HEIGHT);
 	m_sword.Init(m_model.GetModelRender(), PlayerConfig::MakeSwordDesc());
 
 	PlayerStateContext stateContext;

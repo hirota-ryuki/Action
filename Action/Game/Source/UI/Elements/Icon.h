@@ -3,7 +3,7 @@
 #include "UIElement.h"
 
 // 画像を1枚出す（状態異常のマーク、魔法の絵など）。位置は画像の中央。
-// 画像がまだないものは、白い画像（UISprite::kWhitePath）に色を付けて四角で出す。
+// 画像がまだないものは、白い画像（UISprite::WHITE_PATH）に色を付けて四角で出す。
 class Icon : public UIElement
 {
 public:

@@ -25,7 +25,7 @@ class BulletBase : public IGameObject
 {
 public:
 	// NewGO の名前。Game が終了時にまとめて削除するのに使う。
-	static constexpr const char* kObjectName = "bullet";
+	static constexpr const char* OBJECT_NAME = "bullet";
 
 	virtual ~BulletBase() = default;
 

@@ -10,7 +10,7 @@ class BurningGround : public IGameObject
 {
 public:
 	// NewGO の名前。Game が終了時にまとめて削除するのに使う。
-	static constexpr const char* kObjectName = "burningGround";
+	static constexpr const char* OBJECT_NAME = "burningGround";
 
 	~BurningGround();
 
