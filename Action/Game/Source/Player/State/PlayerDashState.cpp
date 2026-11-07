@@ -62,16 +62,13 @@ void PlayerDashState::Begin(PlayerStateContext& context, const CharacterInput& i
 		m_duration = context.settings.dashDistance / context.settings.dashSpeed;
 		context.mover->FaceTo(m_direction);
 	}
-	// 蹴る足を毎回入れ替える。
-	m_isLeftKick = !m_isLeftKick;
 }
 
 void PlayerDashState::PlayKick(PlayerStateContext& context, float blendSeconds, float startTime)
 {
 	// ダッシュの通しのクリップを1回流す（ループしないので、終わると着地して走り出すポーズで止まる）。
-	// 蹴る足を毎回入れ替えるので、連打しても別のクリップへの切り替えになり、指定したところから流れる。
-	const int clip = m_isLeftKick ? enPlayerAnimClip_DashL : enPlayerAnimClip_DashR;
-	context.animator->PlayFrom(clip, blendSeconds, startTime, context.settings.dashAnimSpeed);
+	// 連打で続けて出すとき（dashCanChain）は同じクリップを流し直すので、補間されずに startTime のポーズへ飛ぶ。
+	context.animator->PlayFrom(enPlayerAnimClip_Dash, blendSeconds, startTime, context.settings.dashAnimSpeed);
 }
 
 PlayerStateId PlayerDashState::CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const
@@ -156,7 +153,7 @@ void PlayerDashState::BeginLanding(PlayerStateContext& context, const CharacterI
 	m_isRunBlended = false;
 	const PlayerStateSettings& s = context.settings;
 	// 着地の最後と前後の足が同じになる、走りの位置。
-	const float runEnd = m_isLeftKick ? s.dashLToRunStartTime : s.dashRToRunStartTime;
+	const float runEnd = s.dashToRunStartTime;
 	m_runAnimTime = runEnd;
 	// 走るボタンを押したままなら、着地の間に走りのアニメーションへ先に補間しておく（見た目だけ。動きは着地のまま）。
 	// 着地を流し切ってから補間すると、1回きりのダッシュのクリップが最後のポーズで止まり、
@@ -181,14 +178,14 @@ void PlayerDashState::Exit(PlayerStateContext& context)
 	// 次のアニメーションへは長めに補間して、飛び出したポーズが少し残るようにする。
 	const PlayerStateSettings& s = context.settings;
 	context.animator->SetNextBlend(s.dashExitBlendSeconds);
-	// 走り・歩きは、最後に蹴った足に合わせて、前後の足が同じところから始める。
+	// 走り・歩きは、ダッシュの最後と前後の足が同じところから始める。
 	// 着地の間に走りへ補間してあれば、走りはもう流れているので、そのまま続ける（始める位置を指定すると巻き戻る）。
 	if (!m_isRunBlended) {
-		context.animator->SetNextStartTime(enPlayerAnimClip_Run, m_isLeftKick ? s.dashLToRunStartTime : s.dashRToRunStartTime);
+		context.animator->SetNextStartTime(enPlayerAnimClip_Run, s.dashToRunStartTime);
 	}
 	// 走り・止まる（Stop が踏ん張る足を決める）のために、走りの位置を渡す。
 	context.animator->SetRunTime(m_runAnimTime);
-	context.animator->SetNextStartTime(enPlayerAnimClip_Walk, m_isLeftKick ? s.dashLToWalkStartTime : s.dashRToWalkStartTime);
+	context.animator->SetNextStartTime(enPlayerAnimClip_Walk, s.dashToWalkStartTime);
 	m_elapsed = m_duration;
 	m_isLanding = false;
 	m_crouchRemaining = 0.0f;

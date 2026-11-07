@@ -36,10 +36,8 @@ struct PlayerStateSettings
 	float dashExitBlendSeconds = 0.5f;  // ダッシュから次の動きへ移るときの補間時間。長いほど飛び出したポーズが残る。
 	// ダッシュ（着地まで）のあと、走り・歩きをどこから始めるか（秒）。着地の最後と前後の足が同じところ。
 	// 最初から始めると前後の足が逆で、補間の間に足が入れ替わってつまずいたように見える。
-	float dashLToRunStartTime = 0.0f;   // 左足で蹴ったあと（右足で着地）。
-	float dashRToRunStartTime = 0.0f;   // 右足で蹴ったあと（左足で着地）。
-	float dashLToWalkStartTime = 0.0f;
-	float dashRToWalkStartTime = 0.0f;
+	float dashToRunStartTime = 0.0f;
+	float dashToWalkStartTime = 0.0f;
 	// true なら、着地に入ったとき走るボタンを押していれば、着地の間に走りのアニメーションへ補間しておく（見た目だけ）。
 	// false なら着地を最後まで流してから補間する（ダッシュのクリップが最後のポーズで止まってから補間するので、一瞬止まって見える）。
 	bool dashLandIntoRun = false;

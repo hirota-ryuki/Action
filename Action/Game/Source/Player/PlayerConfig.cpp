@@ -41,11 +41,9 @@ namespace
 		settings.dashLandSeconds = 5.0f / 30.0f;
 		settings.dashExitBlendSeconds = 0.15f; // ダッシュの最後と走りの始めは同じ形なので、短くてよい。
 		// ダッシュのあとの走り・歩きの始め。ダッシュの最後（原神の動画の 33.94秒）と同じ足の形のところ。
-		// Run（原神の走りの1周期、30fps・15コマ）: 左足で蹴ったあと Run の 5コマ目、右足で蹴ったあと 12コマ目。
-		settings.dashLToRunStartTime = 5.0f / 30.0f;
-		settings.dashRToRunStartTime = 12.0f / 30.0f;
-		settings.dashLToWalkStartTime = 0.0f;
-		settings.dashRToWalkStartTime = 17.0f / 30.0f;
+		// Run（原神の走りの1周期、30fps・15コマ）は 5コマ目、Walk は先頭（0コマ目）。
+		settings.dashToRunStartTime = 5.0f / 30.0f;
+		settings.dashToWalkStartTime = 0.0f;
 		settings.dashLandIntoRun = true; // 走るなら、着地（5コマ）の間にダッシュから走りへ補間する。
 		settings.dashCanChain = false;   // 着地まで終わるまで入力を受け付けない（連打で続けて出さない）。
 		settings.dashEndWithStop = true; // ダッシュのあと入力がなければ、勢いで滑って止まる。
@@ -78,7 +76,7 @@ namespace
 		desc.scale = 1.128f;
 		// Idle・Walk は Mixamo のモーションを UE で SK_Player にリターゲットしたもの。
 		// Jump はまだ SK_Player 用が無いので、暫定で run を入れておく。
-		// Run・DashL・DashR は、原神の動画から MediaPipe で関節の位置を読み取り、その角度で SK_Player のポーズを作ったもの
+		// Run・Dash は、原神の動画から MediaPipe で関節の位置を読み取り、その角度で SK_Player のポーズを作ったもの
 		// （tools/UnrealScripts/dash_roto.json）。Run は走りの1周期（34.25〜34.72秒）。
 		const AnimClipDesc run = { "Assets/modelData/player/Animation/Run.fbx", true };
 		desc.clips.resize(enPlayerAnimClip_Num);
@@ -86,9 +84,8 @@ namespace
 		desc.clips[enPlayerAnimClip_Walk] = { "Assets/modelData/player/Animation/Walk.fbx", true };
 		desc.clips[enPlayerAnimClip_Run] = run;
 		desc.clips[enPlayerAnimClip_Jump] = run;
-		// DashL・DashR は「しゃがむ → 蹴って低く滑る → 着地」の通し（33.41〜33.94秒、L・R は蹴る足）。
-		desc.clips[enPlayerAnimClip_DashL] = { "Assets/modelData/player/Animation/DashL.fbx", false };
-		desc.clips[enPlayerAnimClip_DashR] = { "Assets/modelData/player/Animation/DashR.fbx", false };
+		// Dash は「しゃがむ → 左足で蹴って低く滑る → 着地」の通し（33.41〜33.94秒）。原神と同じく、蹴る足はいつも同じ。
+		desc.clips[enPlayerAnimClip_Dash] = { "Assets/modelData/player/Animation/Dash.fbx", false };
 		// StopL・StopR は走りから止まる「前の足を突っ張って滑る → 起き上がる」の通し（29.78〜30.89秒、L・R は突っ張る足。
 		// tools/UnrealScripts/stop_roto.json）。
 		desc.clips[enPlayerAnimClip_StopL] = { "Assets/modelData/player/Animation/StopL.fbx", false };
