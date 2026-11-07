@@ -133,9 +133,10 @@ bool Player::Start()
 
 	PlayerStateContext stateContext;
 	stateContext.mover = &m_mover;
-	stateContext.modelRender = &m_model.GetModelRender();
+	stateContext.animator = &m_animator;
 	stateContext.statusEffects = &m_statusEffects;
 	stateContext.settings = MakeStateSettings();
+	m_animator.Init(&m_model.GetModelRender(), stateContext.settings.animBlendSeconds);
 	m_stateMachine.Init(stateContext);  // Idle から始める。
 
 	m_hitTarget.Init(this, Faction::Player, kHitRadius, kHitCenterHeight);

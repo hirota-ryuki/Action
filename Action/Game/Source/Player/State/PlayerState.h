@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "PlayerAnimator.h"
+
 class CharacterMover;
 class StatusEffects;
 struct CharacterInput;
@@ -15,20 +17,6 @@ enum class PlayerStateId
 	Stop,    // 走っていて入力を離した。勢いで滑りながら踏ん張って止まる
 	Frozen,  // 凍結などで行動できない
 	Num,
-};
-
-// プレイヤーのアニメーションクリップの番号。
-enum EnPlayerAnimClip
-{
-	enPlayerAnimClip_Idle,
-	enPlayerAnimClip_Walk,
-	enPlayerAnimClip_Run,
-	enPlayerAnimClip_Jump,
-	enPlayerAnimClip_DashL,  // ダッシュ（しゃがむ → 左足で蹴って低く滑る → 右足で着地）を通しで1本
-	enPlayerAnimClip_DashR,  // ダッシュ（右足で蹴る）
-	enPlayerAnimClip_StopL,  // 走りから止まる（左足を前へ突っ張り、腰を落として滑る → 起き上がる）
-	enPlayerAnimClip_StopR,  // 走りから止まる（右足を前へ突っ張る）
-	enPlayerAnimClip_Num,
 };
 
 // ステートの調整用の数値。歩く・走る・跳ぶ速さは CharacterMoveSettings にある。
@@ -79,48 +67,14 @@ struct PlayerStateSettings
 struct PlayerStateContext
 {
 	CharacterMover* mover = nullptr;
-	ModelRender* modelRender = nullptr;
+	PlayerAnimator* animator = nullptr;
 	const StatusEffects* statusEffects = nullptr;
 	PlayerStateSettings settings;
-	// 次の PlayAnimation だけで使う補間時間。0より小さければ animBlendSeconds を使う。
-	// 前のステートが Exit で入れておく（例: ダッシュのあとは長めにして、ポーズを残す）。
-	mutable float nextBlendSeconds = -1.0f;
-	// 次の PlayAnimation で、クリップごとに再生を始める位置（秒）。0より小さければ最初から。使ったら全部消す。
-	mutable float nextStartTimes[enPlayerAnimClip_Num] = {};
 	// ひとつ前のステート。Enter の中で、どこから来たかを見るのに使う。PlayerStateMachine が入れる。
 	PlayerStateId previousId = PlayerStateId::Idle;
 	// ダッシュのあと、移動の入力を離すまで走り続ける（走るボタンを押していなくても Run）。
 	// Dash が立て（dashKeepRun のとき）、PlayerStateMachine が移動の入力がないフレームで下ろす。
 	bool keepRunAfterDash = false;
-	// 走りのアニメーションの今の位置（秒、ループ前の通算）。Run が毎フレーム書き、Stop が踏ん張る足を決めるのに使う。
-	float runAnimTime = 0.0f;
-
-	PlayerStateContext()
-	{
-		ClearNextStartTimes();
-	}
-	void ClearNextStartTimes() const
-	{
-		for (float& time : nextStartTimes) {
-			time = -1.0f;
-		}
-	}
-
-	// アニメーションを切り替えて、speed 倍の速さで再生する。
-	void PlayAnimation(int animClip, float speed = 1.0f) const
-	{
-		const float blend = nextBlendSeconds >= 0.0f ? nextBlendSeconds : settings.animBlendSeconds;
-		const float startTime = (animClip >= 0 && animClip < enPlayerAnimClip_Num) ? nextStartTimes[animClip] : -1.0f;
-		nextBlendSeconds = -1.0f;
-		ClearNextStartTimes();
-		if (startTime >= 0.0f) {
-			modelRender->PlayAnimationFromTime(animClip, blend, startTime);
-		}
-		else {
-			modelRender->PlayAnimation(animClip, blend);
-		}
-		modelRender->SetAnimationSpeed(speed);
-	}
 };
 
 // プレイヤーのステートの基底クラス。

@@ -71,8 +71,7 @@ void PlayerDashState::PlayKick(PlayerStateContext& context, float blendSeconds, 
 	// ダッシュの通しのクリップを1回流す（ループしないので、終わると着地して走り出すポーズで止まる）。
 	// 蹴る足を毎回入れ替えるので、連打しても別のクリップへの切り替えになり、指定したところから流れる。
 	const int clip = m_isLeftKick ? enPlayerAnimClip_DashL : enPlayerAnimClip_DashR;
-	context.modelRender->PlayAnimationFromTime(clip, blendSeconds, startTime);
-	context.modelRender->SetAnimationSpeed(context.settings.dashAnimSpeed);
+	context.animator->PlayFrom(clip, blendSeconds, startTime, context.settings.dashAnimSpeed);
 }
 
 PlayerStateId PlayerDashState::CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const
@@ -170,8 +169,7 @@ void PlayerDashState::BeginLanding(PlayerStateContext& context, const CharacterI
 	}
 	// 補間が終わったとき（着地の最後）に runEnd に来るよう、着地の長さの分だけ前から流す。
 	m_runAnimTime = WrapRunAnimTime(runEnd - s.dashLandSeconds * s.dashAnimSpeed, s.runAnimSeconds);
-	context.modelRender->PlayAnimationFromTime(enPlayerAnimClip_Run, s.dashLandSeconds, m_runAnimTime);
-	context.modelRender->SetAnimationSpeed(s.dashAnimSpeed);
+	context.animator->PlayFrom(enPlayerAnimClip_Run, s.dashLandSeconds, m_runAnimTime, s.dashAnimSpeed);
 	m_isRunBlended = true;
 }
 
@@ -181,15 +179,15 @@ void PlayerDashState::Exit(PlayerStateContext& context)
 	// ここで戻すと、凍結で止めたアニメーションが動き出してしまう。
 	// 次のアニメーションへは長めに補間して、飛び出したポーズが少し残るようにする。
 	const PlayerStateSettings& s = context.settings;
-	context.nextBlendSeconds = s.dashExitBlendSeconds;
+	context.animator->SetNextBlend(s.dashExitBlendSeconds);
 	// 走り・歩きは、最後に蹴った足に合わせて、前後の足が同じところから始める。
 	// 着地の間に走りへ補間してあれば、走りはもう流れているので、そのまま続ける（始める位置を指定すると巻き戻る）。
 	if (!m_isRunBlended) {
-		context.nextStartTimes[enPlayerAnimClip_Run] = m_isLeftKick ? s.dashLToRunStartTime : s.dashRToRunStartTime;
+		context.animator->SetNextStartTime(enPlayerAnimClip_Run, m_isLeftKick ? s.dashLToRunStartTime : s.dashRToRunStartTime);
 	}
 	// 走り・止まる（Stop が踏ん張る足を決める）のために、走りの位置を渡す。
-	context.runAnimTime = m_runAnimTime;
-	context.nextStartTimes[enPlayerAnimClip_Walk] = m_isLeftKick ? s.dashLToWalkStartTime : s.dashRToWalkStartTime;
+	context.animator->SetRunTime(m_runAnimTime);
+	context.animator->SetNextStartTime(enPlayerAnimClip_Walk, m_isLeftKick ? s.dashLToWalkStartTime : s.dashRToWalkStartTime);
 	m_elapsed = m_duration;
 	m_isLanding = false;
 	m_crouchRemaining = 0.0f;

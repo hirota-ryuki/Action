@@ -32,11 +32,11 @@ void PlayerStopState::Enter(PlayerStateContext& context, const CharacterInput& i
 	// 走りの中で、今いちばん近い「足が前に着くところ」の足で踏ん張る。
 	bool isLeft = true;
 	if (s.runAnimSeconds > 0.0f) {
-		const float time = context.runAnimTime;
+		const float time = context.animator->GetRunTime();
 		isLeft = LoopDistance(time, s.stopLRunTime, s.runAnimSeconds) <= LoopDistance(time, s.stopRRunTime, s.runAnimSeconds);
 	}
-	context.nextBlendSeconds = s.stopBlendSeconds;
-	context.PlayAnimation(isLeft ? enPlayerAnimClip_StopL : enPlayerAnimClip_StopR);
+	context.animator->SetNextBlend(s.stopBlendSeconds);
+	context.animator->Play(isLeft ? enPlayerAnimClip_StopL : enPlayerAnimClip_StopR);
 }
 
 PlayerStateId PlayerStopState::CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const
@@ -70,5 +70,5 @@ void PlayerStopState::Update(PlayerStateContext& context, const CharacterInput& 
 void PlayerStopState::Exit(PlayerStateContext& context)
 {
 	// 起き上がったポーズから、次の動きへゆっくりつなぐ。
-	context.nextBlendSeconds = context.settings.stopExitBlendSeconds;
+	context.animator->SetNextBlend(context.settings.stopExitBlendSeconds);
 }

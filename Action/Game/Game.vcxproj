@@ -226,6 +226,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Player\PlayerAnimator.cpp" />
     <ClCompile Include="Source\Enemy\Enemy.cpp" />
     <ClCompile Include="Source\Objects\FireEffect.cpp" />
     <ClCompile Include="Source\Character\Input\PlayerInputSource.cpp" />
@@ -260,6 +261,7 @@
     <ClCompile Include="Source\System\system.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Player\PlayerAnimator.h" />
     <ClInclude Include="Source\Enemy\Enemy.h" />
     <ClInclude Include="Source\Objects\FireEffect.h" />
     <ClInclude Include="Source\Character\Input\PlayerInputSource.h" />

@@ -8,6 +8,7 @@
 #include "HitTarget.h"
 #include "MagicCaster.h"
 #include "PlayerStateMachine.h"
+#include "PlayerAnimator.h"
 
 // プレイヤーキャラクター。
 // 入力元（既定ではパッド・キーボード・マウス）から CharacterInput を受け取って動くだけで、
@@ -80,6 +81,7 @@ private:
 	HitTarget m_hitTarget;
 	MagicCaster m_magicCaster;
 	PlayerStateMachine m_stateMachine;
+	PlayerAnimator m_animator;
 
 	CharacterModel m_model;
 	ModelRender m_swordModelRender;

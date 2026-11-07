@@ -39,6 +39,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Player\PlayerAnimator.cpp">
+      <Filter>Source\Player</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Enemy\Enemy.cpp">
       <Filter>Source\Enemy</Filter>
     </ClCompile>
@@ -125,6 +128,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Player\PlayerAnimator.h">
+      <Filter>Source\Player</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Enemy\Enemy.h">
       <Filter>Source\Enemy</Filter>
     </ClInclude>

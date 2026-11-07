@@ -62,7 +62,7 @@ private:
 	bool m_isLanding = false;              // 着地中。
 	bool m_isLeftKick = false;             // 今回、左足で蹴るか。ダッシュのたびに入れ替える（ステートを出ても覚えておく）。
 	bool m_isNextDashQueued = false;       // ダッシュ中にもう一度押された。進み切ったら次のダッシュを出す。
-	bool m_isFirstFrame = false;
+	bool m_isFirstFrame = false;           // 入ったフレーム。入るきっかけになった押下を、次のダッシュの予約と数えないため。
 	bool m_isRunBlended = false;           // 着地の間に、走りのアニメーションへ補間し始めた。
-	float m_runAnimTime = 0.0f;            // 走りのアニメーションの位置（秒）。出るときに context.runAnimTime へ渡す。           // 入ったフレーム。入るきっかけになった押下を、次のダッシュの予約と数えないため。
+	float m_runAnimTime = 0.0f;            // 走りのアニメーションの位置（秒）。出るときに PlayerAnimator へ渡す。
 };
