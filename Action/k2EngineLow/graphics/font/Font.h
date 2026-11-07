@@ -53,6 +53,11 @@ namespace nsK2EngineLow {
 			m_shadowOffset = shadowOffset;
 			m_shadowColor = shadowColor;
 		}
+		/// <summary>
+		/// 文字列を大きさ 1 で描いたときの幅と高さ（ピクセル）を測る。右寄せ・中央寄せに使う。
+		/// Draw の pivot は割合ではなく、文字の左上からのピクセル数として扱われるので、寄せるときはこの値で位置をずらす。
+		/// </summary>
+		Vector2 MeasureString(const wchar_t* text) const;
 	private:
 		DirectX::SpriteBatch* m_spriteBatch = nullptr;		//　スプライトバッチ。
 		DirectX::SpriteFont* m_spriteFont = nullptr;		//　スプライトフォント。

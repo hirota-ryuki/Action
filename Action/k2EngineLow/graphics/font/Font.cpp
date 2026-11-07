@@ -16,6 +16,10 @@ namespace nsK2EngineLow {
 		auto& fontEngine = g_graphicsEngine->GetFontEngine();
 		fontEngine.EndDraw(rc);
 	}
+	Vector2 Font::MeasureString(const wchar_t* text) const
+	{
+		return g_graphicsEngine->GetFontEngine().MeasureString(text);
+	}
 	void Font::Draw(
 		wchar_t const* text,
 		const Vector2& position,
