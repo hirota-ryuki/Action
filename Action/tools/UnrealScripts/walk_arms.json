@@ -1,0 +1,14 @@
+{
+  "work_dir": "/Game/05_Adjust",
+  "mesh_fbx": "../../Game/Assets/modelData/player/Model/SK_Player.FBX",
+  "clips": [
+    {"in": "../../Game/Assets/modelData/player/Animation/Walk.fbx",
+     "out": "../../Game/Assets/modelData/player/Animation/Walk.fbx"}
+  ],
+  "pitch_deg": {
+    "J_Bip_L_UpperArm": -8.0,
+    "J_Bip_R_UpperArm": -8.0,
+    "J_Bip_L_LowerArm": -6.0,
+    "J_Bip_R_LowerArm": -6.0
+  }
+}
