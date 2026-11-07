@@ -15,9 +15,7 @@ void PlayerAirState::Enter(PlayerStateContext& context, const CharacterInput& in
 
 PlayerStateId PlayerAirState::CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const
 {
-	if (input.dash.isTrigger && context.settings.dashDistance > 0.0f) {
-		return PlayerStateId::Dash;
-	}
+	// 空中ではダッシュできない（着地してから）。
 	if (context.mover->IsOnGround()) {
 		return PlayerGroundState::SelectByInput(context, input);
 	}

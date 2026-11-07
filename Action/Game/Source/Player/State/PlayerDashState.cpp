@@ -42,7 +42,7 @@ void PlayerDashState::Enter(PlayerStateContext& context, const CharacterInput& i
 		PlayKick(context, s.dashCrouchBlendSeconds, 0.0f);
 		return;
 	}
-	// 空中では、しゃがむところを飛ばして蹴るところから流す。
+	// しゃがみを使わない設定のとき（dashCrouchSeconds が 0）は、しゃがむところを飛ばして蹴るところから流す。
 	PlayKick(context, s.dashAnimBlendSeconds, s.dashKickStartTime);
 }
 
@@ -81,7 +81,8 @@ PlayerStateId PlayerDashState::CheckTransition(const PlayerStateContext& context
 	if (!IsFinished()) {
 		return PlayerStateId::Dash;
 	}
-	if (context.settings.dashCanChain && (m_isNextDashQueued || input.dash.isTrigger)) {
+	// 続けて出すのも足場があるときだけ（ダッシュで足場から出たら、空中では出さない）。
+	if (context.settings.dashCanChain && (m_isNextDashQueued || input.dash.isTrigger) && context.mover->IsOnGround()) {
 		return PlayerStateId::Dash;
 	}
 	const PlayerStateId next = PlayerGroundState::SelectByInput(context, input);
@@ -103,8 +104,8 @@ void PlayerDashState::Update(PlayerStateContext& context, const CharacterInput& 
 	// 終わったとき移動の入力がなければ、PlayerStateMachine が下ろす（そのときは Stop へ移る）。
 	context.keepRunAfterDash = context.settings.dashKeepRun;
 
-	// 飛び終わっていて予約があれば（着地中でも）、そのときの入力の方向へ次のダッシュを始める。
-	if (IsKickFinished() && m_isNextDashQueued) {
+	// 飛び終わっていて予約があれば（着地中でも）、そのときの入力の方向へ次のダッシュを始める。空中では始めない。
+	if (IsKickFinished() && m_isNextDashQueued && context.mover->IsOnGround()) {
 		m_isNextDashQueued = false;
 		Begin(context, input);
 		// 続けて出すときは、しゃがむところを飛ばして蹴るところから流す。
