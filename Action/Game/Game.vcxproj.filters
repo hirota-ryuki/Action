@@ -19,11 +19,17 @@
     <Filter Include="Source\Character\Input">
       <UniqueIdentifier>{7108363e-ebca-40a9-bccd-eeb2cdabf112}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Character\StateMachine">
+      <UniqueIdentifier>{3d559534-f3f4-4931-a56d-0c5c33583c78}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\Core">
       <UniqueIdentifier>{12b8394b-6a5d-41c7-8a9b-2cfd5acc71fc}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Enemy">
       <UniqueIdentifier>{be5f924a-a161-4e66-99aa-ae0cc6924c34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Enemy\State">
+      <UniqueIdentifier>{a4f05c1b-548f-48f4-afb9-f782893354f6}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Magic">
       <UniqueIdentifier>{9e3a7c51-2f4d-4b8a-a6c1-7d0e5f9b3a28}</UniqueIdentifier>
@@ -42,6 +48,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Enemy\State\EnemyStateMachine.cpp">
+      <Filter>Source\Enemy\State</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Enemy\State\EnemyFrozenState.cpp">
+      <Filter>Source\Enemy\State</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Enemy\State\EnemyGroundState.cpp">
+      <Filter>Source\Enemy\State</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Character\Components\WeaponAttachment.cpp">
       <Filter>Source\Character\Components</Filter>
     </ClCompile>
@@ -140,6 +155,30 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Enemy\State\EnemyStateMachine.h">
+      <Filter>Source\Enemy\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\State\EnemyFrozenState.h">
+      <Filter>Source\Enemy\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\State\EnemyMoveState.h">
+      <Filter>Source\Enemy\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\State\EnemyIdleState.h">
+      <Filter>Source\Enemy\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\State\EnemyGroundState.h">
+      <Filter>Source\Enemy\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\State\EnemyState.h">
+      <Filter>Source\Enemy\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\StateMachine\StateMachine.h">
+      <Filter>Source\Character\StateMachine</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\StateMachine\State.h">
+      <Filter>Source\Character\StateMachine</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Character\Components\FallRespawn.h">
       <Filter>Source\Character\Components</Filter>
     </ClInclude>

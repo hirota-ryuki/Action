@@ -37,9 +37,9 @@ namespace
 		desc.modelPath = "Assets/modelData/unityChan.tkm";
 		desc.upAxis = enModelUpAxisY;
 		desc.scale = 1.08f;
-		desc.clips.resize(Enemy::enAnimClip_Num);
-		desc.clips[Enemy::enAnimClip_Idle] = { "Assets/animData/idle.tka", true };
-		desc.clips[Enemy::enAnimClip_Run] = { "Assets/animData/run.tka", true };
+		desc.clips.resize(enEnemyAnimClip_Num);
+		desc.clips[enEnemyAnimClip_Idle] = { "Assets/animData/idle.tka", true };
+		desc.clips[enEnemyAnimClip_Run] = { "Assets/animData/run.tka", true };
 		return desc;
 	}
 
@@ -72,28 +72,17 @@ CharacterConfig Enemy::MakeConfig() const
 
 void Enemy::OnStart()
 {
-	m_model.PlayAnimation(enAnimClip_Idle);
+	EnemyStateContext stateContext;
+	stateContext.mover = &m_mover;
+	stateContext.model = &m_model;
+	stateContext.statusEffects = &m_statusEffects;
+	m_stateMachine.Init(stateContext);  // Idle から始める（Idle のアニメーションを流す）。
+
 	m_magicCaster.AddMagic(std::make_unique<IceMagic>());
 }
 
 void Enemy::UpdateAction(float deltaTime)
 {
-	if (m_statusEffects.CanAct()) {
-		m_mover.Update(m_input, deltaTime);
-		UpdateAnimation();
-	}
-	else {
-		// 凍結中は入力を無視し、重力で落ちるだけにする。
-		m_mover.Update(CharacterInput(), deltaTime);
-	}
-}
-
-void Enemy::UpdateAnimation()
-{
-	const int newAnimNo = m_mover.IsMoving() ? enAnimClip_Run : enAnimClip_Idle;
-
-	if (newAnimNo != m_currentAnimNo) {
-		m_model.PlayAnimation(newAnimNo, 0.2f);
-		m_currentAnimNo = newAnimNo;
-	}
+	// 移動とアニメーションはステートが行う。凍結中は Frozen ステートになり、重力で落ちるだけになる。
+	m_stateMachine.Update(m_input, deltaTime);
 }
