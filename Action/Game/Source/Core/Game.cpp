@@ -8,6 +8,7 @@
 #include "FireEffect.h"
 #include "BulletBase.h"
 #include "BurningGround.h"
+#include "UIManager.h"
 
 namespace
 {
@@ -28,6 +29,8 @@ Game::Game()
 
 Game::~Game()
 {
+	// UI はキャラクターを読んでいるので、キャラクターより先に消す。
+	DeleteGO(m_uiManager);
 	DeleteGO(m_stage);
 	DeleteGO(m_player);
 	DeleteGO(m_enemy);
@@ -61,7 +64,7 @@ bool Game::Start()
 	g_camera3D->SetTarget({ 0.0f, 80.0f, 0.0f });
 	g_camera3D->SetFar(40000.0f);
 
-	// 優先度0=ステージ（最初に配置）、優先度1=キャラ、優先度2=カメラ（最後に更新）。
+	// 優先度0=ステージ（最初に配置）、優先度1=キャラ、優先度2=カメラ、優先度3=UI（キャラが動いたあとの値を出す）。
 	m_stage = NewGO<Stage>(0, "stage");
 	m_player = NewGO<Player>(1, "player");
 	m_player->SetPosition(kPlayerStartPosition);
@@ -71,6 +74,8 @@ bool Game::Start()
 	m_fireEffect = NewGO<FireEffect>(1, "fireEffect");
 	m_fireEffect->SetPosition(kFirePosition);
 	m_fireEffect->SetScale(kFireScale);
+	m_uiManager = NewGO<UIManager>(3, "uiManager");
+	m_uiManager->SetPlayer(m_player);
 
 	// SkyCubeのテクスチャをIBLの環境マップとしても使い回す。
 	m_skyCube = NewGO<nsK2Engine::SkyCube>(0, "skyCube");

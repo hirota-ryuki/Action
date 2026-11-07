@@ -22,6 +22,10 @@ public:
 	{
 		return m_status;
 	}
+	const PlayerStatus& GetStatus() const override
+	{
+		return m_status;
+	}
 	// 今のステート。デバッグ表示用。
 	PlayerStateId GetStateId() const
 	{

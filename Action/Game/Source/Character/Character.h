@@ -56,8 +56,15 @@ public:
 	{
 		return m_statusEffects;
 	}
+	// UI などの、読むだけの側に渡す。
+	const StatusEffects& GetStatusEffects() const
+	{
+		return m_statusEffects;
+	}
 	// 遊んでいる間に変わる値。派生クラスが自分の Status（PlayerStatus など）を返す。
 	virtual Status& GetStatus() = 0;
+	// 読むだけの側（UI など）に渡す const 版。
+	virtual const Status& GetStatus() const = 0;
 
 	// 体を描くか。一人称カメラのときは false にする。
 	void SetRenderBody(bool isRenderBody)

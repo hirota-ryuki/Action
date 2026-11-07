@@ -1,33 +1,39 @@
 # HUDの設計
 
 作成日: 2026-11-08
-対象: `PlayerHud`・`BossHud`・`Gauge`（`Game/Source/UI/` に作る予定。**まだ実装していない**）
+対象: [PlayerHud](../../../Game/Source/UI/Hud/PlayerHud.cpp)・[BossHud](../../../Game/Source/UI/Hud/BossHud.cpp)・[Gauge](../../../Game/Source/UI/Elements/Gauge.cpp)
 経緯: [UIの経緯](UIの経緯.md)
 
 遊んでいる間ずっと画面に出ている UI（HUD）の中身のページです。
 UIManager・部品の分け方は [UIの構成の設計](UIの構成の設計.md) を見てください。
 
-- **キャラクターの種類ごとに Hud を1つ作る。** Player には `PlayerHud`、Boss には `BossHud`。Hud は自分のキャラクターだけを知っている。
+- **キャラクターの種類ごとに Hud を1つ作る。** Player には `PlayerHud`、ボスには `BossHud`。Hud は自分のキャラクターだけを知っている。
 - **HPゲージはどちらも同じ `Gauge`。** `Status::GetHpRate()`（0〜1）を入れるだけ。
-- **Status はキャラクターごとに分ける。** `PlayerStatus`・`BossStatus` は `Status` を継承し、Hud はそれぞれの Status を読む。
+- **見た目は原神寄り。** Player は画面下の中央に細い緑のゲージと数字、ボスは画面上の中央に赤いゲージと名前。どちらも細い枠と、遅れて減るバーを付ける。
 
 ---
 
 ## 1. 全体像
 
 ```
-Status            … HP・最大HP・GetHpRate()
- ├ PlayerStatus   … 今は Status と同じ（あとで MP・スタミナ）
- └ BossStatus     … GetPhase()（第何形態か）
+                ┌──────────── 画面 ────────────┐
+                │          ボスの名前           │ ← BossHud（上の中央）
+                │ ████████████▒▒▒░░░░░░░░░░ │
+                │                    FPS（右上）│
+                │                              │
+                │          ██████████▒░░  ■ ■  │ ← PlayerHud（下の中央）。■ は状態異常
+                │            850 / 1000         │
+                └──────────────────────────────┘
 
 PlayerHud ──読む──▶ Player の PlayerStatus・StatusEffects
- ├ Gauge m_hp        … 左上
- ├ Icon  m_frozen    … HP の横。凍結中だけ出す
- └ Icon  m_burning   … HP の横。燃焼中だけ出す
+ ├ Gauge m_hp        … 画面下の中央。緑
+ ├ Text  m_hpNumber  … ゲージの下。「今のHP / 最大HP」
+ ├ Icon  m_frozen    … ゲージの右。凍結中だけ出す（水色の四角）
+ └ Icon  m_burning   … その右。燃焼中だけ出す（橙色の四角）
 
-BossHud ──読む──▶ Boss の BossStatus・名前
- ├ Text  m_name      … 画面下の中央
- └ Gauge m_hp        … 名前の下。遅れて減るバー付き
+BossHud ──読む──▶ ボスにする Character の Status と、Show で渡された名前
+ ├ Text  m_name      … ゲージの上
+ └ Gauge m_hp        … 画面上の中央。赤
 ```
 
 ---
@@ -36,11 +42,10 @@ BossHud ──読む──▶ Boss の BossStatus・名前
 
 | | PlayerHud | BossHud |
 |---|---|---|
-| 見るもの | `const Player*` | `const Boss*` |
-| 読む Status | `PlayerStatus` | `BossStatus` |
-| 出すもの | HP、凍結・燃焼のアイコン（あとで魔法） | 名前、HP（あとで第何形態か） |
-| 出るとき | ゲーム中ずっと | `Show(boss)` から `Hide()` まで（フェード付き） |
-| 遅れて減るバー | なし（あとで付けてもよい） | あり |
+| 見るもの | `const Player*`（`SetTarget`） | `const Character*` と名前（`Show`）。Boss ができたら `const Boss*` |
+| 出すもの | HP のゲージと数字、凍結・燃焼のアイコン | 名前、HP のゲージ |
+| 場所 | 画面下の中央 | 画面上の中央 |
+| 出るとき | ゲーム中ずっと（対象が nullptr なら出さない） | `Show()` から `Hide()` まで（0.3秒のフェード付き） |
 
 ---
 
@@ -48,65 +53,31 @@ BossHud ──読む──▶ Boss の BossStatus・名前
 
 ### PlayerHud
 
-```cpp
-class PlayerHud   // UIElement は継承しない
-{
-public:
-    void SetTarget(const Player* player);
-    void Update()
-    {
-        const PlayerStatus& status = m_player->GetStatus();
-        m_hp.SetRate(status.GetHpRate());
-        m_frozen.SetVisible(m_player->GetStatusEffects().IsFrozen());
-        m_burning.SetVisible(m_player->GetStatusEffects().IsBurning());
-    }
-    void Draw(RenderContext& rc);
-private:
-    const Player* m_player = nullptr;
-    Gauge m_hp;
-    Icon  m_frozen;
-    Icon  m_burning;
-};
-```
+毎フレーム、`GetHpRate()` をゲージに、`GetHp()`・`GetMaxHp()` を切り上げた整数を「850 / 1000」の形で数字に入れる（0.3 残っているのに 0 と出さないため）。凍結・燃焼はアイコンの表示する／しないに入れる。`Text::SetText` は値が変わったときだけ書き換えるので、毎フレーム呼んでよい。
 
 ### BossHud
 
-```cpp
-class BossHud
-{
-public:
-    void Show(const Boss* boss);  // 名前を入れ、遅れて減るバーを今のHPにそろえて、フェードイン
-    void Hide();                  // フェードアウトし、m_boss を nullptr にする
-    void Update()
-    {
-        if (m_boss == nullptr) { return; }
-        m_hp.SetRate(m_boss->GetStatus().GetHpRate());
-    }
-    void Draw(RenderContext& rc);
-private:
-    const Boss* m_boss = nullptr;
-    Text  m_name;
-    Gauge m_hp;
-};
-```
+| 関数 | すること |
+|---|---|
+| `Show(boss, name)` | ボスと名前を覚え、HP を入れ、遅れて減るバーを今のHPにそろえる（`ResetTrail`）。透明度の目標を 1 にする |
+| `Hide()` | ボスへのポインタをすぐ捨てる（このあと `DeleteGO` してよい）。透明度の目標を 0 にする |
+| `Update(deltaTime)` | ボスがいれば HP を入れる。透明度を目標へ一定の速さで近づけ、名前とゲージに同じ値を入れる |
 
-- フェードは、`m_name` と `m_hp` の2つに同じ透明度を入れる。
-- `Hide()` でポインタを捨てたあとも、フェードアウトが終わるまでは最後の値のまま描く。
-
-### Gauge の遅れて減るバー
+### Gauge：枠と遅れて減るバー
 
 ```
-██████████████▒▒▒▒░░░░░░░░
- 赤: 今のHP   ▒: 遅れて減る白い部分   ░: 空き
+┌──────────────────────────┐ ← 枠（borderSize だけ外へはみ出す）
+│██████████████▒▒▒▒░░░░░░░│   █: 中身  ▒: 遅れて減るバー  ░: 空き
+└──────────────────────────┘
 ```
 
-| 場面 | 赤いバー | 白いバー |
+4枚の画像を、左端の中央を基準（ピボット x=0）にして下から重ね、横の大きさを割合にする。中身と遅れて減るバーには `barImagePath`（HUD では `gauge.dds`）を使い、色を掛ける。
+
+| 場面 | 中身 | 遅れて減るバー |
 |---|---|---|
-| HP が減った | すぐその長さにする | 少し待ってから、赤いバーまで一定の速さで縮む |
-| HP が増えた | すぐその長さにする | すぐ赤いバーにそろえる（白が残らないように） |
-| `Show` した直後 | 今のHP | 今のHPにそろえる（減っていく演出にならないように） |
-
-`SetRate()` は 0〜1 に収めてから使う。
+| HP が減った | すぐその長さにする | `trailDelay` 秒待ってから、1秒に `trailSpeed` ずつ中身まで縮む |
+| HP が増えた | すぐその長さにする | すぐ中身にそろえる（残らないように） |
+| `ResetTrail()` した | そのまま | 今のHPにそろえる（減っていく演出にならないように） |
 
 ---
 
@@ -115,24 +86,32 @@ private:
 | やりたいこと | すること |
 |---|---|
 | Player の HUD に MP を足す | `PlayerStatus` に MP を足し、`PlayerHud` に `Gauge m_mp` を足して `Update()` で入れる |
-| ボスの第何形態かを出す | `BossHud` に部品を足し、`GetPhase()` を入れる |
+| ボス戦でHPバーを出す | ボス戦を始める側で `ui->ShowBoss(boss, L"名前")`、倒したら `HideBoss()` してから `DeleteGO` |
+| ゲージの見た目を変える | `Gauge::Settings`（大きさ・枠・色・画像・遅れて減るバー）を Hud の `Init()` で変える |
 | 敵の頭上にHPバーを出す | `Gauge` を使い回す。ワールド座標を画面座標に変える処理を足す |
 
 ---
 
-## 5. 調整用の数値（実装するときに決める。今は仮）
+## 5. 調整用の数値
 
-| 内容 | 仮の値 |
-|---|---|
-| 白いバーが縮み始めるまで | 0.5秒 |
-| 白いバーが縮む速さ | 1秒でゲージ全体の 50% |
-| ボスの HUD のフェードイン・アウト | 0.3秒 |
-| 位置・大きさ・色 | Player は左上、Boss は画面下の中央 |
+| 内容 | 値 | 場所 |
+|---|---|---|
+| Player の HPゲージ | 360 × 10、枠 2。画面下の中央、下端から 80 | `PlayerHud.cpp` |
+| Player の HP の数字 | 大きさ 0.42。ゲージの 18 下。影 1.5 | 同上 |
+| 状態異常のアイコン | 18 × 18。ゲージの右に 10 空けて並べる | 同上 |
+| Player の色 | 中身は明るい緑、空きは半透明の黒、遅れて減るバーは半透明の白 | 同上 |
+| ボスの HPゲージ | 720 × 12、枠 2。画面上の中央、上端から 100 | `BossHud.cpp` |
+| ボスの名前 | 大きさ 0.55。ゲージの 24 上。影 1.5 | 同上 |
+| ボスの色 | 中身は赤、遅れて減るバーは少し暖かい白 | 同上 |
+| 遅れて減るバーが縮み始めるまで | 0.5秒 | 同上（`kTrailDelay`）。Player は `Gauge` の既定値 |
+| 遅れて減るバーが縮む速さ | 1秒でゲージ全体の 50% | 同上（`kTrailSpeed`） |
+| フェードイン・アウト | 0.3秒 | 同上（`kFadeSeconds`） |
 
 ---
 
 ## 6. 既知の課題
 
 - Boss のクラス・`BossStatus` はまだない。
+- ゲージの端は四角い。丸くするには、端の画像を分けて描く（大きさを変えると丸い端がつぶれるため）。
+- `Text` に渡す文字は、エンジンの `FontRender` が書式として扱うので、`%` は `%%` と書く。
 - ボスが2体同時に出るときは、`BossHud` を2つ並べる（`ShowBoss` に何本目かを渡す）。
-- HPを何段かに分けるゲージ（第2形態など）は、まだ形を決めていない。

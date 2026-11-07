@@ -17,6 +17,10 @@ public:
 	{
 		return m_status;
 	}
+	const Status& GetStatus() const override
+	{
+		return m_status;
+	}
 	bool IsFrozen() const
 	{
 		return m_statusEffects.IsFrozen();
