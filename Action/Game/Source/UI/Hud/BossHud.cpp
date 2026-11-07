@@ -2,17 +2,30 @@
 #include "BossHud.h"
 
 #include "Character.h"
+#include "UISprite.h"
 
 namespace
 {
-	constexpr float kHpWidth = 800.0f;
-	constexpr float kHpHeight = 20.0f;
-	// HPゲージの左端の中央。画面下の中央に置く。
-	const Vector2 kHpPosition = { -kHpWidth * 0.5f, -static_cast<float>(UI_SPACE_HEIGHT) * 0.5f + 90.0f };
-	// 名前は HPゲージの上（文字の中央の位置。下の端がゲージにかからない高さ）。
-	const Vector2 kNamePosition = { 0.0f, kHpPosition.y + 55.0f };
+	// HPゲージ。画面上の中央に、横長に置く（Player のゲージは画面下なので重ならない）。
+	constexpr float kHpWidth = 720.0f;
+	constexpr float kHpHeight = 12.0f;
+	constexpr float kHpBorder = 2.0f;
+	constexpr float kHpTop = 100.0f;  // 画面の上端から、ゲージの中央までの距離。
+	// HPゲージの左端の中央。
+	const Vector2 kHpPosition = { -kHpWidth * 0.5f, static_cast<float>(UI_SPACE_HEIGHT) * 0.5f - kHpTop };
+	const Vector4 kHpColor = { 0.9f, 0.28f, 0.22f, 1.0f };      // 赤。
+	const Vector4 kHpBackColor = { 0.08f, 0.08f, 0.08f, 0.55f };
+	const Vector4 kHpBorderColor = { 0.0f, 0.0f, 0.0f, 0.6f };
+	const Vector4 kHpTrailColor = { 1.0f, 0.92f, 0.8f, 0.8f };  // 少し暖かい白。
 
-	constexpr float kTrailDelay = 0.5f;  // 減ってから、白いバーが縮み始めるまでの秒数。
+	// 名前は HPゲージの上に小さく。
+	constexpr float kNameScale = 0.55f;
+	constexpr float kNameGap = 24.0f;  // ゲージの中央から、名前の中央までの距離。
+	const Vector2 kNamePosition = { 0.0f, kHpPosition.y + kNameGap };
+	const Vector4 kNameShadowColor = { 0.0f, 0.0f, 0.0f, 0.7f };
+	constexpr float kNameShadowOffset = 1.5f;
+
+	constexpr float kTrailDelay = 0.5f;  // 減ってから、遅れて減るバーが縮み始めるまでの秒数。
 	constexpr float kTrailSpeed = 0.5f;  // 1秒にゲージ全体の 50% 縮む。
 	constexpr float kFadeSeconds = 0.3f; // フェードイン・アウトにかける秒数。
 }
@@ -22,13 +35,21 @@ void BossHud::Init()
 	Gauge::Settings hp;
 	hp.width = kHpWidth;
 	hp.height = kHpHeight;
+	hp.borderSize = kHpBorder;
+	hp.borderColor = kHpBorderColor;
+	hp.backColor = kHpBackColor;
+	hp.barColor = kHpColor;
+	hp.barImagePath = UISprite::kGaugePath;
 	hp.useTrail = true;
+	hp.trailColor = kHpTrailColor;
 	hp.trailDelay = kTrailDelay;
 	hp.trailSpeed = kTrailSpeed;
 	m_hp.Init(hp);
 	m_hp.SetPosition(kHpPosition);
 
 	m_name.SetPosition(kNamePosition);
+	m_name.SetScale(kNameScale);
+	m_name.SetShadow(kNameShadowOffset, kNameShadowColor);
 
 	SetAlpha(0.0f);
 }

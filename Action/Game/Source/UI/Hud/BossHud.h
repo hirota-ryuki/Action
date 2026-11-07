@@ -5,7 +5,7 @@
 
 class Character;
 
-// ボス用の HUD。画面下の中央に、名前とHPゲージ（遅れて減るバー付き）を出す。
+// ボス用の HUD。画面上の中央に、名前とHPゲージ（遅れて減るバー付き）を出す。
 // Show() でフェードインし、Hide() でフェードアウトする。UIElement は継承しない。UIManager が持つ。
 // Boss クラスはまだないので、今は Character と名前を受け取る。Boss ができたら const Boss* に変える。
 class BossHud
