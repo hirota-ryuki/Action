@@ -31,7 +31,7 @@
     "face_frames": [4, 26],
     "neck_add_deg": 25.0,
     "neck_add_frames": [14, 30],
-    "thigh_max_deg": -30.0,
+    "thigh_max_deg": -45.0,
     "thigh_soft_deg": 10.0
    }
   },
@@ -61,7 +61,7 @@
     "face_frames": [4, 26],
     "neck_add_deg": 25.0,
     "neck_add_frames": [14, 30],
-    "thigh_max_deg": -30.0,
+    "thigh_max_deg": -45.0,
     "thigh_soft_deg": 10.0
    }
   }
