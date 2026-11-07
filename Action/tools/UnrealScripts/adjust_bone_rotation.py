@@ -747,11 +747,16 @@ def rotoscope(anim, cfg, base_dir):
     log("rotoscope leg length(cm)", round(leg_cm, 1))
 
     # コマごとの目標（このキャラクターのボーン名で）。
+    # neck_add_deg と neck_add_frames [a, b]: 首（首 → 頭の線）を、a コマ目の 0° から b コマ目の neck_add_deg まで
+    # smoothstep でデータより起こす（止まるの最後を Idle の首の角度にそろえ、Idle へ移るとき頭が後ろへ引かれないように）。
+    neck_add = cfg.get("neck_add_deg", 0.0)
+    na, nb = cfg.get("neck_add_frames", [0, 1])
     targets = []
-    for r in rows:
+    for i, r in enumerate(rows):
         # lean_deg: 胴体と首を、データよりさらに前へ倒す角度（正 = 前へ）。
         lean = cfg.get("lean_deg", 0.0)
-        t = {"torso": r["torso"] - lean, "neck": r["neck"] - lean}
+        u = max(0.0, min(1.0, (i - na) / float(max(1, nb - na))))
+        t = {"torso": r["torso"] - lean, "neck": r["neck"] - lean + neck_add * u * u * (3.0 - 2.0 * u)}
         # leg_lean_deg: 脚（太もも・すね・足）もこの角度だけ前へ倒す（体全体を一本の線で倒し、足が腰の下に着くように）。
         # tuck_knee_deg: 振り戻す脚が腰の下を通るとき（足が浮いていて、太ももが -95°〜-35°）、膝をこの角度以上に曲げて、
         # かかとをお尻へたたむ（太ももがまだ後ろにあるうちにたたむと、かかとが高く跳ね上がるので -95° から）。すねを回した分だけ足も回し、つま先の向きは崩さない。
@@ -785,17 +790,20 @@ def rotoscope(anim, cfg, base_dir):
     bones = TORSO_CHAIN + ["J_Bip_C_Neck", "J_Bip_C_Head"] + limbs
     # head_pitch_deg: 頭だけに足す角度（正 = うつむく、負 = 顔を起こす）。首の線は変えずに、顔の向きだけを変える。
     head_pitch = cfg.get("head_pitch_deg", 0.0)
-    # head_pitch_to_deg と head_pitch_frames [a, b]: a コマ目から b コマ目へ、頭の角度を head_pitch_deg から
-    # head_pitch_to_deg へ smoothstep で移す（止まるで、起き上がったら顔をまっすぐ前へ戻す）。
-    head_to = cfg.get("head_pitch_to_deg", head_pitch)
-    head_a, head_b = cfg.get("head_pitch_frames", [0, 0])
-
-    def head_pitch_at(f):
-        if head_b <= head_a:
-            return head_pitch
-        u = max(0.0, min(1.0, (f - head_a) / float(head_b - head_a)))
-        return head_pitch + (head_to - head_pitch) * u * u * (3.0 - 2.0 * u)
-    orig ={b: {"pos": [], "rot": [], "scl": [], "axis": [], "parent": []} for b in bones}
+    # face_deg [始め, 終わり] と face_frames [a, b]: 頭の角度を足すのでなく、顔の向き（水平から、正 = 上を向く。
+    # 基準のポーズで前を向く向きを 0°）を決める。a コマ目まで「始め」、b コマ目から「終わり」、間は smoothstep。
+    # 首の角度が大きく変わっても、顔は一方向へだけ動く（止まるで起き上がるとき、首が起きて上を向かないように）。
+    face_cfg = cfg.get("face_deg")
+    face_target = None
+    head_ref = None
+    if face_cfg:
+        fa, fb = cfg["face_frames"]
+        face_target = []
+        for f in range(num_keys):
+            u = max(0.0, min(1.0, (f - fa) / float(max(1, fb - fa))))
+            face_target.append(face_cfg[0] + (face_cfg[1] - face_cfg[0]) * u * u * (3.0 - 2.0 * u))
+        head_ref = q_rotate(q_inv(P.get_bone_pose(skel_ref, "J_Bip_C_Head", W).rotation), fwd)
+    orig = {b: {"pos": [], "rot": [], "scl": [], "axis": [], "parent": []} for b in bones}
     for f in range(num_keys):
         pose = P.get_anim_pose_at_frame(anim, f, opts)
         for b in bones:
@@ -825,7 +833,7 @@ def rotoscope(anim, cfg, base_dir):
         if b == "J_Bip_C_Neck":
             return t.get("neck", 0.0) - T
         if b == "J_Bip_C_Head":
-            return head_pitch_at(f)
+            return t.get("head", head_pitch)
         par = parent_of[b]
         base = T * split[0] if par == "hips" else (T if par == "torso" else t.get(par, 0.0))
         return t.get(b, 0.0) - base
@@ -861,6 +869,12 @@ def rotoscope(anim, cfg, base_dir):
             for key, a, b in (("torso", HIPS, "J_Bip_C_Neck"), ("neck", "J_Bip_C_Neck", "J_Bip_C_Head")):
                 r = wrap180(targets[f][key] - seg(pose, a, b))
                 t[key] = t.get(key, 0.0) - r
+                worst = max(worst, abs(r))
+            if face_target:
+                v = q_rotate(P.get_bone_pose(pose, "J_Bip_C_Head", W).rotation, head_ref)
+                r = wrap180(face_target[f] - math.degrees(math.atan2(v.z, v.dot(fwd))))
+                # 頭の回転は正 = うつむく（顔が下へ）なので、上へ r だけ向けるには r を引く。
+                t["head"] = t.get("head", head_pitch) - r
                 worst = max(worst, abs(r))
             for b in limbs:
                 r = wrap180(targets[f][b] - segment_angle(pose, b, fwd))

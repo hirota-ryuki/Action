@@ -27,8 +27,10 @@
     "lean_deg": 0.0,
     "leg_lean_deg": 0.0,
     "head_pitch_deg": -30.0,
-    "head_pitch_to_deg": 0.0,
-    "head_pitch_frames": [14, 30]
+    "face_deg": [-16.0, -4.0],
+    "face_frames": [4, 26],
+    "neck_add_deg": 25.0,
+    "neck_add_frames": [14, 30]
    }
   },
   {
@@ -53,8 +55,10 @@
     "lean_deg": 0.0,
     "leg_lean_deg": 0.0,
     "head_pitch_deg": -30.0,
-    "head_pitch_to_deg": 0.0,
-    "head_pitch_frames": [14, 30]
+    "face_deg": [-16.0, -4.0],
+    "face_frames": [4, 26],
+    "neck_add_deg": 25.0,
+    "neck_add_frames": [14, 30]
    }
   }
  ]
