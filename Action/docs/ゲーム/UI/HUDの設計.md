@@ -3,6 +3,7 @@
 作成日: 2026-11-08
 対象: [PlayerHud](../../../Game/Source/UI/Hud/PlayerHud.cpp)・[BossHud](../../../Game/Source/UI/Hud/BossHud.cpp)・[Gauge](../../../Game/Source/UI/Elements/Gauge.cpp)
 経緯: [UIの経緯](UIの経緯.md)
+手順: [HUDの手順](HUDの手順.md)（何もない状態から、どのファイルに何を足すか）
 
 遊んでいる間ずっと画面に出ている UI（HUD）の中身のページです。
 UIManager・部品の分け方は [UIの構成の設計](UIの構成の設計.md) を見てください。
