@@ -47,6 +47,7 @@ static const int MAX_FPS = 60;	// 最大FPS。USE_FPS_LIMITTERが有効なとき
 #include "util/Noncopyable.h"
 #include "dbg/MyAssert.h"
 #include "dbg/MyLog.h"
+#include "dbg/DebugUI.h"
 #include "time/GameTime.h"
 #include "math/Math.h"
 #include "math/Vector.h"

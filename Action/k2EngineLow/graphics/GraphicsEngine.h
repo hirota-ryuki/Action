@@ -309,6 +309,10 @@ namespace nsK2EngineLow {
 		{
 		}
 #endif
+		/// <summary>
+		/// 描画の完了待ち。
+		/// </summary>
+		void WaitDraw();
 	private:
 		/// <summary>
 		/// D3Dデバイスの作成。
@@ -356,10 +360,6 @@ namespace nsK2EngineLow {
 		/// </summary>
 		/// <returns>trueが返ってきたら作成に成功。</returns>
 		bool CreateSynchronizationWithGPUObject();
-		/// <summary>
-		/// 描画の完了待ち。
-		/// </summary>
-		void WaitDraw();
 		/// <summary>
 		/// ID3D12Objectの解放リクエストを処理する。
 		/// </summary>

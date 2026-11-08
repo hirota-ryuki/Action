@@ -14,6 +14,10 @@ HWND			g_hWnd = NULL;				//ウィンドウハンドル。
 ///////////////////////////////////////////////////////////////////
 LRESULT CALLBACK MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	// 開発用の画面（ImGui）が使ったメッセージは、ゲームでは使わない。
+	if (DebugUI::HandleWindowMessage(hWnd, msg, wParam, lParam)) {
+		return true;
+	}
 	//送られてきたメッセージで処理を分岐させる。
 	switch (msg)
 	{

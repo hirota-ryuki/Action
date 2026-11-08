@@ -29,9 +29,9 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	const bool isDashPress = IsKeyPressed(VK_LSHIFT) || pad.IsPress(enButtonX);
 	input.dash.Update(isDashPress);
 	input.isRun = isDashPress;
-	input.fire.Update((IsGameWindowActive() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
+	input.fire.Update((CanUseMouse() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
 	// パッド未接続時は右トリガー(RB2)が8キーに割り当てられている。
-	input.subFire.Update((IsGameWindowActive() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
+	input.subFire.Update((CanUseMouse() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
 
 	m_prevMagicKey.Update(IsKeyPressed('Q'));
 	m_nextMagicKey.Update(IsKeyPressed('E'));
@@ -54,6 +54,12 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 bool PlayerInputSource::IsGameWindowActive()
 {
 	return g_hWnd != nullptr && GetForegroundWindow() == g_hWnd;
+}
+
+bool PlayerInputSource::CanUseMouse()
+{
+	// 開発用の画面（ImGui）を出している間は、クリックを ImGui に使うので、魔法を撃たない。
+	return IsGameWindowActive() && !DebugUI::IsVisible();
 }
 
 bool PlayerInputSource::IsKeyPressed(int virtualKey)
