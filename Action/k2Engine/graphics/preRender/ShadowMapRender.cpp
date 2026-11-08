@@ -2,10 +2,18 @@
 #include "ShadowMapRender.h"
 
 namespace nsK2Engine {
+    namespace {
+        // 指数シャドウマップの指数。DrawShadowMap.fx と Shadowing.h の INFINITY と同じ値にする。
+        constexpr float SHADOW_MAP_EXPONENT = 40.0f;
+    }
+
     void ShadowMapRender::Init(bool isSoftShadow)
     {
- 
-        float clearColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        // 影を落とす物が描かれなかった所は、いちばん奥（深度 1.0）の値 exp(40) にしておき、光が当たるようにする。
+        // 1.0 でクリアすると exp(40 × 0) と同じになり、「ライトのすぐ前に遮る物がある」として全部影になる。
+        // ソフトシャドウでは g に2乗を入れる（DrawShadowMap.fx と同じ）。exp(80) でも float に収まる。
+        const float farValue = expf(SHADOW_MAP_EXPONENT);
+        float clearColor[4] = { farValue, farValue * farValue, 0.0f, 1.0f };
 
         DXGI_FORMAT colorFormat;
         DXGI_FORMAT depthFormat;
