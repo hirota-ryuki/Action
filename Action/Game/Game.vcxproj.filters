@@ -177,6 +177,12 @@
     <ClCompile Include="Source\Objects\Stage.cpp">
       <Filter>Source\Objects</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Objects\StageChunk.cpp">
+      <Filter>Source\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Objects\StageProps.cpp">
+      <Filter>Source\Objects</Filter>
+    </ClCompile>
     <ClCompile Include="Source\App\stdafx.cpp">
       <Filter>Source\App</Filter>
     </ClCompile>
@@ -360,6 +366,12 @@
       <Filter>Source\Player</Filter>
     </ClInclude>
     <ClInclude Include="Source\Objects\Stage.h">
+      <Filter>Source\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Objects\StageChunk.h">
+      <Filter>Source\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Objects\StageProps.h">
       <Filter>Source\Objects</Filter>
     </ClInclude>
     <ClInclude Include="Source\App\stdafx.h">

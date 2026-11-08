@@ -1,7 +1,14 @@
-#pragma once
+﻿#pragma once
 
-// ステージの地形を管理するクラス。
-// モデルから物理コリジョンを生成し、キャラクターが乗れる静的な床を提供する。
+#include <memory>
+#include <vector>
+
+#include "StageChunk.h"
+#include "StageProps.h"
+
+// ステージ（草原）。
+// 配置 JSON（Assets/data/stage/field_props.json）を読み、地形の区画（StageChunk）と
+// 岩・木・草などの部品（StageProps）を作る。JSON は tools/StageGenerator/generate_stage.py が書き出す。
 class Stage : public IGameObject
 {
 public:
@@ -11,25 +18,7 @@ public:
 	void Update();
 	void Render(RenderContext& rc);
 
-	void SetPosition(const Vector3& position)
-	{
-		m_position = position;
-	}
-
-	void SetScale(const Vector3& scale)
-	{
-		m_scale = scale;
-	}
-
-	void SetRotation(const Quaternion& rotation)
-	{
-		m_rotation = rotation;
-	}
-
 private:
-	Vector3 m_position = Vector3::Zero;
-	Vector3 m_scale = Vector3::One;
-	Quaternion m_rotation = Quaternion::Identity;
-	ModelRender m_modelRender;
-	PhysicsStaticObject m_physicsStaticObject;
+	std::vector<std::unique_ptr<StageChunk>> m_chunks;
+	StageProps m_props;
 };
