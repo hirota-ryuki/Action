@@ -3,6 +3,7 @@
 作成日: 2026-11-08
 対象: [JsonFile.h](../../../Game/Source/System/JsonFile.h)、[JsonFile.cpp](../../../Game/Source/System/JsonFile.cpp)、[json.hpp](../../../exlib/nlohmann/json.hpp)
 経緯: [JSON読み込みの経緯](JSON読み込みの経緯.md)
+手順: [JSON読み込みの手順](JSON読み込みの手順.md)（どのファイルに何を足したか）
 
 ゲームで JSON ファイルを読むための仕組みのページです。調整値やステージの配置などを、コードの外に出したいときに使います。使っている例は [プレイヤーの調整値の設計](../プレイヤー/プレイヤーの調整値の設計.md) にあります。
 
