@@ -335,3 +335,6 @@ ASALocalRun/
 .vscode/*
 # 例外: フォルダーを開いたときに Claude のタブを開き直すタスク（どのPCでも同じ）
 !.vscode/tasks.json
+
+# ステージを作るスクリプトの確かめ用の画像と .blend（スクリプトを動かせば作り直せる）
+Action/tools/StageGenerator/preview/

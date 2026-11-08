@@ -1,0 +1,95 @@
+{
+  "_comment": "generate_stage.py が読む、草原のステージの作り方の設定。長さの単位は m（Blender の座標。X が東、Y が北、Z が上）。",
+
+  "seed": 7,
+
+  "chunkSize": 64.0,
+  "chunksX": 2,
+  "chunksY": 2,
+  "gridStep": 1.0,
+  "farGridStep": 8.0,
+  "textureSize": 1024,
+
+  "terrain": {
+    "hillHeight": 5.0,
+    "hillScale": 45.0,
+    "detailHeight": 0.5,
+    "detailScale": 7.0,
+    "flatRadius": 10.0,
+    "flatBlend": 14.0,
+    "cliffHeight": 9.0,
+    "cliffY": 38.0,
+    "cliffWidth": 3.0,
+    "cliffWarp": 8.0,
+    "cliffWarpScale": 25.0
+  },
+
+  "path": {
+    "points": [[0, 0], [10, -8], [22, -14], [34, -28], [52, -40], [70, -70]],
+    "width": 1.6,
+    "edgeNoise": 0.6
+  },
+
+  "colors": {
+    "grassLight": [0.62, 0.78, 0.30],
+    "grassMid":   [0.44, 0.67, 0.23],
+    "grassDark":  [0.30, 0.52, 0.20],
+    "dirt":       [0.71, 0.60, 0.42],
+    "rock":       [0.58, 0.58, 0.55],
+    "rockDark":   [0.44, 0.45, 0.44]
+  },
+
+  "models": [
+    { "name": "CommonTree_1", "kind": "tree", "baseScale": 1.0, "trunkRadius": 0.3, "foliage": ["Leaves_NormalTree"] },
+    { "name": "CommonTree_2", "kind": "tree", "baseScale": 1.0, "trunkRadius": 0.3, "foliage": ["Leaves_NormalTree"] },
+    { "name": "CommonTree_3", "kind": "tree", "baseScale": 1.0, "trunkRadius": 0.3, "foliage": ["Leaves_NormalTree"] },
+    { "name": "Pine_1",       "kind": "tree", "baseScale": 1.0, "trunkRadius": 0.3, "foliage": ["Leaves_Pine"] },
+    { "name": "Pine_2",       "kind": "tree", "baseScale": 1.0, "trunkRadius": 0.3, "foliage": ["Leaves_Pine"] },
+    { "name": "Rock_Medium_1", "kind": "rock", "baseScale": 1.0 },
+    { "name": "Rock_Medium_2", "kind": "rock", "baseScale": 1.0 },
+    { "name": "Rock_Medium_3", "kind": "rock", "baseScale": 1.0 },
+    { "name": "Bush_Common",         "kind": "detail", "baseScale": 0.8, "foliage": ["Leaves_TwistedTree", "Material"],
+      "tint": { "Leaves_TwistedTree": { "image": "Leaves_TwistedTree.png", "color": [0.40, 0.66, 0.22], "name": "Leaves_Bush" } },
+      "solid": { "Material": [0.28, 0.48, 0.16] } },
+    { "name": "Bush_Common_Flowers", "kind": "detail", "baseScale": 0.8, "foliage": ["Leaves_TwistedTree", "Material", "Flowers"],
+      "tint": { "Leaves_TwistedTree": { "image": "Leaves_TwistedTree.png", "color": [0.40, 0.66, 0.22], "name": "Leaves_Bush" } },
+      "solid": { "Material": [0.28, 0.48, 0.16] } },
+    { "name": "Fern_1",              "kind": "detail", "baseScale": 0.22, "foliage": ["Leaves"] },
+    { "name": "Pebble_Round_1",  "kind": "detail", "baseScale": 1.0 },
+    { "name": "Pebble_Round_3",  "kind": "detail", "baseScale": 1.0 },
+    { "name": "Pebble_Square_2", "kind": "detail", "baseScale": 1.0 },
+    { "name": "RockPath_Round_Small_1", "kind": "detail", "baseScale": 1.0 },
+    { "name": "RockPath_Round_Small_2", "kind": "detail", "baseScale": 1.0 },
+    { "name": "Flower_3_Group", "kind": "grass", "baseScale": 0.45, "foliage": ["Flowers", "Leaves"] },
+    { "name": "Flower_4_Group", "kind": "grass", "baseScale": 0.45, "foliage": ["Flowers", "Leaves"] },
+    { "name": "Grass_Common_Short", "kind": "grass", "baseScale": 0.4, "foliage": ["Grass"] },
+    { "name": "Grass_Wispy_Short",  "kind": "grass", "baseScale": 0.4, "foliage": ["Grass"] }
+  ],
+
+  "kinds": {
+    "tree":   { "collision": "trunk", "shadow": true,  "drawDistance": 300.0 },
+    "rock":   { "collision": "mesh",  "shadow": true,  "drawDistance": 300.0 },
+    "detail": { "collision": "none",  "shadow": false, "drawDistance": 80.0 },
+    "grass":  { "collision": "none",  "shadow": false, "drawDistance": 35.0 }
+  },
+
+  "_rulesComment": "置き方の決まり。count は 1区画あたりの数。area: all / lowland（崖の下）/ plateau（崖の上）/ cliff（崖の斜面）/ path（道の上）。slopeMax は坂の傾き（tan）。cluster は 0〜1 で、大きいほど固まって生える。block は他の物を寄せ付けない半径（m）。foot は足もとの半径（m、大きさを掛ける）で、その範囲のいちばん低い地面に置く。sink は大きさ1あたりの埋める深さ（m）。",
+  "rules": [
+    { "models": ["Rock_Medium_1", "Rock_Medium_2", "Rock_Medium_3"], "area": "cliff", "count": 12, "scale": [1.8, 3.2], "minDist": 4.5, "block": 2.5, "foot": 1.2, "sink": 0.15, "tilt": 12 },
+    { "models": ["Rock_Medium_1", "Rock_Medium_2", "Rock_Medium_3"], "area": "all", "count": 5, "scale": [0.5, 1.4], "minDist": 8.0, "block": 1.5, "slopeMax": 0.6, "pathAvoid": 2.5, "foot": 1.0, "sink": 0.15, "tilt": 8 },
+    { "models": ["CommonTree_1", "CommonTree_2", "CommonTree_3"], "area": "lowland", "count": 7, "scale": [0.9, 1.3], "minDist": 6.0, "block": 1.0, "slopeMax": 0.45, "pathAvoid": 3.0, "spawnAvoid": 6.0, "cluster": 0.5, "foot": 0.3 },
+    { "models": ["Pine_1", "Pine_2"], "area": "plateau", "count": 9, "scale": [0.9, 1.4], "minDist": 5.0, "block": 1.0, "slopeMax": 0.5, "cluster": 0.4, "foot": 0.3 },
+    { "models": ["Bush_Common", "Bush_Common_Flowers"], "area": "all", "count": 10, "scale": [0.7, 1.2], "minDist": 3.0, "block": 0.6, "slopeMax": 0.6, "pathAvoid": 1.5, "spawnAvoid": 4.0, "cluster": 0.5 },
+    { "models": ["Fern_1"], "area": "all", "count": 6, "scale": [0.8, 1.2], "minDist": 3.0, "block": 0.3, "slopeMax": 0.7, "pathAvoid": 1.5 },
+    { "models": ["Pebble_Round_1", "Pebble_Round_3", "Pebble_Square_2"], "area": "all", "count": 25, "scale": [0.6, 1.6], "minDist": 1.5, "slopeMax": 0.8, "tilt": 10 },
+    { "models": ["RockPath_Round_Small_1", "RockPath_Round_Small_2"], "area": "path", "count": 10, "scale": [0.8, 1.1], "minDist": 1.8, "sink": 0.03 },
+    { "models": ["Flower_3_Group", "Flower_4_Group"], "area": "all", "count": 40, "scale": [0.8, 1.2], "minDist": 1.2, "slopeMax": 0.5, "pathAvoid": 1.2, "cluster": 0.6 },
+    { "models": ["Grass_Common_Short"], "area": "all", "count": 1500, "scale": [1.0, 1.6], "minDist": 0.7, "slopeMax": 0.7, "pathAvoid": 0.9 },
+    { "models": ["Grass_Wispy_Short"], "area": "all", "count": 300, "scale": [0.8, 1.2], "minDist": 0.9, "slopeMax": 0.6, "pathAvoid": 1.2, "cluster": 0.5 }
+  ],
+
+  "preview": {
+    "width": 1280,
+    "height": 720
+  }
+}
