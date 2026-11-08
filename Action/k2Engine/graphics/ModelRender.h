@@ -448,6 +448,18 @@ namespace nsK2Engine {
 		/// </summary>
 		void SetupVertexShaderEntryPointFunc(ModelInitData& modelInitData);
 		/// <summary>
+		/// GPU インスタンシングで描くモデルなら、事前計算済みの頂点バッファを使わず、
+		/// インスタンシング用の頂点シェーダー（VSMainInstancing）で描くように設定を書き換える。
+		/// </summary>
+		void SetupGpuInstancing(ModelInitData& modelInitData);
+		/// <summary>
+		/// このフレームに描くインスタンスの数。インスタンシング描画でなければ 1。
+		/// </summary>
+		int GetDrawInstanceCount() const
+		{
+			return m_isGpuInstancing ? m_numDrawInstance : 1;
+		}
+		/// <summary>
 		/// モデルを内包するバウンディングボリュームを初期化。
 		/// </summary>
 		/// <remark>
@@ -484,6 +496,10 @@ namespace nsK2Engine {
 		int							m_numInstance = 0;					// インスタンスの数。
 		int							m_maxInstance = 1;					// 最大インスタンス数。
 		bool						m_isEnableInstancingDraw = false;	// インスタンシング描画が有効？
+		// アニメーションのないインスタンシング描画は、頂点を事前計算せず GPU インスタンシングで描く。
+		// 事前計算は全インスタンス分の頂点バッファを作り毎フレーム計算するので、草のように数が多いと重いため。
+		bool						m_isGpuInstancing = false;
+		int							m_numDrawInstance = 0;				// Draw() で受け取った、このフレームに描くインスタンスの数。
 		bool						m_isRaytracingWorld = true;			//レイトレワールドに登録する？
 		std::unique_ptr<Matrix[]>	m_worldMatrixArray;					// ワールド行列の配列。
 		StructuredBuffer			m_worldMatrixArraySB;				// ワールド行列の配列のストラクチャードバッファ。
