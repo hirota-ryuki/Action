@@ -1194,6 +1194,12 @@ def log_frames(anim, label):
         for s in "LR":
             row += "  %s arm=%.0f/%.0f" % (s, segment_angle(pose, "J_Bip_%s_UpperArm" % s, fwd),
                                             segment_angle(pose, "J_Bip_%s_LowerArm" % s, fwd))
+            # 肩から見た肘・手の、体の外への距離（cm、正 = 外）。脇の締まり具合を見る。
+            sh_ = P.get_bone_pose(pose, "J_Bip_%s_UpperArm" % s, W).translation
+            out = axis * (1.0 if (sh_ - hips).dot(axis) >= 0.0 else -1.0)
+            row += " out(elbow=%.1f hand=%.1f)" % (
+                (P.get_bone_pose(pose, "J_Bip_%s_LowerArm" % s, W).translation - sh_).dot(out),
+                (P.get_bone_pose(pose, "J_Bip_%s_Hand" % s, W).translation - sh_).dot(out))
         log(row)
 
 

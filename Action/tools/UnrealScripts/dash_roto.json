@@ -36,6 +36,10 @@
   {
    "in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
    "out": "../../Game/Assets/modelData/player/Animation/Run.fbx",
+   "out_deg": {
+    "J_Bip_L_UpperArm": -8.0,
+    "J_Bip_R_UpperArm": -25.0
+   },
    "frames": {
     "start": 0,
     "count": 1,
