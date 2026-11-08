@@ -180,6 +180,9 @@
     <ClCompile Include="Source\App\stdafx.cpp">
       <Filter>Source\App</Filter>
     </ClCompile>
+    <ClCompile Include="Source\System\JsonFile.cpp">
+      <Filter>Source\System</Filter>
+    </ClCompile>
     <ClCompile Include="Source\System\system.cpp">
       <Filter>Source\System</Filter>
     </ClCompile>
@@ -361,6 +364,9 @@
     </ClInclude>
     <ClInclude Include="Source\App\stdafx.h">
       <Filter>Source\App</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\System\JsonFile.h">
+      <Filter>Source\System</Filter>
     </ClInclude>
     <ClInclude Include="Source\System\system.h">
       <Filter>Source\System</Filter>
