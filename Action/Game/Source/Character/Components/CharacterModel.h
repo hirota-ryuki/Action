@@ -4,14 +4,14 @@
 struct AnimClipDesc
 {
 	// .tka か .fbx。.fbx ならモデルのスケルトンにボーン名でリターゲットして .tka に変換してから読む。
-	const char* path = nullptr;
+	std::string path;
 	bool isLoop = true;
 };
 
 // キャラクターの見た目の指定。キャラクターごとの違いはここに書くデータだけにする。
 struct CharacterModelDesc
 {
-	const char* modelPath = nullptr;            // .tkm か .fbx。
+	std::string modelPath;                      // .tkm か .fbx。
 	EnModelUpAxis upAxis = enModelUpAxisY;      // 3ds Max で作ったモデルは Z。
 	float scale = 1.0f;
 	bool isShadowCaster = true;

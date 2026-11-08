@@ -40,10 +40,10 @@ void CharacterModel::Init(const CharacterModelDesc& desc)
 		std::string tkaPath = clip.path;
 		if (EndsWithFbx(tkaPath)) {
 			if (tksPath.empty()) {
-				tksPath = ToTksPath(nsK2EngineLow::FbxRuntimeImporter::ResolveToTkmFilePath(desc.modelPath));
+				tksPath = ToTksPath(nsK2EngineLow::FbxRuntimeImporter::ResolveToTkmFilePath(desc.modelPath.c_str()));
 			}
 			// 変換結果はファイルの更新日時でキャッシュされるので、同じ FBX を何度渡しても変換は1回。
-			tkaPath = nsK2EngineLow::FbxRuntimeImporter::ResolveAnimationFbxToTka(clip.path, tksPath.c_str());
+			tkaPath = nsK2EngineLow::FbxRuntimeImporter::ResolveAnimationFbxToTka(clip.path.c_str(), tksPath.c_str());
 		}
 		if (tkaPath.empty()) {
 			continue;  // 変換に失敗した。エラーは変換側で表示される。
@@ -53,6 +53,6 @@ void CharacterModel::Init(const CharacterModelDesc& desc)
 	}
 
 	// ModelRender::Init は中で 0 番のクリップを再生するので、クリップは必ずこれより前に読み込む。
-	m_modelRender.Init(desc.modelPath, numClips > 0 ? m_animClips.get() : nullptr, numClips, desc.upAxis);
+	m_modelRender.Init(desc.modelPath.c_str(), numClips > 0 ? m_animClips.get() : nullptr, numClips, desc.upAxis);
 	m_modelRender.SetShadowCasterFlag(desc.isShadowCaster);
 }

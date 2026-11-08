@@ -3,7 +3,7 @@
 // 武器をキャラクターのボーンに付ける指定。
 struct WeaponAttachmentDesc
 {
-	const char* modelPath = nullptr;
+	std::string modelPath;
 	// 付けるボーンの名前。モデルによって名前が違うので、前から順に探して最初に見つかったものを使う。
 	std::vector<const wchar_t*> boneNames;
 	Vector3 offset = Vector3::Zero;            // ボーンのローカル空間での位置のずれ。
