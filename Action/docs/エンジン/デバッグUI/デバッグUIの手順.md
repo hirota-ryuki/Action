@@ -26,6 +26,26 @@ ImGui を入れて、F1 キーで開発用の画面（デバッグUI）を出せ
 
 ---
 
+## 触るファイルの一覧
+
+| ファイル | 何をするか | 手順 |
+|---|---|---|
+| `Action/exlib/imgui/`（16個） | 新しく置く（ImGui のファイルをコピー） | 1 |
+| `k2EngineLow` のプロジェクトの設定 | 書き換え（インクルードパスを足す、ImGui の `.cpp` 7つを足して、プリコンパイル済みヘッダーを使わない） | 2 |
+| [GraphicsEngine.h](../../../k2EngineLow/graphics/GraphicsEngine.h) | 書き換え（`WaitDraw()` の宣言を `private` から `public` へ移す） | 3 |
+| `k2EngineLow/dbg/DebugUI.h` | 新しく作る → 宣言を追加 | 4 → 5・6 |
+| `k2EngineLow/dbg/DebugUI.cpp` | 新しく作る → 関数を追加 | 4 → 5・6 |
+| [k2EngineLowPreCompile.h](../../../k2EngineLow/k2EngineLowPreCompile.h) | 追加（`#include` 1行） | 4 |
+| [k2EngineLow.cpp](../../../k2EngineLow/k2EngineLow.cpp) | 追加（起動・終了の呼び出し、フレームの始め・終わりの呼び出し） | 4・6 |
+| [system.cpp](../../../Game/Source/System/system.cpp) | 追加（`MsgProc()` の先頭に3行） | 5 |
+| [GameCamera.cpp](../../../Game/Source/Objects/GameCamera.cpp) | 追加（`if` を1つ） | 7 |
+| [PlayerInputSource.h](../../../Game/Source/Character/Input/PlayerInputSource.h) | 追加（宣言1つ） | 7 |
+| [PlayerInputSource.cpp](../../../Game/Source/Character/Input/PlayerInputSource.cpp) | 追加（関数1つ）・書き換え（2行） | 7 |
+
+消すファイル・コメントアウトする行はありません。
+
+---
+
 ## 新しいファイルを作るときの注意（全手順共通）
 
 新しく作る `.h` / `.cpp` は、**UTF-8（BOM 付き）**で保存する。BOM がないと、コンパイラーが Shift-JIS として読み、`u8"日本語"` の文字が化ける。
@@ -35,6 +55,12 @@ ImGui を入れて、F1 キーで開発用の画面（デバッグUI）を出せ
 ---
 
 ## 手順1: ImGui のファイルを exlib に置く
+
+**この手順で触るファイル:**
+
+| ファイル | 何をするか |
+|---|---|
+| `Action/exlib/imgui/` | 新しく置く（16個） |
 
 ImGui 本体と、Windows（Win32）・DirectX12 用のつなぎのファイル（バックエンド）を、JSON の `nlohmann` と同じ `Action/exlib/` に置きます。
 
@@ -51,6 +77,12 @@ ImGui 本体と、Windows（Win32）・DirectX12 用のつなぎのファイル�
 ---
 
 ## 手順2: k2EngineLow で ImGui をビルドする
+
+**この手順で触るファイル:**
+
+| ファイル | 何をするか |
+|---|---|
+| `k2EngineLow` のプロジェクトの設定 | 書き換え（インクルードパス・ファイルの追加・プリコンパイル済みヘッダー） |
 
 ImGui の描画はエンジンのフレームの最後で行うので、ImGui の `.cpp` は k2EngineLow のプロジェクトでビルドします。k2EngineLow のライブラリは k2Engine を通して Game にリンクされるので、Game からも ImGui の関数を呼べるようになります。
 
@@ -73,35 +105,55 @@ ImGui の描画はエンジンのフレームの最後で行うので、ImGui �
 
 ## 手順3: GPU を待つ関数を外から呼べるようにする
 
+**この手順で触るファイル:**
+
+| ファイル | 何をするか |
+|---|---|
+| [GraphicsEngine.h](../../../k2EngineLow/graphics/GraphicsEngine.h) | 書き換え（`WaitDraw()` の宣言4行を、`private:` の下から `public` の最後へ移す） |
+
 終了するときに、GPU が ImGui のバッファを使い終わるのを待ってから消す必要があります。待つ関数 `GraphicsEngine::WaitDraw()` はすでにありますが `private` なので、`public` に移します。
 
-[GraphicsEngine.h](../../../k2EngineLow/graphics/GraphicsEngine.h) で、次の4行を `private:` の下から消します。
+[GraphicsEngine.h](../../../k2EngineLow/graphics/GraphicsEngine.h) で、`WaitDraw()` の宣言4行を**削除**します。`CreateSynchronizationWithGPUObject()` の下、`private:` の中にあります。
 
-```cpp
-		/// <summary>
-		/// 描画の完了待ち。
-		/// </summary>
-		void WaitDraw();
+```diff
+ 		bool CreateSynchronizationWithGPUObject();
+-		/// <summary>
+-		/// 描画の完了待ち。
+-		/// </summary>
+-		void WaitDraw();
+ 		/// <summary>
+ 		/// ID3D12Objectの解放リクエストを処理する。
 ```
 
-同じ4行を、`EndGPUEvent()` の `#endif` のすぐ下、最初の `private:` の上に書きます。
+同じ4行を、`EndGPUEvent()` の `#endif` のすぐ下、最初の `private:` の上に**追加**します。
 
-```cpp
-#endif
-		/// <summary>
-		/// 描画の完了待ち。
-		/// </summary>
-		void WaitDraw();
-	private:
-		/// <summary>
-		/// D3Dデバイスの作成。
+```diff
+ #endif
++		/// <summary>
++		/// 描画の完了待ち。
++		/// </summary>
++		void WaitDraw();
+ 	private:
+ 		/// <summary>
+ 		/// D3Dデバイスの作成。
 ```
+
+関数の中身（`GraphicsEngine.cpp` の `WaitDraw()`）は、もとからある（変えない）。
 
 **確かめ方:** `k2EngineLow` のビルドが通る。
 
 ---
 
 ## 手順4: DebugUI を作り、起動と終了を入れる
+
+**この手順で触るファイル:**
+
+| ファイル | 何をするか |
+|---|---|
+| `k2EngineLow/dbg/DebugUI.h` | 新しく作る（`Init()`・`Finalize()` の宣言） |
+| `k2EngineLow/dbg/DebugUI.cpp` | 新しく作る（`Init()`・`Finalize()` の中身） |
+| [k2EngineLowPreCompile.h](../../../k2EngineLow/k2EngineLowPreCompile.h) | 追加（`#include "dbg/DebugUI.h"` の1行） |
+| [k2EngineLow.cpp](../../../k2EngineLow/k2EngineLow.cpp) | 追加（`Init()` に `DebugUI::Init(hwnd);`、デストラクターに `DebugUI::Finalize();`） |
 
 ImGui を直接さわるのは `DebugUI` だけにします。まずは起動（`Init`）と終了（`Finalize`）だけを作り、エンジンの起動と終了から呼びます。
 
@@ -296,6 +348,14 @@ namespace nsK2EngineLow {
 
 ## 手順5: ウィンドウのメッセージを ImGui に渡す
 
+**この手順で触るファイル:**
+
+| ファイル | 何をするか |
+|---|---|
+| `k2EngineLow/dbg/DebugUI.h` | 追加（`HandleWindowMessage()` の宣言） |
+| `k2EngineLow/dbg/DebugUI.cpp` | 追加（`extern` の宣言1行と、`HandleWindowMessage()` の中身） |
+| [system.cpp](../../../Game/Source/System/system.cpp) | 追加（`MsgProc()` の先頭に `if` を1つ） |
+
 ImGui はキーやマウスの入力を、ウィンドウのメッセージから受け取ります。ゲームのメッセージ処理（`MsgProc`）から `DebugUI` に渡します。
 
 ### 5-1. DebugUI.h に宣言を足す
@@ -351,6 +411,14 @@ LRESULT CALLBACK MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 ---
 
 ## 手順6: 毎フレーム ImGui を受け付けて描く
+
+**この手順で触るファイル:**
+
+| ファイル | 何をするか |
+|---|---|
+| `k2EngineLow/dbg/DebugUI.h` | 追加（`BeginFrame()`・`Render()`・`IsVisible()` の宣言） |
+| `k2EngineLow/dbg/DebugUI.cpp` | 追加（変数2つ、`DrawDebugUIWindow()`、3つの関数の中身） |
+| [k2EngineLow.cpp](../../../k2EngineLow/k2EngineLow.cpp) | 追加（`BeginFrame()` に `DebugUI::BeginFrame();`、`EndFrame()` に `DebugUI::Render();`） |
 
 フレームの始めに ImGui の受け付けを始め（`BeginFrame`）、フレームの終わりにゲームの絵の上へ描きます（`Render`）。始めと終わりの間にゲームの `Update()` が呼ばれるので、ゲームからも ImGui の関数を呼べます。F1 で出す・隠すを切り替え、出しているときは DebugUI 自身の窓を出します。
 
@@ -477,6 +545,14 @@ LRESULT CALLBACK MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 ## 手順7: 窓を出している間はマウスを ImGui に使う
 
+**この手順で触るファイル:**
+
+| ファイル | 何をするか |
+|---|---|
+| [GameCamera.cpp](../../../Game/Source/Objects/GameCamera.cpp) | 追加（`TryGetMouseRotationInput()` に `if` を1つ） |
+| [PlayerInputSource.h](../../../Game/Source/Character/Input/PlayerInputSource.h) | 追加（`CanUseMouse()` の宣言） |
+| [PlayerInputSource.cpp](../../../Game/Source/Character/Input/PlayerInputSource.cpp) | 追加（`CanUseMouse()` の中身）・書き換え（`Update()` の2行の `IsGameWindowActive()` を `CanUseMouse()` に） |
+
 カメラは、毎フレームカーソルを画面の真ん中に戻して、動いた量で向きを変えています（カーソルも隠す）。また、左右クリックで魔法を撃ちます。DebugUI を出している間は、この2つを止めます。
 
 ### 7-1. カメラを回さない
@@ -517,13 +593,17 @@ bool PlayerInputSource::CanUseMouse()
 }
 ```
 
-同じファイルの `Update()` で、左右クリックを見ている2行の `IsGameWindowActive()` を `CanUseMouse()` に変えます。
+同じファイルの `Update()` で、左右クリックを見ている2行を**書き換え**ます。`IsGameWindowActive()` を `CanUseMouse()` に変えます。
 
-```cpp
-	input.fire.Update((CanUseMouse() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
-	// パッド未接続時は右トリガー(RB2)が8キーに割り当てられている。
-	input.subFire.Update((CanUseMouse() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
+```diff
+-	input.fire.Update((IsGameWindowActive() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
++	input.fire.Update((CanUseMouse() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
+ 	// パッド未接続時は右トリガー(RB2)が8キーに割り当てられている。
+-	input.subFire.Update((IsGameWindowActive() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
++	input.subFire.Update((CanUseMouse() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
 ```
+
+キーボードの入力を見ている行は、もとからある（変えない）。
 
 **確かめ方（これで出来上がり）:**
 
