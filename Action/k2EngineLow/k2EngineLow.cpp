@@ -8,6 +8,8 @@ namespace nsK2EngineLow {
 
 	K2EngineLow::~K2EngineLow()
 	{
+		// ImGui はグラフィックエンジンを使っているので、先に終了する。
+		DebugUI::Finalize();
 		// グローバルなアクセスポイントにnullptrを代入。
 		g_graphicsEngine = nullptr;
 		g_gameTime = nullptr;
@@ -37,6 +39,8 @@ namespace nsK2EngineLow {
 				frameBufferHeight,
 				raytracingInitData
 			);
+			// 開発用の画面（ImGui）を起動する。
+			DebugUI::Init(hwnd);
 		}
 		g_gameTime = &m_gameTime;
 		//ゲームパッドの初期化。
@@ -64,6 +68,8 @@ namespace nsK2EngineLow {
 		m_fpsLimitter.BeginFrame();
 		m_gameTime.BeginMeasurement();
 		m_graphicsEngine->BeginRender();
+		// ImGui の受け付けを始める。ここから EndFrame() までの間、ゲームの Update で ImGui の関数を呼べる。
+		DebugUI::BeginFrame();
 		EffectEngine::GetInstance()->BeginFrame();
 		for (auto& pad : m_pad) {
 			pad.BeginFrame();
@@ -88,6 +94,8 @@ namespace nsK2EngineLow {
 //		m_fpsFont->Draw(text, fpsPosition, { 1.0f, 1.0f, 1.0f, 1.0f }, 0.0f, fpsScale, { 0.0f, 1.0f });
 //		m_fpsFont->End(g_graphicsEngine->GetRenderContext());
 //#endif
+		// ImGui の画面を、ゲームの絵の上に描く。
+		DebugUI::Render();
 		m_graphicsEngine->EndRender();
 #ifdef USE_FPS_LIMITTER
 		m_fpsLimitter.Wait();

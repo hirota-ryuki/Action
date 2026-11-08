@@ -1,103 +1,239 @@
 ﻿#include "stdafx.h"
 #include "PlayerConfig.h"
+#include "System/JsonFile.h"
+
+// プレイヤーの調整値を Assets/data/player.json から読んで、各部品の設定の構造体に詰める。
+// 数値の意味・決めた理由のコメントは player.json の方に書いてある。
+// ここに書いてある値は、JSON にキーがないときの既定値（player.json を作ったときと同じ値）。
+// JSON のキー名や入れ子の形を知っているのは、このファイルだけにする（Player は JSON を知らない）。
 
 namespace
 {
-	const Vector3 SWORD_OFFSET = Vector3(5.0f, -3.0f, 10.0f);   // 右手ボーンローカル空間での剣の位置オフセット。
-	const Vector3 SWORD_SCALE = Vector3(1.35f, 1.35f, 1.35f);
-	constexpr float SWORD_ROT_OFFSET_X = 0.0f;
-	constexpr float SWORD_ROT_OFFSET_Y = 0.0f;
-	constexpr float SWORD_ROT_OFFSET_Z = -90.0f; // 剣モデルのZ軸が手の向きと90度ずれているため補正。
-	constexpr float HIT_RADIUS = 45.0f;        // 弾に当たる球の半径。
-	constexpr float HIT_CENTER_HEIGHT = 70.0f;  // 足元から当たり判定の中心までの高さ（胸のあたり）。
+	using Json = JsonFile::Json;
+
+	constexpr const char* JSON_PATH = "player.json";
+	// アニメーションのコマ数を秒にするときの値。クリップはどれも 30fps で作っている。
+	constexpr float ANIM_FPS = 30.0f;
+
+	// player.json は最初に呼ばれたときに1回だけ読み、あとは取っておいたものを使う。
+	const Json& GetJson()
+	{
+		static const Json json = JsonFile::Load(JSON_PATH);
+		return json;
+	}
+
+	void Log(const std::string& message)
+	{
+		const std::string line = "[PlayerConfig] " + message + "\n";
+		OutputDebugStringA(line.c_str());
+	}
+
+	// 入れ子の1段（"move" など）を取り出す。ないときは空の {} を返すので、中のキーはどれも既定値になる。
+	Json GetSection(const char* name)
+	{
+		const Json& json = GetJson();
+		auto it = json.find(name);
+		if (it == json.end() || !it->is_object()) {
+			Log(std::string(JSON_PATH) + " に \"" + name + "\" がないので、既定値を使います。");
+			return Json::object();
+		}
+		return *it;
+	}
+
+	// section の key を読む。ないとき・型が違うときは defaultValue を返し、出力ウィンドウに出す（書き間違いに気づくため）。
+	template <class T>
+	T Read(const Json& section, const char* sectionName, const char* key, T defaultValue)
+	{
+		auto it = section.find(key);
+		if (it == section.end()) {
+			Log(std::string(JSON_PATH) + " に " + sectionName + "." + key + " がないので、既定値を使います。");
+			return defaultValue;
+		}
+		// 数値のところに文字列が書いてあるなど、型が違うときも既定値にする（落とさない）。
+		try {
+			return it->get<T>();
+		}
+		catch (const nlohmann::json::exception&) {
+			Log(std::string(JSON_PATH) + " の " + sectionName + "." + key + " の型が違うので、既定値を使います。");
+			return defaultValue;
+		}
+	}
+
+	// コマ数で書いてある値を読み、秒にして返す。
+	float ReadFramesAsSeconds(const Json& section, const char* sectionName, const char* key, float defaultFrames)
+	{
+		return Read(section, sectionName, key, defaultFrames) / ANIM_FPS;
+	}
+
+	// [x, y, z] の形の値を Vector3 で読む。
+	Vector3 ReadVector3(const Json& section, const char* sectionName, const char* key, const Vector3& defaultValue)
+	{
+		const std::vector<float> values = Read(section, sectionName, key, std::vector<float>{});
+		if (values.size() != 3) {
+			if (!values.empty()) {
+				Log(std::string(JSON_PATH) + " の " + sectionName + "." + key + " は [x, y, z] の3つで書いてください。既定値を使います。");
+			}
+			return defaultValue;
+		}
+		return Vector3(values[0], values[1], values[2]);
+	}
 
 	CharacterMoveSettings MakeMoveSettings()
 	{
+		const Json section = GetSection("move");
 		CharacterMoveSettings settings;
-		// 歩きは原神のような落ち着いた速さにする（Walk アニメーションを約1.3倍で再生して足をそろえる）。
-		settings.walkSpeed = 170.0f;
-		settings.runSpeedMultiplier = 480.0f / 170.0f;  // 走る速さは 480 のまま変えない。
-		settings.jumpSpeed = 400.0f;
-		settings.gravity = 980.0f;
-		settings.capsuleRadius = 20.0f;
-		settings.capsuleHeight = 100.0f;
+		settings.walkSpeed = Read(section, "move", "walkSpeed", 170.0f);
+		// CharacterMover は「歩く速さの何倍で走るか」で持つので、走る速さ ÷ 歩く速さにする。
+		const float runSpeed = Read(section, "move", "runSpeed", 480.0f);
+		settings.runSpeedMultiplier = settings.walkSpeed > 0.0f ? runSpeed / settings.walkSpeed : 1.0f;
+		settings.jumpSpeed = Read(section, "move", "jumpSpeed", 400.0f);
+		settings.gravity = Read(section, "move", "gravity", 980.0f);
+		settings.capsuleRadius = Read(section, "move", "capsuleRadius", 20.0f);
+		settings.capsuleHeight = Read(section, "move", "capsuleHeight", 100.0f);
 		return settings;
+	}
+
+	// ダッシュの数値を settings に入れる。
+	void ReadDashSettings(PlayerStateSettings& settings)
+	{
+		const Json section = GetSection("dash");
+		settings.dashDistance = Read(section, "dash", "distance", 390.0f);
+		// distance を、蹴って低く滑る区間（kickFrames コマ）で進む速さにする。
+		const float kickSeconds = ReadFramesAsSeconds(section, "dash", "kickFrames", 7.0f);
+		settings.dashSpeed = kickSeconds > 0.0f ? settings.dashDistance / kickSeconds : 0.0f;
+		settings.dashEndSpeed = Read(section, "dash", "endSpeed", 480.0f);
+		settings.dashAnimSpeed = Read(section, "dash", "animSpeed", 1.0f);
+		settings.dashAnimBlendSeconds = Read(section, "dash", "animBlendSeconds", 0.05f);
+		settings.dashCrouchSeconds = ReadFramesAsSeconds(section, "dash", "crouchFrames", 4.0f);
+		settings.dashCrouchBlendSeconds = Read(section, "dash", "crouchBlendSeconds", 0.1f);
+		settings.dashCrouchSpeed = Read(section, "dash", "crouchSpeed", 200.0f);
+		settings.dashKickStartTime = ReadFramesAsSeconds(section, "dash", "kickStartFrame", 4.0f);
+		settings.dashLandSeconds = ReadFramesAsSeconds(section, "dash", "landFrames", 5.0f);
+		settings.dashExitBlendSeconds = Read(section, "dash", "exitBlendSeconds", 0.15f);
+		settings.dashToRunStartTime = ReadFramesAsSeconds(section, "dash", "toRunStartFrame", 5.0f);
+		settings.dashToWalkStartTime = ReadFramesAsSeconds(section, "dash", "toWalkStartFrame", 0.0f);
+		settings.dashLandIntoRun = Read(section, "dash", "landIntoRun", true);
+		settings.dashCanChain = Read(section, "dash", "canChain", false);
+		settings.dashEndWithStop = Read(section, "dash", "endWithStop", true);
+		settings.dashKeepRun = Read(section, "dash", "keepRun", true);
+	}
+
+	// 走りから止まる数値を settings に入れる。
+	void ReadStopSettings(PlayerStateSettings& settings)
+	{
+		const Json section = GetSection("stop");
+		settings.stopSeconds = ReadFramesAsSeconds(section, "stop", "frames", 30.0f);
+		settings.stopSlideSeconds = ReadFramesAsSeconds(section, "stop", "slideFrames", 14.0f);
+		settings.stopBlendSeconds = Read(section, "stop", "blendSeconds", 0.1f);
+		settings.stopExitBlendSeconds = Read(section, "stop", "exitBlendSeconds", 0.3f);
+		settings.stopAfterRunSeconds = Read(section, "stop", "afterRunSeconds", 0.2f);
+		settings.runAnimSeconds = ReadFramesAsSeconds(section, "stop", "runAnimFrames", 14.0f);
+		settings.stopLRunTime = ReadFramesAsSeconds(section, "stop", "stopLRunFrame", 9.0f);
+		settings.stopRRunTime = ReadFramesAsSeconds(section, "stop", "stopRRunFrame", 2.0f);
 	}
 
 	PlayerStateSettings BuildStateSettings()
 	{
 		PlayerStateSettings settings;
-		settings.dashDistance = 390.0f;  // ダッシュスキルの総移動距離（はじめ 300、1.3倍にした）。
-		// ダッシュのクリップ（原神の動画の 33.41〜33.94秒、30fps・17コマ）の区間に合わせる。
-		//   しゃがむ 0〜4コマ目（4コマ）、蹴って低く滑る 4〜11コマ目（7コマ）、着地 11〜16コマ目（5コマ）。コマは先頭を 0 と数える。
-		settings.dashSpeed = 390.0f / (7.0f / 30.0f); // 390 を 7コマ（約0.233秒）で進む（平均 約1671）。
-		settings.dashEndSpeed = 480.0f;  // 終わりは走る速さ。蹴った瞬間は約2860 になる。
-		settings.dashAnimSpeed = 1.0f;   // 動画と同じ速さで流す。
-		settings.dashAnimBlendSeconds = 0.05f;
-		settings.dashCrouchSeconds = 4.0f / 30.0f;
-		settings.dashCrouchBlendSeconds = 0.1f;
-		settings.dashCrouchSpeed = 200.0f;     // 入った勢いで少し進み、止まってから飛び出す。
-		settings.dashKickStartTime = 4.0f / 30.0f;
-		settings.dashLandSeconds = 5.0f / 30.0f;
-		settings.dashExitBlendSeconds = 0.15f; // ダッシュの最後と走りの始めは同じ形なので、短くてよい。
-		// ダッシュのあとの走り・歩きの始め。ダッシュの最後（原神の動画の 33.94秒）と同じ足の形のところ。
-		// Run（原神の走りの1周期、30fps・15コマ）は 5コマ目、Walk は先頭（0コマ目）。
-		settings.dashToRunStartTime = 5.0f / 30.0f;
-		settings.dashToWalkStartTime = 0.0f;
-		settings.dashLandIntoRun = true; // 走るなら、着地（5コマ）の間にダッシュから走りへ補間する。
-		settings.dashCanChain = false;   // 着地まで終わるまで入力を受け付けない（連打で続けて出さない）。
-		settings.dashEndWithStop = true; // ダッシュのあと入力がなければ、勢いで滑って止まる。
-		settings.dashKeepRun = true;     // ダッシュのあとは、移動の入力を離すまで走り続ける（ちょこちょこ歩きに戻らない）。
-		// 走りから止まる。StopL / StopR（原神の動画の 29.78〜30.89秒、30fps・34コマ）に合わせる。
-		//   0〜4コマ目 前の足を着いて腰を落とす、4〜14コマ目 突っ張って低く滑る、14〜33コマ目 起き上がって立つ。
-		settings.stopSeconds = 30.0f / 30.0f;      // 立ち上がったところ（Stop の 30コマ目）で Idle へ移る。
-		settings.stopSlideSeconds = 14.0f / 30.0f; // 走る速さ（480）から 0.47秒で止まる。約112 滑る。
-		settings.stopBlendSeconds = 0.1f;
-		settings.stopExitBlendSeconds = 0.3f;
-		settings.stopAfterRunSeconds = 0.2f;       // 左Shift を移動キーより 0.2秒まで先に離しても滑って止まる。
-		// Run（15コマ、最後は最初と同じ）で、前の足が地面に着くところ。右足は Run の 2コマ目、左足は 9コマ目。
-		settings.runAnimSeconds = 14.0f / 30.0f;
-		settings.stopLRunTime = 9.0f / 30.0f;
-		settings.stopRRunTime = 2.0f / 30.0f;
-		settings.moveThreshold = 0.1f;   // 移動入力がこれより小さければ立ち止まる。
-		settings.animBlendSeconds = 0.2f;
-		// Walk.fbx（Mixamo の Female Walk）の足が地面を送る速さ。UE で足のボーンを測った 115/秒 × モデルの大きさ 1.128。
-		settings.walkAnimMoveSpeed = 130.0f;
+		ReadDashSettings(settings);
+		ReadStopSettings(settings);
+
+		const Json move = GetSection("move");
+		settings.moveThreshold = Read(move, "move", "moveThreshold", 0.1f);
+
+		const Json animation = GetSection("animation");
+		settings.animBlendSeconds = Read(animation, "animation", "blendSeconds", 0.2f);
+		settings.walkAnimMoveSpeed = Read(animation, "animation", "walkMoveSpeed", 130.0f);
 		return settings;
+	}
+
+	// JSON のクリップの名前と、クリップの番号・既定値の対応表。番号の順に並べる。
+	struct ClipEntry
+	{
+		const char* name;
+		EnPlayerAnimClip clip;
+		AnimClipDesc defaultDesc;
+	};
+	const ClipEntry CLIP_TABLE[] = {
+		{ "Idle",  enPlayerAnimClip_Idle,  { "Assets/modelData/player/Animation/Idle.fbx",  true } },
+		{ "Walk",  enPlayerAnimClip_Walk,  { "Assets/modelData/player/Animation/Walk.fbx",  true } },
+		{ "Run",   enPlayerAnimClip_Run,   { "Assets/modelData/player/Animation/Run.fbx",   true } },
+		{ "Jump",  enPlayerAnimClip_Jump,  { "Assets/modelData/player/Animation/Run.fbx",   true } },
+		{ "Dash",  enPlayerAnimClip_Dash,  { "Assets/modelData/player/Animation/Dash.fbx",  false } },
+		{ "StopL", enPlayerAnimClip_StopL, { "Assets/modelData/player/Animation/StopL.fbx", false } },
+		{ "StopR", enPlayerAnimClip_StopR, { "Assets/modelData/player/Animation/StopR.fbx", false } },
+	};
+	static_assert(sizeof(CLIP_TABLE) / sizeof(CLIP_TABLE[0]) == enPlayerAnimClip_Num,
+		"EnPlayerAnimClip を足したら、CLIP_TABLE と player.json の animation.clips にも足してください。");
+
+	// "Z" / "Y" を EnModelUpAxis にする。
+	EnModelUpAxis ReadUpAxis(const Json& section, EnModelUpAxis defaultValue)
+	{
+		const std::string defaultName = defaultValue == enModelUpAxisZ ? "Z" : "Y";
+		const std::string name = Read(section, "model", "upAxis", defaultName);
+		if (name == "Z") {
+			return enModelUpAxisZ;
+		}
+		if (name == "Y") {
+			return enModelUpAxisY;
+		}
+		Log(std::string(JSON_PATH) + " の model.upAxis は \"Y\" か \"Z\" で書いてください。既定値を使います。");
+		return defaultValue;
+	}
+
+	std::vector<AnimClipDesc> MakeClips()
+	{
+		const Json animation = GetSection("animation");
+		const Json clips = Read(animation, "animation", "clips", Json::object());
+
+		std::vector<AnimClipDesc> result(enPlayerAnimClip_Num);
+		for (const ClipEntry& entry : CLIP_TABLE) {
+			AnimClipDesc desc = entry.defaultDesc;
+			auto it = clips.find(entry.name);
+			if (it == clips.end() || !it->is_object()) {
+				Log(std::string(JSON_PATH) + " の animation.clips に \"" + entry.name + "\" がないので、既定のパスを使います。");
+			}
+			else {
+				const std::string sectionName = std::string("animation.clips.") + entry.name;
+				desc.path = Read(*it, sectionName.c_str(), "path", desc.path);
+				desc.isLoop = Read(*it, sectionName.c_str(), "loop", desc.isLoop);
+			}
+			result[entry.clip] = desc;
+		}
+
+		// 対応表にない名前（書き間違いなど）は使われないので、気づけるように出す。
+		for (auto it = clips.begin(); it != clips.end(); ++it) {
+			bool known = false;
+			for (const ClipEntry& entry : CLIP_TABLE) {
+				if (it.key() == entry.name) {
+					known = true;
+					break;
+				}
+			}
+			if (!known) {
+				Log(std::string(JSON_PATH) + " の animation.clips の \"" + it.key() + "\" は、対応するクリップがないので使いません。");
+			}
+		}
+		return result;
 	}
 
 	CharacterModelDesc MakeModelDesc()
 	{
+		const Json section = GetSection("model");
 		CharacterModelDesc desc;
-		// 3ds Max(Z-up)で作られているので Z を上にして起こす（Yのままだと仰向けに倒れる）。
-		desc.modelPath = "Assets/modelData/player/Model/SK_Player.FBX";
-		desc.upAxis = enModelUpAxisZ;
-		// UnityChan(Enemy)の2倍の高さ(1.692)を狙った後、実機で大きすぎたのでその2/3にした。
-		desc.scale = 1.128f;
-		// Idle・Walk は Mixamo のモーションを UE で SK_Player にリターゲットしたもの。
-		// Jump はまだ SK_Player 用が無いので、暫定で run を入れておく。
-		// Run・Dash は、原神の動画から MediaPipe で関節の位置を読み取り、その角度で SK_Player のポーズを作ったもの
-		// （tools/UnrealScripts/dash_roto.json）。Run は走りの1周期（34.25〜34.72秒）。
-		const AnimClipDesc run = { "Assets/modelData/player/Animation/Run.fbx", true };
-		desc.clips.resize(enPlayerAnimClip_Num);
-		desc.clips[enPlayerAnimClip_Idle] = { "Assets/modelData/player/Animation/Idle.fbx", true };
-		desc.clips[enPlayerAnimClip_Walk] = { "Assets/modelData/player/Animation/Walk.fbx", true };
-		desc.clips[enPlayerAnimClip_Run] = run;
-		desc.clips[enPlayerAnimClip_Jump] = run;
-		// Dash は「しゃがむ → 左足で蹴って低く滑る → 着地」の通し（33.41〜33.94秒）。原神と同じく、蹴る足はいつも同じ。
-		desc.clips[enPlayerAnimClip_Dash] = { "Assets/modelData/player/Animation/Dash.fbx", false };
-		// StopL・StopR は走りから止まる「前の足を突っ張って滑る → 起き上がる」の通し（29.78〜30.89秒、L・R は突っ張る足。
-		// tools/UnrealScripts/stop_roto.json）。
-		desc.clips[enPlayerAnimClip_StopL] = { "Assets/modelData/player/Animation/StopL.fbx", false };
-		desc.clips[enPlayerAnimClip_StopR] = { "Assets/modelData/player/Animation/StopR.fbx", false };
+		desc.modelPath = Read(section, "model", "path", std::string("Assets/modelData/player/Model/SK_Player.FBX"));
+		desc.upAxis = ReadUpAxis(section, enModelUpAxisZ);
+		desc.scale = Read(section, "model", "scale", 1.128f);
+		desc.clips = MakeClips();
 		return desc;
 	}
 
 	MagicCaster::Settings MakeCasterSettings()
 	{
+		const Json section = GetSection("caster");
 		MagicCaster::Settings settings;
-		settings.castHeight = 140.0f;   // 三人称時、足元からこの高さで撃つ（胸のあたり）。
-		settings.castForward = 60.0f;  // 自分のカプセル(半径20)に当たらないよう前に出して撃つ。
+		settings.castHeight = Read(section, "caster", "height", 140.0f);
+		settings.castForward = Read(section, "caster", "forward", 60.0f);
 		return settings;
 	}
 }
@@ -108,9 +244,12 @@ CharacterConfig PlayerConfig::MakeCharacterConfig()
 	config.move = MakeMoveSettings();
 	config.model = MakeModelDesc();
 	config.caster = MakeCasterSettings();
-	config.hitRadius = HIT_RADIUS;
-	config.hitCenterHeight = HIT_CENTER_HEIGHT;
-	config.maxHp = 100.0f;
+
+	const Json hit = GetSection("hit");
+	config.hitRadius = Read(hit, "hit", "radius", 45.0f);
+	config.hitCenterHeight = Read(hit, "hit", "centerHeight", 70.0f);
+
+	config.maxHp = Read(GetJson(), "(先頭)", "maxHp", 100.0f);
 	return config;
 }
 
@@ -121,13 +260,15 @@ PlayerStateSettings PlayerConfig::MakeStateSettings()
 
 WeaponAttachmentDesc PlayerConfig::MakeSwordDesc()
 {
+	const Json section = GetSection("sword");
 	WeaponAttachmentDesc desc;
-	desc.modelPath = "Assets/modelData/weapon/sowrd/sowrd.tkm";
+	desc.modelPath = Read(section, "sword", "path", std::string("Assets/modelData/weapon/sowrd/sowrd.tkm"));
 	// 右手ボーンの名前はモデルのセットアップによって異なるので、2つの名前で探す。
+	// ボーンの名前はモデルの作りで決まるので、JSON には出さない。
 	desc.boneNames = { L"Character1_RightHand", L"J_R_ForeArm_00_tw" };
-	desc.offset = SWORD_OFFSET;
-	desc.rotationOffsetDeg = Vector3(SWORD_ROT_OFFSET_X, SWORD_ROT_OFFSET_Y, SWORD_ROT_OFFSET_Z);
-	desc.scale = SWORD_SCALE;
-	desc.isShadowCaster = true;
+	desc.offset = ReadVector3(section, "sword", "offset", Vector3(5.0f, -3.0f, 10.0f));
+	desc.rotationOffsetDeg = ReadVector3(section, "sword", "rotationOffsetDeg", Vector3(0.0f, 0.0f, -90.0f));
+	desc.scale = ReadVector3(section, "sword", "scale", Vector3(1.35f, 1.35f, 1.35f));
+	desc.isShadowCaster = Read(section, "sword", "castShadow", true);
 	return desc;
 }

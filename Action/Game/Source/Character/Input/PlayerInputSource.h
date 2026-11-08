@@ -21,6 +21,8 @@ public:
 private:
 	// ゲームのウィンドウが前面にあるか。マウスは他のウィンドウを操作中に反応させない。
 	static bool IsGameWindowActive();
+	// マウスのボタンをゲームの操作に使ってよいか（ウィンドウが前にあり、開発用の画面を出していない）。
+	static bool CanUseMouse();
 	static bool IsKeyPressed(int virtualKey);
 
 	int m_padNo = 0;

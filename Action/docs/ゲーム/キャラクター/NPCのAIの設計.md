@@ -3,6 +3,7 @@
 作成日: 2026-11-07（[入力の設計](入力の設計.md) から分けた）
 対象: [NpcInputSource.cpp](../../../Game/Source/Character/Input/NpcInputSource.cpp)
 経緯: [入力の経緯](入力の経緯.md)
+手順: [NPCのAIの手順](NPCのAIの手順.md)（何もない状態から、どのファイルに何を足すか）
 
 NPC の AI は、プレイヤーと同じ `CharacterInput` を作る入力元（`NpcInputSource`）です。
 

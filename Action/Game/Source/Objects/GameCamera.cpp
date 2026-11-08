@@ -256,6 +256,12 @@ bool GameCamera::TryGetMouseRotationInput(float& yawDeg, float& pitchDeg)
 		return false;
 	}
 
+	// 開発用の画面（ImGui）を出している間は、マウスを ImGui に使うので、カメラは回さない。
+	if (DebugUI::IsVisible()) {
+		EndMouseLook();
+		return false;
+	}
+
 	RECT clientRect;
 	if (!GetClientRect(g_hWnd, &clientRect)) {
 		EndMouseLook();
