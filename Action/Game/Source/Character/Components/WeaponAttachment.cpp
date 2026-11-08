@@ -23,7 +23,7 @@ void WeaponAttachment::Init(ModelRender& ownerModel, const WeaponAttachmentDesc&
 		}
 	}
 
-	m_model.Init(desc.modelPath);
+	m_model.Init(desc.modelPath.c_str());
 	m_model.SetShadowCasterFlag(desc.isShadowCaster);
 	Update();
 }
