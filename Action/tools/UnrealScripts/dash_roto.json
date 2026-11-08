@@ -40,6 +40,10 @@
     "J_Bip_L_UpperArm": -8.0,
     "J_Bip_R_UpperArm": -25.0
    },
+   "splay_deg": {
+    "J_Bip_L_LowerArm": 25.0,
+    "J_Bip_R_LowerArm": 42.0
+   },
    "frames": {
     "start": 0,
     "count": 1,
