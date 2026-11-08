@@ -201,6 +201,30 @@
       <Filter>physics</Filter>
     </ClCompile>
     <ClCompile Include="k2EngineLow.cpp" />
+    <ClCompile Include="dbg\DebugUI.cpp">
+      <Filter>dbg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exlib\imgui\imgui.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exlib\imgui\imgui_demo.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exlib\imgui\imgui_draw.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exlib\imgui\imgui_tables.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exlib\imgui\imgui_widgets.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exlib\imgui\imgui_impl_dx12.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exlib\imgui\imgui_impl_win32.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
     <ClCompile Include="online\SyncOnlineTwoPlayerMatchEngine.cpp">
       <Filter>online</Filter>
     </ClCompile>
@@ -478,6 +502,33 @@
       <Filter>physics</Filter>
     </ClInclude>
     <ClInclude Include="k2EngineLow.h" />
+    <ClInclude Include="dbg\DebugUI.h">
+      <Filter>dbg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\exlib\imgui\imgui.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\exlib\imgui\imgui_internal.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\exlib\imgui\imconfig.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\exlib\imgui\imstb_rectpack.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\exlib\imgui\imstb_textedit.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\exlib\imgui\imstb_truetype.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\exlib\imgui\imgui_impl_dx12.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\exlib\imgui\imgui_impl_win32.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
     <ClInclude Include="dbg\MyLog.h">
       <Filter>dbg</Filter>
     </ClInclude>
@@ -533,6 +584,9 @@
     </Filter>
     <Filter Include="graphics\raytracing">
       <UniqueIdentifier>{0a40c3fb-299b-4626-b558-3a049fb72c77}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="imgui">
+      <UniqueIdentifier>{3f6c2a8e-5d41-4b7a-9e0c-1a2b3c4d5e6f}</UniqueIdentifier>
     </Filter>
     <Filter Include="dbg">
       <UniqueIdentifier>{79cb2e01-6726-423e-8c6d-8f654d2abb7e}</UniqueIdentifier>
