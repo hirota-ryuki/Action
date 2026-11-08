@@ -54,13 +54,6 @@ float SpcFresnel(float f0, float u)
     return f0 + (1-f0) * pow(1-u, 5);
 }
 
-/// <summary>
-/// クックトランスモデルの鏡面反射を計算
-/// </summary>
-/// <param name="L">光源に向かうベクトル</param>
-/// <param name="V">視点に向かうベクトル</param>
-/// <param name="N">法線ベクトル</param>
-/// <param name="smooth">滑らかさ</param>
 // 鏡面反射の調整値。
 static const float SPECULAR_F0 = 0.04f;             // 正面から見たときの反射率。金属でない物（草・土・岩・肌・布）はおよそ4%。
 static const float SPECULAR_MIN_ROUGHNESS = 0.3f;   // 粗さの下限。0に近いとハイライトが点になり、明るさが跳ね上がる。
