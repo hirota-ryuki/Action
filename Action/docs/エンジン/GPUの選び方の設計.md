@@ -3,6 +3,7 @@
 作成日: 2026-11-08
 対象: [GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) の `GraphicsEngine::CreateD3DDevice()`
 経緯: [GPUの選び方の経緯](GPUの選び方の経緯.md)
+手順: [GPUの選び方の手順](GPUの選び方の手順.md)（どのファイルに何を足し、何を書き換えたか）
 
 PC に GPU が複数あるとき、どれで描くかを決める仕組みです。ゲームが急に重くなったとき、ノート PC や CPU 内蔵の GPU がある PC で動かすときに読んでください。
 

@@ -233,3 +233,15 @@ m_modelRender.Update();
 - `Action\k2EngineLow\k2EngineLow.vcxproj` / `.vcxproj.filters`
 - `Action\Game\Source\Objects\Player.cpp`(検証用に一時変更、6章参照)
 - `Action\Game\Assets\modelData\player\Model\SK_Player.FBX` / `MaterialTextureTable.txt` / `MaterialTextureTable_Simple.txt` / `Textures\*.png`(検証に使用した実アセット、ユーザー提供)
+
+---
+
+## 2026-11-08 手順書を書いた
+
+FBX を tkm・tks・tka に変換する仕組み（#13・#16 と、#19 の頂点の統合）を、[モデル読み込みの手順](モデル読み込みの手順.md) にした。ufbx を置く → tkm を書き出す口 → 静的なメッシュ → ModelRender から呼ぶ → 頂点の統合 → テクスチャ → マテリアル → スケルトン → アニメーション、の9手順に分けた。手順書のコードは、今のコードの行を手順ごとに割り当てて作ったので、今のコードと一字一句同じ。頂点の統合の前の2行（角ごとに頂点を足す処理）は、#19 の前のコードと同じにした。
+
+どう確かめたか: 作業用フォルダー（main を `git worktree` で取り出したもの）で、手順の前から手順9まで10の時点のソースを書き出し、そのたびにビルドした。途中の時点は、ゲームの `CharacterModel` がこの仕組みを使っていて Game がビルドできないので、k2EngineLow と k2Engine だけをビルドした。最後の時点はソリューション全体をビルドした。すべて通り、最後は main と差がなかった。
+
+- はじめ、テクスチャの関数が使う `ToStdString()` をマテリアルの手順に入れていて、手順6でビルドが通らなかった。手順6に移して直した。
+- 手順の前の形を、#13 の前のコミットと比べた。`TkmFile.h`・`TksFile`・`TkaFile`・`k2EngineLow.vcxproj`・`.filters` は同じ。`ModelRender.cpp` は、あとの #17 で足した乗算色の3行（FBX とは関係ないので、手順書では変えない）と、#13 で行末のタブを消した空行1つが違う。
+- 画面での確かめ（変換されたモデル・テクスチャ・アニメーションの見た目）はしていない。コードは main と同じ。
