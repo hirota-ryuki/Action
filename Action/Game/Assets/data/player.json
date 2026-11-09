@@ -24,7 +24,10 @@
 		"gravity": 980.0,
 		"capsuleRadius": 20.0,
 		"capsuleHeight": 100.0,
-		"turnSpeedDeg": 360.0, // 向きを変える速さ（度/秒）。180° 振り向くのに 0.5秒。向いている方へ進むので、曲がるときは弧を描く。0 ならすぐ向き、入力の方へすぐ進む。
+		"turnSpeedDeg": 540.0,        // 向きを変える速さ（度/秒）。180° 振り向くのに 0.33秒。0 ならすぐ向く。
+		"turnInPlaceAngleDeg": 45.0,  // 入力の方向が体の向きからこれより離れていたら、進まずにその場で回る。
+		"acceleration": 2400.0,       // 速くなるときの加速度（cm/秒²）。走る速さ 480 まで 0.2秒（アニメーションの切り替えと同じ）。
+		"deceleration": 3000.0,       // 遅くなるときの減速度（cm/秒²）。走りから止まるときは止まるステートが自分で減速する。
 		"moveThreshold": 0.1 // 移動入力がこれより小さければ立ち止まる。
 	},
 
@@ -88,7 +91,7 @@
 		"enabled": true,
 		"legRadius": 8.0, // 太もも・すねの太さ。揺れ物の先がこれより脚に近づかない（アニメーションの形がもとから近いときはそこまで）。
 		"groups": {
-			"hair":      { "match": "Hair",      "frequency": 2.5, "dampingRatio": 0.35, "maxAngleDeg": 40.0 },
+			"hair":      { "match": "Hair",      "frequency": 3.5, "dampingRatio": 0.6,  "maxAngleDeg": 20.0 }, // 2.5・0.35・40 では揺れすぎた。
 			"coatSkirt": { "match": "CoatSkirt", "frequency": 2.5, "dampingRatio": 0.4,  "maxAngleDeg": 35.0 },
 			"skirt":     { "match": "Skirt",     "frequency": 3.0, "dampingRatio": 0.5,  "maxAngleDeg": 25.0 },
 			"bust":      { "match": "Bust",      "frequency": 4.0, "dampingRatio": 0.25, "maxAngleDeg": 8.0 }

@@ -12,6 +12,9 @@ struct CharacterMoveSettings
 	float capsuleRadius = 20.0f;
 	float capsuleHeight = 100.0f;
 	float turnSpeedDeg = 0.0f;        // 移動中に向きを変える速さ（度/秒）。0ならすぐその方向を向く。
+	float turnInPlaceAngleDeg = 0.0f; // 入力の方向が体の向きからこれより離れていたら、進まずにその場で回る。0ならいつも進む。
+	float acceleration = 0.0f;        // 速くなるときの加速度（cm/秒²）。0なら一瞬でその速さになる。
+	float deceleration = 0.0f;        // 遅くなるときの減速度（cm/秒²）。0なら acceleration と同じ。
 };
 
 // CharacterController を包み、移動・ジャンプ・重力・向きを処理する。
@@ -38,6 +41,8 @@ public:
 	void FaceTo(const Vector3& direction);
 	// 水平方向の向きを、turnSpeedDeg の速さで direction へ近づける（近い回り方で回る）。turnSpeedDeg が 0 なら FaceTo() と同じ。
 	void TurnTo(const Vector3& direction, float deltaTime);
+	// 今の水平の速度を、acceleration・deceleration の速さで targetVelocity へ近づけた値を返す。
+	Vector3 ApproachVelocity(const Vector3& targetVelocity, float deltaTime) const;
 	// 速度を打ち消して止める（リスポーン時など）。
 	void Stop();
 

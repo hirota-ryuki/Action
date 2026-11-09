@@ -65,16 +65,22 @@ void CharacterMover::MoveByInput(const CharacterInput& input, float speed, float
 	}
 	else if (horizontalVelocity.LengthSq() > MOVE_DEAD_ZONE_SQ) {
 		TurnTo(horizontalVelocity, deltaTime);
-		// 回りながら向いている方へ進む（人が曲がるときのように弧を描く）。入力の方向へすぐ進むと、体だけ遅れて横や後ろへ滑って見える。
-		if (m_settings.turnSpeedDeg > 0.0f) {
+		// 入力の方向が体の向きから大きく離れているあいだは、その場で回る（向き終わってから進む）。
+		// 回りながら進むと、体だけ遅れて横や後ろへ滑ったり、大回りしたりして見える。
+		if (m_settings.turnInPlaceAngleDeg > 0.0f) {
 			Vector3 forward = GetForward();
 			forward.y = 0.0f;
 			forward.Normalize();
-			horizontalVelocity = forward * horizontalVelocity.Length();
+			Vector3 inputDirection = horizontalVelocity;
+			inputDirection.Normalize();
+			if (forward.Dot(inputDirection) < cosf(Math::DegToRad(m_settings.turnInPlaceAngleDeg))) {
+				horizontalVelocity = Vector3::Zero;
+			}
 		}
 	}
 
-	Move(horizontalVelocity, deltaTime);
+	// 速さは一瞬で変えず、加速・減速の速さで近づける。
+	Move(ApproachVelocity(horizontalVelocity, deltaTime), deltaTime);
 }
 
 void CharacterMover::Move(const Vector3& horizontalVelocity, float deltaTime)
@@ -112,6 +118,25 @@ void CharacterMover::FaceTo(const Vector3& direction)
 		return;
 	}
 	m_rotation.SetRotationYFromDirectionXZ(horizontal);
+}
+
+Vector3 CharacterMover::ApproachVelocity(const Vector3& targetVelocity, float deltaTime) const
+{
+	if (m_settings.acceleration <= 0.0f) {
+		return targetVelocity;
+	}
+	const Vector3 current(m_moveSpeed.x, 0.0f, m_moveSpeed.z);
+	Vector3 diff = targetVelocity - current;
+	const float diffLength = diff.Length();
+	// 速くなるときは acceleration、遅くなるときは deceleration（0 なら acceleration）。
+	const bool isSpeedingUp = targetVelocity.LengthSq() >= current.LengthSq();
+	const float rate = (isSpeedingUp || m_settings.deceleration <= 0.0f) ? m_settings.acceleration : m_settings.deceleration;
+	const float maxStep = rate * deltaTime;
+	if (diffLength <= maxStep) {
+		return targetVelocity;
+	}
+	diff *= maxStep / diffLength;
+	return current + diff;
 }
 
 void CharacterMover::TurnTo(const Vector3& direction, float deltaTime)
