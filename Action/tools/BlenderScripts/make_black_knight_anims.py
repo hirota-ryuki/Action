@@ -1,10 +1,11 @@
-# 黒騎士のアニメーション（Idle・Run・Attack）を作って FBX に書き出す。
+# 黒騎士のアニメーション（Idle・Walk・Attack）を作って FBX に書き出す。
 #
 # 使い方:
 #   blender -b --python make_black_knight_anims.py -- <BlackKnight.fbx> <出力フォルダ> [--preview <プレビューのフォルダ>]
 #
 # BlackKnight.fbx（make_black_knight.py で作ったもの）の骨格にポーズを付けて、
-# 出力フォルダに Idle.fbx・Run.fbx・Attack.fbx を書き出す。
+# 出力フォルダに Idle.fbx・Walk.fbx・Attack.fbx を書き出す。
+# 動きは西洋の騎士らしく、背筋を伸ばして厳かに（待機は剣を地面に突いて柄頭に手を重ね、攻撃は両手で縦に振り下ろす）。
 # --preview を付けると、各アニメーションのコマを並べた画像（<名前>.png）も書き出す。
 #
 # ポーズの付け方
@@ -12,7 +13,7 @@
 #     親が回っていれば、その回転に乗ったまま回る。
 #   - 足は足首の位置・つま先の向き・膝の向きを指定し、IK で太もも・すねの向きを決める（legs）。
 #   - 腕は手首の位置・肘の向きを指定し、IK で上腕・前腕の向きを決める（arms）。
-#     右手は剣の刃の向きも指定する。
+#     右手は剣の刃の向きも指定する。左手は ("grip", 柄の上の位置, 肘の向き) で剣の柄に添えられる。
 #   - 座標はワールド（m）で、前は -Y、上は +Z、キャラクターの左は +X。
 #   - キーにしたポーズの間は、時間つきの Catmull-Rom で毎フレーム補間してキーを打つ（30fps）。
 import bpy
@@ -111,14 +112,14 @@ def two_bone_ik(a, b0, c0, target, pole):
 
 
 # 剣の刃の、初期の（T ポーズの）向き。make_black_knight.py の build_sword と同じ。
-_a = math.radians(35)
+_a = math.radians(20)   # make_black_knight.py の SWORD_ANGLE と合わせる
 BLADE_D0 = Vector((-math.sin(_a), -math.cos(_a), 0)).normalized()
 BLADE_W0 = (Vector((-1, 0, 0)) - BLADE_D0 * Vector((-1, 0, 0)).dot(BLADE_D0)).normalized()
 
 LIMB_IK_BONES = {S(s, n) for s in "LR" for n in ("UpperLeg", "LowerLeg", "Foot", "UpperArm", "LowerArm", "Hand")}
 
 
-def compute_pose(pose):
+def _compute_pose(pose):
     """ポーズの指定から、骨ごとの回転（matrix_basis の回転）と腰の移動（骨の空間）を求める。"""
     D = {}       # 骨格の空間での、初期の向きからの回転
     P = {}       # 骨格の空間での、付け根の位置
@@ -199,11 +200,36 @@ def compute_pose(pose):
             basis[name] = Quaternion()
             D[name] = Dp
     hips_loc = REST_Q[C("Hips")].inverted() @ loc_a
-    # 確かめ用: 剣先の位置
     hand = S("R", "Hand")
-    fist = P[hand] + D[hand] @ (w2a_pos((-.610, .012, 1.272)) - REST_H[hand])
-    tip = fist + D[hand] @ (w2a_dir(BLADE_D0) * (1.10 / M_WORLD.to_scale()[0]))
-    return basis, hips_loc, a2w_pos(tip)
+    fist = P[hand] + D[hand] @ (w2a_pos(FIST_R) - REST_H[hand])
+
+    def sword_point(sd):
+        """柄・刃の上の点（拳の中心から刃の向きに sd m）のワールド座標。"""
+        return a2w_pos(fist + D[hand] @ (w2a_dir(BLADE_D0) * (sd / M_WORLD.to_scale()[0])))
+
+    shoulder_l = a2w_pos(P[S("L", "UpperArm")])
+    return basis, hips_loc, sword_point, shoulder_l
+
+
+FIST_R = (-.610, .012, 1.272)   # 右の拳の中心（T ポーズ）。make_black_knight.py と同じ。
+
+
+def compute_pose(pose):
+    """左手を剣の柄に添えるポーズ（arms の L が ("grip", 柄の上の位置, 肘の向き)）は、
+    右手と剣の位置を先に求めてから、左の手首の位置を決めてもう一度求める。"""
+    left = pose.get("arms", {}).get("L")
+    if left is not None and left[0] == "grip":
+        first = dict(pose)
+        first["arms"] = {k: v for k, v in pose["arms"].items() if k != "L"}
+        _, _, sword_point, shoulder_l = _compute_pose(first)
+        gp = sword_point(left[1])
+        wrist = gp + (shoulder_l - gp).normalized() * 0.065   # 拳の中心が柄に来るよう、手首は少し手前
+        second = dict(pose)
+        second["arms"] = dict(pose["arms"])
+        second["arms"]["L"] = (tuple(wrist), left[2])
+        pose = second
+    basis, hips_loc, sword_point, _ = _compute_pose(pose)
+    return basis, hips_loc, sword_point(1.16)
 
 
 # ---------------------------------------------------------------------------
@@ -292,184 +318,135 @@ def lerp3(a, b, t):
     return tuple(x + (y - x) * t for x, y in zip(a, b))
 
 
-FWD = (0, -1, 0)
-
-
-def guard(breath=0.0):
-    """待機の構え。体を少し右へ開き、左足を前に、剣は右下で切っ先を前の地面へ向ける。"""
+def stand(breath=0.0):
+    """待機。背筋を伸ばして立ち、切っ先を前の地面に突いた剣の柄頭に、左手を重ねる。"""
     return {
-        "loc": (0.0, 0.015, -0.065 - 0.008 * breath),
+        "loc": (0.0, 0.0, -0.012 - 0.004 * breath),
         "rot": {
-            C("Hips"): [("Z", -20)],
-            C("Spine"): [("X", 5 + 0.5 * breath)],
-            C("Chest"): [("X", 3 + 0.8 * breath), ("Z", 7)],
-            C("UpperChest"): [("X", 2 + 1.2 * breath), ("Z", 6)],
-            C("Neck"): [("X", -3), ("Z", 4)],
-            C("Head"): [("X", -4 - 1.5 * breath), ("Z", 3)],
+            C("Spine"): [("X", -2)],
+            C("Chest"): [("X", -2 + 0.6 * breath)],
+            C("UpperChest"): [("X", -1 + 0.8 * breath)],
+            C("Neck"): [("X", 2)],
+            C("Head"): [("X", 4 - 0.6 * breath)],
         },
         "legs": {
-            "L": ((0.135, -0.150, 0.109), 0, 0, (0.15, -1, 0)),
-            "R": ((-0.175, 0.150, 0.109), -40, 0, (-0.55, -0.8, 0)),
+            "L": ((0.115, -0.010, 0.109), 8, 0, (0.15, -1, 0)),
+            "R": ((-0.115, -0.010, 0.109), -8, 0, (-0.15, -1, 0)),
         },
         "arms": {
-            "R": ((-0.235, -0.115, 0.915 - 0.008 * breath), (-0.5, 0.85, 0.1), (-0.30, -0.72, -0.62)),
-            "L": ((0.235, -0.050, 0.925 - 0.008 * breath), (0.45, 0.9, 0.0)),
+            "R": ((-0.035, -0.235, 0.985), (-0.9, 0.4, -0.2), (0.0, -0.58, -0.81)),
+            "L": ("grip", -0.15, (0.9, 0.4, -0.2)),
         },
     }
 
 
-def run_pose(phase):
-    """走り（phase: 0〜1 で1周。0 で右足が前に着く）。体を前に倒し、剣は右後ろへ流す。"""
+WALK_LEN = 36      # 1.2秒で2歩
+WALK_STRIDE = 0.27  # 足首が前後に動く幅の半分（m）
+
+
+def walk_pose(phase):
+    """歩き（phase: 0〜1 で1周。0 で右足が前に着く）。背筋を伸ばしたまま、ゆっくり大きく歩く。
+    剣は右手に下げ、切っ先を前下へ向ける。"""
     def foot(ph):
-        # 足首の位置（前後 y・高さ z）とつま先の下がり角（度）。ph=0 で前に着く。
-        table = [
-            (0.00, -0.26, 0.120, -10),
-            (0.15, -0.08, 0.109, 0),
-            (0.30, 0.16, 0.150, 35),
-            (0.45, 0.32, 0.360, 70),
-            (0.65, 0.10, 0.450, 40),
-            (0.85, -0.24, 0.240, 0),
-            (1.00, -0.26, 0.120, -10),
-        ]
         ph %= 1.0
-        for (p0, y0, z0, a0), (p1, y1, z1, a1) in zip(table, table[1:]):
-            if p0 <= ph <= p1:
-                t = (ph - p0) / (p1 - p0)
-                t = t * t * (3 - 2 * t)
-                return y0 + (y1 - y0) * t, z0 + (z1 - z0) * t, a0 + (a1 - a0) * t
+        if ph < 0.6:   # 着いている間: 前から後ろへ一定の速さで動く
+            t = ph / 0.6
+            return -WALK_STRIDE + 2 * WALK_STRIDE * t, 0.109, 0.0
+        t = (ph - 0.6) / 0.4   # 浮いている間: 後ろから前へ
+        s = t * t * (3 - 2 * t)
+        y = WALK_STRIDE - 2 * WALK_STRIDE * s
+        z = 0.109 + 0.085 * math.sin(math.pi * t)
+        pitch = 28 * math.sin(math.pi * t) * (1 - t) - 10 * t * t   # 蹴り出しでつま先が下がり、着く前に上がる
+        return y, z, pitch
+
     ry, rz, ra = foot(phase)
     ly, lz, la = foot(phase + 0.5)
-    s = math.cos(2 * math.pi * phase)           # 1: 右足が前、-1: 左足が前
-    bob = math.cos(4 * math.pi * (phase - 0.1))  # 着地の少しあとに沈む
+    s = math.cos(2 * math.pi * phase)               # 1: 右足が前、-1: 左足が前
+    bob = math.cos(4 * math.pi * (phase - 0.3))     # 片足で立った真ん中で高く、着いたときに低い
+    sway = math.sin(2 * math.pi * phase)            # 体重を乗せている足の方へ少し寄る
     return {
-        "loc": (0.0, -0.05, -0.075 - 0.025 * bob),
+        "loc": (-0.014 * sway, 0.0, -0.045 + 0.010 * bob),
         "rot": {
-            C("Hips"): [("X", 4), ("Z", 9 * s)],
-            C("Spine"): [("X", 8), ("Z", -5 * s)],
-            C("Chest"): [("X", 6), ("Z", -5 * s)],
-            C("UpperChest"): [("X", 4), ("Z", -3 * s)],
-            C("Neck"): [("X", -8)],
-            C("Head"): [("X", -10)],
+            C("Hips"): [("Z", 6 * s)],
+            C("Spine"): [("X", -1), ("Z", -2 * s)],
+            C("Chest"): [("X", -2), ("Z", -2 * s)],
+            C("UpperChest"): [("Z", -1 * s)],
+            C("Neck"): [("X", 1)],
+            C("Head"): [("X", 2)],
         },
         "legs": {
-            "R": ((-0.085, ry, rz), 0, ra, (0, -1, 0)),
-            "L": ((0.085, ly, lz), 0, la, (0, -1, 0)),
+            "R": ((-0.090, ry, rz), -4, ra, (-0.1, -1, 0)),
+            "L": ((0.090, ly, lz), 4, la, (0.1, -1, 0)),
         },
         "arms": {
-            # 剣は右の腰の後ろで握り、刃を後ろへ水平に流す。
-            "R": ((-0.235, 0.135 + 0.025 * s, 0.940 + 0.012 * bob), (-0.6, 0.7, 0.4), (-0.30, 0.94, 0.12)),
-            # 左腕は左足と逆に振る（右足が前のとき左腕が前）。
-            "L": (lerp3((0.175, 0.200, 0.960), (0.150, -0.260, 1.080), 0.5 + 0.5 * s), (0.3, 0.9, -0.3)),
+            "R": ((-0.225, -0.060 + 0.015 * s, 0.905 + 0.006 * bob), (-0.7, 0.7, 0.0), (-0.20, -0.78, -0.60)),
+            # 左腕は左足と逆に、小さく振る（右足が前のとき左腕が前）。
+            "L": (lerp3((0.200, 0.090, 0.925), (0.190, -0.150, 0.960), 0.5 + 0.5 * s), (0.4, 0.9, 0.0)),
+        },
+    }
+
+
+def attack_pose(wrist, blade, chest_x, hips_loc, l_foot, head_x=0.0):
+    """両手で握った剣を縦に振るときのポーズ。右足は後ろ、左足を前に踏み込む。"""
+    return {
+        "loc": hips_loc,
+        "rot": {
+            C("Spine"): [("X", chest_x * 0.4)],
+            C("Chest"): [("X", chest_x * 0.35)],
+            C("UpperChest"): [("X", chest_x * 0.25)],
+            C("Head"): [("X", head_x)],
+        },
+        "legs": {
+            "L": (l_foot, 4, 0, (0.15, -1, 0)),
+            "R": ((-0.125, 0.150, 0.109), -18, 0, (-0.3, -1, 0)),
+        },
+        "arms": {
+            "R": (wrist, (-1.0, 0.2, -0.2), blade),
+            "L": ("grip", -0.09, (1.0, 0.2, -0.2)),
         },
     }
 
 
 def attack_windup():
-    p = guard()
-    p["loc"] = (0.0, 0.06, -0.085)
-    p["rot"] = {
-        C("Hips"): [("Z", -35)],
-        C("Spine"): [("X", -2), ("Z", -12)],
-        C("Chest"): [("X", -3), ("Z", -10)],
-        C("UpperChest"): [("X", -2), ("Z", -8)],
-        C("Neck"): [("Z", 30)],
-        C("Head"): [("X", -3), ("Z", 25)],
-    }
-    p["legs"] = {
-        "L": ((0.135, -0.150, 0.109), 0, 0, (0.2, -1, 0)),
-        "R": ((-0.175, 0.150, 0.109), -40, 0, (-0.6, -0.8, 0)),
-    }
-    p["arms"] = {
-        # 剣を右肩の上へ振りかぶる（切っ先は後ろ上）。
-        "R": ((-0.205, 0.120, 1.560), (-0.9, 0.2, -0.3), (0.25, 0.55, 0.80)),
-        # 左手は前へ伸ばして狙いを付ける。
-        "L": ((0.120, -0.380, 1.250), (0.6, 0.5, -0.6)),
-    }
-    return p
+    # 頭の上へ振りかぶる（切っ先は後ろ上）。少し胸を張る。
+    return attack_pose((-0.040, 0.060, 1.660), (0.0, 0.62, 0.78), -6, (0.0, 0.035, -0.035),
+                       (0.115, -0.120, 0.109), head_x=-2)
 
 
 def attack_top():
-    """振りかぶりから振り下ろしへ移るところ。剣は頭の上で前へ倒れ始める。"""
-    p = attack_windup()
-    p["loc"] = (0.0, 0.0, -0.100)
-    p["rot"] = {
-        C("Hips"): [("Z", -15)],
-        C("Spine"): [("X", 3), ("Z", 0)],
-        C("Chest"): [("X", 2), ("Z", 0)],
-        C("UpperChest"): [("X", 1), ("Z", 0)],
-        C("Neck"): [("Z", 10)],
-        C("Head"): [("X", -4), ("Z", 5)],
-    }
-    p["arms"] = {
-        "R": ((-0.120, -0.180, 1.560), (-0.9, 0.3, -0.2), (0.25, -0.45, 0.85)),
-        "L": ((0.180, -0.300, 1.200), (0.6, 0.5, -0.6)),
-    }
-    return p
+    # 振り下ろし始め（切っ先は真上から前へ倒れる）。左足を上げて踏み出す。
+    return attack_pose((-0.040, -0.120, 1.700), (0.0, -0.35, 0.94), 0, (0.0, -0.010, -0.050),
+                       (0.120, -0.210, 0.170))
 
 
 def attack_mid():
-    p = attack_windup()
-    p["loc"] = (0.0, -0.06, -0.120)
-    p["rot"] = {
-        C("Hips"): [("Z", 5)],
-        C("Spine"): [("X", 8), ("Z", 12)],
-        C("Chest"): [("X", 6), ("Z", 10)],
-        C("UpperChest"): [("X", 4), ("Z", 8)],
-        C("Neck"): [("Z", -15)],
-        C("Head"): [("X", -6), ("Z", -12)],
-    }
-    p["legs"] = {
-        "L": ((0.150, -0.300, 0.150), 5, 0, (0.2, -1, 0)),
-        "R": ((-0.175, 0.150, 0.109), -40, 0, (-0.6, -0.8, 0)),
-    }
-    p["arms"] = {
-        # 剣は体の前を斜めに振り下ろしている途中（切っ先は前の左下）。
-        "R": ((-0.030, -0.420, 1.120), (-0.8, 0.3, -0.5), (0.55, -0.70, -0.45)),
-        "L": ((0.230, -0.150, 1.120), (0.6, 0.6, -0.4)),
-    }
-    return p
+    # 体の前を真っすぐ振り下ろしている途中（刃は前へ水平）。
+    return attack_pose((-0.030, -0.420, 1.380), (0.0, -0.97, 0.24), 8, (0.0, -0.060, -0.075),
+                       (0.120, -0.290, 0.109), head_x=-2)
 
 
 def attack_end():
-    p = attack_mid()
-    p["loc"] = (0.0, -0.105, -0.165)
-    p["rot"] = {
-        C("Hips"): [("Z", 18)],
-        C("Spine"): [("X", 12), ("Z", 14)],
-        C("Chest"): [("X", 9), ("Z", 12)],
-        C("UpperChest"): [("X", 5), ("Z", 8)],
-        C("Neck"): [("X", -6), ("Z", -24)],
-        C("Head"): [("X", -8), ("Z", -20)],
-    }
-    p["legs"] = {
-        "L": ((0.165, -0.340, 0.109), 10, 0, (0.25, -1, 0)),
-        "R": ((-0.175, 0.150, 0.109), -40, 0, (-0.6, -0.8, 0)),
-    }
-    p["arms"] = {
-        # 振り抜いて、剣は左下（切っ先は左後ろの地面の方）。
-        "R": ((0.200, -0.300, 0.820), (-0.6, 0.3, -0.7), (0.70, 0.30, -0.65)),
-        "L": ((0.260, 0.120, 1.020), (0.5, 0.8, 0.0)),
-    }
-    return p
+    # 振り下ろした（切っ先は前の地面の少し上）。
+    return attack_pose((-0.030, -0.420, 0.930), (0.0, -0.72, -0.69), 15, (0.0, -0.090, -0.105),
+                       (0.120, -0.300, 0.109), head_x=-6)
 
 
 ANIMS = []
-# Idle: 2秒で1周。息に合わせて少し上下する。
-ANIMS.append(("Idle", [(0, guard(0)), (30, guard(1)), (60, guard(0))], 60, True))
-# Run: 0.6秒（18コマ）で1周（2歩）。
-RUN_LEN = 18
-ANIMS.append(("Run", [(f, run_pose(f / RUN_LEN)) for f in range(0, RUN_LEN + 1, 3)], RUN_LEN, True))
-# Attack: 振りかぶって（0.2秒）、一気に斜めに斬り下ろし（0.1秒）、構えに戻る。全部で 1.1秒。
+# Idle: 3秒で1回、ゆっくり息をする。
+ANIMS.append(("Idle", [(0, stand(0)), (45, stand(1)), (90, stand(0))], 90, True))
+# Walk: 1.2秒（36コマ）で2歩。
+ANIMS.append(("Walk", [(f, walk_pose(f / WALK_LEN)) for f in range(0, WALK_LEN + 1, 3)], WALK_LEN, True))
+# Attack: 0.3秒で振りかぶり、少しためて、0.23秒で縦に振り下ろす。構えに戻るまで 1.2秒。
 ANIMS.append(("Attack", [
-    (0, guard(0)),
-    (6, attack_windup()),
+    (0, stand(0)),
     (9, attack_windup()),
-    (10, attack_top()),
-    (11, attack_mid()),
-    (13, attack_end()),
-    (20, attack_end()),
-    (33, guard(0)),
-], 33, False))
+    (12, attack_windup()),
+    (14, attack_top()),
+    (16, attack_mid()),
+    (19, attack_end()),
+    (25, attack_end()),
+    (36, stand(0)),
+], 36, False))
 
 
 # ---------------------------------------------------------------------------
@@ -541,9 +518,9 @@ def render_previews():
     cam.data.lens = 45
     os.makedirs(PREVIEW_DIR, exist_ok=True)
     plan = {
-        "Idle": ([0, 30], [25, 90]),
-        "Run": ([0, 3, 6, 9, 12, 15], [25, 90]),
-        "Attack": ([0, 6, 9, 10, 11, 12, 13, 20, 27], [25, 90]),
+        "Idle": ([0, 45], [25, 90]),
+        "Walk": ([0, 6, 12, 18, 24, 30], [25, 90]),
+        "Attack": ([0, 9, 13, 14, 15, 16, 17, 19, 25, 31], [25, 90]),
     }
     for name, (act, length) in actions.items():
         ARM.animation_data.action = act

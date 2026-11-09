@@ -1,6 +1,5 @@
 ﻿#include "stdafx.h"
 #include "Enemy.h"
-#include "IceMagic.h"
 
 namespace
 {
@@ -10,7 +9,7 @@ namespace
 	CharacterMoveSettings MakeMoveSettings()
 	{
 		CharacterMoveSettings settings;
-		settings.walkSpeed = 140.0f;
+		settings.walkSpeed = 120.0f;   // 黒騎士は走らず、Walk の歩幅に合わせてゆっくり歩く。
 		settings.gravity = 980.0f;
 		settings.capsuleRadius = 30.0f;   // 黒騎士は肩当てが広いので、プレイヤー（20）より太くする。
 		settings.capsuleHeight = 140.0f;
@@ -21,13 +20,13 @@ namespace
 	{
 		NpcInputSource::Settings settings;
 		// 今は敵を止めておく（相手を探さないので、動かず・向きも変えず・撃たない）。動かすときは 900 に戻す。
-		settings.searchRange = 0.0f;     // この距離以内に入ると追跡を開始する。
-		settings.stopDistance = 90.0f;   // この距離まで近づいたら停止する（近づきすぎ防止）。
+		settings.searchRange = 900.0f;     // この距離以内に入ると追跡を開始する。
+		settings.stopDistance = 150.0f;   // この距離まで近づいたら停止する（剣が届くところで止まる）。
+		// 黒騎士は魔法を持たず、fire（撃つ）の入力で剣を振る（EnemyAttackState）。
 		settings.canFire = true;
-		settings.fireRange = 700.0f;
-		settings.fireInterval = 4.0f;    // 凍結(2.5秒)より長くして、凍らされ続けないようにする。
-		settings.firstFireDelay = 1.5f;
-		settings.castHeight = 150.0f;
+		settings.fireRange = 220.0f;      // この距離以内なら剣を振る（剣の長さ＋踏み込み）。
+		settings.fireInterval = 2.5f;     // 剣を振る間隔（秒）。振るのに 1.1秒かかる。
+		settings.firstFireDelay = 0.6f;   // 近づいてから最初に振るまでの秒数。
 		return settings;
 	}
 
@@ -41,18 +40,11 @@ namespace
 		desc.scale = 1.3f;   // プレイヤー（1.128）より一回り大きくする。
 		desc.clips.resize(enEnemyAnimClip_Num);
 		desc.clips[enEnemyAnimClip_Idle] = { "Assets/modelData/enemy/BlackKnight/Animation/Idle.fbx", true };
-		desc.clips[enEnemyAnimClip_Run] = { "Assets/modelData/enemy/BlackKnight/Animation/Run.fbx", true };
+		desc.clips[enEnemyAnimClip_Walk] = { "Assets/modelData/enemy/BlackKnight/Animation/Walk.fbx", true };
 		desc.clips[enEnemyAnimClip_Attack] = { "Assets/modelData/enemy/BlackKnight/Animation/Attack.fbx", false };
 		return desc;
 	}
 
-	MagicCaster::Settings MakeCasterSettings()
-	{
-		MagicCaster::Settings settings;
-		settings.castHeight = 150.0f;  // 黒騎士の胸の高さ。
-		settings.castForward = 80.0f;  // 自分のカプセル(半径30)と肩当てに当たらないよう前に出して撃つ。
-		return settings;
-	}
 }
 
 Enemy::Enemy()
@@ -66,7 +58,6 @@ CharacterConfig Enemy::MakeConfig() const
 	CharacterConfig config;
 	config.move = MakeMoveSettings();
 	config.model = MakeModelDesc();
-	config.caster = MakeCasterSettings();
 	config.hitRadius = HIT_RADIUS;
 	config.hitCenterHeight = HIT_CENTER_HEIGHT;
 	config.maxHp = 100.0f;
@@ -80,8 +71,7 @@ void Enemy::OnStart()
 	stateContext.model = &m_model;
 	stateContext.statusEffects = &m_statusEffects;
 	m_stateMachine.Init(stateContext);  // Idle から始める（Idle のアニメーションを流す）。
-
-	m_magicCaster.AddMagic(std::make_unique<IceMagic>());
+	// 黒騎士は魔法を持たない（MagicCaster に何も足さないので、fire を押しても何も撃たない）。
 }
 
 void Enemy::UpdateAction(float deltaTime)

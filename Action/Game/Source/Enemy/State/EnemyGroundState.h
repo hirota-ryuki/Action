@@ -5,7 +5,7 @@
 // 地面で動くステート（Idle・Move）の共通部分。
 // 動き方はどちらも入力どおり（CharacterMover::Update）で、違いはアニメーションだけ。
 //   移動の入力がある → Move、ない → Idle
-//   魔法を撃った → Attack
+//   fire を押した → Attack（剣を振る）
 class EnemyGroundState : public EnemyState
 {
 public:

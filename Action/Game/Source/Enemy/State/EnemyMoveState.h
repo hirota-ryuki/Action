@@ -18,6 +18,6 @@ public:
 protected:
 	int GetAnimClip() const override
 	{
-		return enEnemyAnimClip_Run;
+		return enEnemyAnimClip_Walk;
 	}
 };

@@ -1,4 +1,6 @@
 # 黒騎士（敵）のモデルを、SK_Player の骨格の上に形から作って FBX に書き出す。
+# 見た目は西洋の厳かな騎士（グレートヘルム・十字の紋章・長い前垂れとマント）。
+# 色は主人公（紫の上着と飾り帯）に合わせ、くすんだ黒い鋼に古い金の縁取り・深い紫の布にする。
 #
 # 使い方（Blender 5.2 で確認）:
 #   blender -b --python make_black_knight.py -- <SK_Player.FBX> <出力フォルダ>
@@ -25,30 +27,32 @@ OUT_NAME = "BlackKnight"
 # ---------------------------------------------------------------------------
 # 色のマス（4×4、1マス 64px）
 # ---------------------------------------------------------------------------
-ARMOR, TRIM, GLOW, CAPE_OUT, CAPE_IN, LEATHER, BLADE, HORN = range(8)
+ARMOR, TRIM, GLOW, CAPE_OUT, CAPE_IN, LEATHER, BLADE, CLOTH = range(8)
 
 # (上の色, 下の色)  0〜255
 CELL_COLORS = {
-    ARMOR: ((62, 62, 76), (24, 24, 30)),        # 黒い鋼
-    TRIM: ((168, 166, 184), (92, 90, 106)),     # くすんだ銀の縁取り
-    GLOW: ((240, 190, 255), (186, 92, 255)),    # 紫の光（目・胸の石・剣の溝）
-    CAPE_OUT: ((40, 34, 48), (14, 12, 18)),     # マントの表（黒）
-    CAPE_IN: ((150, 22, 38), (70, 8, 18)),      # マントの裏・前垂れ（深紅）
-    LEATHER: ((66, 58, 62), (32, 28, 30)),      # 革（剣の柄・ベルト）
-    BLADE: ((150, 154, 172), (78, 80, 96)),     # 刃（暗い鋼）
-    HORN: ((52, 46, 58), (16, 14, 20)),         # 角
+    ARMOR: ((64, 66, 74), (24, 24, 30)),        # くすんだ黒い鋼
+    TRIM: ((196, 164, 104), (112, 84, 44)),     # 古い金の縁取り
+    GLOW: ((200, 160, 245), (128, 80, 200)),    # 紫の宝石（今は使っていない）
+    CAPE_OUT: ((56, 40, 78), (22, 16, 32)),     # マントの表（深い紫）
+    CAPE_IN: ((30, 26, 36), (14, 12, 18)),      # マントの裏・兜のすき間（暗い色）
+    LEATHER: ((78, 54, 40), (38, 26, 20)),      # 革（剣の柄・ベルト）
+    BLADE: ((214, 218, 230), (132, 136, 152)),  # 刃（明るい鋼）
+    CLOTH: ((88, 58, 124), (42, 28, 64)),       # 前垂れの布（主人公の上着の紫を深くした色）
 }
 # (メタリック, なめらかさ)  0〜1。シェーダーは spec の r をメタリック、a をなめらかさとして読む。
 CELL_SPEC = {
     ARMOR: (0.8, 0.62),
-    TRIM: (1.0, 0.72),
-    GLOW: (0.0, 0.0),
+    TRIM: (1.0, 0.70),
+    GLOW: (0.3, 0.8),
     CAPE_OUT: (0.0, 0.12),
     CAPE_IN: (0.0, 0.2),
     LEATHER: (0.2, 0.3),
-    BLADE: (1.0, 0.82),
-    HORN: (0.3, 0.55),
+    BLADE: (1.0, 0.85),
+    CLOTH: (0.0, 0.18),
 }
+# 剣の柄の傾き。前（-Y）から指先の方へ何度傾けて握るか。make_black_knight_anims.py と合わせる。
+SWORD_ANGLE = math.radians(20)
 TEX_SIZE = 256
 CELL_PX = 64
 CELL_MARGIN = 6
@@ -242,44 +246,43 @@ def blend(z_hi_bone, z_lo_bone, z_lo, z_hi):
 def build_helmet():
     head = "J_Bip_C_Head"
     yc = 0.005
-    prof = [(1.36, .092, .102), (1.40, .108, .118), (1.46, .116, .126), (1.52, .116, .124),
-            (1.57, .103, .110), (1.605, .072, .078), (1.625, .030, .034)]
-    rings = []
-    for z, rx, ry in prof:
-        keel = 0.022 if 1.37 < z < 1.6 else 0.008
-        rings.append(body_ring(z, rx, ry, ry * 0.98, n=16, yc=yc, keel=keel))
-    v, f = loft(rings, cap_start=True, end_point=(0, yc, 1.632))
+    # 西洋のグレートヘルム（筒形で頭頂は平ら。正面に稜線）
+    prof = [(1.345, .106, .116), (1.40, .114, .124), (1.48, .118, .128), (1.56, .116, .126),
+            (1.615, .110, .120), (1.640, .096, .106)]
+    rings = [body_ring(z, rx, ry, ry * 0.98, n=16, yc=yc, keel=0.012) for z, rx, ry in prof]
+    v, f = loft(rings, cap_start=True, end_point=(0, yc, 1.652))
     add_part(v, f, ARMOR, rigid(head))
     # 首を覆う下の縁
-    v, f = loft([body_ring(1.345, .098, .108, .104, yc=yc), body_ring(1.372, .100, .112, .108, yc=yc)])
+    v, f = loft([body_ring(1.330, .108, .120, .116, yc=yc), body_ring(1.355, .110, .123, .119, yc=yc)])
     add_part(v, f, TRIM, rigid(head))
-    # 目のすき間（V 字に吊り上がった光）と、その上の眉の縁取り
+    # 正面の金の縦の帯（目のすき間と金の眉で十字になる）
+    for zs in ((1.360, 1.400, 1.440, 1.462), (1.494, 1.560, 1.615, 1.645)):
+        front = {1.360: -.129, 1.400: -.137, 1.440: -.140, 1.462: -.141, 1.494: -.141, 1.560: -.139,
+                 1.615: -.133, 1.645: -.118}
+        v, f = tube([(0, front[z] - .004, z) for z in zs], [.010] * len(zs), n=6, tip=False)
+        add_part(v, f, TRIM, rigid(head))
+    v, f = tube([(0, -.118, 1.645), (0, -.060, 1.656), (0, .020, 1.656)], [.010, .010, .010], n=6, tip=False)
+    add_part(v, f, TRIM, rigid(head))
+    # 目のすき間（暗い横の切れ目）と、その上の金の眉
     for s in (1, -1):
-        a = Vector((s * 0.012, -0.142, 1.462))
-        b = Vector((s * 0.088, -0.098, 1.492))
+        a = Vector((s * 0.012, -0.142, 1.478))
+        b = Vector((s * 0.088, -0.088, 1.478))
         d = (b - a).normalized()
         n_out = Vector((s * 0.35, -1, 0)).normalized()
         up = d.cross(n_out).normalized()
         if up.z < 0:
             up = -up
         axes = (d, n_out, up)
-        v, f = box((a + b) / 2, ((b - a).length, 0.02, 0.013), axes)
-        add_part(v, f, GLOW, rigid(head))
+        v, f = box((a + b) / 2, ((b - a).length, 0.02, 0.011), axes)
+        add_part(v, f, CAPE_IN, rigid(head))
         v, f = box((a + b) / 2 + up * 0.019 + n_out * 0.004, ((b - a).length * 1.12, 0.02, 0.012), axes)
         add_part(v, f, TRIM, rigid(head))
-    # 角（こめかみから後ろへ反り上がる）
-    for s in (1, -1):
-        pts = [(s * .100, .000, 1.515), (s * .150, .025, 1.555), (s * .190, .070, 1.610),
-               (s * .212, .135, 1.690), (s * .205, .200, 1.765), (s * .185, .245, 1.815)]
-        v, f = tube(pts, [.030, .026, .020, .014, .008, 0], n=8)
-        add_part(v, f, HORN, rigid(head))
-        # 角の根元の輪
-        v, f = tube([(s * .092, -.004, 1.508), (s * .118, .006, 1.528)], [.036, .036], n=8, tip=False)
-        add_part(v, f, TRIM, rigid(head))
-    # 額から頭頂への稜線
-    v, f = tube([(0, -.150, 1.50), (0, -.128, 1.56), (0, -.085, 1.605), (0, -.02, 1.635), (0, .06, 1.62)],
-                [.010, .010, .010, .009, 0], n=6)
-    add_part(v, f, TRIM, rigid(head))
+    # 右の頬の息穴（暗い小さな切れ目）
+    for k in range(3):
+        v, f = box((-.058, -.106, 1.392 + k * .022), (.034, .02, .007), (Vector((.89, -.45, 0)).normalized(),
+                                                                          Vector((-.45, -.89, 0)).normalized(),
+                                                                          Vector((0, 0, 1))))
+        add_part(v, f, CAPE_IN, rigid(head))
 
 
 def build_torso():
@@ -295,11 +298,11 @@ def build_torso():
     # 胸当ての下の縁取り
     v, f = loft([body_ring(1.052, .116, .100, .092), body_ring(1.072, .118, .104, .094)])
     add_part(v, f, TRIM, rigid("J_Bip_C_Chest"))
-    # 胸の紫の石と台座
-    v, f = octa((0, -.150, 1.235), .042, .014, .052)
-    add_part(v, f, TRIM, rigid("J_Bip_C_UpperChest"))
-    v, f = octa((0, -.160, 1.235), .022, .010, .030)
-    add_part(v, f, GLOW, rigid("J_Bip_C_UpperChest"))
+    # 胸の金の十字の紋章
+    v, f = box((0, -.146, 1.205), (.024, .012, .150))
+    add_part(v, f, TRIM, blend("J_Bip_C_UpperChest", "J_Bip_C_Chest", 1.11, 1.21), bevel=.003)
+    v, f = box((0, -.148, 1.240), (.096, .012, .024))
+    add_part(v, f, TRIM, rigid("J_Bip_C_UpperChest"), bevel=.003)
     # 腹の板（2段）
     v, f = loft([body_ring(1.020, .114, .098, .090), body_ring(1.075, .110, .094, .088)])
     add_part(v, f, ARMOR, lambda p: {"J_Bip_C_Chest": .5, "J_Bip_C_Spine": .5})
@@ -310,8 +313,6 @@ def build_torso():
     add_part(v, f, LEATHER, rigid("J_Bip_C_Hips"))
     v, f = box((0, -.112, .960), (.055, .018, .044))
     add_part(v, f, TRIM, rigid("J_Bip_C_Hips"), bevel=.004)
-    v, f = octa((0, -.123, .960), .012, .006, .016)
-    add_part(v, f, GLOW, rigid("J_Bip_C_Hips"))
 
 
 def curved_plate(axis_xy, radius, a0, a1, z_top, z_bot, thick, seg=8, flare=0.0):
@@ -349,11 +350,11 @@ def build_skirt():
             add_part(v, f, ARMOR, rigid(bone))
             v, f = curved_plate(axis, r + .004, a0, a1, zb + .012, zb, .012, flare=.008)
             add_part(v, f, TRIM, rigid(bone))
-    # 前垂れ（深紅の布）。上は腰、下は両脚の真ん中について揺れる。
-    build_sheet(lambda u, t: Vector((u * (0.075 - 0.012 * t), -0.112 - 0.018 * t - 0.01 * math.sin(t * 3),
-                                     0.955 - t * 0.43)),
-                cols=4, rows=6, outer_cell=CAPE_IN, inner_cell=CAPE_OUT, out_dir=lambda p: Vector((0, -1, 0)),
-                weight=lambda p, u, t: _front_cloth_weight(t), hem=lambda c: 0.04 * ((c * 37) % 3) / 2)
+    # 前垂れ（紫の布、裾は真ん中が長い）。上は腰、下は両脚の真ん中について揺れる。
+    build_sheet(lambda u, t: Vector((u * (0.092 - 0.010 * t), -0.112 - 0.018 * t - 0.01 * math.sin(t * 3),
+                                     0.955 - t * 0.60)),
+                cols=4, rows=8, outer_cell=CLOTH, inner_cell=CAPE_IN, out_dir=lambda p: Vector((0, -1, 0)),
+                weight=lambda p, u, t: _front_cloth_weight(t), hem=lambda c: -0.05 * abs(c - 2) / 2)
 
 
 def _front_cloth_weight(t):
@@ -420,7 +421,7 @@ def build_cape():
         r = 0.112 + 0.17 * smoothstep(0, 0.35, t) + 0.07 * t
         r += 0.016 * min(t * 3, 1) * math.sin(u * 5.0 * math.pi)
         yc = 0.012 + 0.085 * smoothstep(0, 0.18, t) + 0.13 * t
-        z = 1.36 - t * 1.08
+        z = 1.36 - t * 1.24   # 裾は足首の高さまで
         return Vector((r * math.sin(th), yc + r * math.cos(th), z))
 
     def out_dir(p):
@@ -435,7 +436,8 @@ def build_cape():
                 "J_Bip_L_UpperLeg": legs * side, "J_Bip_R_UpperLeg": legs * (1 - side)}
 
     def hem(c):
-        return (0.10 if c % 2 else 0.0) + 0.05 * ((c * 7919) % 5) / 4
+        u = -1 + 2 * c / 22
+        return 0.06 * (1 - u * u)   # 真ん中が少し長い、整った裾
 
     build_sheet(pos, cols=22, rows=14, outer_cell=CAPE_OUT, inner_cell=CAPE_IN, out_dir=out_dir,
                 weight=weight, thickness=0.008, hem=hem)
@@ -459,25 +461,20 @@ def build_arms():
         # 肩当て（3枚重ね、外へ傾ける）。腕と肩の骨の両方につけ、腕を下ろしたときに半分だけついていく。
         w_pauldron = lambda p, _u=upper, _s=shoulder: {_u: 0.6, _s: 0.4}
         for k, (cx, cz, radii, tilt) in enumerate((
-                (0.150, 1.338, (.112, .128, .080), 22),
-                (0.195, 1.292, (.090, .118, .064), 48),
-                (0.228, 1.245, (.072, .104, .052), 70))):
+                (0.168, 1.335, (.132, .146, .084), 24),
+                (0.214, 1.280, (.106, .134, .066), 50),
+                (0.246, 1.230, (.084, .120, .054), 72))):
             m = Matrix.Rotation(math.radians(-s * tilt), 4, "Y")
-            v, f = ellipsoid((s * cx, .022, cz), radii, rings_n=6, seg=14, zmin=-0.25, matrix=m)
+            # 面を少なくして、丸みより板の角を見せる
+            v, f = ellipsoid((s * cx, .022, cz), radii, rings_n=3, seg=10, zmin=-0.25, matrix=m)
             add_part(v, f, ARMOR, w_pauldron)
             rim = [ring((0, 0, 0), (1, 0, 0), (0, 1, 0), radii[0] * 1.02 * math.cos(math.asin(-0.25)),
-                        radii[1] * 1.02 * math.cos(math.asin(-0.25)), 14)]
+                        radii[1] * 1.02 * math.cos(math.asin(-0.25)), 10)]
             z0 = -0.25 * radii[2]
             rim_rings = [[(m @ (p + Vector((0, 0, z0 + dz)))) + Vector((s * cx, .022, cz)) for p in rim[0]]
                          for dz in (-0.004, 0.012)]
             v, f = loft(rim_rings, cap_start=False, cap_end=False)
             add_part(v, f, TRIM, w_pauldron)
-        # 一番上の肩当ての尖り
-        m = Matrix.Rotation(math.radians(-s * 22), 4, "Y")
-        top = m @ Vector((0, 0, .08)) + Vector((s * .150, .022, 1.338))
-        v, f = tube([top - Vector((0, 0, .01)), top + Vector((s * .03, .01, .06)), top + Vector((s * .045, .03, .10))],
-                    [.022, .012, 0], n=6)
-        add_part(v, f, TRIM, w_pauldron)
         # 二の腕
         y0, z0 = .025, 1.283
         v, f = loft([ring((s * x, y0, z0), (0, 1, 0), (0, 0, 1), ry, rz, 8, math.pi / 8)
@@ -486,9 +483,6 @@ def build_arms():
         # 肘当て
         v, f = ellipsoid((s * .330, .030, z0), (.058, .064, .060), rings_n=5, seg=10)
         add_part(v, f, ARMOR, rigid(lower))
-        v, f = tube([(s * .330, .060, z0), (s * .345, .115, z0 + .005), (s * .360, .150, z0 + .01)],
-                    [.022, .012, 0], n=6)
-        add_part(v, f, TRIM, rigid(lower))
         # 前腕の籠手
         v, f = loft([ring((s * x, y0, z0), (0, 1, 0), (0, 0, 1), ry, rz, 8, math.pi / 8)
                      for x, ry, rz in ((.355, .057, .054), (.450, .054, .051), (.520, .049, .046))])
@@ -501,11 +495,16 @@ def build_arms():
         v, f = loft([ring((s * x, y0, z0), (0, 1, 0), (0, 0, 1), r, r * .95, 8, math.pi / 8)
                      for x, r in ((.520, .052), (.565, .066))])
         add_part(v, f, ARMOR, rigid(hand))
-        v, f = box((s * .610, .012, 1.276), (.090, .096, .074))
+        fist = Vector((s * .610, .012, 1.272))
+        # 右手は柄（刃の向き）に合わせて拳を回し、柄の真ん中を握る。左手は回さない。
+        rot = Matrix.Rotation(-SWORD_ANGLE, 3, "Z") if s < 0 else Matrix.Identity(3)
+        axes = tuple(rot @ Vector(a) for a in ((1, 0, 0), (0, 1, 0), (0, 0, 1)))
+        v, f = box(fist + rot @ Vector((0, 0, .004)), (.090, .092, .074), axes)
         add_part(v, f, ARMOR, rigid(hand), bevel=.012)
-        v, f = box((s * .632, .012, 1.312), (.052, .100, .016))
+        v, f = box(fist + rot @ Vector((s * .022, 0, .040)), (.052, .096, .016), axes)
         add_part(v, f, TRIM, rigid(hand), bevel=.004)
-        v, f = box((s * .590, -.046, 1.262), (.050, .030, .034))
+        # 親指（柄の手前を上から押さえる）
+        v, f = box(fist + rot @ Vector((-s * .012, -.050, .020)), (.050, .026, .030), axes)
         add_part(v, f, ARMOR, rigid(hand), bevel=.006)
 
 
@@ -549,44 +548,39 @@ def build_sword():
     hand = "J_Bip_R_Hand"
     fist = Vector((-.610, .012, 1.272))
     fwd, out = Vector((0, -1, 0)), Vector((-1, 0, 0))
-    a = math.radians(35)
+    a = SWORD_ANGLE
     d = (fwd * math.cos(a) + out * math.sin(a)).normalized()   # 刃の向き（腕を下ろすと前下を向く）
     w = (out - d * out.dot(d)).normalized()                     # 刃の幅の向き
     t = d.cross(w).normalized()                                 # 刃の厚みの向き
     P = lambda sd, sw=0.0, st=0.0: fist + d * sd + w * sw + t * st
     R = rigid(hand)
-    # 柄頭・柄
-    v, f = octa((0, 0, 0), .030, .030, .030)
-    add_part([P(-.175) + (Matrix((w, t, d)).transposed() @ p) for p in v], f, TRIM, R)
-    v, f = octa((0, 0, 0), .014, .014, .016)
-    add_part([P(-.205) + (Matrix((w, t, d)).transposed() @ p) for p in v], f, GLOW, R)
-    v, f = tube([P(-.160), P(0.0)], [.017, .017], n=8, tip=False)
+    # 柄頭・柄（拳は柄の真ん中を握る）
+    v, f = octa((0, 0, 0), .026, .026, .030)
+    add_part([P(-.118) + (Matrix((w, t, d)).transposed() @ p) for p in v], f, TRIM, R)
+    v, f = tube([P(-.105), P(.090)], [.016, .017], n=8, tip=False)
     add_part(v, f, LEATHER, R)
-    # 鍔（両端が刃の方へ反る）と、真ん中の紫の石
-    pts = [P(.045, -.150), P(.020, -.105), P(.012, -.050), P(.012, 0), P(.012, .050), P(.020, .105), P(.045, .150)]
+    # 金の鍔（まっすぐな十字の鍔）
+    pts = [P(.100, -.150), P(.100, -.100), P(.100, -.050), P(.100, 0), P(.100, .050), P(.100, .100), P(.100, .150)]
     v, f = tube(pts[:4], [.012, .016, .019, .019], n=6, tip=False)
     add_part(v, f, TRIM, R)
     v, f = tube(pts[3:], [.019, .019, .016, .012], n=6, tip=False)
     add_part(v, f, TRIM, R)
-    for tip_from, tip_to in ((pts[1], pts[0]), (pts[5], pts[6])):
-        v, f = tube([tip_from, tip_to, tip_to + (tip_to - tip_from).normalized() * .03], [.012, .009, 0], n=6)
-        add_part(v, f, TRIM, R)
-    v, f = box(P(.022), (.07, .040, .055), (w, t, d))
-    add_part(v, f, ARMOR, R, bevel=.006)
-    for st in (.021, -.021):
-        v, f = octa((0, 0, 0), .016, .004, .022)
-        add_part([P(.024, 0, st) + (Matrix((w, t, d)).transposed() @ p) for p in v], f, GLOW, R)
+    for end in (pts[0], pts[6]):
+        v, f = octa((0, 0, 0), .020, .020, .020)
+        add_part([end + (Matrix((w, t, d)).transposed() @ p) for p in v], f, TRIM, R)
+    v, f = box(P(.110), (.07, .040, .050), (w, t, d))
+    add_part(v, f, TRIM, R, bevel=.006)
     # 刃（断面はひし形）
     rings = []
-    for sd, hw, ht in ((.050, .034, .008), (.35, .031, .008), (.70, .027, .007), (.93, .018, .006), (1.04, .006, .003)):
+    for sd, hw, ht in ((.130, .033, .008), (.43, .030, .008), (.78, .026, .007), (1.00, .017, .006), (1.10, .006, .003)):
         c = P(sd)
         rings.append([c + w * hw, c + t * ht, c - w * hw, c - t * ht])
-    v, f = loft(rings, cap_start=True, end_point=P(1.10))
+    v, f = loft(rings, cap_start=True, end_point=P(1.16))
     add_part(v, f, BLADE, R)
-    # 刃の溝の光（表と裏）
-    for st in (.0068, -.0068):
-        v, f = box(P(.43, 0, st), (.008, .002, .70), (w, t, d))
-        add_part(v, f, GLOW, R)
+    # 刃の根元の金の飾り（表と裏）
+    for st in (.0066, -.0066):
+        v, f = box(P(.20, 0, st), (.014, .002, .10), (w, t, d))
+        add_part(v, f, TRIM, R)
 
 
 build_helmet()
