@@ -26,3 +26,24 @@ FPS の上限はかかっていなかった（`USE_FPS_LIMITTER` は無効）。
 [GPUの選び方の手順](GPUの選び方の手順.md) を書いた。`CreateD3DDevice()` に足した変数とラムダ、NVIDIA・AMD・Intel の3か所の書き換えを diff で並べた。
 
 どう確かめたか: 作業用フォルダーで手順書の diff を逆に当てると、`GraphicsEngine.cpp` は #77 の前のコミットと同じになった。そこから手順1〜3を1つずつ当て、そのたびに Game.sln を Debug x64 でビルドして、すべて通った。最後は main と差がなくなった。
+
+---
+
+## 2026-11-09 NVIDIA と CPU 内蔵の GPU があるノート PC で確かめた
+
+別の PC（ノート PC）でも、どの GPU で描いているかと FPS を確かめた。コードは変えていない。
+
+この PC には GPU が2つある（NVIDIA GeForce RTX 4060 Laptop GPU、Intel(R) UHD Graphics＝CPU 内蔵）。`CreateD3DDevice()` は NVIDIA を最優先するので、RTX 4060 が選ばれるはずである。
+
+置いてあった Release の exe は 11-06 のもので、上の直しが入っていなかったので、今のコード（#92）で Release x64 をビルドし直してから動かした。ゲームの窓は前に出さず、ほかの窓の後ろに置いたまま、窓だけを撮った。
+
+| 見たもの | 結果 |
+|---|---|
+| `nvidia-smi` | `Game.exe` が RTX 4060 を使っていて、使用率は 98% |
+| パフォーマンスカウンター（GPU Engine の 3D） | 一方の GPU が 64%、もう一方が 0% |
+| パフォーマンスカウンター（GPU Process Memory の専用メモリ） | 3D を使っている方が 1,370 MB、もう一方が 0 MB（CPU 内蔵の GPU は使っていない） |
+| 右上の FPS | 263.7、265.7（2回撮った） |
+
+![RTX 4060 Laptop で立っているだけの画面。右上の FPS は 263.7](画像/GPUの選び方_1_RTX4060Laptop_FPS.jpg)
+
+FPS の上限なしで、GPU の使用率が 98% なので、約 264fps はこの GPU の重さで決まっている。RX 9070 XT のデスクトップ（約 470〜490fps）より低いのは GPU の差による。デスクトップの値は最小化して測ったもので、今回は窓を出したまま測った違いもある。

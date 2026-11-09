@@ -50,12 +50,13 @@ auto isBetter = [&](int vender) {
 
 ## 3. 確かめ方
 
-選ばれた GPU は、タスクマネージャーの「パフォーマンス」で、ゲームを動かしている間に使用率が上がる方を見るとわかる。
+選ばれた GPU は、タスクマネージャーの「パフォーマンス」で、ゲームを動かしている間に使用率が上がる方を見るとわかる。NVIDIA の GPU なら、`nvidia-smi` の一覧に `Game.exe` が出るかでもわかる。
 
-| この PC（2026-11-08） | 直す前 | 直したあと |
-|---|---|---|
-| 選ばれた GPU | AMD Radeon(TM) Graphics（CPU 内蔵） | AMD Radeon RX 9070 XT |
-| FPS（Release、立っているだけ） | 約 31 | 約 470〜490 |
+| PC | ある GPU | 選ばれた GPU | FPS（Release、立っているだけ） |
+|---|---|---|---|
+| デスクトップ（2026-11-08、直す前） | AMD Radeon(TM) Graphics（CPU 内蔵）、AMD Radeon RX 9070 XT | AMD Radeon(TM) Graphics（CPU 内蔵） | 約 31 |
+| デスクトップ（2026-11-08、直したあと） | 同上 | AMD Radeon RX 9070 XT | 約 470〜490 |
+| ノート PC（2026-11-09） | NVIDIA GeForce RTX 4060 Laptop GPU、Intel(R) UHD Graphics（CPU 内蔵） | NVIDIA GeForce RTX 4060 Laptop GPU | 約 264 |
 
 ---
 
