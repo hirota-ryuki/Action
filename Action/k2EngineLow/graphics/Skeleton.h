@@ -230,6 +230,14 @@ namespace nsK2EngineLow {
 		{
 			m_isPlayAnimation = true;
 		}
+		/// <summary>
+		/// ボーンのワールド行列を計算したあと、ボーン行列を作る前に呼ぶ処理を登録する。
+		/// 揺れ物（髪・スカート）のように、アニメーションの姿勢にあとから手を加えるときに使う。nullptr で外す。
+		/// </summary>
+		void SetOnPostUpdateWorldMatrix(std::function<void(Skeleton&)> func)
+		{
+			m_onPostUpdateWorldMatrix = std::move(func);
+		}
 	public:
 
 
@@ -257,5 +265,6 @@ namespace nsK2EngineLow {
 		std::unique_ptr<Matrix[]>	m_boneMatrixs;	//ボーン行列。
 		bool m_isInited = false;					//初期化済み？
 		bool m_isPlayAnimation = false;				//アニメーションが流し込まれている？
+		std::function<void(Skeleton&)> m_onPostUpdateWorldMatrix;	//ワールド行列を計算したあとに呼ぶ処理。
 	};
 }
