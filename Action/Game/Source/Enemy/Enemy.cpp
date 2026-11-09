@@ -4,16 +4,16 @@
 
 namespace
 {
-	constexpr float HIT_RADIUS = 45.0f;        // 弾に当たる球の半径。
-	constexpr float HIT_CENTER_HEIGHT = 60.0f;  // 足元から当たり判定の中心までの高さ。
+	constexpr float HIT_RADIUS = 60.0f;         // 弾に当たる球の半径。黒騎士の胴（肩当てまで）を覆う。
+	constexpr float HIT_CENTER_HEIGHT = 110.0f; // 足元から当たり判定の中心までの高さ（黒騎士の胸の下あたり）。
 
 	CharacterMoveSettings MakeMoveSettings()
 	{
 		CharacterMoveSettings settings;
 		settings.walkSpeed = 140.0f;
 		settings.gravity = 980.0f;
-		settings.capsuleRadius = 20.0f;
-		settings.capsuleHeight = 100.0f;
+		settings.capsuleRadius = 30.0f;   // 黒騎士は肩当てが広いので、プレイヤー（20）より太くする。
+		settings.capsuleHeight = 140.0f;
 		return settings;
 	}
 
@@ -27,27 +27,31 @@ namespace
 		settings.fireRange = 700.0f;
 		settings.fireInterval = 4.0f;    // 凍結(2.5秒)より長くして、凍らされ続けないようにする。
 		settings.firstFireDelay = 1.5f;
-		settings.castHeight = 60.0f;
+		settings.castHeight = 150.0f;
 		return settings;
 	}
 
 	CharacterModelDesc MakeModelDesc()
 	{
 		CharacterModelDesc desc;
-		desc.modelPath = "Assets/modelData/unityChan.tkm";
-		desc.upAxis = enModelUpAxisY;
-		desc.scale = 1.08f;
+		// 黒騎士。SK_Player と同じ骨格なので、プレイヤーの Idle・Run をそのまま流せる
+		// （tools/BlenderScripts/make_black_knight.py で作る）。
+		// アニメーションの FBX は黒騎士のフォルダに写したものを使う。tka は FBX の隣に1つだけ作られ、
+		// ボーンの並びはモデルごとに違うので、プレイヤーと同じ FBX を指すとプレイヤーの tka を上書きしてしまう。
+		desc.modelPath = "Assets/modelData/enemy/BlackKnight/BlackKnight.fbx";
+		desc.upAxis = enModelUpAxisZ;
+		desc.scale = 1.3f;   // プレイヤー（1.128）より一回り大きくする。
 		desc.clips.resize(enEnemyAnimClip_Num);
-		desc.clips[enEnemyAnimClip_Idle] = { "Assets/animData/idle.tka", true };
-		desc.clips[enEnemyAnimClip_Run] = { "Assets/animData/run.tka", true };
+		desc.clips[enEnemyAnimClip_Idle] = { "Assets/modelData/enemy/BlackKnight/Animation/Idle.fbx", true };
+		desc.clips[enEnemyAnimClip_Run] = { "Assets/modelData/enemy/BlackKnight/Animation/Run.fbx", true };
 		return desc;
 	}
 
 	MagicCaster::Settings MakeCasterSettings()
 	{
 		MagicCaster::Settings settings;
-		settings.castHeight = 60.0f;
-		settings.castForward = 60.0f;  // 自分のカプセル(半径20)に当たらないよう前に出して撃つ。
+		settings.castHeight = 150.0f;  // 黒騎士の胸の高さ。
+		settings.castForward = 80.0f;  // 自分のカプセル(半径30)と肩当てに当たらないよう前に出して撃つ。
 		return settings;
 	}
 }
