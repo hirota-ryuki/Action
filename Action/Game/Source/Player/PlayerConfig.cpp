@@ -243,8 +243,6 @@ namespace
 		const Json section = GetSection("lean");
 		BodyLeanSettings settings;
 		settings.isEnabled = Read(section, "lean", "enabled", true);
-		settings.turnLeanScale = Read(section, "lean", "turnLeanScale", 0.2f);
-		settings.maxTurnLeanDeg = Read(section, "lean", "maxTurnLeanDeg", 12.0f);
 		settings.accelLeanScale = Read(section, "lean", "accelLeanScale", 0.12f);
 		settings.maxAccelLeanDeg = Read(section, "lean", "maxAccelLeanDeg", 8.0f);
 		settings.velocitySmoothSeconds = Read(section, "lean", "velocitySmoothSeconds", 0.15f);

@@ -75,9 +75,7 @@
 	// 体の傾き（見た目だけ。足元を中心に傾ける）。
 	"lean": {
 		"enabled": true,
-		"turnLeanScale": 0.2,          // 曲がるとき内側へ。物理の傾き（遠心力と重力の釣り合い）の 0.2倍。
-		"maxTurnLeanDeg": 12.0,
-		"accelLeanScale": 0.12,        // 速くなるとき前へ、遅くなるとき後ろへ。物理の傾きの 0.12倍。
+		"accelLeanScale": 0.12,        // 速くなるとき前へ、遅くなるとき後ろへ。物理の傾き（加速と重力の釣り合い）の 0.12倍。
 		"maxAccelLeanDeg": 8.0,
 		"velocitySmoothSeconds": 0.15, // 移動の速さは一瞬で変わるので、この時間でならしてから加速を求める。
 		"leanSmoothSeconds": 0.1       // 傾きが目標に追いつく時間。
