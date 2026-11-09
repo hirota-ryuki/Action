@@ -15,5 +15,24 @@
     { "type": "density", "enabled": true, "kinds": ["grass"], "startDistance": 1200.0, "minKeepRatio": 0.35 },
     // 画面の高さに対して minScreenRatio より小さく見える物を消す。
     { "type": "screenSize", "enabled": true, "minScreenRatio": 0.004 }
-  ]
+  ],
+
+  // LOD（距離で細かさの違うモデルに切り替える）。部品の種類ごとに、段を近い順に書く。
+  //   ratio: 残す三角形の割合、maxError: 許す形のずれ（モデルの大きさを 1 とした割合）、
+  //   prune: 小さく離れた部品を消してでも減らすか、distance: この段に切り替わる距離（cm）。
+  // 減らしたモデルは ModelReducer が xxx_lod0.tkm… として作る（もとのモデルか、この設定が変わったときだけ）。
+  "lod": {
+    "enabled": true,
+    "kinds": {
+      "tree":   [ { "ratio": 1.0, "distance": 0.0 },
+                  { "ratio": 0.35, "maxError": 0.04, "distance": 2500.0 },
+                  { "ratio": 0.12, "maxError": 0.10, "prune": true, "distance": 8000.0 } ],
+      "rock":   [ { "ratio": 1.0, "distance": 0.0 },
+                  { "ratio": 0.4, "maxError": 0.03, "distance": 3000.0 } ],
+      "detail": [ { "ratio": 1.0, "distance": 0.0 },
+                  { "ratio": 0.4, "maxError": 0.05, "distance": 1500.0 } ],
+      "grass":  [ { "ratio": 1.0, "distance": 0.0 },
+                  { "ratio": 0.4, "maxError": 0.08, "distance": 800.0 } ]
+    }
+  }
 }

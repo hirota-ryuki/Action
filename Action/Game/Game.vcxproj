@@ -275,6 +275,7 @@
     <ClCompile Include="Source\Objects\StageRender\DensityFilter.cpp" />
     <ClCompile Include="Source\Objects\StageRender\ScreenSizeFilter.cpp" />
     <ClCompile Include="Source\Objects\StageRender\StageRenderSettings.cpp" />
+    <ClCompile Include="Source\Objects\StageRender\LodSelector.cpp" />
     <ClCompile Include="Source\App\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -354,6 +355,7 @@
     <ClInclude Include="Source\Objects\StageRender\DensityFilter.h" />
     <ClInclude Include="Source\Objects\StageRender\ScreenSizeFilter.h" />
     <ClInclude Include="Source\Objects\StageRender\StageRenderSettings.h" />
+    <ClInclude Include="Source\Objects\StageRender\LodSelector.h" />
     <ClInclude Include="Source\App\stdafx.h" />
     <ClInclude Include="Source\System\JsonFile.h" />
     <ClInclude Include="Source\System\system.h" />

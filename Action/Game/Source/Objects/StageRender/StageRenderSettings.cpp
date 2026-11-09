@@ -13,7 +13,7 @@ StageRenderSettings StageRenderSettings::Load(const char* jsonPath)
 	StageRenderSettings settings;
 	JsonFile::Json json;
 	if (!JsonFile::TryLoad(jsonPath, json)) {
-		// 読めなければ全部入りにする。
+		// 読めなければフィルターは全部入りにする（LOD は使わない）。
 		for (const char* type : { "distance", "frustum", "density", "screenSize" }) {
 			FilterSetting f;
 			f.type = type;
@@ -39,6 +39,25 @@ StageRenderSettings StageRenderSettings::Load(const char* jsonPath)
 		s.minKeepRatio = f.value("minKeepRatio", s.minKeepRatio);
 		s.minScreenRatio = f.value("minScreenRatio", s.minScreenRatio);
 		settings.m_filters.push_back(s);
+	}
+
+	if (json.contains("lod")) {
+		const auto& lod = json["lod"];
+		settings.m_isLodEnabled = lod.value("enabled", false);
+		if (lod.contains("kinds")) {
+			for (auto it = lod["kinds"].begin(); it != lod["kinds"].end(); ++it) {
+				std::vector<LodLevelSetting> levels;
+				for (const auto& l : it.value()) {
+					LodLevelSetting s;
+					s.level.ratio = l.value("ratio", 1.0f);
+					s.level.maxError = l.value("maxError", 0.02f);
+					s.level.prune = l.value("prune", false);
+					s.switchDistance = l.value("distance", 0.0f);
+					levels.push_back(s);
+				}
+				settings.m_lodLevels[it.key()] = levels;
+			}
+		}
 	}
 	return settings;
 }
@@ -69,4 +88,29 @@ std::vector<std::unique_ptr<IPropFilter>> StageRenderSettings::CreateFilters() c
 std::unique_ptr<ISpatialIndex> StageRenderSettings::CreateSpatialIndex() const
 {
 	return std::make_unique<GridSpatialIndex>(m_cellSize);
+}
+
+std::vector<nsK2EngineLow::ModelReducer::Level> StageRenderSettings::GetLodLevels(const std::string& kind) const
+{
+	std::vector<nsK2EngineLow::ModelReducer::Level> levels;
+	auto found = m_lodLevels.find(kind);
+	if (!m_isLodEnabled || found == m_lodLevels.end()) {
+		return levels;
+	}
+	for (const auto& s : found->second) {
+		levels.push_back(s.level);
+	}
+	return levels;
+}
+
+LodSelector StageRenderSettings::CreateLodSelector(const std::string& kind) const
+{
+	std::vector<float> distances;
+	auto found = m_lodLevels.find(kind);
+	if (m_isLodEnabled && found != m_lodLevels.end()) {
+		for (const auto& s : found->second) {
+			distances.push_back(s.switchDistance);
+		}
+	}
+	return LodSelector(distances);
 }
