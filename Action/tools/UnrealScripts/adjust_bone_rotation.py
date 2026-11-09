@@ -23,6 +23,9 @@ config.json（ファイルのパスは、絶対パスか config.json からの�
   "out_deg": {                                           # 省略可。前後の軸まわりに回して体の外へ開く（度、正 = 外）。
     "J_Bip_L_UpperArm": 8.0                              #   左右とも正で外へ開く
   },
+  "splay_deg": {                                         # 省略可。ボーン → 子の線を、体の外の向きへ倒す（度、正 = 外）。
+    "J_Bip_L_LowerArm": 20.0                             #   軸はコマごとの「骨の向き × 外向き」なので、骨が前を向いていても
+  },                                                     #   ねじれにならず、先の端が外へ出る（out_deg は前後の軸に固定）
   "motion_scale": 0.5,                                   # 省略可。体全体の動きを、平均のポーズを中心に何倍にするか
   "swing_scale": {                                       # 省略可。ボーンの振り幅を、平均の向きを中心に何倍にするか
     "J_Bip_L_UpperLeg": 1.3
@@ -235,12 +238,13 @@ def body_shape(anim, fwd):
     return {"torso": torso / num_keys, "leg": leg / num_keys, "toe_min": toe_min}
 
 
-def adjust(anim, pitch_deg, swing_scale, keep_feet_on_ground=False, out_deg=None, motion_scale=1.0):
+def adjust(anim, pitch_deg, swing_scale, keep_feet_on_ground=False, out_deg=None, motion_scale=1.0, splay_deg=None):
     P = unreal.AnimPoseExtensions
     W = unreal.AnimPoseSpaces.WORLD
     L = unreal.AnimPoseSpaces.LOCAL
     opts = eval_options()
     out_deg = out_deg or {}
+    splay_deg = splay_deg or {}
 
     num_keys = unreal.AnimationLibrary.get_num_frames(anim) + 1
     first = P.get_anim_pose_at_frame(anim, 0, opts)
@@ -249,9 +253,11 @@ def adjust(anim, pitch_deg, swing_scale, keep_feet_on_ground=False, out_deg=None
     # out_deg: 前後の軸まわりに回し、ボーンの下の端を体の外へ開く（腕を広げる）。
     # 外の向きは、基準のポーズでボーンが腰のどちら側にあるかで決める。回す軸 = 下向き × 外向き。
     out_axis = {}
-    for bone in out_deg:
+    out_side = {}
+    for bone in list(out_deg) + list(splay_deg):
         d = P.get_bone_pose(ref, bone, W).translation - P.get_bone_pose(ref, HIPS, W).translation
         side = axis * (1.0 if d.dot(axis) >= 0.0 else -1.0)
+        out_side[bone] = side
         out_axis[bone] = unreal.Vector(0.0, 0.0, -1.0).cross(side).normal()
 
     # 先に全コマの元の値を読む（書き換えると、あとのコマの評価が変わるため）。
@@ -260,11 +266,11 @@ def adjust(anim, pitch_deg, swing_scale, keep_feet_on_ground=False, out_deg=None
     scaled = []
     if motion_scale != 1.0:
         scaled = [str(n) for n in P.get_bone_names(first)]
-    bones = list(dict.fromkeys(scaled + list(swing_scale) + list(pitch_deg) + list(out_deg) +
+    bones = list(dict.fromkeys(scaled + list(swing_scale) + list(pitch_deg) + list(out_deg) + list(splay_deg) +
                                ([HIPS] if keep_feet_on_ground else [])))
     tracks = {}
     for bone in bones:
-        tracks[bone] = {"pos": [], "rot": [], "scl": [], "axis": [], "out_axis": []}
+        tracks[bone] = {"pos": [], "rot": [], "scl": [], "axis": [], "out_axis": [], "splay_axis": []}
     for f in range(num_keys):
         pose = P.get_anim_pose_at_frame(anim, f, opts)
         for bone in bones:
@@ -277,6 +283,10 @@ def adjust(anim, pitch_deg, swing_scale, keep_feet_on_ground=False, out_deg=None
             t["axis"].append(q_rotate(q_inv(parent_rot), axis))
             if bone in out_axis:
                 t["out_axis"].append(q_rotate(q_inv(parent_rot), out_axis[bone]))
+            # splay_deg の軸 = 骨の向き × 外向き。この軸まわりに正に回すと、骨の先が外向きの方へ倒れる。
+            if bone in splay_deg:
+                tip = P.get_bone_pose(pose, SEGMENT_CHILD[bone], W).translation - world.translation
+                t["splay_axis"].append(q_rotate(q_inv(parent_rot), tip.cross(out_side[bone]).normal()))
             t["pos"].append(local.translation)
             t["rot"].append(local.rotation)
             t["scl"].append(local.scale3d)
@@ -313,6 +323,13 @@ def adjust(anim, pitch_deg, swing_scale, keep_feet_on_ground=False, out_deg=None
         t["rot"] = [q_mul(unreal.Quat(a.x * s, a.y * s, a.z * s, math.cos(half)), r)
                     for a, r in zip(t["out_axis"], t["rot"])]
 
+    for bone, deg in splay_deg.items():
+        t = tracks[bone]
+        half = math.radians(deg) * 0.5
+        s = math.sin(half)
+        t["rot"] = [q_mul(unreal.Quat(a.x * s, a.y * s, a.z * s, math.cos(half)), r)
+                    for a, r in zip(t["splay_axis"], t["rot"])]
+
     fwd =unreal.Vector(0.0, 0.0, 1.0).cross(axis) * -1.0
     before_shape = body_shape(anim, fwd)
 
@@ -320,7 +337,7 @@ def adjust(anim, pitch_deg, swing_scale, keep_feet_on_ground=False, out_deg=None
     c.open_bracket(unreal.Text("adjust"), False)
     for bone, t in tracks.items():
         ok = c.set_bone_track_keys(bone, t["pos"], t["rot"], t["scl"], False)
-        log("set", bone, "deg", pitch_deg.get(bone, 0.0), "out", out_deg.get(bone, 0.0), "swing", swing_scale.get(bone, 1.0), "keys", num_keys, ok)
+        log("set", bone, "deg", pitch_deg.get(bone, 0.0), "out", out_deg.get(bone, 0.0), "splay", splay_deg.get(bone, 0.0), "swing", swing_scale.get(bone, 1.0), "keys", num_keys, ok)
     c.close_bracket(False)
 
     # 足を地面に合わせる: 脚ごと倒すと足が浮くので、つま先の一番低い高さが元と同じになるまで腰を下げる。
@@ -1194,6 +1211,12 @@ def log_frames(anim, label):
         for s in "LR":
             row += "  %s arm=%.0f/%.0f" % (s, segment_angle(pose, "J_Bip_%s_UpperArm" % s, fwd),
                                             segment_angle(pose, "J_Bip_%s_LowerArm" % s, fwd))
+            # 肩から見た肘・手の、体の外への距離（cm、正 = 外）。脇の締まり具合を見る。
+            sh_ = P.get_bone_pose(pose, "J_Bip_%s_UpperArm" % s, W).translation
+            out = axis * (1.0 if (sh_ - hips).dot(axis) >= 0.0 else -1.0)
+            row += " out(elbow=%.1f hand=%.1f)" % (
+                (P.get_bone_pose(pose, "J_Bip_%s_LowerArm" % s, W).translation - sh_).dot(out),
+                (P.get_bone_pose(pose, "J_Bip_%s_Hand" % s, W).translation - sh_).dot(out))
         log(row)
 
 
@@ -1222,7 +1245,8 @@ def main():
             adjust(anim, clip.get("pitch_deg", cfg["pitch_deg"]), clip.get("swing_scale", cfg.get("swing_scale", {})),
                    clip.get("keep_feet_on_ground", cfg.get("keep_feet_on_ground", False)),
                    clip.get("out_deg", cfg.get("out_deg", {})),
-                   clip.get("motion_scale", cfg.get("motion_scale", 1.0)))
+                   clip.get("motion_scale", cfg.get("motion_scale", 1.0)),
+                   clip.get("splay_deg", cfg.get("splay_deg", {})))
             frames = clip.get("frames")
             if frames:
                 trim(anim, frames["start"], frames["count"], frames.get("hold", 0))

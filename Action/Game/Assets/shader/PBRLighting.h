@@ -54,46 +54,56 @@ float SpcFresnel(float f0, float u)
     return f0 + (1-f0) * pow(1-u, 5);
 }
 
+// 鏡面反射の調整値。
+static const float SPECULAR_F0 = 0.04f;             // 正面から見たときの反射率。金属でない物（草・土・岩・肌・布）はおよそ4%。
+static const float SPECULAR_MIN_ROUGHNESS = 0.3f;   // 粗さの下限。0に近いとハイライトが点になり、明るさが跳ね上がる。
+static const float SPECULAR_MAX = 1.0f;             // 鏡面反射の上限（ライトの色に掛ける前の値）。ライトの色より明るく照り返さない。
+
 /// <summary>
-/// クックトランスモデルの鏡面反射を計算
+/// クックトランスモデルの鏡面反射を計算（GGX 分布と Smith の遮蔽）
 /// </summary>
+/// <remark>
+/// 戻り値は N·L を掛けたあとの値。光が当たっていない面（N·L が 0 以下）では 0 を返す。
+/// 視線が面すれすれ（N·V が 0 に近い）でも、Smith の遮蔽の分母に k が残るので割り算で無限には大きくならない。
+/// それでも逆光の面すれすれでは大きくなるので、SPECULAR_MAX で止める。
+/// </remark>
 /// <param name="L">光源に向かうベクトル</param>
 /// <param name="V">視点に向かうベクトル</param>
 /// <param name="N">法線ベクトル</param>
 /// <param name="smooth">滑らかさ</param>
 float CookTorranceSpecular(float3 L, float3 V, float3 N, float smooth)
 {
-    // マイクロファセットが小さくなりすぎると、鏡面反射が強くなりすぎることがあるので、
-    // 下限を0.5にした。
-    float microfacet = min( 0.5f, 1.0f - smooth );
-
-    // 金属度を垂直入射の時のフレネル反射率として扱う
-    // 金属度が高いほどフレネル反射は大きくなる
-    float f0 = 0.5;
+    float NdotL = dot(N, L);
+    if (NdotL <= 0.0f) {
+        return 0.0f;
+    }
+    float NdotV = max(dot(N, V), 0.001f);
 
     // ライトに向かうベクトルと視線に向かうベクトルのハーフベクトルを求める
     float3 H = normalize(L + V);
+    float NdotH = saturate(dot(N, H));
+    float VdotH = saturate(dot(V, H));
 
-    // 各種ベクトルがどれくらい似ているかを内積を利用して求める
-    float NdotH = max( saturate(dot(N, H)), 0.001f );
-    float VdotH = max( saturate(dot(V, H)), 0.001f );
-    float NdotL = max( saturate(dot(N, L)), 0.001f );
-    float NdotV = max( saturate(dot(N, V)), 0.001f );
+    // 粗さ。見た目の粗さに合わせるため2乗したものを使う。
+    float roughness = max(1.0f - smooth, SPECULAR_MIN_ROUGHNESS);
+    float a = roughness * roughness;
+    float a2 = a * a;
 
-    // D項をベックマン分布を用いて計算する
-    float D = Beckmann(microfacet, NdotH);
+    // D項：GGX 分布
+    float d = NdotH * NdotH * (a2 - 1.0f) + 1.0f;
+    float D = a2 / (PI * d * d);
 
-    // F項をSchlick近似を用いて計算する
-    float F = SpcFresnel(f0, VdotH);
+    // F項：Schlick 近似
+    float F = SpcFresnel(SPECULAR_F0, VdotH);
 
-    // G項を求める
-    float G = min(1.0f, min(2*NdotH*NdotV/VdotH, 2*NdotH*NdotL/VdotH));
+    // G項を 4·N·L·N·V で割ったもの（Smith の遮蔽、Schlick-GGX 近似）
+    float k = a * 0.5f;
+    float visL = NdotL * (1.0f - k) + k;
+    float visV = NdotV * (1.0f - k) + k;
+    float vis = 0.25f / (visL * visV);
 
-    // m項を求める
-    float m = PI * NdotV * NdotH;
-
-    // ここまで求めた、値を利用して、クックトランスモデルの鏡面反射を求める
-    return max(F * D * G / m, 0.0);
+    // 逆光で面すれすれに見るときは、滑らかな物ほど数十倍まで明るくなるので、上限で止める。
+    return min(D * F * vis * NdotL, SPECULAR_MAX);
 }
 
 /// <summary>
