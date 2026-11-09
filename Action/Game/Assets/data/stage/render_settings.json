@@ -1,0 +1,19 @@
+{
+  // ステージの部品（岩・木・草など）の描き方の設定。StageRenderSettings が読む。
+  // 長さの単位は cm。enabled を false にすると、そのフィルターを使わない（効果を比べるとき用）。
+
+  // 区画の分け方。地面を cellSize 四方のマスに分け、マスごとに「描く距離の内側か・画面にかかるか」を見る。
+  "spatialIndex": { "type": "grid", "cellSize": 800.0 },
+
+  // 描く候補を、上から順に通すフィルター。
+  "filters": [
+    // 部品の種類ごとの描く距離（field_props.json の drawDistance）より遠い物を消す。
+    { "type": "distance", "enabled": true },
+    // 画面（視錐台）に入らない物を消す。
+    { "type": "frustum", "enabled": true },
+    // kinds の部品を、startDistance から先で間引く。描く距離のところで minKeepRatio まで減らす。
+    { "type": "density", "enabled": true, "kinds": ["grass"], "startDistance": 1200.0, "minKeepRatio": 0.35 },
+    // 画面の高さに対して minScreenRatio より小さく見える物を消す。
+    { "type": "screenSize", "enabled": true, "minScreenRatio": 0.004 }
+  ]
+}

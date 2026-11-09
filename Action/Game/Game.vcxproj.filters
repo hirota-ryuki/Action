@@ -37,6 +37,9 @@
     <Filter Include="Source\Objects">
       <UniqueIdentifier>{746964ec-ae1f-418c-a97c-a9ef78aaab8e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Objects\StageRender">
+      <UniqueIdentifier>{8d2c4e71-3b6a-4f09-9e15-7a0c2b5d4f63}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\Player">
       <UniqueIdentifier>{84b0e54b-afe2-427a-9937-a20c5301d05b}</UniqueIdentifier>
     </Filter>
@@ -182,6 +185,27 @@
     </ClCompile>
     <ClCompile Include="Source\Objects\StageProps.cpp">
       <Filter>Source\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Objects\StageRender\CullContextBuilder.cpp">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Objects\StageRender\GridSpatialIndex.cpp">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Objects\StageRender\DistanceFilter.cpp">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Objects\StageRender\FrustumFilter.cpp">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Objects\StageRender\DensityFilter.cpp">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Objects\StageRender\ScreenSizeFilter.cpp">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Objects\StageRender\StageRenderSettings.cpp">
+      <Filter>Source\Objects\StageRender</Filter>
     </ClCompile>
     <ClCompile Include="Source\App\stdafx.cpp">
       <Filter>Source\App</Filter>
@@ -373,6 +397,36 @@
     </ClInclude>
     <ClInclude Include="Source\Objects\StageProps.h">
       <Filter>Source\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Objects\StageRender\PropTypes.h">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Objects\StageRender\ISpatialIndex.h">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Objects\StageRender\IPropFilter.h">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Objects\StageRender\CullContextBuilder.h">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Objects\StageRender\GridSpatialIndex.h">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Objects\StageRender\DistanceFilter.h">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Objects\StageRender\FrustumFilter.h">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Objects\StageRender\DensityFilter.h">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Objects\StageRender\ScreenSizeFilter.h">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Objects\StageRender\StageRenderSettings.h">
+      <Filter>Source\Objects\StageRender</Filter>
     </ClInclude>
     <ClInclude Include="Source\App\stdafx.h">
       <Filter>Source\App</Filter>
