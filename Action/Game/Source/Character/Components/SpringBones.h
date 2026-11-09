@@ -21,12 +21,21 @@ struct SpringBonesSettings
 
 // 髪・スカートなどの揺れ物の骨を、体の動きから遅れて付いてくるように揺らす部品。
 // アニメーションの姿勢を正として、その形へばねで引き戻す（体が動くと先が遅れ、止まると揺り返す）。
-// Skeleton にワールド行列を計算したあとの処理として登録するので、毎フレームの呼び出しはいらない。
+// 持ち主が、Skeleton のワールド行列を計算したあとの処理（SetOnPostUpdateWorldMatrix）から Update() を呼ぶ。
 class SpringBones
 {
 public:
-	// model はスケルトンを読み込んだあとのもの。持ち主より長く生きないこと（登録を外さないため）。
+	// model はスケルトンを読み込んだあとのもの。
 	void Init(ModelRender& model, const SpringBonesSettings& settings);
+	// 揺らす骨があるか。
+	bool IsActive() const
+	{
+		return !m_joints.empty();
+	}
+	// アニメーションの姿勢（ワールド行列）を揺らす。体の連動（BodyLink）のあとに呼ぶ。
+	void Update(Skeleton& skeleton);
+	// 骨とその子孫のワールド行列に、rotationAroundCenter をかける。
+	static void RotateBoneTree(Bone& bone, const Matrix& rotationAroundCenter);
 
 private:
 	struct Joint
@@ -45,9 +54,6 @@ private:
 		int endBoneNo = -1;
 	};
 
-	void Update(Skeleton& skeleton);
-	// 骨とその子孫のワールド行列に、center を中心とした回転をかける。
-	static void RotateBoneTree(Bone& bone, const Matrix& rotationAroundCenter);
 	// 先を脚から押し出す。animTail がもとから近いときは、その近さまでは許す。
 	Vector3 PushOutFromLegs(Skeleton& skeleton, const Vector3& tail, const Vector3& animTail) const;
 

@@ -254,6 +254,19 @@ namespace
 		return settings;
 	}
 
+	BodyLinkSettings MakeBodyLinkSettings()
+	{
+		const Json section = GetSection("bodyLink");
+		BodyLinkSettings settings;
+		settings.isEnabled = Read(section, "bodyLink", "enabled", true);
+		settings.pelvisYawDeg = Read(section, "bodyLink", "pelvisYawDeg", 18.0f);
+		settings.shoulderYawDeg = Read(section, "bodyLink", "shoulderYawDeg", 22.0f);
+		settings.headFollow = Read(section, "bodyLink", "headFollow", 0.2f);
+		settings.pelvisRollDeg = Read(section, "bodyLink", "pelvisRollDeg", 5.0f);
+		settings.chestRollRatio = Read(section, "bodyLink", "chestRollRatio", 0.5f);
+		return settings;
+	}
+
 	SpringBonesSettings MakeSpringBonesSettings()
 	{
 		const Json section = GetSection("springBone");
@@ -289,6 +302,7 @@ CharacterConfig PlayerConfig::MakeCharacterConfig()
 	config.caster = MakeCasterSettings();
 	config.lean = MakeLeanSettings();
 	config.springBones = MakeSpringBonesSettings();
+	config.bodyLink = MakeBodyLinkSettings();
 
 	const Json hit = GetSection("hit");
 	config.hitRadius = Read(hit, "hit", "radius", 45.0f);

@@ -1,0 +1,158 @@
+﻿#include "stdafx.h"
+#include "BodyLink.h"
+#include "SpringBones.h"
+
+namespace
+{
+	// VRoid のモデルの骨の名前（EnBone の順）。
+	const wchar_t* const BONE_NAMES[] = {
+		L"J_Bip_C_Hips",
+		L"J_Bip_C_Spine",
+		L"J_Bip_C_Chest",
+		L"J_Bip_C_UpperChest",
+		L"J_Bip_C_Neck",
+		L"J_Bip_C_Head",
+		L"J_Bip_L_UpperLeg",
+		L"J_Bip_L_LowerLeg",
+		L"J_Bip_L_Foot",
+		L"J_Bip_R_UpperLeg",
+		L"J_Bip_R_LowerLeg",
+		L"J_Bip_R_Foot",
+	};
+	// 背骨のひねり・傾きを、Spine・Chest・UpperChest に分ける割合。
+	constexpr float SPINE_SHARE = 0.4f;
+	constexpr float CHEST_SHARE = 0.3f;
+	constexpr float UPPER_CHEST_SHARE = 0.3f;
+	// 首のひねり・傾きを、Neck・Head に分ける割合。
+	constexpr float NECK_SHARE = 0.5f;
+	constexpr float HEAD_SHARE = 0.5f;
+	// 左右の足の高さの差が、脚の長さのこの割合になったら、骨盤の傾きをいっぱいにする。
+	constexpr float FULL_ROLL_FOOT_HEIGHT_RATIO = 0.15f;
+	// 向きを調べるために試しに回す角度（ラジアン）。
+	constexpr float PROBE_ANGLE = 0.1f;
+
+	Vector3 GetTranslation(const Matrix& m)
+	{
+		return Vector3(m.m[3][0], m.m[3][1], m.m[3][2]);
+	}
+
+	// center を中心に axis まわりへ angle 回す行列。
+	Matrix MakeRotationAround(const Vector3& center, const Vector3& axis, float angle)
+	{
+		Matrix toOrigin, rotation, back;
+		toOrigin.MakeTranslation(center * -1.0f);
+		rotation.MakeRotationAxis(axis, angle);
+		back.MakeTranslation(center);
+		return toOrigin * rotation * back;
+	}
+
+	float Clamp(float value, float minValue, float maxValue)
+	{
+		return max(minValue, min(maxValue, value));
+	}
+}
+
+void BodyLink::Init(ModelRender& model, const BodyLinkSettings& settings)
+{
+	static_assert(sizeof(BONE_NAMES) / sizeof(BONE_NAMES[0]) == enBone_Num, "BONE_NAMES と EnBone の数をそろえる");
+	m_settings = settings;
+	m_isActive = false;
+	if (!m_settings.isEnabled || !model.GetSkeleton().IsInited()) {
+		return;
+	}
+	for (int i = 0; i < enBone_Num; i++) {
+		m_boneNos[i] = model.FindBoneID(BONE_NAMES[i]);
+		if (m_boneNos[i] == -1) {
+			return;
+		}
+	}
+	m_isActive = true;
+}
+
+Vector3 BodyLink::GetPosition(Skeleton& skeleton, EnBone bone) const
+{
+	return GetTranslation(skeleton.GetBone(m_boneNos[bone])->GetWorldMatrix());
+}
+
+void BodyLink::RotateAround(Skeleton& skeleton, EnBone bone, const Vector3& axis, float angle) const
+{
+	if (fabsf(angle) <= 1.0e-5f) {
+		return;
+	}
+	SpringBones::RotateBoneTree(*skeleton.GetBone(m_boneNos[bone]), MakeRotationAround(GetPosition(skeleton, bone), axis, angle));
+}
+
+float BodyLink::SignToward(Skeleton& skeleton, EnBone bone, EnBone pivot, const Vector3& axis, const Vector3& direction) const
+{
+	const Vector3 position = GetPosition(skeleton, bone);
+	Vector3 moved = position;
+	MakeRotationAround(GetPosition(skeleton, pivot), axis, PROBE_ANGLE).Apply(moved);
+	return (moved - position).Dot(direction) >= 0.0f ? 1.0f : -1.0f;
+}
+
+void BodyLink::Update(Skeleton& skeleton)
+{
+	if (!m_isActive) {
+		return;
+	}
+	const Vector3 up = Vector3::AxisY;
+	Vector3 forward = Vector3::AxisZ;
+	m_rotation.Apply(forward);
+	forward.y = 0.0f;
+	if (forward.LengthSq() <= FLT_EPSILON) {
+		return;
+	}
+	forward.Normalize();
+
+	// アニメーションの脚の形から、脚の振りと、どちらの足が浮いているかを読む。
+	const Vector3 hipL = GetPosition(skeleton, enBone_UpperLegL);
+	const Vector3 kneeL = GetPosition(skeleton, enBone_LowerLegL);
+	const Vector3 footL = GetPosition(skeleton, enBone_FootL);
+	const Vector3 hipR = GetPosition(skeleton, enBone_UpperLegR);
+	const Vector3 kneeR = GetPosition(skeleton, enBone_LowerLegR);
+	const Vector3 footR = GetPosition(skeleton, enBone_FootR);
+	const float thighLength = ((kneeL - hipL).Length() + (kneeR - hipR).Length()) * 0.5f;
+	const float shinLength = ((footL - kneeL).Length() + (footR - kneeR).Length()) * 0.5f;
+	if (thighLength <= 1.0e-3f) {
+		return;
+	}
+	// 右の膝が前に出ているほど正。
+	const float swing = Clamp(((kneeR - hipR).Dot(forward) - (kneeL - hipL).Dot(forward)) / (2.0f * thighLength), -1.0f, 1.0f);
+	// 右の足が高い（右脚が浮いている）ほど正。
+	const float footHeight = Clamp((footR - footL).Dot(up) / ((thighLength + shinLength) * FULL_ROLL_FOOT_HEIGHT_RATIO), -1.0f, 1.0f);
+
+	// ── ひねり（縦の軸まわり）──
+	// 骨盤: 右の膝が前なら、右の腰が前へ出る向き。骨盤を回した分だけ脚を戻して、足の位置を保つ。
+	const float yawSign = SignToward(skeleton, enBone_UpperLegR, enBone_Hips, up, forward);
+	const float pelvisYaw = Math::DegToRad(m_settings.pelvisYawDeg) * swing * yawSign;
+	RotateAround(skeleton, enBone_Hips, up, pelvisYaw);
+	RotateAround(skeleton, enBone_UpperLegL, up, -pelvisYaw);
+	RotateAround(skeleton, enBone_UpperLegR, up, -pelvisYaw);
+	// 肩: 骨盤と逆向き。骨盤からの差を背骨に分けて回す。
+	const float shoulderYaw = -Math::DegToRad(m_settings.shoulderYawDeg) * swing * yawSign;
+	const float spineYaw = shoulderYaw - pelvisYaw;
+	RotateAround(skeleton, enBone_Spine, up, spineYaw * SPINE_SHARE);
+	RotateAround(skeleton, enBone_Chest, up, spineYaw * CHEST_SHARE);
+	RotateAround(skeleton, enBone_UpperChest, up, spineYaw * UPPER_CHEST_SHARE);
+	// 頭: 肩のひねりを首で戻し、前を向いたままにする。
+	const float neckYaw = shoulderYaw * m_settings.headFollow - shoulderYaw;
+	RotateAround(skeleton, enBone_Neck, up, neckYaw * NECK_SHARE);
+	RotateAround(skeleton, enBone_Head, up, neckYaw * HEAD_SHARE);
+
+	// ── 左右の傾き（前後の軸まわり）──
+	// 骨盤: 浮いている脚の側の腰が下がる。脚は戻して、足の位置を保つ。
+	const float rollSign = SignToward(skeleton, enBone_UpperLegR, enBone_Hips, forward, up);
+	const float pelvisRoll = -Math::DegToRad(m_settings.pelvisRollDeg) * footHeight * rollSign;
+	RotateAround(skeleton, enBone_Hips, forward, pelvisRoll);
+	RotateAround(skeleton, enBone_UpperLegL, forward, -pelvisRoll);
+	RotateAround(skeleton, enBone_UpperLegR, forward, -pelvisRoll);
+	// 肩: 骨盤と逆へ少し傾ける。
+	const float chestRoll = -pelvisRoll * m_settings.chestRollRatio;
+	const float spineRoll = chestRoll - pelvisRoll;
+	RotateAround(skeleton, enBone_Spine, forward, spineRoll * SPINE_SHARE);
+	RotateAround(skeleton, enBone_Chest, forward, spineRoll * CHEST_SHARE);
+	RotateAround(skeleton, enBone_UpperChest, forward, spineRoll * UPPER_CHEST_SHARE);
+	// 頭: 水平に戻す。
+	RotateAround(skeleton, enBone_Neck, forward, -chestRoll * NECK_SHARE);
+	RotateAround(skeleton, enBone_Head, forward, -chestRoll * HEAD_SHARE);
+}

@@ -117,12 +117,6 @@ void SpringBones::Init(ModelRender& model, const SpringBonesSettings& settings)
 			}
 		}
 	}
-
-	if (!m_joints.empty()) {
-		skeleton.SetOnPostUpdateWorldMatrix([this](Skeleton& s) {
-			Update(s);
-		});
-	}
 }
 
 void SpringBones::Update(Skeleton& skeleton)
