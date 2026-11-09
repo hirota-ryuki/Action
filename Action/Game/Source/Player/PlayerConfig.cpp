@@ -237,6 +237,46 @@ namespace
 		settings.castForward = Read(section, "caster", "forward", 60.0f);
 		return settings;
 	}
+
+	BodyLeanSettings MakeLeanSettings()
+	{
+		const Json section = GetSection("lean");
+		BodyLeanSettings settings;
+		settings.isEnabled = Read(section, "lean", "enabled", true);
+		settings.turnLeanScale = Read(section, "lean", "turnLeanScale", 0.2f);
+		settings.maxTurnLeanDeg = Read(section, "lean", "maxTurnLeanDeg", 12.0f);
+		settings.accelLeanScale = Read(section, "lean", "accelLeanScale", 0.12f);
+		settings.maxAccelLeanDeg = Read(section, "lean", "maxAccelLeanDeg", 8.0f);
+		settings.velocitySmoothSeconds = Read(section, "lean", "velocitySmoothSeconds", 0.15f);
+		settings.leanSmoothSeconds = Read(section, "lean", "leanSmoothSeconds", 0.1f);
+		return settings;
+	}
+
+	SpringBonesSettings MakeSpringBonesSettings()
+	{
+		const Json section = GetSection("springBone");
+		SpringBonesSettings settings;
+		settings.isEnabled = Read(section, "springBone", "enabled", true);
+		settings.legRadius = Read(section, "springBone", "legRadius", 8.0f);
+		auto groups = section.find("groups");
+		if (groups == section.end() || !groups->is_object()) {
+			Log(std::string(JSON_PATH) + " に springBone.groups がないので、揺れ物を使いません。");
+			settings.isEnabled = false;
+			return settings;
+		}
+		for (auto it = groups->begin(); it != groups->end(); ++it) {
+			const std::string sectionName = "springBone.groups." + it.key();
+			const Json& group = it.value();
+			SpringBoneGroupSettings groupSettings;
+			const std::string match = Read(group, sectionName.c_str(), "match", std::string());
+			groupSettings.match = std::wstring(match.begin(), match.end());
+			groupSettings.frequency = Read(group, sectionName.c_str(), "frequency", 3.0f);
+			groupSettings.dampingRatio = Read(group, sectionName.c_str(), "dampingRatio", 0.5f);
+			groupSettings.maxAngleDeg = Read(group, sectionName.c_str(), "maxAngleDeg", 30.0f);
+			settings.groups.push_back(groupSettings);
+		}
+		return settings;
+	}
 }
 
 CharacterConfig PlayerConfig::MakeCharacterConfig()
@@ -245,6 +285,8 @@ CharacterConfig PlayerConfig::MakeCharacterConfig()
 	config.move = MakeMoveSettings();
 	config.model = MakeModelDesc();
 	config.caster = MakeCasterSettings();
+	config.lean = MakeLeanSettings();
+	config.springBones = MakeSpringBonesSettings();
 
 	const Json hit = GetSection("hit");
 	config.hitRadius = Read(hit, "hit", "radius", 45.0f);

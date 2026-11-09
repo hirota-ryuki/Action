@@ -18,6 +18,8 @@ bool Character::Start()
 	m_model.Init(config.model);
 	m_model.SetTransform(m_transform.position, m_transform.rotation);
 	m_model.Update();
+	m_bodyLean.Init(config.lean);
+	m_springBones.Init(m_model.GetModelRender(), config.springBones);
 
 	m_statusEffects.Init(&m_model.GetModelRender());
 
@@ -49,7 +51,8 @@ void Character::Update()
 	SyncTransform();
 	// ⑥ 当たり判定・モデルを合わせる
 	m_hitTarget.SetPosition(m_transform.position);
-	m_model.SetTransform(m_transform.position, m_transform.rotation);
+	// 見た目だけ、曲がる・速さが変わるのに合わせて傾ける（髪・スカートの揺れは m_model.Update() の中で動く）。
+	m_model.SetTransform(m_transform.position, m_bodyLean.Update(m_transform.position, m_transform.rotation, deltaTime));
 	m_model.Update();
 	// ⑦ モデルを更新したあとの処理（派生クラス）
 	OnLateUpdate(deltaTime);

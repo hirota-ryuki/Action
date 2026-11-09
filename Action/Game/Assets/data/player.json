@@ -72,6 +72,31 @@
 		"scale": 1.128  // UnityChan（Enemy）の2倍の高さ（1.692）を狙った後、実機で大きすぎたのでその2/3にした。
 	},
 
+	// 体の傾き（見た目だけ。足元を中心に傾ける）。
+	"lean": {
+		"enabled": true,
+		"turnLeanScale": 0.2,          // 曲がるとき内側へ。物理の傾き（遠心力と重力の釣り合い）の 0.2倍。
+		"maxTurnLeanDeg": 12.0,
+		"accelLeanScale": 0.12,        // 速くなるとき前へ、遅くなるとき後ろへ。物理の傾きの 0.12倍。
+		"maxAccelLeanDeg": 8.0,
+		"velocitySmoothSeconds": 0.15, // 移動の速さは一瞬で変わるので、この時間でならしてから加速を求める。
+		"leanSmoothSeconds": 0.1       // 傾きが目標に追いつく時間。
+	},
+
+	// 髪・スカートなどの揺れ物（骨の名前が J_Sec_ で始まるもの）。アニメーションの形へばねで引き戻す。
+	//   frequency: 1秒に何回揺れるか（大きいほど硬い）。dampingRatio: 1 で揺り返さない、小さいほど何度も揺れる。
+	//   maxAngleDeg: アニメーションの形から曲がってよい角度。match: 骨の名前に入っている文字（いくつも当てはまるときは長い方）。
+	"springBone": {
+		"enabled": true,
+		"legRadius": 8.0, // 太もも・すねの太さ。揺れ物の先がこれより脚に近づかない（アニメーションの形がもとから近いときはそこまで）。
+		"groups": {
+			"hair":      { "match": "Hair",      "frequency": 2.5, "dampingRatio": 0.35, "maxAngleDeg": 40.0 },
+			"coatSkirt": { "match": "CoatSkirt", "frequency": 2.5, "dampingRatio": 0.4,  "maxAngleDeg": 35.0 },
+			"skirt":     { "match": "Skirt",     "frequency": 3.0, "dampingRatio": 0.5,  "maxAngleDeg": 25.0 },
+			"bust":      { "match": "Bust",      "frequency": 4.0, "dampingRatio": 0.25, "maxAngleDeg": 8.0 }
+		}
+	},
+
 	"animation": {
 		"blendSeconds": 0.2, // アニメーションを切り替えるときの補間時間。
 		// Walk.fbx（Mixamo の Female Walk）の足が地面を送る速さ。UE で足のボーンを測った 115/秒 × モデルの大きさ 1.128。

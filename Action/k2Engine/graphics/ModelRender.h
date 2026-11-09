@@ -265,6 +265,13 @@ namespace nsK2Engine {
 		{
 			return m_skeleton.GetBone(boneNo);
 		}
+		/// <summary>
+		/// スケルトンを取得。揺れ物の処理を登録するときなどに使う。
+		/// </summary>
+		Skeleton& GetSkeleton()
+		{
+			return m_skeleton;
+		}
 		void AddAnimationEvent(AnimationEventListener eventListener)
 		{
 			m_animation.AddAnimationEventListener(eventListener);

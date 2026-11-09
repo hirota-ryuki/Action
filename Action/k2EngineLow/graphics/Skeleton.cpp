@@ -154,6 +154,11 @@ namespace nsK2EngineLow {
 			}
 		}
 
+		// 揺れ物などで、ワールド行列に手を加える。
+		if (m_onPostUpdateWorldMatrix) {
+			m_onPostUpdateWorldMatrix(*this);
+		}
+
 		// ボーン行列を計算。
 		int boneNo = 0;
 		for (auto& bonePtr : m_bones) {
