@@ -57,23 +57,24 @@ void CharacterMover::MoveByInput(const CharacterInput& input, float speed, float
 	horizontalVelocity.y = 0.0f;
 	horizontalVelocity *= speed;
 
-	// 向きたい方向の指定があればそちらへ、なければ移動方向へ回る。
+	// 向きたい方向の指定があればそちらを、なければ移動方向を、すぐに向く（見た目は UpdateVisualRotation() で少しずつ回る）。
 	Vector3 lookDirection = input.lookDirection;
 	lookDirection.y = 0.0f;
 	if (lookDirection.LengthSq() > FLT_EPSILON) {
-		TurnTo(lookDirection, deltaTime);
+		SetFacing(lookDirection);
 	}
 	else if (horizontalVelocity.LengthSq() > MOVE_DEAD_ZONE_SQ) {
-		TurnTo(horizontalVelocity, deltaTime);
-		// 入力の方向が体の向きから大きく離れているあいだは、その場で回る（向き終わってから進む）。
-		// 回りながら進むと、体だけ遅れて横や後ろへ滑ったり、大回りしたりして見える。
+		SetFacing(horizontalVelocity);
+		// 見た目の向きが入力の方向から大きく離れているあいだは進まず、その場で回る（向き終わってから進む）。
+		// 回りながら進むと、体だけ遅れて横や後ろへ滑って見える。
 		if (m_settings.turnInPlaceAngleDeg > 0.0f) {
-			Vector3 forward = GetForward();
-			forward.y = 0.0f;
-			forward.Normalize();
+			Vector3 visualForward = Vector3::AxisZ;
+			m_visualRotation.Apply(visualForward);
+			visualForward.y = 0.0f;
+			visualForward.Normalize();
 			Vector3 inputDirection = horizontalVelocity;
 			inputDirection.Normalize();
-			if (forward.Dot(inputDirection) < cosf(Math::DegToRad(m_settings.turnInPlaceAngleDeg))) {
+			if (visualForward.Dot(inputDirection) < cosf(Math::DegToRad(m_settings.turnInPlaceAngleDeg))) {
 				horizontalVelocity = Vector3::Zero;
 			}
 		}
@@ -88,6 +89,7 @@ void CharacterMover::Move(const Vector3& horizontalVelocity, float deltaTime)
 	if (!m_isInitialized) {
 		return;
 	}
+	UpdateVisualRotation(deltaTime);
 
 	m_moveSpeed.x = horizontalVelocity.x;
 	m_moveSpeed.z = horizontalVelocity.z;
@@ -112,12 +114,20 @@ bool CharacterMover::Jump(float speed)
 
 void CharacterMover::FaceTo(const Vector3& direction)
 {
+	if (SetFacing(direction)) {
+		m_visualRotation = m_rotation;
+	}
+}
+
+bool CharacterMover::SetFacing(const Vector3& direction)
+{
 	Vector3 horizontal = direction;
 	horizontal.y = 0.0f;
 	if (horizontal.LengthSq() <= FLT_EPSILON) {
-		return;
+		return false;
 	}
 	m_rotation.SetRotationYFromDirectionXZ(horizontal);
+	return true;
 }
 
 Vector3 CharacterMover::ApproachVelocity(const Vector3& targetVelocity, float deltaTime) const
@@ -139,19 +149,18 @@ Vector3 CharacterMover::ApproachVelocity(const Vector3& targetVelocity, float de
 	return current + diff;
 }
 
-void CharacterMover::TurnTo(const Vector3& direction, float deltaTime)
+void CharacterMover::UpdateVisualRotation(float deltaTime)
 {
 	if (m_settings.turnSpeedDeg <= 0.0f) {
-		FaceTo(direction);
+		m_visualRotation = m_rotation;
 		return;
 	}
-	if (direction.x * direction.x + direction.z * direction.z <= FLT_EPSILON) {
-		return;
-	}
-	// 今の向きと向きたい方向を Y 軸回りの角度にし、差を -180°〜180° にそろえて近い方へ回る。
+	// 見た目の向きと本当の向きを Y 軸回りの角度にし、差を -180°〜180° にそろえて近い方へ回る。
+	Vector3 visualForward = Vector3::AxisZ;
+	m_visualRotation.Apply(visualForward);
 	const Vector3 forward = GetForward();
-	const float currentAngle = atan2f(forward.x, forward.z);
-	const float targetAngle = atan2f(direction.x, direction.z);
+	const float currentAngle = atan2f(visualForward.x, visualForward.z);
+	const float targetAngle = atan2f(forward.x, forward.z);
 	float diff = targetAngle - currentAngle;
 	while (diff > Math::PI) {
 		diff -= Math::PI2;
@@ -161,8 +170,8 @@ void CharacterMover::TurnTo(const Vector3& direction, float deltaTime)
 	}
 	const float maxStep = Math::DegToRad(m_settings.turnSpeedDeg) * deltaTime;
 	if (fabsf(diff) <= maxStep) {
-		m_rotation.SetRotationY(targetAngle);
+		m_visualRotation = m_rotation;
 		return;
 	}
-	m_rotation.SetRotationY(currentAngle + (diff > 0.0f ? maxStep : -maxStep));
+	m_visualRotation.SetRotationY(currentAngle + (diff > 0.0f ? maxStep : -maxStep));
 }

@@ -52,7 +52,8 @@ void Character::Update()
 	// ⑥ 当たり判定・モデルを合わせる
 	m_hitTarget.SetPosition(m_transform.position);
 	// 見た目だけ、速さが変わるのに合わせて前後に傾ける（髪・スカートの揺れは m_model.Update() の中で動く）。
-	m_model.SetTransform(m_transform.position, m_bodyLean.Update(m_transform.position, m_transform.rotation, deltaTime));
+	// 向きは、本当の向きへ少しずつ回る見た目の向きを使う。
+	m_model.SetTransform(m_transform.position, m_bodyLean.Update(m_transform.position, m_mover.GetVisualRotation(), deltaTime));
 	m_model.Update();
 	// ⑦ モデルを更新したあとの処理（派生クラス）
 	OnLateUpdate(deltaTime);

@@ -31,18 +31,15 @@ public:
 	// 入力どおりに動く。走る入力なら runSpeedMultiplier 倍、ジャンプボタンで跳ぶ。
 	void Update(const CharacterInput& input, float deltaTime);
 
-	// 水平方向の速度で1フレーム動かす。重力もかける。向きは変えない。
+	// 水平方向の速度で1フレーム動かす。重力もかける。向きは変えない（見た目の向きは本当の向きへ回す）。
 	void Move(const Vector3& horizontalVelocity, float deltaTime);
-	// 入力の移動方向に speed の速さで1フレーム動かし、入力の向きたい方向（なければ移動方向）へ TurnTo() で回る。
+	// 入力の移動方向に speed の速さで1フレーム動かし、入力の向きたい方向（なければ移動方向）をすぐに向く。
+	// 見た目の向きは turnSpeedDeg で少しずつ回り、大きく離れているあいだは進まずにその場で回る。
 	void MoveByInput(const CharacterInput& input, float speed, float deltaTime);
 	// 地面にいれば、speed の初速で跳ぶ。跳べたら true。
 	bool Jump(float speed);
-	// 水平方向の向きをすぐに変える。ゼロに近い方向は無視する。
+	// 水平方向の向きを、見た目も含めてすぐに変える（ダッシュなど）。ゼロに近い方向は無視する。
 	void FaceTo(const Vector3& direction);
-	// 水平方向の向きを、turnSpeedDeg の速さで direction へ近づける（近い回り方で回る）。turnSpeedDeg が 0 なら FaceTo() と同じ。
-	void TurnTo(const Vector3& direction, float deltaTime);
-	// 今の水平の速度を、acceleration・deceleration の速さで targetVelocity へ近づけた値を返す。
-	Vector3 ApproachVelocity(const Vector3& targetVelocity, float deltaTime) const;
 	// 速度を打ち消して止める（リスポーン時など）。
 	void Stop();
 
@@ -55,10 +52,17 @@ public:
 	void SetRotation(const Quaternion& rotation)
 	{
 		m_rotation = rotation;
+		m_visualRotation = rotation;
 	}
+	// 本当の向き（移動・魔法を撃つ向きなど）。入力した方向をすぐに向く。
 	const Quaternion& GetRotation() const
 	{
 		return m_rotation;
+	}
+	// 見た目の向き（モデルの向き）。本当の向きへ turnSpeedDeg で少しずつ回る。
+	const Quaternion& GetVisualRotation() const
+	{
+		return m_visualRotation;
 	}
 	Vector3 GetForward() const;
 	const CharacterMoveSettings& GetSettings() const
@@ -74,11 +78,19 @@ public:
 	}
 
 private:
+	// 本当の向きだけを変える。向けたら true。
+	bool SetFacing(const Vector3& direction);
+	// 見た目の向きを、本当の向きへ turnSpeedDeg の速さで近い方へ回す。
+	void UpdateVisualRotation(float deltaTime);
+	// 今の水平の速度を、acceleration・deceleration の速さで targetVelocity へ近づけた値を返す。
+	Vector3 ApproachVelocity(const Vector3& targetVelocity, float deltaTime) const;
+
 	CharacterMoveSettings m_settings;
 	CharacterController m_charaCon;
 	Vector3 m_position = Vector3::Zero;
 	Vector3 m_moveSpeed = Vector3::Zero;
 	Quaternion m_rotation = Quaternion::Identity;
+	Quaternion m_visualRotation = Quaternion::Identity;
 	bool m_isMoving = false;
 	bool m_isInitialized = false;
 };
