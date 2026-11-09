@@ -296,6 +296,24 @@ namespace nsK2Engine {
 			return m_isShadowCaster;
 		}
 		/// <summary>
+		/// instanceId 番の幾何学データ（AABB）を、このフレームに更新する必要があるか。
+		/// </summary>
+		/// <remarks>
+		/// GPU インスタンシングで描くモデルの幾何学データは、影の範囲を決めるのにしか使わない（画面外の判定はしない）。
+		/// そのため、影を落とさないモデルと、このフレームに渡されていない番号は更新しない。
+		/// 置ける最大数ぶん（草なら数千）を毎フレーム更新すると、CPU が重くなるため。
+		/// </remarks>
+		bool IsGeometryDataActive(int instanceId) const
+		{
+			if (!m_isGpuInstancing) {
+				return true;
+			}
+			if (!m_isShadowCaster) {
+				return false;
+			}
+			return instanceId < (std::max)(m_numInstance, m_numDrawInstance);
+		}
+		/// <summary>
 		/// インスタン数を取得。
 		/// </summary>
 		/// <returns></returns>

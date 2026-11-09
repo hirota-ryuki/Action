@@ -5,6 +5,11 @@
 namespace nsK2Engine {
 	void GemometryData::Update()
 	{
+		if (!m_modelRender->IsGeometryDataActive(m_instanceId)) {
+			// 使わない幾何学データ。画面にも影の範囲にも入れない。
+			m_isInViewFrustum = false;
+			return;
+		}
 		Matrix worldMatrix = m_modelRender->GetWorldMatrix(m_instanceId);
 		m_aabb.CalcVertexPositions(
 			m_aabbWorldVertexPositions,
