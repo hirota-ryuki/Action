@@ -90,7 +90,7 @@ namespace
 		settings.gravity = Read(section, "move", "gravity", 980.0f);
 		settings.capsuleRadius = Read(section, "move", "capsuleRadius", 20.0f);
 		settings.capsuleHeight = Read(section, "move", "capsuleHeight", 100.0f);
-		settings.turnSpeedDeg = Read(section, "move", "turnSpeedDeg", 1080.0f);
+		settings.turnSpeedDeg = Read(section, "move", "turnSpeedDeg", 2160.0f);
 		settings.turnInPlaceAngleDeg = Read(section, "move", "turnInPlaceAngleDeg", 45.0f);
 		settings.acceleration = Read(section, "move", "acceleration", 2400.0f);
 		settings.deceleration = Read(section, "move", "deceleration", 3000.0f);
