@@ -60,7 +60,6 @@ void PlayerDashState::Begin(PlayerStateContext& context, const CharacterInput& i
 	if (m_direction.LengthSq() > FLT_EPSILON && context.settings.dashSpeed > 0.0f) {
 		m_direction.Normalize();
 		m_duration = context.settings.dashDistance / context.settings.dashSpeed;
-		context.mover->FaceTo(m_direction);
 	}
 }
 
@@ -142,6 +141,8 @@ void PlayerDashState::Update(PlayerStateContext& context, const CharacterInput& 
 			m_isLanding = false;
 		}
 	}
+	// 体はダッシュの向きへ、走るときと同じ速さで回る（進む向きは最初から m_direction）。
+	context.mover->TurnTo(m_direction, deltaTime);
 	context.mover->Move(velocity, deltaTime);
 }
 

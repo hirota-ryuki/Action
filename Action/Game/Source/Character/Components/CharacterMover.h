@@ -11,13 +11,14 @@ struct CharacterMoveSettings
 	float gravity = 980.0f;
 	float capsuleRadius = 20.0f;
 	float capsuleHeight = 100.0f;
+	float turnSpeedDeg = 0.0f;        // 向きを変える速さ（1秒に何度まで回るか）。0なら一瞬で向く。
 };
 
 // CharacterController を包み、移動・ジャンプ・重力・向きを処理する。
 // パッドやカメラは触らない。
 // 使い方は2通りある。
 // ・Update(input): 入力どおりに歩く・走る・跳ぶ。状態を持たないキャラクター（Enemy）向け。
-// ・Move() / MoveByInput() / Jump() / FaceTo(): 1つずつの操作。ステートで動きを変えるキャラクター（Player）向け。
+// ・Move() / MoveByInput() / Jump() / TurnTo() / FaceTo(): 1つずつの操作。ステートで動きを変えるキャラクター（Player）向け。
 // どちらも、1フレームに1回だけ Move() 系を呼ぶこと（重力はそこでかかる）。
 class CharacterMover
 {
@@ -29,11 +30,14 @@ public:
 
 	// 水平方向の速度で1フレーム動かす。重力もかける。向きは変えない。
 	void Move(const Vector3& horizontalVelocity, float deltaTime);
-	// 入力の移動方向に speed の速さで1フレーム動かし、入力の向きたい方向（なければ移動方向）を向く。
+	// 入力の移動方向に speed の速さで1フレーム動かし、入力の向きたい方向（なければ移動方向）へ TurnTo() で回る。
 	void MoveByInput(const CharacterInput& input, float speed, float deltaTime);
 	// 地面にいれば、speed の初速で跳ぶ。跳べたら true。
 	bool Jump(float speed);
-	// 水平方向の向きを変える。ゼロに近い方向は無視する。
+	// 水平方向の向きを、direction へ turnSpeedDeg の速さで1フレーム分だけ回す（近い方へ回る）。
+	// turnSpeedDeg が 0 なら FaceTo() と同じく一瞬で向く。ゼロに近い方向は無視する。
+	void TurnTo(const Vector3& direction, float deltaTime);
+	// 水平方向の向きを、一瞬で direction にする。ゼロに近い方向は無視する。
 	void FaceTo(const Vector3& direction);
 	// 速度を打ち消して止める（リスポーン時など）。
 	void Stop();

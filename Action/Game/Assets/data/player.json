@@ -24,6 +24,7 @@
 		"gravity": 980.0,
 		"capsuleRadius": 20.0,
 		"capsuleHeight": 100.0,
+		"turnSpeedDeg": 720.0, // 向きを変える速さ（1秒に何度まで回るか）。180° の切り返しで約0.25秒。0 なら一瞬で向く。
 		"moveThreshold": 0.1 // 移動入力がこれより小さければ立ち止まる。
 	},
 

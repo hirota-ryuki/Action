@@ -57,14 +57,14 @@ void CharacterMover::MoveByInput(const CharacterInput& input, float speed, float
 	horizontalVelocity.y = 0.0f;
 	horizontalVelocity *= speed;
 
-	// 向きたい方向の指定があればそちらを、なければ移動方向を向く。
+	// 向きたい方向の指定があればそちらへ、なければ移動方向へ回る。
 	Vector3 lookDirection = input.lookDirection;
 	lookDirection.y = 0.0f;
 	if (lookDirection.LengthSq() > FLT_EPSILON) {
-		FaceTo(lookDirection);
+		TurnTo(lookDirection, deltaTime);
 	}
 	else if (horizontalVelocity.LengthSq() > MOVE_DEAD_ZONE_SQ) {
-		FaceTo(horizontalVelocity);
+		TurnTo(horizontalVelocity, deltaTime);
 	}
 
 	Move(horizontalVelocity, deltaTime);
@@ -95,6 +95,38 @@ bool CharacterMover::Jump(float speed)
 	}
 	m_moveSpeed.y = speed;
 	return true;
+}
+
+void CharacterMover::TurnTo(const Vector3& direction, float deltaTime)
+{
+	if (m_settings.turnSpeedDeg <= 0.0f) {
+		FaceTo(direction);
+		return;
+	}
+	Vector3 horizontal = direction;
+	horizontal.y = 0.0f;
+	if (horizontal.LengthSq() <= FLT_EPSILON) {
+		return;
+	}
+	// 今の向きと目標の向きを、Y軸まわりの角度にする（SetRotationYFromDirectionXZ と同じ測り方）。
+	const Vector3 forward = GetForward();
+	const float currentYaw = atan2f(forward.x, forward.z);
+	const float targetYaw = atan2f(horizontal.x, horizontal.z);
+	// 差を -180〜180° にして、近い方へ回る。
+	float diff = targetYaw - currentYaw;
+	while (diff > Math::PI) {
+		diff -= Math::PI2;
+	}
+	while (diff < -Math::PI) {
+		diff += Math::PI2;
+	}
+	// 1フレームで回れる角度を超えたら、そこで止める（次のフレームで続きを回る）。
+	const float maxStep = Math::DegToRad(m_settings.turnSpeedDeg) * deltaTime;
+	if (fabsf(diff) <= maxStep) {
+		m_rotation.SetRotationY(targetYaw);
+		return;
+	}
+	m_rotation.SetRotationY(currentYaw + (diff > 0.0f ? maxStep : -maxStep));
 }
 
 void CharacterMover::FaceTo(const Vector3& direction)
