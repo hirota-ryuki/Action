@@ -191,6 +191,33 @@
     <ClCompile Include="tkFile\FbxRuntimeImporter.cpp">
       <Filter>tkFile</Filter>
     </ClCompile>
+    <ClCompile Include="tkFile\ModelReducer\ModelReducer.cpp">
+      <Filter>tkFile\ModelReducer</Filter>
+    </ClCompile>
+    <ClCompile Include="tkFile\ModelReducer\LodBuilder.cpp">
+      <Filter>tkFile\ModelReducer</Filter>
+    </ClCompile>
+    <ClCompile Include="tkFile\ModelReducer\MeshSimplifier.cpp">
+      <Filter>tkFile\ModelReducer</Filter>
+    </ClCompile>
+    <ClCompile Include="tkFile\ModelReducer\VertexOrderOptimizer.cpp">
+      <Filter>tkFile\ModelReducer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exlib\meshoptimizer\allocator.cpp">
+      <Filter>meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exlib\meshoptimizer\simplifier.cpp">
+      <Filter>meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exlib\meshoptimizer\vcacheoptimizer.cpp">
+      <Filter>meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exlib\meshoptimizer\overdrawoptimizer.cpp">
+      <Filter>meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exlib\meshoptimizer\vfetchoptimizer.cpp">
+      <Filter>meshoptimizer</Filter>
+    </ClCompile>
     <ClCompile Include="tkFile\TkmFile.cpp">
       <Filter>tkFile</Filter>
     </ClCompile>
@@ -492,6 +519,21 @@
     <ClInclude Include="tkFile\FbxRuntimeImporter.h">
       <Filter>tkFile</Filter>
     </ClInclude>
+    <ClInclude Include="tkFile\ModelReducer\ModelReducer.h">
+      <Filter>tkFile\ModelReducer</Filter>
+    </ClInclude>
+    <ClInclude Include="tkFile\ModelReducer\LodBuilder.h">
+      <Filter>tkFile\ModelReducer</Filter>
+    </ClInclude>
+    <ClInclude Include="tkFile\ModelReducer\MeshSimplifier.h">
+      <Filter>tkFile\ModelReducer</Filter>
+    </ClInclude>
+    <ClInclude Include="tkFile\ModelReducer\VertexOrderOptimizer.h">
+      <Filter>tkFile\ModelReducer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\exlib\meshoptimizer\meshoptimizer.h">
+      <Filter>meshoptimizer</Filter>
+    </ClInclude>
     <ClInclude Include="tkFile\TkmFile.h">
       <Filter>tkFile</Filter>
     </ClInclude>
@@ -617,6 +659,12 @@
     </Filter>
     <Filter Include="tkFile">
       <UniqueIdentifier>{76a10421-a719-4ab3-82db-2cd452f086a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tkFile\ModelReducer">
+      <UniqueIdentifier>{5b8e2f14-7c3d-4a91-b6e0-2d4f8a1c9e37}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="meshoptimizer">
+      <UniqueIdentifier>{c41d7a62-0e95-4f3b-8a27-6b1e9d3f5c08}</UniqueIdentifier>
     </Filter>
     <Filter Include="util">
       <UniqueIdentifier>{d22bcaef-43e4-45a4-bd3b-412ecb38dfd4}</UniqueIdentifier>

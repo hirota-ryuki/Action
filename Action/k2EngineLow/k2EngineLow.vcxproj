@@ -371,6 +371,35 @@
     <ClCompile Include="sound\WaveFileBank.cpp" />
     <ClCompile Include="tkFile\TkaFile.cpp" />
     <ClCompile Include="tkFile\FbxRuntimeImporter.cpp" />
+    <ClCompile Include="tkFile\ModelReducer\ModelReducer.cpp" />
+    <ClCompile Include="tkFile\ModelReducer\LodBuilder.cpp" />
+    <ClCompile Include="tkFile\ModelReducer\MeshSimplifier.cpp" />
+    <ClCompile Include="tkFile\ModelReducer\VertexOrderOptimizer.cpp" />
+    <ClCompile Include="..\exlib\meshoptimizer\allocator.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Preview|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\exlib\meshoptimizer\simplifier.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Preview|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\exlib\meshoptimizer\vcacheoptimizer.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Preview|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\exlib\meshoptimizer\overdrawoptimizer.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Preview|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\exlib\meshoptimizer\vfetchoptimizer.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Preview|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="tkFile\TkmFile.cpp" />
     <ClCompile Include="tkFile\TknFile.cpp" />
     <ClCompile Include="tkFile\TksFile.cpp" />
@@ -478,6 +507,11 @@
     <ClInclude Include="time\Stopwatch.h" />
     <ClInclude Include="tkFile\TkaFile.h" />
     <ClInclude Include="tkFile\FbxRuntimeImporter.h" />
+    <ClInclude Include="tkFile\ModelReducer\ModelReducer.h" />
+    <ClInclude Include="tkFile\ModelReducer\LodBuilder.h" />
+    <ClInclude Include="tkFile\ModelReducer\MeshSimplifier.h" />
+    <ClInclude Include="tkFile\ModelReducer\VertexOrderOptimizer.h" />
+    <ClInclude Include="..\exlib\meshoptimizer\meshoptimizer.h" />
     <ClInclude Include="tkFile\TkmFile.h" />
     <ClInclude Include="tkFile\TknFile.h" />
     <ClInclude Include="tkFile\TksFile.h" />
