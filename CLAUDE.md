@@ -62,6 +62,10 @@
 - **書き方（用語・数え方・略し方）は、設計も経緯も含めて全部のドキュメントで一律にする。** 書き方の決まりを変えたら、経緯の過去の記述も直す（中身は変えない）。決まりは `Action/docs/README.md` の「ドキュメントを追加するとき」に書く。
   - 例: アニメーションのコマは `f02` と略さず「Run の 2コマ目（右足が前に着く）」と書く。アニメーションの1枚は「コマ」、ゲームの1回の更新は「フレーム」。
 - 詳しい手順は `Action/docs/README.md` の「ドキュメントを追加するとき」を参照。
+- ドキュメントは VSCode の標準のプレビュー（`Ctrl+Shift+V`）で読む。手順書の「行番号の枠とコードの枠を並べる表」（`<table class="code-lines">`）の見た目は `.vscode/markdown-preview.css` で付けている。
+  - `.vscode/settings.json` はPCごとの設定で git に入れていないので、各PCの VSCode のユーザー設定（`%APPDATA%\Code\User\settings.json`）に次の2つを1回だけ足す。足していないPCに気づいたら、ユーザーに聞いてから足す。
+    - `"workbench.editorAssociations": { "*.md": "default" }`（`.md` を拡張機能 Office Viewer ではなくテキストで開き、`Ctrl+Shift+V` を効くようにする）
+    - `"markdown.styles": [".vscode/markdown-preview.css"]`（プレビューにこの CSS を読み込む）
 
 ## git
 
