@@ -60,6 +60,9 @@
     <ClCompile Include="Source\Enemy\State\EnemyStateMachine.cpp">
       <Filter>Source\Enemy\State</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Enemy\State\EnemyAttackState.cpp">
+      <Filter>Source\Enemy\State</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Enemy\State\EnemyFrozenState.cpp">
       <Filter>Source\Enemy\State</Filter>
     </ClCompile>
@@ -189,6 +192,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Enemy\State\EnemyStateMachine.h">
+      <Filter>Source\Enemy\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\State\EnemyAttackState.h">
       <Filter>Source\Enemy\State</Filter>
     </ClInclude>
     <ClInclude Include="Source\Enemy\State\EnemyFrozenState.h">

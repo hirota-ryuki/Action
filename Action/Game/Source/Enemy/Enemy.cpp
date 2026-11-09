@@ -34,16 +34,15 @@ namespace
 	CharacterModelDesc MakeModelDesc()
 	{
 		CharacterModelDesc desc;
-		// 黒騎士。SK_Player と同じ骨格なので、プレイヤーの Idle・Run をそのまま流せる
-		// （tools/BlenderScripts/make_black_knight.py で作る）。
-		// アニメーションの FBX は黒騎士のフォルダに写したものを使う。tka は FBX の隣に1つだけ作られ、
-		// ボーンの並びはモデルごとに違うので、プレイヤーと同じ FBX を指すとプレイヤーの tka を上書きしてしまう。
+		// 黒騎士。骨格は SK_Player と同じ（tools/BlenderScripts/make_black_knight.py で作る）。
+		// アニメーションは黒騎士用に作ったもの（tools/BlenderScripts/make_black_knight_anims.py で作る）。
 		desc.modelPath = "Assets/modelData/enemy/BlackKnight/BlackKnight.fbx";
 		desc.upAxis = enModelUpAxisZ;
 		desc.scale = 1.3f;   // プレイヤー（1.128）より一回り大きくする。
 		desc.clips.resize(enEnemyAnimClip_Num);
 		desc.clips[enEnemyAnimClip_Idle] = { "Assets/modelData/enemy/BlackKnight/Animation/Idle.fbx", true };
 		desc.clips[enEnemyAnimClip_Run] = { "Assets/modelData/enemy/BlackKnight/Animation/Run.fbx", true };
+		desc.clips[enEnemyAnimClip_Attack] = { "Assets/modelData/enemy/BlackKnight/Animation/Attack.fbx", false };
 		return desc;
 	}
 

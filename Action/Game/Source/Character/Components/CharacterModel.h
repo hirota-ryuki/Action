@@ -44,6 +44,11 @@ public:
 	{
 		m_modelRender.PlayAnimation(animClip, interpolateTime);
 	}
+	// ループしないアニメーションが、まだ最後まで流れていないか。
+	bool IsPlayingAnimation() const
+	{
+		return m_modelRender.IsPlayingAnimation();
+	}
 
 	// アニメーション速度・ボーン・状態異常の色など、ModelRender を直接触る部品向け。
 	ModelRender& GetModelRender()
