@@ -11,7 +11,8 @@ struct CharacterMoveSettings
 	float gravity = 980.0f;
 	float capsuleRadius = 20.0f;
 	float capsuleHeight = 100.0f;
-	float turnSpeedDeg = 0.0f;        // 移動中に向きを変える速さ（度/秒）。0ならすぐその方向を向く。
+	float turnSpeedDeg = 0.0f;        // 見た目の向きを変える速さの上限（度/秒）。0ならすぐその方向を向く。
+	float turnStiffness = 0.0f;       // 見た目の向きを寄せるばねの強さ（1/秒）。大きいほど早く向く。向き終わるのは 約 4.7 ÷ この値 秒。0ならすぐ向く。
 	float turnInPlaceAngleDeg = 0.0f; // 入力の方向が体の向きからこれより離れていたら、進まずにその場で回る。0ならいつも進む。
 	float acceleration = 0.0f;        // 速くなるときの加速度（cm/秒²）。0なら一瞬でその速さになる。
 	float deceleration = 0.0f;        // 遅くなるときの減速度（cm/秒²）。0なら acceleration と同じ。
@@ -53,6 +54,7 @@ public:
 	{
 		m_rotation = rotation;
 		m_visualRotation = rotation;
+		m_visualYawVelocity = 0.0f;
 	}
 	// 本当の向き（移動・魔法を撃つ向きなど）。入力した方向をすぐに向く。
 	const Quaternion& GetRotation() const
@@ -91,6 +93,7 @@ private:
 	Vector3 m_moveSpeed = Vector3::Zero;
 	Quaternion m_rotation = Quaternion::Identity;
 	Quaternion m_visualRotation = Quaternion::Identity;
+	float m_visualYawVelocity = 0.0f;  // 見た目の向きが回る速さ（ラジアン/秒）。
 	bool m_isMoving = false;
 	bool m_isInitialized = false;
 };

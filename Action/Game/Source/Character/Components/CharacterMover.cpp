@@ -116,6 +116,7 @@ void CharacterMover::FaceTo(const Vector3& direction)
 {
 	if (SetFacing(direction)) {
 		m_visualRotation = m_rotation;
+		m_visualYawVelocity = 0.0f;
 	}
 }
 
@@ -151,27 +152,46 @@ Vector3 CharacterMover::ApproachVelocity(const Vector3& targetVelocity, float de
 
 void CharacterMover::UpdateVisualRotation(float deltaTime)
 {
-	if (m_settings.turnSpeedDeg <= 0.0f) {
+	if (m_settings.turnSpeedDeg <= 0.0f || m_settings.turnStiffness <= 0.0f) {
 		m_visualRotation = m_rotation;
+		m_visualYawVelocity = 0.0f;
 		return;
 	}
-	// 見た目の向きと本当の向きを Y 軸回りの角度にし、差を -180°〜180° にそろえて近い方へ回る。
+	// 見た目の向きと本当の向きを Y 軸回りの角度にし、差を -180°〜180° にそろえる（近い方へ回る）。
 	Vector3 visualForward = Vector3::AxisZ;
 	m_visualRotation.Apply(visualForward);
 	const Vector3 forward = GetForward();
 	const float currentAngle = atan2f(visualForward.x, visualForward.z);
 	const float targetAngle = atan2f(forward.x, forward.z);
-	float diff = targetAngle - currentAngle;
-	while (diff > Math::PI) {
-		diff -= Math::PI2;
+	float offset = currentAngle - targetAngle;  // 本当の向きから見た、見た目の向きのずれ。
+	while (offset > Math::PI) {
+		offset -= Math::PI2;
 	}
-	while (diff < -Math::PI) {
-		diff += Math::PI2;
+	while (offset < -Math::PI) {
+		offset += Math::PI2;
 	}
-	const float maxStep = Math::DegToRad(m_settings.turnSpeedDeg) * deltaTime;
-	if (fabsf(diff) <= maxStep) {
+
+	// 臨界減衰のばねで、ずれを 0 へ寄せる（回り始めと終わりがゆっくりで、行き過ぎない）。
+	// 1フレームの時間がどれだけ長くても暴れないよう、ばねの式をそのまま解いた形で進める。
+	const float omega = m_settings.turnStiffness;
+	const float decay = expf(-omega * deltaTime);
+	const float temp = (m_visualYawVelocity + omega * offset) * deltaTime;
+	float nextOffset = (offset + temp) * decay;
+	float nextVelocity = (m_visualYawVelocity - omega * temp) * decay;
+
+	// 回る速さは turnSpeedDeg を超えない。
+	const float maxSpeed = Math::DegToRad(m_settings.turnSpeedDeg);
+	if (fabsf(nextOffset - offset) > maxSpeed * deltaTime) {
+		const float sign = nextOffset < offset ? -1.0f : 1.0f;
+		nextOffset = offset + sign * maxSpeed * deltaTime;
+		nextVelocity = sign * maxSpeed;
+	}
+	// ほとんど向き終わったら、ぴったり合わせる。
+	if (fabsf(nextOffset) < 1.0e-4f && fabsf(nextVelocity) < 1.0e-3f) {
 		m_visualRotation = m_rotation;
+		m_visualYawVelocity = 0.0f;
 		return;
 	}
-	m_visualRotation.SetRotationY(currentAngle + (diff > 0.0f ? maxStep : -maxStep));
+	m_visualYawVelocity = nextVelocity;
+	m_visualRotation.SetRotationY(targetAngle + nextOffset);
 }
