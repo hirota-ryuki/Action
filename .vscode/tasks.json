@@ -1,6 +1,7 @@
 {
-    // フォルダーを開いたときに、別のPCで最近使っていた Claude の会話をタブで開き直す。
-    // 中身は .claude/scripts/claude-sessions.ps1 の restore モード。
+    // フォルダーを開いたときに、次の2つを動かす。
+    //   ・別のPCで最近使っていた Claude の会話をタブで開き直す（.claude/scripts/claude-sessions.ps1 の restore モード）
+    //   ・リモートの最新を取り込んでから Game.sln を開く（.claude/scripts/pull-and-open-sln.ps1）
     // 初回は VSCode が「自動タスクを許可するか」を聞いてくるので「許可」を選ぶ。
     "version": "2.0.0",
     "tasks": [
@@ -17,6 +18,21 @@
             ],
             "runOptions": { "runOn": "folderOpen" },
             "presentation": { "reveal": "silent", "panel": "dedicated", "close": true },
+            "problemMatcher": []
+        },
+        {
+            // 結果を後から見られるように、ターミナルは閉じずに残す（前には出さない）。
+            "label": "Pull して sln を開く",
+            "type": "process",
+            "command": "powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy", "Bypass",
+                "-File", "${workspaceFolder}/.claude/scripts/pull-and-open-sln.ps1",
+                "-RepoDir", "${workspaceFolder}"
+            ],
+            "runOptions": { "runOn": "folderOpen" },
+            "presentation": { "reveal": "never", "panel": "dedicated", "close": false },
             "problemMatcher": []
         }
     ]
