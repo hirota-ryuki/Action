@@ -65,6 +65,13 @@ void CharacterMover::MoveByInput(const CharacterInput& input, float speed, float
 	}
 	else if (horizontalVelocity.LengthSq() > MOVE_DEAD_ZONE_SQ) {
 		TurnTo(horizontalVelocity, deltaTime);
+		// 回りながら向いている方へ進む（人が曲がるときのように弧を描く）。入力の方向へすぐ進むと、体だけ遅れて横や後ろへ滑って見える。
+		if (m_settings.turnSpeedDeg > 0.0f) {
+			Vector3 forward = GetForward();
+			forward.y = 0.0f;
+			forward.Normalize();
+			horizontalVelocity = forward * horizontalVelocity.Length();
+		}
 	}
 
 	Move(horizontalVelocity, deltaTime);
