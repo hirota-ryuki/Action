@@ -20,6 +20,14 @@ bool Character::Start()
 	m_model.Update();
 	m_bodyLean.Init(config.lean);
 	m_springBones.Init(m_model.GetModelRender(), config.springBones);
+	m_bodyLink.Init(m_model.GetModelRender(), config.bodyLink);
+	// アニメーションの姿勢ができたあとに、体の連動 → 揺れ物の順に手を加える（揺れ物は連動した体の動きに遅れて付いてくる）。
+	if (m_bodyLink.IsActive() || m_springBones.IsActive()) {
+		m_model.GetModelRender().GetSkeleton().SetOnPostUpdateWorldMatrix([this](Skeleton& skeleton) {
+			m_bodyLink.Update(skeleton);
+			m_springBones.Update(skeleton);
+		});
+	}
 
 	m_statusEffects.Init(&m_model.GetModelRender());
 
@@ -53,7 +61,9 @@ void Character::Update()
 	m_hitTarget.SetPosition(m_transform.position);
 	// 見た目だけ、速さが変わるのに合わせて前後に傾ける（髪・スカートの揺れは m_model.Update() の中で動く）。
 	// 向きは、本当の向きへ少しずつ回る見た目の向きを使う。
-	m_model.SetTransform(m_transform.position, m_bodyLean.Update(m_transform.position, m_mover.GetVisualRotation(), deltaTime));
+	const Quaternion modelRotation = m_bodyLean.Update(m_transform.position, m_mover.GetVisualRotation(), deltaTime);
+	m_model.SetTransform(m_transform.position, modelRotation);
+	m_bodyLink.SetRotation(modelRotation);
 	m_model.Update();
 	// ⑦ モデルを更新したあとの処理（派生クラス）
 	OnLateUpdate(deltaTime);

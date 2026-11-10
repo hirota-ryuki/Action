@@ -81,6 +81,9 @@
     <ClCompile Include="Source\Character\Components\BodyLean.cpp">
       <Filter>Source\Character\Components</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Character\Components\BodyLink.cpp">
+      <Filter>Source\Character\Components</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Player\PlayerConfig.cpp">
       <Filter>Source\Player</Filter>
     </ClCompile>
@@ -267,6 +270,9 @@
       <Filter>Source\Character\Components</Filter>
     </ClInclude>
     <ClInclude Include="Source\Character\Components\BodyLean.h">
+      <Filter>Source\Character\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\Components\BodyLink.h">
       <Filter>Source\Character\Components</Filter>
     </ClInclude>
     <ClInclude Include="Source\Player\PlayerConfig.h">

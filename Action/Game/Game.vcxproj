@@ -233,6 +233,7 @@
     <ClCompile Include="Source\Character\Components\WeaponAttachment.cpp" />
     <ClCompile Include="Source\Character\Components\SpringBones.cpp" />
     <ClCompile Include="Source\Character\Components\BodyLean.cpp" />
+    <ClCompile Include="Source\Character\Components\BodyLink.cpp" />
     <ClCompile Include="Source\Player\PlayerConfig.cpp" />
     <ClCompile Include="Source\Character\Character.cpp" />
     <ClCompile Include="Source\Player\PlayerAnimator.cpp" />
@@ -301,6 +302,7 @@
     <ClInclude Include="Source\Character\Components\WeaponAttachment.h" />
     <ClInclude Include="Source\Character\Components\SpringBones.h" />
     <ClInclude Include="Source\Character\Components\BodyLean.h" />
+    <ClInclude Include="Source\Character\Components\BodyLink.h" />
     <ClInclude Include="Source\Player\PlayerConfig.h" />
     <ClInclude Include="Source\Player\PlayerStatus.h" />
     <ClInclude Include="Source\Character\Character.h" />

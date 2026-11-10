@@ -11,6 +11,7 @@
 #include "MagicCaster.h"
 #include "BodyLean.h"
 #include "SpringBones.h"
+#include "BodyLink.h"
 
 // キャラクターごとの調整値。派生クラスが MakeConfig() で返す。
 struct CharacterConfig
@@ -23,6 +24,7 @@ struct CharacterConfig
 	float maxHp = 100.0f;
 	BodyLeanSettings lean;              // 体の傾き。既定は使わない。
 	SpringBonesSettings springBones;    // 髪・スカートの揺れ。既定は使わない。
+	BodyLinkSettings bodyLink;          // 脚に合わせた骨盤・背骨・肩・首の連動。既定は使わない。
 };
 
 // Player・Enemy など、キャラクターの基底クラス。
@@ -120,6 +122,7 @@ private:
 
 	BodyLean m_bodyLean;
 	SpringBones m_springBones;
+	BodyLink m_bodyLink;
 	IInputSource* m_inputSource = nullptr;  // nullptr なら GetDefaultInputSource()。
 	Faction m_faction = Faction::Neutral;
 	bool m_isRenderBody = true;
