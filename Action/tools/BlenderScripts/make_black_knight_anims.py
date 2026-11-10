@@ -1,7 +1,10 @@
 # 黒騎士のアニメーション（30fps）を作って FBX に書き出す。
 #
 # 使い方（Blender 5.1 で確認）:
-#   blender -b --python make_black_knight_anims.py -- <BlackKnight.fbx> <出力フォルダ> [--preview <プレビューのフォルダ>]
+#   blender -b --python make_black_knight_anims.py -- <PoseRig.fbx> <BlackKnight.fbx> <出力フォルダ> [--preview <プレビューのフォルダ>]
+#
+#   PoseRig.fbx      ポーズを計算する骨格（BlackKnightSource/PoseRig.fbx。SK_Player の比率）
+#   BlackKnight.fbx  書き出す骨格とメッシュ（make_black_knight_meshy.py の出力。Meshy の体に合わせた比率）
 #
 # 動きのテーマは「静から動へ一瞬で切り替わる、低く素早い暗殺者の動き」。
 # どの攻撃も「予備動作（短い）→ 攻撃（非常に速い）→ 残心（やや長め）」の3段で作る。
@@ -30,7 +33,9 @@
 #   - 垂れ布とフードの骨は、腰・頭の動き（速さ・回る速さ・落ちる速さ）から、ばねで遅れて揺れるように後から付ける。
 #     脚や背中に入り込まないよう、太もも・すね・胸の傾きに合わせて押し出す。
 #   - 刀身の発光の強さ（GLOW）は、ゲームのエンジンに発光がないので、プレビューの描画にだけ使う。
-#     プレビューは、make_black_knight.py が焼いた albedo・normal・emission（発光のマスク）の画像を使う。
+#     プレビューは、BlackKnight.fbx の横にある、マテリアルごとの albedo・normal・emission（発光のマスク）の画像を使う。
+#   - ポーズは PoseRig の上で計算し、骨の世界での向きがそろうように BlackKnight.fbx の骨格へ移して書き出す。
+#     腰の移動は、脚の長さの比（LEG_RATIO）で伸び縮みさせる。
 import bpy
 import sys
 import os
@@ -38,13 +43,20 @@ import math
 from mathutils import Vector, Quaternion, Matrix
 
 argv = sys.argv[sys.argv.index("--") + 1:]
-SRC_FBX, OUT_DIR = argv[0], argv[1]
-PREVIEW_DIR = argv[argv.index("--preview") + 1] if "--preview" in argv else None
+RIG_FBX, SRC_FBX, OUT_DIR = (os.path.abspath(p) for p in argv[:3])
+PREVIEW_DIR = os.path.abspath(argv[argv.index("--preview") + 1]) if "--preview" in argv else None
 FPS = 30
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
-bpy.ops.import_scene.fbx(filepath=SRC_FBX)
+# ポーズを計算する骨格（PoseRig。SK_Player の比率）。剣のメッシュは使わない
+bpy.ops.import_scene.fbx(filepath=RIG_FBX)
 ARM = next(o for o in bpy.data.objects if o.type == "ARMATURE")
+for o in [o for o in bpy.data.objects if o.type == "MESH"]:
+    bpy.data.objects.remove(o, do_unlink=True)
+# 書き出す骨格（BlackKnight.fbx。Meshy の体に合わせた比率）
+_before = set(bpy.data.objects)
+bpy.ops.import_scene.fbx(filepath=SRC_FBX)
+TGT = next(o for o in bpy.data.objects if o not in _before and o.type == "ARMATURE")
 SCENE = bpy.context.scene
 SCENE.render.fps = FPS
 SCENE.render.fps_base = 1.0
@@ -80,6 +92,24 @@ def depth(b):
 
 ORDER = sorted([b.name for b in BONES], key=lambda n: depth(BONES[n]))
 PARENT = {b.name: (b.parent.name if b.parent else None) for b in BONES}
+
+# 書き出す骨格へ移すための値。骨の世界での向きを PoseRig とそろえると、
+# 骨ごとの回転は D⁻¹·（PoseRig の回転）·D になる（D は PoseRig から見た、書き出す骨格の初期の向きの差）
+TGT_REST_Q = {b.name: b.matrix_local.to_quaternion() for b in TGT.data.bones}
+REST_D = {n: REST_Q[n].inverted() @ TGT_REST_Q[n] for n in REST_Q if n in TGT_REST_Q}
+
+
+def retarget(name, q):
+    d = REST_D[name]
+    return (d.inverted() @ q @ d).normalized()
+
+
+def _leg_len(bones):
+    return bones[S("L", "UpperLeg")].head_local.z - bones[S("L", "Foot")].head_local.z
+
+
+LEG_RATIO = _leg_len(TGT.data.bones) / _leg_len(BONES)
+print("LEG_RATIO", round(LEG_RATIO, 4))
 
 
 def w2a_dir(v):
@@ -521,22 +551,23 @@ def bake(name, keys, length, loop, in_place):
     if loop:
         frames_basis[-1] = dict(frames_basis[0])
 
-    ARM.animation_data_create()
-    ARM.animation_data.action = None
-    for pb in ARM.pose.bones:
+    # 書き出す骨格へ移す（骨の世界での向きをそろえる。腰の移動は脚の長さの比で伸び縮みさせる）
+    TGT.animation_data_create()
+    TGT.animation_data.action = None
+    for pb in TGT.pose.bones:
         pb.rotation_mode = "QUATERNION"
         pb.rotation_quaternion = Quaternion()
         pb.location = Vector()
     keyed = sorted(set(bone_names) | {n for n in ORDER if n.startswith("J_Sec_") and n != "J_Sec_Sword"})
     for f in range(0, length + 1):
         for n in keyed:
-            pb = ARM.pose.bones[n]
-            pb.rotation_quaternion = frames_basis[f].get(n, Quaternion())
+            pb = TGT.pose.bones[n]
+            pb.rotation_quaternion = retarget(n, frames_basis[f].get(n, Quaternion()))
             pb.keyframe_insert("rotation_quaternion", frame=f)
-        hb = ARM.pose.bones[C("Hips")]
-        hb.location = hips_key[f]
+        hb = TGT.pose.bones[C("Hips")]
+        hb.location = TGT_REST_Q[C("Hips")].inverted() @ (REST_Q[C("Hips")] @ hips_key[f]) * LEG_RATIO
         hb.keyframe_insert("location", frame=f)
-    act = ARM.animation_data.action
+    act = TGT.animation_data.action
     act.name = name + ("" if in_place else "_RM")
     act.use_fake_user = True
     for c in computed:
@@ -878,8 +909,8 @@ ANIMS.append(("FeintDash", feint_keys, 42, False, [(0, 1.0), (11, 1.3), (13, 2.6
 # ---------------------------------------------------------------------------
 def export(path):
     for o in bpy.data.objects:
-        o.select_set(o == ARM)
-    bpy.context.view_layer.objects.active = ARM
+        o.select_set(o == TGT)
+    bpy.context.view_layer.objects.active = TGT
     bpy.ops.export_scene.fbx(
         filepath=path, use_selection=True, object_types={"ARMATURE"},
         axis_forward="Y", axis_up="Z", add_leaf_bones=False,
@@ -907,71 +938,78 @@ for name, keys, length, loop, glow, prev_frames, in_game in ANIMS:
 # プレビュー（キーポーズの連番画像）
 # ---------------------------------------------------------------------------
 def preview_material(mesh):
-    """トゥーン寄りの陰影と発光（make_black_knight.py の stage 4 と同じ考え方を、albedo・spec から組む）。"""
-    import numpy as np  # noqa: F401
+    """トゥーン寄りの陰影と発光を、マテリアル（体・剣）ごとに、その名前の albedo・normal・emission の画像から組む。"""
     d = os.path.dirname(SRC_FBX)
-    m = bpy.data.materials.new("prev")
-    m.use_nodes = True
-    t = m.node_tree
-    for nd in list(t.nodes):
-        t.nodes.remove(nd)
-    out = t.nodes.new("ShaderNodeOutputMaterial")
-    ta = t.nodes.new("ShaderNodeTexImage")
-    ta.image = bpy.data.images.load(os.path.join(d, "BlackKnight_albedo.png"))
-    # 拡散の3段
-    diff = t.nodes.new("ShaderNodeBsdfDiffuse")
-    s2r = t.nodes.new("ShaderNodeShaderToRGB")
-    t.links.new(diff.outputs[0], s2r.inputs[0])
-    tn = t.nodes.new("ShaderNodeTexImage")
-    tn.image = bpy.data.images.load(os.path.join(d, "BlackKnight_normal.png"))
-    tn.image.colorspace_settings.name = "Non-Color"
-    nmap = t.nodes.new("ShaderNodeNormalMap")
-    t.links.new(tn.outputs["Color"], nmap.inputs["Color"])
-    t.links.new(nmap.outputs["Normal"], diff.inputs["Normal"])
-    ramp = t.nodes.new("ShaderNodeValToRGB")
-    ramp.color_ramp.interpolation = "CONSTANT"
-    els = ramp.color_ramp.elements
-    els[0].position, els[0].color = 0.0, (0.34, 0.34, 0.40, 1)
-    els[1].position, els[1].color = 0.18, (0.66, 0.66, 0.70, 1)
-    e3 = els.new(0.55)
-    e3.color = (1, 1, 1, 1)
-    t.links.new(s2r.outputs["Color"], ramp.inputs["Fac"])
-    mul = t.nodes.new("ShaderNodeMix")
-    mul.data_type = "RGBA"
-    mul.blend_type = "MULTIPLY"
-    mul.inputs["Factor"].default_value = 1.0
-    t.links.new(ta.outputs["Color"], mul.inputs[6])
-    t.links.new(ramp.outputs["Color"], mul.inputs[7])
-    # 発光のマスク（make_black_knight.py が焼いた BlackKnight_emission.png）の白いところだけを光らせる
-    te = t.nodes.new("ShaderNodeTexImage")
-    te.image = bpy.data.images.load(os.path.join(d, "BlackKnight_emission.png"))
-    te.image.colorspace_settings.name = "Non-Color"
-    sep = t.nodes.new("ShaderNodeSeparateColor")
-    t.links.new(te.outputs["Color"], sep.inputs[0])
 
-    def mult(a, b):
-        n_ = t.nodes.new("ShaderNodeMath")
-        n_.operation = "MULTIPLY"
-        t.links.new(a, n_.inputs[0])
-        t.links.new(b, n_.inputs[1])
-        return n_.outputs[0]
-    mask = sep.outputs[0]
-    strength = t.nodes.new("ShaderNodeValue")
-    strength.name = "GlowStrength"
-    strength.outputs[0].default_value = 1.0
-    em = t.nodes.new("ShaderNodeVectorMath")
-    em.operation = "SCALE"
-    em.inputs[0].default_value = (0.54 * 1.2, 0.36 * 1.2, 1.0 * 1.2)
-    t.links.new(mult(mask, strength.outputs[0]), em.inputs["Scale"])
-    add = t.nodes.new("ShaderNodeVectorMath")
-    add.operation = "ADD"
-    t.links.new(mul.outputs[2], add.inputs[0])
-    t.links.new(em.outputs[0], add.inputs[1])
-    emis = t.nodes.new("ShaderNodeEmission")
-    t.links.new(add.outputs[0], emis.inputs["Color"])
-    t.links.new(emis.outputs[0], out.inputs["Surface"])
+    def toon(prefix):
+        m = bpy.data.materials.new("prev_" + prefix)
+        m.use_nodes = True
+        t = m.node_tree
+        for nd in list(t.nodes):
+            t.nodes.remove(nd)
+        out = t.nodes.new("ShaderNodeOutputMaterial")
+        ta = t.nodes.new("ShaderNodeTexImage")
+        ta.image = bpy.data.images.load(os.path.join(d, prefix + "_albedo.png"))
+        # 拡散の3段
+        diff = t.nodes.new("ShaderNodeBsdfDiffuse")
+        s2r = t.nodes.new("ShaderNodeShaderToRGB")
+        t.links.new(diff.outputs[0], s2r.inputs[0])
+        if os.path.exists(os.path.join(d, prefix + "_normal.png")):
+            tn = t.nodes.new("ShaderNodeTexImage")
+            tn.image = bpy.data.images.load(os.path.join(d, prefix + "_normal.png"))
+            tn.image.colorspace_settings.name = "Non-Color"
+            nmap = t.nodes.new("ShaderNodeNormalMap")
+            t.links.new(tn.outputs["Color"], nmap.inputs["Color"])
+            t.links.new(nmap.outputs["Normal"], diff.inputs["Normal"])
+        ramp = t.nodes.new("ShaderNodeValToRGB")
+        ramp.color_ramp.interpolation = "CONSTANT"
+        els = ramp.color_ramp.elements
+        els[0].position, els[0].color = 0.0, (0.34, 0.34, 0.40, 1)
+        els[1].position, els[1].color = 0.18, (0.66, 0.66, 0.70, 1)
+        e3 = els.new(0.55)
+        e3.color = (1, 1, 1, 1)
+        t.links.new(s2r.outputs["Color"], ramp.inputs["Fac"])
+        mul = t.nodes.new("ShaderNodeMix")
+        mul.data_type = "RGBA"
+        mul.blend_type = "MULTIPLY"
+        mul.inputs["Factor"].default_value = 1.0
+        t.links.new(ta.outputs["Color"], mul.inputs[6])
+        t.links.new(ramp.outputs["Color"], mul.inputs[7])
+        # 発光のマスク（<名前>_emission.png）の白いところだけを光らせる
+        te = t.nodes.new("ShaderNodeTexImage")
+        te.image = bpy.data.images.load(os.path.join(d, prefix + "_emission.png"))
+        te.image.colorspace_settings.name = "Non-Color"
+        sep = t.nodes.new("ShaderNodeSeparateColor")
+        t.links.new(te.outputs["Color"], sep.inputs[0])
+
+        def mult(a, b):
+            n_ = t.nodes.new("ShaderNodeMath")
+            n_.operation = "MULTIPLY"
+            t.links.new(a, n_.inputs[0])
+            t.links.new(b, n_.inputs[1])
+            return n_.outputs[0]
+        mask = sep.outputs[0]
+        strength = t.nodes.new("ShaderNodeValue")
+        strength.name = "GlowStrength"
+        strength.outputs[0].default_value = 1.0
+        em = t.nodes.new("ShaderNodeVectorMath")
+        em.operation = "SCALE"
+        em.inputs[0].default_value = (0.54 * 1.2, 0.36 * 1.2, 1.0 * 1.2)
+        t.links.new(mult(mask, strength.outputs[0]), em.inputs["Scale"])
+        add = t.nodes.new("ShaderNodeVectorMath")
+        add.operation = "ADD"
+        t.links.new(mul.outputs[2], add.inputs[0])
+        t.links.new(em.outputs[0], add.inputs[1])
+        emis = t.nodes.new("ShaderNodeEmission")
+        t.links.new(add.outputs[0], emis.inputs["Color"])
+        t.links.new(emis.outputs[0], out.inputs["Surface"])
+        return m, strength
+
+    names = [m_.name.split(".")[0] for m_ in mesh.data.materials]
+    built = [toon(n) for n in names]
     mesh.data.materials.clear()
-    mesh.data.materials.append(m)
+    for m_, _ in built:
+        mesh.data.materials.append(m_)
     ol = bpy.data.materials.new("outline")
     ol.use_nodes = True
     ot = ol.node_tree
@@ -982,19 +1020,20 @@ def preview_material(mesh):
     o_em.inputs["Color"].default_value = (0.012, 0.010, 0.018, 1)
     ot.links.new(o_em.outputs[0], o_out.inputs["Surface"])
     ol.use_backface_culling = True
-    mesh.data.materials.append(ol)
+    for _ in built:
+        mesh.data.materials.append(ol)
     sol = mesh.modifiers.new("Outline", "SOLIDIFY")
     sol.thickness = 0.0035 / UNIT if mesh.matrix_world.to_scale()[0] < 0.5 else 0.0035
     sol.offset = 1.0
     sol.use_flip_normals = True
-    sol.material_offset = 1
-    return strength
+    sol.material_offset = len(built)
+    return [st for _, st in built]
 
 
 def render_previews():
     import numpy as np
     mesh = next(o for o in bpy.data.objects if o.type == "MESH")
-    strength = preview_material(mesh)
+    strengths = preview_material(mesh)
     try:
         SCENE.render.engine = "BLENDER_EEVEE"
     except TypeError:
@@ -1021,11 +1060,11 @@ def render_previews():
     SCENE.camera = cam
     cam.data.type = "ORTHO"
     cam.data.ortho_scale = 2.6
-    hips = ARM.pose.bones[C("Hips")]
+    hips = TGT.pose.bones[C("Hips")]
     for name, (act, length, glow, frames) in results.items():
-        ARM.animation_data.action = act
-        if hasattr(ARM.animation_data, "action_slot") and act.slots:
-            ARM.animation_data.action_slot = act.slots[0]
+        TGT.animation_data.action = act
+        if hasattr(TGT.animation_data, "action_slot") and act.slots:
+            TGT.animation_data.action_slot = act.slots[0]
         folder = os.path.join(PREVIEW_DIR, name)
         os.makedirs(folder, exist_ok=True)
         rows = []
@@ -1033,8 +1072,9 @@ def render_previews():
             tiles = []
             for f in frames:
                 SCENE.frame_set(f)
-                strength.outputs[0].default_value = sample_linear(glow, f)
-                hw = ARM.matrix_world @ hips.head
+                for st in strengths:
+                    st.outputs[0].default_value = sample_linear(glow, f)
+                hw = TGT.matrix_world @ hips.head
                 a = math.radians(ang)
                 tgt = Vector((hw.x, hw.y, 0.95 + max(0.0, hw.z - 0.95) * 0.8))
                 cam.location = tgt + Vector((math.sin(a) * 5.0, -math.cos(a) * 5.0, 0.6))
