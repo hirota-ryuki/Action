@@ -5,6 +5,7 @@
 
 #include "Objects/StageRender/StageRenderSettings.h"
 #include "Objects/StageRender/CullContextBuilder.h"
+#include "tkFile/ModelReducer/ModelReducer.h"
 
 namespace
 {
@@ -46,19 +47,40 @@ void StageProps::Init(
 			m_models.push_back(std::move(entry));
 			continue;
 		}
+		// LOD のモデルを用意する。設定がない種類や、作れなかったときは、もとのモデル1つで描く。
+		std::vector<std::string> modelPaths;
+		const auto levels = settings.GetLodLevels(entry->desc.kind);
+		if (!levels.empty()) {
+			modelPaths = nsK2EngineLow::ModelReducer::ResolveLodTkmFilePaths(entry->desc.path.c_str(), levels);
+		}
+		if (modelPaths.empty()) {
+			modelPaths = { entry->desc.path };
+			entry->lodSelector = std::make_unique<LodSelector>(std::vector<float>{ 0.0f });
+		}
+		else {
+			entry->lodSelector = std::make_unique<LodSelector>(settings.CreateLodSelector(entry->desc.kind));
+		}
+
 		// エンジンは最大数が 2 以上のときだけインスタンス描画にするので、1個しかない部品でも 2 にする。
+		// どの物がどの段になるかはフレームごとに変わるので、どの段も全部入る数にしておく。
 		const int maxInstance = (std::max)(static_cast<int>(items.size()), 2);
-		entry->modelRender.Init(entry->desc.path.c_str(), nullptr, 0, enModelUpAxisZ, true, maxInstance);
-		entry->modelRender.SetShadowCasterFlag(entry->desc.isShadowCaster);
+		for (const auto& path : modelPaths) {
+			auto modelRender = std::make_unique<ModelRender>();
+			modelRender->Init(path.c_str(), nullptr, 0, enModelUpAxisZ, true, maxInstance);
+			modelRender->SetShadowCasterFlag(entry->desc.isShadowCaster);
+			entry->lodRenders.push_back(std::move(modelRender));
+		}
+		entry->numInstances.assign(entry->lodRenders.size(), 0);
+		ModelRender& baseRender = *entry->lodRenders[0];
 
 		// 動かないので、行列・包む球・間引き用の乱数を最初に計算しておく。
-		const float modelRadius = CalcModelRadius(entry->modelRender.GetModel());
+		const float modelRadius = CalcModelRadius(baseRender.GetModel());
 		entry->instances.reserve(items.size());
 		for (const Item& item : items) {
 			PropInstance instance;
 			instance.position = item.position;
 			instance.radius = modelRadius * item.scale.x;
-			instance.world = entry->modelRender.CalcWorldMatrix(item.position, item.rotation, item.scale);
+			instance.world = baseRender.CalcWorldMatrix(item.position, item.rotation, item.scale);
 			instance.keepValue = MakeKeepValue(static_cast<uint32_t>(entry->instances.size()));
 			entry->instances.push_back(instance);
 			CreateCollision(*entry, item, instance.world);
@@ -75,7 +97,7 @@ void StageProps::CreateCollision(ModelEntry& entry, const Item& item, const Matr
 	case ModelDesc::Collision::Mesh: {
 		// 岩はモデルの形のまま。
 		auto obj = std::make_unique<PhysicsStaticObject>();
-		obj->CreateFromModel(entry.modelRender.GetModel(), world);
+		obj->CreateFromModel(entry.lodRenders[0]->GetModel(), world);
 		obj->SetFriction(1.0f);
 		m_meshCollisions.push_back(std::move(obj));
 		break;
@@ -104,7 +126,7 @@ void StageProps::Update()
 {
 	PropCullContext context = CullContextBuilder::Build(*g_camera3D);
 	for (auto& entry : m_models) {
-		entry->numInstance = 0;
+		entry->numInstances.assign(entry->lodRenders.size(), 0);
 		if (!entry->spatialIndex) {
 			continue;
 		}
@@ -117,10 +139,14 @@ void StageProps::Update()
 		for (const auto& filter : m_filters) {
 			filter->Apply(m_candidates, context);
 		}
-		// 3. 残った物の行列を、番号 0 から詰めて渡す。渡した数だけ描かれる。
-		for (const PropInstance* instance : m_candidates) {
-			entry->modelRender.UpdateInstancingData(entry->numInstance, instance->world);
-			entry->numInstance++;
+		// 3. LOD の段ごとに分ける。
+		entry->lodSelector->Split(m_candidates, context, m_lodLists);
+		// 4. 段ごとに、行列を番号 0 から詰めて渡す。渡した数だけ描かれる。
+		for (size_t lod = 0; lod < entry->lodRenders.size() && lod < m_lodLists.size(); lod++) {
+			for (const PropInstance* instance : m_lodLists[lod]) {
+				entry->lodRenders[lod]->UpdateInstancingData(entry->numInstances[lod], instance->world);
+				entry->numInstances[lod]++;
+			}
 		}
 	}
 }
@@ -128,8 +154,10 @@ void StageProps::Update()
 void StageProps::Render(RenderContext& rc)
 {
 	for (auto& entry : m_models) {
-		if (entry->numInstance > 0) {
-			entry->modelRender.Draw(rc);
+		for (size_t lod = 0; lod < entry->lodRenders.size(); lod++) {
+			if (entry->numInstances[lod] > 0) {
+				entry->lodRenders[lod]->Draw(rc);
+			}
 		}
 	}
 }

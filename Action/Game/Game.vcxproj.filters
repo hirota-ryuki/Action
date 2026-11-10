@@ -216,6 +216,9 @@
     <ClCompile Include="Source\Objects\StageRender\StageRenderSettings.cpp">
       <Filter>Source\Objects\StageRender</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Objects\StageRender\LodSelector.cpp">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClCompile>
     <ClCompile Include="Source\App\stdafx.cpp">
       <Filter>Source\App</Filter>
     </ClCompile>
@@ -444,6 +447,9 @@
       <Filter>Source\Objects\StageRender</Filter>
     </ClInclude>
     <ClInclude Include="Source\Objects\StageRender\StageRenderSettings.h">
+      <Filter>Source\Objects\StageRender</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Objects\StageRender\LodSelector.h">
       <Filter>Source\Objects\StageRender</Filter>
     </ClInclude>
     <ClInclude Include="Source\App\stdafx.h">

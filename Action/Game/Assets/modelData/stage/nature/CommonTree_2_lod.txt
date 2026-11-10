@@ -1,0 +1,4 @@
+version 1
+ratio 1 maxError 0.02 prune 0
+ratio 0.35 maxError 0.04 prune 0
+ratio 0.12 maxError 0.1 prune 1
