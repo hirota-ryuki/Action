@@ -427,7 +427,15 @@ namespace nsK2Engine {
 		}
 		else {
 			worldMatrix = m_zprepassModel.CalcWorldMatrix(pos, rot, scale);
-		} 
+		}
+		UpdateInstancingData(instanceNo, worldMatrix);
+	}
+	void ModelRender::UpdateInstancingData(int instanceNo, const Matrix& worldMatrix)
+	{
+		K2_ASSERT(instanceNo < m_maxInstance, "インスタンス番号が不正です。");
+		if (!m_isEnableInstancingDraw) {
+			return;
+		}
 		// インスタンス番号から行列のインデックスを取得する。
 		int matrixArrayIndex = m_instanceNoToWorldMatrixArrayIndexTable[instanceNo];
 		// インスタンシング描画を行う。

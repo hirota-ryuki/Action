@@ -90,6 +90,23 @@ namespace nsK2Engine {
 		/// <param name="scale">拡大率</param>
 		void UpdateInstancingData(int instanceNo, const Vector3& pos, const Quaternion& rot, const Vector3& scale);
 		/// <summary>
+		/// インスタンシングデータの更新（ワールド行列を直接渡す）。
+		/// </summary>
+		/// <remarks>
+		/// 動かない物の行列を前もって計算しておき、毎フレームの計算を省くときに使う。
+		/// 行列は CalcWorldMatrix() で作ったもの（モデルの上方向の補正を含む）を渡す。
+		/// </remarks>
+		/// <param name="instanceNo">インスタンス番号</param>
+		/// <param name="worldMatrix">ワールド行列</param>
+		void UpdateInstancingData(int instanceNo, const Matrix& worldMatrix);
+		/// <summary>
+		/// 位置・回転・拡大から、このモデルのワールド行列を計算する（モデルの上方向の補正を含む）。
+		/// </summary>
+		Matrix CalcWorldMatrix(const Vector3& pos, const Quaternion& rot, const Vector3& scale)
+		{
+			return GetModel().CalcWorldMatrix(pos, rot, scale);
+		}
+		/// <summary>
 		/// 描画処理。
 		/// </summary>
 		void Draw(RenderContext& rc);
@@ -284,6 +301,24 @@ namespace nsK2Engine {
 		bool IsShadowCaster() const
 		{
 			return m_isShadowCaster;
+		}
+		/// <summary>
+		/// instanceId 番の幾何学データ（AABB）を、このフレームに更新する必要があるか。
+		/// </summary>
+		/// <remarks>
+		/// GPU インスタンシングで描くモデルの幾何学データは、影の範囲を決めるのにしか使わない（画面外の判定はしない）。
+		/// そのため、影を落とさないモデルと、このフレームに渡されていない番号は更新しない。
+		/// 置ける最大数ぶん（草なら数千）を毎フレーム更新すると、CPU が重くなるため。
+		/// </remarks>
+		bool IsGeometryDataActive(int instanceId) const
+		{
+			if (!m_isGpuInstancing) {
+				return true;
+			}
+			if (!m_isShadowCaster) {
+				return false;
+			}
+			return instanceId < (std::max)(m_numInstance, m_numDrawInstance);
 		}
 		/// <summary>
 		/// インスタン数を取得。
