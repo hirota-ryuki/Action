@@ -335,3 +335,5 @@ ASALocalRun/
 .vscode/*
 # 例外: フォルダーを開いたときに Claude のタブを開き直すタスク（どのPCでも同じ）
 !.vscode/tasks.json
+# 例外: 手順書の、行番号とコードを並べる見た目（Markdown のプレビュー用。どのPCでも同じ）
+!.vscode/markdown-preview.css

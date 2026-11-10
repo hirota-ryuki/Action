@@ -1,0 +1,59 @@
+/* 手順書の「行番号の列」と「コードの列」を並べる表（<table class="code-lines">）の見た目。
+   VSCode の Markdown プレビューで読み込む（settings.json の markdown.styles）。 */
+
+/* 表をプレビューの横幅いっぱいに広げる。 */
+table.code-lines {
+	width: 100%;
+	margin-bottom: 0.7em;
+}
+
+table.code-lines td {
+	padding: 0;
+	border: none !important;
+	vertical-align: top;
+}
+
+/* 行番号の列は、番号の幅だけにする。番号は選べないようにして、コピーに入らないようにする。 */
+table.code-lines td:first-child {
+	width: 1%;
+	padding-right: 4px;
+	text-align: right;
+}
+
+table.code-lines td:first-child pre {
+	user-select: none;
+	opacity: 0.6;
+}
+
+/* コードの列は残りの幅を使う。はみ出す行は折り返さず、枠の中で横にスクロールする（折り返すと番号とずれる）。 */
+table.code-lines td:last-child {
+	max-width: 0;
+}
+
+table.code-lines pre {
+	white-space: pre !important;
+	margin-bottom: 0;
+}
+
+/* 番号の枠とコードの枠で、余白・文字の大きさ・1行の高さをそろえる。
+   日本語の字体が混ざっても1行が高くならないように、中の要素すべてに同じ値を当てる。 */
+table.code-lines pre {
+	padding: 12px 16px !important;
+}
+
+table.code-lines pre code,
+table.code-lines pre code > div {
+	padding: 0 !important;
+	margin: 0 !important;
+}
+
+table.code-lines pre,
+table.code-lines pre * {
+	font-size: 14px !important;
+	line-height: 20px !important;
+}
+
+/* 番号の枠も色付けの枠にしているので、番号に付く色を消す。 */
+table.code-lines td:first-child pre * {
+	color: var(--vscode-editorLineNumber-foreground) !important;
+}

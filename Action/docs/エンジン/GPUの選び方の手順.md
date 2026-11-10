@@ -1,6 +1,5 @@
 # GPUの選び方の手順
 
-作成日: 2026-11-08
 設計: [GPUの選び方の設計](GPUの選び方の設計.md)
 経緯: [GPUの選び方の経緯](GPUの選び方の経緯.md)
 
@@ -10,9 +9,8 @@ PC に同じメーカーの GPU が2つ以上あるとき（CPU 内蔵の GPU �
 
 **前提:**
 
-- Visual Studio 2022 で `Action/Game/Game.sln` を開き、構成は **Debug / x64** でビルドする。
+- Visual Studio で `Action/Game/Game.sln` を開き、構成は **Debug / x64** でビルドする。
 - 始める前は、エンジンにもとからある形になっている。もとの形では、同じメーカーの GPU を見つけるたびに、あとから見つけた方で置き換える。
-- 作業を始める前に、main からブランチを切る。
 
 | 手順 | 足すもの | 確かめ方 |
 |---|---|---|
@@ -20,15 +18,23 @@ PC に同じメーカーの GPU が2つ以上あるとき（CPU 内蔵の GPU �
 | 2 | 今の GPU より良いかを決める関数（ラムダ） | ビルドが通る |
 | 3 | 良いときだけ置き換えるようにする | 専用の GPU で描かれ、FPS が上がる |
 
+**読み方:**
+
+- 足す場所は「〇行目 `その行に書いてあること` の下」で示します。行番号は、それより前の小手順を済ませたときの番号です。
+- 枠の左の数字は、足したあとの行番号です。右の枠のコードを、そのまま書きます。
+- 消すところは、消す行を枠で示します（番号は消す前の番号）。書き換えるところは、「前」と「後」の枠を並べています。
+- 小手順の見出しは、足すコードのコメントか関数の名前です。何のためのコードかは、コードのコメントに書いてあります。
+- VSCode で `Ctrl+Shift+V` を押してプレビューで読みます。
+
 ---
 
 ## 触るファイルの一覧
 
 | ファイル | 何をするか | 手順 |
 |---|---|---|
-| [GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) | 追加（`CreateD3DDevice()` に変数1つ、ラムダ1つ）・書き換え（NVIDIA・AMD・Intel の置き換え3か所） | 1〜3 |
+| [GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) | 追加・書き換え・削除 | 1・2・3 |
 
-新しく作るファイル・消すファイル・コメントアウトする行はありません。
+---
 
 **もとからあって、変えないもの:** `CreateD3DDevice()` の後半の「使用するアダプターを決める」（NVIDIA → AMD → ビデオメモリが一番多いもの）の `if` は、そのまま使います。
 
@@ -58,18 +64,26 @@ PC に同じメーカーの GPU が2つ以上あるとき（CPU 内蔵の GPU �
 
 | ファイル | 何をするか |
 |---|---|
-| [GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) | 追加（`CreateD3DDevice()` の変数1つ） |
+| [GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) | 追加 |
 
-[GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) の `GraphicsEngine::CreateD3DDevice()` で、`SIZE_T videoMemorySize = 0;` の下に**追加**します。
+### 1-1. `CreateD3DDevice()` の続きを書く
 
-```diff
- 		IDXGIAdapter* useAdapter = nullptr;							//最終的に使用するアダプタ。
- 		SIZE_T videoMemorySize = 0;
-+		SIZE_T venderVideoMemory[Num_GPUVender] = { 0 };				//各ベンダーで選んだアダプターのビデオメモリ。
- 		for (int i = 0; dxgiFactory->EnumAdapters(i, &adapterTmp) != DXGI_ERROR_NOT_FOUND; i++) {
+[GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) の **213行目** `SIZE_T videoMemorySize = 0;` の下に、1行足します（214〜214行目になります）。
+
+<!-- add: Action/k2EngineLow/graphics/GraphicsEngine.cpp 214 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+214
 ```
 
-`Num_GPUVender` は、同じクラスの `GPU_Vender` の列挙にもとからある（変えない）。名前の `vender` も、まわりのコード（`adapterVender`）に合わせています。
+</td><td>
+
+```cpp
+		SIZE_T venderVideoMemory[Num_GPUVender] = { 0 };				//各ベンダーで選んだアダプターのビデオメモリ。
+```
+
+</td></tr></table>
 
 **確かめ方:** k2EngineLow のビルドが通る。
 
@@ -83,23 +97,40 @@ PC に同じメーカーの GPU が2つ以上あるとき（CPU 内蔵の GPU �
 
 | ファイル | 何をするか |
 |---|---|
-| [GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) | 追加（`for` の中にラムダ `isBetter`） |
+| [GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) | 追加 |
 
-[GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) の `CreateD3DDevice()` の `for` の中、ビデオメモリが一番多い GPU を覚える `if` の閉じかっこの下（NVIDIA を見る `if` の上）に**追加**します。ラムダは `desc`（今見ている GPU の情報）を使うので、ループの中に置きます。
+### 2-1. 同じメーカーの GPU が複数あるとき（CPU 内蔵の GPU と、専用の GP…
 
-```diff
- 				videoMemorySize = desc.DedicatedVideoMemory;
- 			}
-+			// 同じメーカーの GPU が複数あるとき（CPU 内蔵の GPU と、専用の GPU など）は、専用のビデオメモリが多い方を使う。
-+			// 先に見つけた方の方が多ければ、あとから見つけた方では置き換えない。
-+			auto isBetter = [&](int vender) {
-+				if (adapterVender[vender] == nullptr) {
-+					return true;
-+				}
-+				return desc.DedicatedVideoMemory > venderVideoMemory[vender];
-+			};
- 			if (wcsstr(desc.Description, L"NVIDIA") != nullptr) {
+[GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) の **226行目** `}` の下、`if (wcsstr(desc.Description, L"NVIDIA") != nullptr) {` の上に、8行足します（227〜234行目になります）。
+
+<!-- add: Action/k2EngineLow/graphics/GraphicsEngine.cpp 227 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+227
+228
+229
+230
+231
+232
+233
+234
 ```
+
+</td><td>
+
+```cpp
+			// 同じメーカーの GPU が複数あるとき（CPU 内蔵の GPU と、専用の GPU など）は、専用のビデオメモリが多い方を使う。
+			// 先に見つけた方の方が多ければ、あとから見つけた方では置き換えない。
+			auto isBetter = [&](int vender) {
+				if (adapterVender[vender] == nullptr) {
+					return true;
+				}
+				return desc.DedicatedVideoMemory > venderVideoMemory[vender];
+			};
+```
+
+</td></tr></table>
 
 **確かめ方:** k2EngineLow のビルドが通る（まだ `isBetter` を使っていないので、動きは変わらない）。
 
@@ -113,72 +144,226 @@ NVIDIA・AMD・Intel の3か所で、見つけるたびに置き換えていた�
 
 | ファイル | 何をするか |
 |---|---|
-| [GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) | 書き換え（NVIDIA・AMD・Intel の置き換え3か所） |
+| [GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) | 書き換え・削除 |
 
-### 3-1. NVIDIA
+### 3-1. `CreateD3DDevice()` の中を書き換える
 
-[GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) の NVIDIA の `if` の中、`#endif // #ifdef ENABLE_DXR_ON_RTX_ONLY` の下を**書き換え**ます。レイトレーシングが使えるかを決める `#ifdef ENABLE_DXR_ON_RTX_ONLY` の部分は、もとからある（変えない）。
+[GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) の **247〜248行目**を、次のように書き換えます（247〜253行目になります）。
 
-```diff
- #endif // #ifdef ENABLE_DXR_ON_RTX_ONLY
--				if (adapterVender[GPU_VenderNvidia]) {
--					adapterVender[GPU_VenderNvidia]->Release();
-+				if (isBetter(GPU_VenderNvidia)) {
-+					if (adapterVender[GPU_VenderNvidia]) {
-+						adapterVender[GPU_VenderNvidia]->Release();
-+					}
-+					adapterVender[GPU_VenderNvidia] = adapterTmp;
-+					adapterVender[GPU_VenderNvidia]->AddRef();
-+					venderVideoMemory[GPU_VenderNvidia] = desc.DedicatedVideoMemory;
- 				}
--				adapterVender[GPU_VenderNvidia] = adapterTmp;
--				adapterVender[GPU_VenderNvidia]->AddRef();
- 			}
+**前**
+
+<!-- rewrite-before: Action/k2EngineLow/graphics/GraphicsEngine.cpp 247 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+247
+248
 ```
 
-### 3-2. AMD
+</td><td>
 
-[GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) の `//AMD製` の下を**書き換え**ます。
-
-```diff
- 				//AMD製
--				if (adapterVender[GPU_VenderAMD]) {
--					adapterVender[GPU_VenderAMD]->Release();
-+				if (isBetter(GPU_VenderAMD)) {
-+					if (adapterVender[GPU_VenderAMD]) {
-+						adapterVender[GPU_VenderAMD]->Release();
-+					}
-+					adapterVender[GPU_VenderAMD] = adapterTmp;
-+					adapterVender[GPU_VenderAMD]->AddRef();
-+					venderVideoMemory[GPU_VenderAMD] = desc.DedicatedVideoMemory;
- 				}
--				adapterVender[GPU_VenderAMD] = adapterTmp;
--				adapterVender[GPU_VenderAMD]->AddRef();
- 			}
+```cpp
+				if (adapterVender[GPU_VenderNvidia]) {
+					adapterVender[GPU_VenderNvidia]->Release();
 ```
 
-### 3-3. Intel
+</td></tr></table>
 
-[GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) の `//Intel製` の下を**書き換え**ます。
+**後**
 
-```diff
- 				//Intel製
--				if (adapterVender[GPU_VenderIntel]) {
--					adapterVender[GPU_VenderIntel]->Release();
-+				if (isBetter(GPU_VenderIntel)) {
-+					if (adapterVender[GPU_VenderIntel]) {
-+						adapterVender[GPU_VenderIntel]->Release();
-+					}
-+					adapterVender[GPU_VenderIntel] = adapterTmp;
-+					adapterVender[GPU_VenderIntel]->AddRef();
-+					venderVideoMemory[GPU_VenderIntel] = desc.DedicatedVideoMemory;
- 				}
--				adapterVender[GPU_VenderIntel] = adapterTmp;
--				adapterVender[GPU_VenderIntel]->AddRef();
- 			}
+<!-- rewrite-after: Action/k2EngineLow/graphics/GraphicsEngine.cpp 247 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+247
+248
+249
+250
+251
+252
+253
 ```
 
-ループの最後の `adapterTmp->Release();` は、もとからある（変えない）。置き換えたときは `AddRef()` で持ち続け、置き換えなかったときはここで手放します。
+</td><td>
+
+```cpp
+				if (isBetter(GPU_VenderNvidia)) {
+					if (adapterVender[GPU_VenderNvidia]) {
+						adapterVender[GPU_VenderNvidia]->Release();
+					}
+					adapterVender[GPU_VenderNvidia] = adapterTmp;
+					adapterVender[GPU_VenderNvidia]->AddRef();
+					venderVideoMemory[GPU_VenderNvidia] = desc.DedicatedVideoMemory;
+```
+
+</td></tr></table>
+
+### 3-2. `CreateD3DDevice()` の中の行を消す
+
+[GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) の **255〜256行目**を消します。
+
+<!-- del: Action/k2EngineLow/graphics/GraphicsEngine.cpp 255 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+255
+256
+```
+
+</td><td>
+
+```cpp
+				adapterVender[GPU_VenderNvidia] = adapterTmp;
+				adapterVender[GPU_VenderNvidia]->AddRef();
+```
+
+</td></tr></table>
+
+### 3-3. `CreateD3DDevice()` の中を書き換える
+
+[GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) の **258〜259行目**を、次のように書き換えます（258〜264行目になります）。
+
+**前**
+
+<!-- rewrite-before: Action/k2EngineLow/graphics/GraphicsEngine.cpp 258 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+258
+259
+```
+
+</td><td>
+
+```cpp
+				if (adapterVender[GPU_VenderAMD]) {
+					adapterVender[GPU_VenderAMD]->Release();
+```
+
+</td></tr></table>
+
+**後**
+
+<!-- rewrite-after: Action/k2EngineLow/graphics/GraphicsEngine.cpp 258 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+258
+259
+260
+261
+262
+263
+264
+```
+
+</td><td>
+
+```cpp
+				if (isBetter(GPU_VenderAMD)) {
+					if (adapterVender[GPU_VenderAMD]) {
+						adapterVender[GPU_VenderAMD]->Release();
+					}
+					adapterVender[GPU_VenderAMD] = adapterTmp;
+					adapterVender[GPU_VenderAMD]->AddRef();
+					venderVideoMemory[GPU_VenderAMD] = desc.DedicatedVideoMemory;
+```
+
+</td></tr></table>
+
+### 3-4. `CreateD3DDevice()` の中の行を消す
+
+[GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) の **266〜267行目**を消します。
+
+<!-- del: Action/k2EngineLow/graphics/GraphicsEngine.cpp 266 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+266
+267
+```
+
+</td><td>
+
+```cpp
+				adapterVender[GPU_VenderAMD] = adapterTmp;
+				adapterVender[GPU_VenderAMD]->AddRef();
+```
+
+</td></tr></table>
+
+### 3-5. `CreateD3DDevice()` の中を書き換える
+
+[GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) の **269〜270行目**を、次のように書き換えます（269〜275行目になります）。
+
+**前**
+
+<!-- rewrite-before: Action/k2EngineLow/graphics/GraphicsEngine.cpp 269 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+269
+270
+```
+
+</td><td>
+
+```cpp
+				if (adapterVender[GPU_VenderIntel]) {
+					adapterVender[GPU_VenderIntel]->Release();
+```
+
+</td></tr></table>
+
+**後**
+
+<!-- rewrite-after: Action/k2EngineLow/graphics/GraphicsEngine.cpp 269 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+269
+270
+271
+272
+273
+274
+275
+```
+
+</td><td>
+
+```cpp
+				if (isBetter(GPU_VenderIntel)) {
+					if (adapterVender[GPU_VenderIntel]) {
+						adapterVender[GPU_VenderIntel]->Release();
+					}
+					adapterVender[GPU_VenderIntel] = adapterTmp;
+					adapterVender[GPU_VenderIntel]->AddRef();
+					venderVideoMemory[GPU_VenderIntel] = desc.DedicatedVideoMemory;
+```
+
+</td></tr></table>
+
+### 3-6. `CreateD3DDevice()` の中の行を消す
+
+[GraphicsEngine.cpp](../../k2EngineLow/graphics/GraphicsEngine.cpp) の **277〜278行目**を消します。
+
+<!-- del: Action/k2EngineLow/graphics/GraphicsEngine.cpp 277 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+277
+278
+```
+
+</td><td>
+
+```cpp
+				adapterVender[GPU_VenderIntel] = adapterTmp;
+				adapterVender[GPU_VenderIntel]->AddRef();
+```
+
+</td></tr></table>
 
 **確かめ方（これで出来上がり）:**
 

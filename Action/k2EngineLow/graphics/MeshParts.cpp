@@ -201,10 +201,11 @@ namespace nsK2EngineLow {
 		auto& materialBank = GetMaterialBank();
 		mesh->m_materials.reserve(tkmMesh.materials.size());
 		for (auto& tkmMat : tkmMesh.materials) {
-			char materiayKey[MAX_PATH];
-			sprintf_s(
-				materiayKey,
-				MAX_PATH,
+			// テクスチャの名前が長いと MAX_PATH を超えるので、先に長さを数えてから書く。
+			auto formatMaterialKey = [&](char* buffer, size_t bufferSize) {
+				return snprintf(
+				buffer,
+				bufferSize,
 				"%s, %s, %s, %s, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %s, %s, %s",
 				fxFilePath,
 				vsEntryPointFunc,
@@ -225,8 +226,11 @@ namespace nsK2EngineLow {
 				tkmMat.albedoMapFileName.empty() ? "none" : tkmMat.albedoMapFileName.c_str(),
 				tkmMat.normalMapFileName.empty() ? "none" : tkmMat.normalMapFileName.c_str(),
 				tkmMat.specularMapFileName.empty() ? "none" : tkmMat.specularMapFileName.c_str()
-			);
-			auto mat = materialBank.Get(materiayKey);
+				);
+			};
+			std::string materiayKey(formatMaterialKey(nullptr, 0), '\0');
+			formatMaterialKey(&materiayKey[0],materiayKey.size() + 1);
+			auto mat = materialBank.Get(materiayKey.c_str());
 			if (mat == nullptr) {
 				mat = new Material();
 
@@ -246,7 +250,7 @@ namespace nsK2EngineLow {
 					isDepthTest,
 					cullMode
 				);
-				materialBank.Regist(materiayKey, mat);
+				materialBank.Regist(materiayKey.c_str(), mat);
 			}
 			//作成したマテリアル数をカウントする。
 			materialNum++;

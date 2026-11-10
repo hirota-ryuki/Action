@@ -9,6 +9,8 @@
 #include "StatusEffects.h"
 #include "HitTarget.h"
 #include "MagicCaster.h"
+#include "BodyLean.h"
+#include "SpringBones.h"
 
 // キャラクターごとの調整値。派生クラスが MakeConfig() で返す。
 struct CharacterConfig
@@ -19,6 +21,8 @@ struct CharacterConfig
 	float hitRadius = 45.0f;        // 弾に当たる球の半径。
 	float hitCenterHeight = 60.0f;  // 足元から当たり判定の中心までの高さ。
 	float maxHp = 100.0f;
+	BodyLeanSettings lean;              // 体の傾き。既定は使わない。
+	SpringBonesSettings springBones;    // 髪・スカートの揺れ。既定は使わない。
 };
 
 // Player・Enemy など、キャラクターの基底クラス。
@@ -114,6 +118,8 @@ private:
 	// キャラコンの位置・回転を Transform に書く。
 	void SyncTransform();
 
+	BodyLean m_bodyLean;
+	SpringBones m_springBones;
 	IInputSource* m_inputSource = nullptr;  // nullptr なら GetDefaultInputSource()。
 	Faction m_faction = Faction::Neutral;
 	bool m_isRenderBody = true;
