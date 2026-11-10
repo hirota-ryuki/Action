@@ -53,6 +53,16 @@ namespace nsK2Engine {
 			modelInitData.m_vsSkinEntryPointFunc = "VSMainSkinUsePreComputedVertexBuffer";
 		}
 	}
+	void ModelRender::SetupGpuInstancing(ModelInitData& modelInitData)
+	{
+		if (!m_isGpuInstancing) {
+			return;
+		}
+		// 頂点はモデルのまま渡し、頂点シェーダーで g_worldMatrixArray[インスタンス番号] を掛ける。
+		modelInitData.m_computedAnimationVertexBuffer = nullptr;
+		modelInitData.m_vsEntryPointFunc = "VSMainInstancing";
+		modelInitData.m_vsSkinEntryPointFunc = "VSMainInstancing";
+	}
 	void ModelRender::IniTranslucent(
 		const char* filePath,
 		AnimationClip* animationClips,
@@ -225,6 +235,7 @@ namespace nsK2Engine {
 		SetupVertexShaderEntryPointFunc(modelInitData);
 		// 頂点の事前計算処理を使う。
 		modelInitData.m_computedAnimationVertexBuffer = &m_computeAnimationVertexBuffer;
+		SetupGpuInstancing(modelInitData);
 		if (m_animationClips != nullptr) {
 			//スケルトンを指定する。
 			modelInitData.m_skeleton = &m_skeleton;		}
@@ -254,6 +265,12 @@ namespace nsK2Engine {
 		const char* tkmFilePath,
 		EnModelUpAxis enModelUpAxis)
 	{
+		// アニメーションのないインスタンシング描画は GPU インスタンシングで描くので、頂点の事前計算は作らない。
+		// （InitAnimation() のあとに呼ばれるので、ここで m_animationClips が決まっている。）
+		m_isGpuInstancing = m_isEnableInstancingDraw && m_animationClips == nullptr;
+		if (m_isGpuInstancing) {
+			return;
+		}
 		StructuredBuffer* worldMatrxiArraySB = nullptr;
 		if (m_isEnableInstancingDraw) {
 			worldMatrxiArraySB = &m_worldMatrixArraySB;
@@ -282,6 +299,7 @@ namespace nsK2Engine {
 		SetupVertexShaderEntryPointFunc(modelInitData);
 		// 頂点の事前計算処理を使う。
 		modelInitData.m_computedAnimationVertexBuffer = &m_computeAnimationVertexBuffer;
+		SetupGpuInstancing(modelInitData);
 
 		if (m_animationClips != nullptr) {
 			//スケルトンを指定する。
@@ -333,6 +351,7 @@ namespace nsK2Engine {
 
 		// 頂点の事前計算処理を使う。
 		modelInitData.m_computedAnimationVertexBuffer = &m_computeAnimationVertexBuffer;
+		SetupGpuInstancing(modelInitData);
 
 		if (m_animationClips != nullptr) {
 			//スケルトンを指定する。
@@ -380,6 +399,7 @@ namespace nsK2Engine {
 		SetupVertexShaderEntryPointFunc(modelInitData);
 		// 頂点の事前計算処理を使う。
 		modelInitData.m_computedAnimationVertexBuffer = &m_computeAnimationVertexBuffer;
+		SetupGpuInstancing(modelInitData);
 
 		if (m_animationClips != nullptr) {
 			//スケルトンを指定する。
@@ -466,6 +486,8 @@ namespace nsK2Engine {
 			// インスタンシング描画はビューフラスタムカリングは行わない。
 			g_renderingEngine->AddRenderObject(this);
 			m_worldMatrixArraySB.Update(m_worldMatrixArray.get());
+			// GPU インスタンシングでは、UpdateInstancingData() で渡された数だけ描く。
+			m_numDrawInstance = m_numInstance;
 			m_numInstance = 0;
 		}
 		else {
@@ -485,6 +507,10 @@ namespace nsK2Engine {
 	}
 	void ModelRender::OnComputeVertex(RenderContext& rc)
 	{
+		if (m_isGpuInstancing) {
+			// GPU インスタンシングは頂点を事前計算しない。
+			return;
+		}
 		// 頂点の事前計算処理をディスパッチする。
 		if (m_isEnableInstancingDraw) {
 			m_computeAnimationVertexBuffer.Dispatch(rc, m_zprepassModel.GetWorldMatrix(), m_maxInstance);
@@ -511,31 +537,31 @@ namespace nsK2Engine {
 				rc,
 				g_matIdentity,
 				lvpMatrix,
-				1
+				GetDrawInstanceCount()
 			);
 		}
 	}
 
 	void ModelRender::OnZPrepass(RenderContext& rc)
 	{
-		m_zprepassModel.Draw(rc, 1);
+		m_zprepassModel.Draw(rc, GetDrawInstanceCount());
 	}
 	void ModelRender::OnRenderToGBuffer(RenderContext& rc)
 	{
 		if (m_renderToGBufferModel.IsInited()) {
-			m_renderToGBufferModel.Draw(rc, 1);
+			m_renderToGBufferModel.Draw(rc, GetDrawInstanceCount());
 		}
 	}
 	void ModelRender::OnForwardRender(RenderContext& rc)
 	{
 		if (m_forwardRenderModel.IsInited()) {
-			m_forwardRenderModel.Draw(rc, 1);
+			m_forwardRenderModel.Draw(rc, GetDrawInstanceCount());
 		}
 	}
 	void ModelRender::OnTlanslucentRender(RenderContext& rc)
 	{
 		if (m_translucentModel.IsInited()) {
-			m_translucentModel.Draw(rc, 1);
+			m_translucentModel.Draw(rc, GetDrawInstanceCount());
 		}
 	}
 }
