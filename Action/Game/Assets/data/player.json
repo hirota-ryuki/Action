@@ -105,12 +105,13 @@
 		"armFrontMaxDeg": 60.0,
 		"armBackMaxDeg": 40.0,
 		// 走っているときに、上腕の前後の振り（真下を 0°）を何倍にするか。1 ならアニメーションのまま。前・後ろの最大の角度で抑える前にかける。
-		"armSwingScale": 1.0,
+		// 腕の4つの値（振る量・肩・ひじ・横に広げる）は、F1 の開発用の画面で原神の走りに近づけて決めた。
+		"armSwingScale": 0.56,
 		// 走っているときに、肩の関節（上腕のつけ根）・ひじの関節を前後へ回しておく角度。正なら前、負なら後ろ。立ち止まり・歩きはアニメーションのまま。F1 の開発用の画面でも変えられる。
-		"shoulderJointOffsetDeg": 0.0,
-		"elbowJointOffsetDeg": 0.0,
+		"shoulderJointOffsetDeg": -28.0,
+		"elbowJointOffsetDeg": 22.0,
 		// 走っているときに、上腕を体の外へ開く角度。負なら内へ閉じる。F1 の開発用の画面でも変えられる。
-		"upperArmSpreadDeg": 0.0
+		"upperArmSpreadDeg": 11.0
 	},
 
 	// 髪・スカートなどの揺れ物（骨の名前が J_Sec_ で始まるもの）。アニメーションの形へばねで引き戻す。
