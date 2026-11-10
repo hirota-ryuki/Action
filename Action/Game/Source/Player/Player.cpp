@@ -67,7 +67,7 @@ void Player::UpdateDebugUI()
 	ImGui::Separator();
 	ImGui::SliderFloat(u8"肩の関節を前後に", &bodyLink.shoulderJointOffsetDeg, -60.0f, 60.0f, u8"%.0f°");
 	ImGui::SliderFloat(u8"ひじの関節を前後に", &bodyLink.elbowJointOffsetDeg, -60.0f, 60.0f, u8"%.0f°");
-	ImGui::TextUnformatted(u8"アニメーションから、いつも回しておく角度。正なら前、負なら後ろ。");
+	ImGui::TextUnformatted(u8"走っているときだけ回す角度（立ち止まり・歩きはそのまま）。正なら前、負なら後ろ。");
 	ImGui::Separator();
 	if (ImGui::Button(u8"初期値に戻す")) {
 		ResetBodyLinkSettings();

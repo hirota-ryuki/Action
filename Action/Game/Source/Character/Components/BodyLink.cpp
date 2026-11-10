@@ -221,11 +221,13 @@ void BodyLink::Update(Skeleton& skeleton)
 	LimitArmSwing(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward);
 	LimitArmSwing(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward);
 
-	// ── 肩の関節・ひじの関節を、前後へ回しておく ──
-	RotateJointForward(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward, m_settings.shoulderJointOffsetDeg);
-	RotateJointForward(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward, m_settings.shoulderJointOffsetDeg);
-	RotateJointForward(skeleton, enBone_LowerArmL, enBone_HandL, forward, m_settings.elbowJointOffsetDeg);
-	RotateJointForward(skeleton, enBone_LowerArmR, enBone_HandR, forward, m_settings.elbowJointOffsetDeg);
+	// ── 走っているときだけ、肩の関節・ひじの関節を前後へ回しておく ──
+	const float shoulderOffset = m_settings.shoulderJointOffsetDeg * m_runWeight;
+	const float elbowOffset = m_settings.elbowJointOffsetDeg * m_runWeight;
+	RotateJointForward(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward, shoulderOffset);
+	RotateJointForward(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward, shoulderOffset);
+	RotateJointForward(skeleton, enBone_LowerArmL, enBone_HandL, forward, elbowOffset);
+	RotateJointForward(skeleton, enBone_LowerArmR, enBone_HandR, forward, elbowOffset);
 }
 
 void BodyLink::RotateJointForward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& forward, float angleDeg) const

@@ -20,7 +20,8 @@ struct BodyLinkSettings
 	// 最大の角度の半分までは、アニメーションのまま。
 	float armFrontMaxDeg = 0.0f;
 	float armBackMaxDeg = 0.0f;
-	// 肩の関節（上腕のつけ根）・ひじの関節を、アニメーションからいつも前後へ回しておく角度。正なら前、負なら後ろ。
+	// 走っているときに、肩の関節（上腕のつけ根）・ひじの関節を、アニメーションから前後へ回しておく角度。正なら前、負なら後ろ。
+	// 歩く速さから走る速さに近づくにつれて効かせる（立ち止まり・歩きは、アニメーションの角度のまま）。
 	float shoulderJointOffsetDeg = 0.0f;
 	float elbowJointOffsetDeg = 0.0f;
 };
@@ -43,6 +44,11 @@ public:
 	void SetRotation(const Quaternion& rotation)
 	{
 		m_rotation = rotation;
+	}
+	// 走っている度合い（歩く速さで 0、走る速さで 1）。モデルを Update する前に毎フレーム渡す。
+	void SetRunWeight(float runWeight)
+	{
+		m_runWeight = runWeight;
 	}
 	void Update(Skeleton& skeleton);
 	// 調整値。開発用の画面（ImGui）で変えるときに使う。変えた値は次のフレームから効く。
@@ -97,4 +103,5 @@ private:
 	int m_boneNos[enBone_Num] = {};
 	bool m_isActive = false;
 	Quaternion m_rotation = Quaternion::Identity;
+	float m_runWeight = 0.0f;
 };
