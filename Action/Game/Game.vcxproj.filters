@@ -99,6 +99,9 @@
     <ClCompile Include="Source\Enemy\BlackKnightInputSource.cpp">
       <Filter>Source\Enemy</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Enemy\SlashBullet.cpp">
+      <Filter>Source\Enemy</Filter>
+    </ClCompile>
     <ClCompile Include="Source\UI\UIManager.cpp">
       <Filter>Source\UI</Filter>
     </ClCompile>
@@ -303,6 +306,9 @@
       <Filter>Source\Enemy</Filter>
     </ClInclude>
     <ClInclude Include="Source\Enemy\BlackKnightInputSource.h">
+      <Filter>Source\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\SlashBullet.h">
       <Filter>Source\Enemy</Filter>
     </ClInclude>
     <ClInclude Include="Source\UI\UIManager.h">

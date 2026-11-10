@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "State.h"
+#include "Faction.h"
 
 class CharacterMover;
 class CharacterModel;
@@ -12,7 +13,9 @@ enum EnEnemyAnimClip
 	enEnemyAnimClip_Idle,
 	enEnemyAnimClip_Walk,
 	enEnemyAnimClip_Run,
-	enEnemyAnimClip_Attack,
+	enEnemyAnimClip_Attack1,  // 突進して突き → 回転斬り
+	enEnemyAnimClip_Attack2,  // 左上→右下、右上→左下と斬り下ろし → 横一閃
+	enEnemyAnimClip_Attack3,  // 斜めの斬撃を5つ飛ばす
 	enEnemyAnimClip_Num,
 };
 
@@ -22,7 +25,7 @@ enum class EnemyStateId
 	Idle,    // 立ち止まっている
 	Move,    // 入力どおりに歩いている
 	Run,     // 入力どおりに走っている（AI が isRun を立てたとき。剣を肩に乗せて走る）
-	Attack,  // 剣を振っている（AI が fire を押したときに振る）
+	Attack,  // 剣で攻撃している（AI が fire を押したときに、attackIndex の攻撃をする）
 	Frozen,  // 凍結などで行動できない
 	Num,
 };
@@ -40,6 +43,8 @@ struct EnemyStateContext
 	CharacterMover* mover = nullptr;
 	CharacterModel* model = nullptr;
 	const StatusEffects* statusEffects = nullptr;
+	const IGameObject* owner = nullptr;  // 自分。飛ばした斬撃が自分に当たらないように使う。
+	Faction faction = Faction::Enemy;    // 飛ばした斬撃が当たる相手を決める。
 	EnemyStateSettings settings;
 	// ひとつ前のステート。StateMachine が入れる。
 	EnemyStateId previousId = EnemyStateId::Idle;

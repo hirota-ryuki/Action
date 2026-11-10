@@ -2,6 +2,7 @@
 #
 # 使い方（Blender 5.2 で確認）:
 #   blender -b --python retarget_black_knight.py -- <設定の .json> [--preview <プレビューのフォルダ>]
+#           [--views 90,30] [--count 6] [--only 名前,名前]
 #
 # 設定（black_knight_anims.json）
 #   target    書き出す骨格とメッシュ（BlackKnight.fbx）
@@ -15,6 +16,11 @@
 #     frames   使うコマの範囲 [最初, 最後]（元の FBX のコマ番号。省くと全部）
 #     mask     腕などのポーズだけを重ねる。{"fbx": 腕だけのポーズの FBX, "bones": ["B-upperArm.R", ...], "frame": 何コマ目を使うか}
 #              ここに書いた元の骨は、元のモーションの回転の代わりに、このポーズの回転を使う（親から見た回転）
+#     mirror   true なら左右を反転する（左手の動きを右手にする、など）
+#     spin     [[コマ, 度], ...]。そのコマで体ごと縦の軸まわりに何度回っているか（+ で左回り。回転斬り・横一閃用）。
+#              コマは frames の最初を 0 と数える。間はなめらかにつなぐ
+#     segments 上の項目（source〜spin）を書いたものを並べると、順につないで1本にする。
+#              つなぎ目は blend コマ（既定 4）かけて混ぜ、腰の水平の位置は前の終わりに合わせる
 #     adjust   移したあとで骨を回す。[{"bone": "J_Bip_R_Hand", "axis": [x, y, z], "deg": 度}, ...]
 #              軸は体（腰の向き）から見た向き（+X が体の左、-Y が前、+Z が上）。その骨と、その下の骨がまとめて回る
 #
@@ -34,6 +40,9 @@ from mathutils import Vector, Quaternion, Matrix
 argv = sys.argv[sys.argv.index("--") + 1:]
 CONFIG_PATH = os.path.abspath(argv[0])
 PREVIEW_DIR = os.path.abspath(argv[argv.index("--preview") + 1]) if "--preview" in argv else None
+# プレビューの向き（度。0 = 正面、90 = 体の左から）とコマ数。--views 0,90 --count 12 のように変えられる
+PREVIEW_VIEWS = [float(v) for v in argv[argv.index("--views") + 1].split(",")] if "--views" in argv else [90.0, 30.0]
+PREVIEW_COUNT = int(argv[argv.index("--count") + 1]) if "--count" in argv else 6
 with open(CONFIG_PATH, encoding="utf-8") as fp:
     CONFIG = json.load(fp)
 BASE = os.path.dirname(CONFIG_PATH)
@@ -272,6 +281,20 @@ def retarget_clip(clip):
     hips_src = bmap[C("Hips")]
     h_ratio = TGT_REST_W[C("Hips")].translation.z / src_rest[hips_src].translation.z
 
+    # 左右を反転するときは、反対側の骨の回転を、左右（X）で鏡に映して使う
+    mirror = clip.get("mirror", False)
+    src_names = {b.name for b in src.data.bones}
+
+    def other_side(s):
+        for a, b in ((".L", ".R"), ("Left", "Right"), ("_L_", "_R_")):
+            if a in s:
+                n = s.replace(a, b)
+                return n if n in src_names else s
+            if b in s:
+                n = s.replace(b, a)
+                return n if n in src_names else s
+        return s
+
     f0, f1 = clip.get("frames", [int(act.frame_range[0]), int(act.frame_range[1])])
     frames_world, hips_world = [], []
     for f in range(f0, f1 + 1):
@@ -280,9 +303,14 @@ def retarget_clip(clip):
         pw = posed_world(src, basis)
         W = {}
         for t, s in bmap.items():
-            q = G @ pw[s].to_quaternion()
-            W[t] = (q @ rest_q_src[s].inverted() @ REF[t]).normalized()
+            sm = other_side(s) if mirror else s
+            d = (G @ pw[sm].to_quaternion()) @ rest_q_src[sm].inverted()
+            if mirror:
+                d = Quaternion((d.w, d.x, -d.y, -d.z))
+            W[t] = (d @ REF[t]).normalized()
         hp = G @ pw[hips_src].translation
+        if mirror:
+            hp.x = -hp.x
         hips_world.append(Vector((hp.x, hp.y, hp.z)) * h_ratio)
         frames_world.append(W)
     bpy.data.objects.remove(src, do_unlink=True)
@@ -504,11 +532,66 @@ def secondary(frames_basis, hips_world, loop):
 # ---------------------------------------------------------------------------
 # 焼き込みと書き出し
 # ---------------------------------------------------------------------------
+def spin_angle(keys, i):
+    """[[コマ, 度], ...] の間を、なめらかに（速くなって遅くなる）つないだ角度。"""
+    if i <= keys[0][0]:
+        return keys[0][1]
+    for (fa, da), (fb, db) in zip(keys, keys[1:]):
+        if i <= fb:
+            s = (i - fa) / max(fb - fa, 1)
+            s = s * s * (3 - 2 * s)
+            return da + (db - da) * s
+    return keys[-1][1]
+
+
+def apply_spin(frames_world, hips_world, spin):
+    """spin: [[コマ, 度], ...]。そのコマで体ごと縦の軸まわりに何度回っているか（+ で左回り）。間はなめらかにつなぐ。"""
+    if not spin:
+        return
+    for i in range(len(frames_world)):
+        q = Quaternion((0, 0, 1), math.radians(spin_angle(spin, i)))
+        frames_world[i] = {n: (q @ w).normalized() for n, w in frames_world[i].items()}
+        h = hips_world[i]
+        hips_world[i] = Vector((0, 0, h.z)) + q @ Vector((h.x, h.y, 0))
+
+
+def blend_world(wa, wb, t):
+    return {n: wa[n].slerp(wb[n], t).normalized() for n in wa if n in wb}
+
+
+def build_frames(clip):
+    """1本の元のモーションか、いくつかをつないだもの（segments）を、骨の世界での向きのコマの並びにする。"""
+    segments = clip.get("segments", [clip])
+    frames_world, hips_world = [], []
+    for k, seg in enumerate(segments):
+        W, H = retarget_clip(seg)
+        # 何コマ目から始まったか（つなぎ目で blend コマ重なる）。斬撃を出すコマなどを決める用
+        start = 0 if not frames_world else len(frames_world) - min(seg.get("blend", clip.get("blend", 4)), len(W), len(frames_world))
+        print(f"SEGMENT [{clip['name']}] {k}: 出来上がりの {start} コマ目から（元の {seg.get('frames', ['最初'])[0]} コマ目）")
+        for w in W:
+            apply_adjust(w, seg.get("adjust"))
+        apply_spin(W, H, seg.get("spin"))
+        if not frames_world:
+            frames_world, hips_world = W, H
+            continue
+        # つなぎ目は blend コマかけて混ぜる。腰の水平の位置は、前の終わりに合わせる
+        b = min(seg.get("blend", clip.get("blend", 4)), len(W), len(frames_world))
+        off = hips_world[-1] - H[0]
+        off.z = 0
+        H = [h + off for h in H]
+        for i in range(b):
+            t = (i + 1) / (b + 1)
+            k = len(frames_world) - b + i
+            frames_world[k] = blend_world(frames_world[k], W[i], t)
+            hips_world[k] = hips_world[k].lerp(H[i], t)
+        frames_world += W[b:]
+        hips_world += H[b:]
+    return frames_world, hips_world
+
+
 def bake(clip):
-    frames_world, hips_world = retarget_clip(clip)
+    frames_world, hips_world = build_frames(clip)
     loop = clip.get("loop", False)
-    for W in frames_world:
-        apply_adjust(W, clip.get("adjust"))
     frames_basis = [to_basis(W) for W in frames_world]
     if loop:
         # 最後のコマを最初のコマと同じにして、つなぎ目で跳ねないようにする
@@ -545,7 +628,43 @@ def bake(clip):
     act.use_fake_user = True
     SCENE.frame_start, SCENE.frame_end = 0, length
     print(f"[{clip['name']}] {length + 1} コマ（{(length) / FPS:.2f} 秒）")
+    print_sword_path(clip["name"], length)
     return act, length
+
+
+SWORD_BONE = "J_Sec_Sword"
+
+
+def sword_tip_local():
+    """剣のメッシュで、剣の骨からいちばん遠い点（剣先）を、剣の骨の空間で返す。"""
+    mesh = next(o for o in bpy.data.objects if o.type == "MESH")
+    vg = mesh.vertex_groups.get(SWORD_BONE)
+    bone_w = TGT.matrix_world @ BONES[SWORD_BONE].matrix_local
+    head = bone_w.translation
+    best, best_d = None, -1.0
+    for v in mesh.data.vertices:
+        if any(g.group == vg.index and g.weight > 0.5 for g in v.groups):
+            w = mesh.matrix_world @ v.co
+            d = (w - head).length
+            if d > best_d:
+                best, best_d = w, d
+    return bone_w.inverted() @ best
+
+
+def print_sword_path(name, length):
+    """剣先の通り道を、腰から見た（右, 前, 上）cm で3コマごとに出す（斬る向きを確かめる用）。"""
+    if "--sword" not in argv:
+        return
+    if not hasattr(print_sword_path, "tip"):
+        print_sword_path.tip = sword_tip_local()
+    out = []
+    for f in range(0, length + 1, 3):
+        SCENE.frame_set(f)
+        hips = TGT.matrix_world @ TGT.pose.bones[C("Hips")].head
+        tip = TGT.matrix_world @ TGT.pose.bones[SWORD_BONE].matrix @ print_sword_path.tip
+        d = (tip - hips) * 100
+        out.append(f"{f}:({-d.x:.0f},{-d.y:.0f},{d.z:.0f})")
+    print(f"SWORD [{name}] " + " ".join(out))
 
 
 def export(path):
@@ -589,9 +708,10 @@ def render_preview(name, act, length):
     TGT.animation_data.action = act
     if hasattr(TGT.animation_data, "action_slot") and act.slots:
         TGT.animation_data.action_slot = act.slots[0]
-    frames = [round(length * i / 5) for i in range(6)]
+    count = PREVIEW_COUNT
+    frames = [round(length * i / (count - 1)) for i in range(count)]
     rows = []
-    for ang in (90, 30):
+    for ang in PREVIEW_VIEWS:
         tiles = []
         for f in frames:
             SCENE.frame_set(f)

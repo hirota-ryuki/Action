@@ -66,30 +66,43 @@ void BlackKnightInputSource::Update(const InputSourceContext& context, Character
 	bool isAttack = false;
 	if (range == Range::Near) {
 		if (m_isRunning) {
-			// 走って近くまで来たら、歩きに戻してすぐに振る。
+			// 走って近くまで来たら、歩きに戻してすぐに攻撃する。
 			m_isRunning = false;
 			m_attackTimer = 0.0f;
 		}
 		if (m_attackTimer <= 0.0f) {
 			isAttack = true;
-			m_attackTimer = m_settings.attackInterval;
+			input.attackIndex = ATTACK_COMBO;
 		}
 		m_decideTimer = m_settings.decideInterval;
 	}
 	else if (!m_isRunning) {
 		// 中くらい・遠いときは、歩きながら間隔ごとに決め直す。
 		m_decideTimer -= context.deltaTime;
-		if (m_decideTimer <= 0.0f) {
+		if (m_decideTimer <= 0.0f && m_attackTimer <= 0.0f) {
 			m_decideTimer = m_settings.decideInterval;
 			std::uniform_real_distribution<float> chance(0.0f, 1.0f);
 			if (chance(m_random) < m_settings.runChance) {
 				m_isRunning = true;
 			}
-			// 残りは攻撃（中くらいなら攻撃1、遠いなら攻撃3）。まだモーションがないので、歩き続ける。
+			else {
+				isAttack = true;
+				input.attackIndex = range == Range::Middle ? ATTACK_DASH_THRUST : ATTACK_SLASH_WAVE;
+			}
 		}
 	}
 
+	if (isAttack) {
+		m_attackTimer = m_settings.attackInterval;
+		m_decideTimer = m_settings.decideInterval;
+	}
 	input.isRun = m_isRunning;
 	// fire は1フレームだけ押す（EnemyGroundState が押した瞬間に Attack へ移る）。
 	input.fire.Update(isAttack);
+
+	// 斬撃は、胸の高さから相手の胸のあたりへ飛ばす。
+	input.hasAim = true;
+	input.aimOrigin = context.position;
+	input.aimOrigin.y += m_settings.aimHeight;
+	input.aimDirection = target->GetCenter() - input.aimOrigin;
 }

@@ -25,8 +25,8 @@ namespace
 		settings.midRange = 600.0f;        // この距離以内が「中くらい」。
 		settings.stopDistance = 150.0f;    // この距離まで近づいたら止まる（剣が届くところで止まる）。
 		settings.decideInterval = 2.0f;    // 歩いている間、走るかを決め直す間隔（秒）。
-		settings.runChance = 0.5f;         // 中くらい・遠いときに走る確率。残りは攻撃（攻撃1・3ができるまでは歩き続ける）。
-		settings.attackInterval = 2.5f;    // 近いときに剣を振る間隔（秒）。振るのに 1.1秒かかる。
+		settings.runChance = 0.5f;         // 中くらい・遠いときに走る確率。残りは攻撃（中くらいなら攻撃1、遠いなら攻撃3）。
+		settings.attackInterval = 3.5f;    // 近いときに攻撃2をする間隔（秒）。攻撃2は 2.4秒かかる。
 		settings.firstAttackDelay = 0.6f;  // 相手を見つけてから最初に振れるまでの秒数。
 		return settings;
 	}
@@ -36,7 +36,6 @@ namespace
 		CharacterModelDesc desc;
 		// 黒騎士。体は Meshy で作り、骨格を SK_Player に合わせる（tools/BlenderScripts/make_black_knight_meshy.py で作る）。
 		// アニメーションは既存のモーションを黒騎士の骨格へ移したもの（tools/BlenderScripts/retarget_black_knight.py で作る）。
-		// Attack は、攻撃1〜3のモーションができるまでの仮（Kevin Iglesias の片手剣の攻撃）。
 		desc.modelPath = "Assets/modelData/enemy/BlackKnight/BlackKnight.fbx";
 		desc.upAxis = enModelUpAxisZ;
 		desc.scale = 1.3f;   // プレイヤー（1.128）より一回り大きくする。
@@ -44,7 +43,9 @@ namespace
 		desc.clips[enEnemyAnimClip_Idle] = { "Assets/modelData/enemy/BlackKnight/Animation/Idle.fbx", true };
 		desc.clips[enEnemyAnimClip_Walk] = { "Assets/modelData/enemy/BlackKnight/Animation/Walk.fbx", true };
 		desc.clips[enEnemyAnimClip_Run] = { "Assets/modelData/enemy/BlackKnight/Animation/Run.fbx", true };
-		desc.clips[enEnemyAnimClip_Attack] = { "Assets/modelData/enemy/BlackKnight/Animation/Attack.fbx", false };
+		desc.clips[enEnemyAnimClip_Attack1] = { "Assets/modelData/enemy/BlackKnight/Animation/Attack1.fbx", false };
+		desc.clips[enEnemyAnimClip_Attack2] = { "Assets/modelData/enemy/BlackKnight/Animation/Attack2.fbx", false };
+		desc.clips[enEnemyAnimClip_Attack3] = { "Assets/modelData/enemy/BlackKnight/Animation/Attack3.fbx", false };
 		return desc;
 	}
 
@@ -73,8 +74,11 @@ void Enemy::OnStart()
 	stateContext.mover = &m_mover;
 	stateContext.model = &m_model;
 	stateContext.statusEffects = &m_statusEffects;
+	stateContext.owner = this;
+	stateContext.faction = GetFaction();
 	m_stateMachine.Init(stateContext);  // Idle から始める（Idle のアニメーションを流す）。
-	// 黒騎士は魔法を持たない（MagicCaster に何も足さないので、fire を押しても何も撃たない）。
+	// 黒騎士は魔法を持たない（MagicCaster に何も足さないので、fire を押しても魔法は撃たない）。
+	// fire は剣の攻撃（EnemyAttackState）になり、攻撃3の斬撃はステートが飛ばす。
 }
 
 void Enemy::UpdateAction(float deltaTime)
