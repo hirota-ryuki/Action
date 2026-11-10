@@ -2,10 +2,12 @@
 #include "Stage.h"
 
 #include "System/JsonFile.h"
+#include "Objects/StageRender/StageRenderSettings.h"
 
 namespace
 {
 	const char* STAGE_JSON_PATH = "stage/field_props.json";
+	const char* RENDER_SETTINGS_JSON_PATH = "stage/render_settings.json";
 
 	Vector3 ToVector3(const JsonFile::Json& a)
 	{
@@ -42,21 +44,9 @@ bool Stage::Start()
 	}
 
 	// 地形の区画。
-	std::vector<Vector3> chunkCenters;
-	int numChunkX = 0;
-	int numChunkY = 0;
 	for (const auto& c : json["chunks"]) {
-		numChunkX = (std::max)(numChunkX, c.value("x", 0) + 1);
-		numChunkY = (std::max)(numChunkY, c.value("y", 0) + 1);
-	}
-	// 区画の番号（x, y）から chunkCenters の番号を引くための表。
-	std::vector<int> chunkIndex(numChunkX * numChunkY, -1);
-	for (const auto& c : json["chunks"]) {
-		const Vector3 center = ToVector3(c["center"]);
 		auto chunk = std::make_unique<StageChunk>();
-		chunk->Init(c.value("model", std::string()).c_str(), c.value("far", std::string()).c_str(), center);
-		chunkIndex[c.value("y", 0) * numChunkX + c.value("x", 0)] = static_cast<int>(chunkCenters.size());
-		chunkCenters.push_back(center);
+		chunk->Init(c.value("model", std::string()).c_str(), c.value("far", std::string()).c_str(), ToVector3(c["center"]));
 		m_chunks.push_back(std::move(chunk));
 	}
 
@@ -65,6 +55,7 @@ bool Stage::Start()
 	for (const auto& m : json["models"]) {
 		StageProps::ModelDesc desc;
 		desc.path = m.value("path", std::string());
+		desc.kind = m.value("kind", std::string());
 		desc.isShadowCaster = m.value("shadow", false);
 		desc.drawDistance = m.value("drawDistance", 0.0f);
 		desc.collision = ToCollision(m.value("collision", std::string("none")));
@@ -74,12 +65,11 @@ bool Stage::Start()
 	}
 
 	// 置き場所。items の1つは [x, y, z, 向き（Y 軸まわりの度）, 大きさ, 傾き X, 傾き Z]。
-	std::vector<std::vector<std::vector<StageProps::Item>>> itemsByChunk(
-		chunkCenters.size(), std::vector<std::vector<StageProps::Item>>(models.size()));
+	// 描くときは区画の分け方（ISpatialIndex）が場所で分け直すので、ここでは部品の種類ごとにまとめるだけ。
+	std::vector<std::vector<StageProps::Item>> itemsByModel(models.size());
 	for (const auto& p : json["props"]) {
-		const int chunkNo = chunkIndex[p["chunk"][1].get<int>() * numChunkX + p["chunk"][0].get<int>()];
 		const int modelNo = p.value("model", 0);
-		auto& items = itemsByChunk[chunkNo][modelNo];
+		auto& items = itemsByModel[modelNo];
 		for (const auto& it : p["items"]) {
 			StageProps::Item item;
 			item.position = Vector3(it[0].get<float>(), it[1].get<float>(), it[2].get<float>());
@@ -97,7 +87,8 @@ bool Stage::Start()
 		}
 	}
 
-	m_props.Init(models, std::move(itemsByChunk), chunkCenters, json.value("chunkSize", 6400.0f));
+	const StageRenderSettings renderSettings = StageRenderSettings::Load(RENDER_SETTINGS_JSON_PATH);
+	m_props.Init(models, itemsByModel, renderSettings);
 	return true;
 }
 

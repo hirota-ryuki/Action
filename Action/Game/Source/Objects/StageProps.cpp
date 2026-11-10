@@ -1,52 +1,81 @@
 ﻿#include "stdafx.h"
 #include "StageProps.h"
 
-void StageProps::Init(
-	const std::vector<ModelDesc>& models,
-	std::vector<std::vector<std::vector<Item>>>&& itemsByChunk,
-	const std::vector<Vector3>& chunkCenters,
-	float chunkSize)
+#include <cmath>
+
+#include "Objects/StageRender/StageRenderSettings.h"
+#include "Objects/StageRender/CullContextBuilder.h"
+
+namespace
 {
-	m_itemsByChunk = std::move(itemsByChunk);
-	m_chunkCenters = chunkCenters;
-	m_chunkRadius = chunkSize * 0.5f * 1.4143f;
-
-	for (int modelNo = 0; modelNo < static_cast<int>(models.size()); modelNo++) {
-		// インスタンスの最大数は、全区画に置いたこの部品の数。
-		int maxInstance = 0;
-		for (const auto& chunk : m_itemsByChunk) {
-			maxInstance += static_cast<int>(chunk[modelNo].size());
-		}
-
-		auto entry = std::make_unique<ModelEntry>();
-		entry->desc = models[modelNo];
-		if (maxInstance > 0) {
-			// エンジンは最大数が 2 以上のときだけインスタンス描画にするので、1個しかない部品でも 2 にする。
-			maxInstance = (std::max)(maxInstance, 2);
-			entry->modelRender.Init(entry->desc.path.c_str(), nullptr, 0, enModelUpAxisZ, true, maxInstance);
-			entry->modelRender.SetShadowCasterFlag(entry->desc.isShadowCaster);
-		}
-		m_models.push_back(std::move(entry));
-
-		// 当たり判定は動かないので、最初に全部作る。
-		for (const auto& chunk : m_itemsByChunk) {
-			for (const Item& item : chunk[modelNo]) {
-				CreateCollision(modelNo, item);
+	// モデルの原点（足もと）から、いちばん遠い頂点までの距離。部品をまるごと包む球の半径に使う。
+	float CalcModelRadius(Model& model)
+	{
+		float maxLengthSq = 0.0f;
+		model.GetTkmFile().QueryMeshParts([&](const TkmFile::SMesh& mesh) {
+			for (const auto& v : mesh.vertexBuffer) {
+				maxLengthSq = (std::max)(maxLengthSq, v.pos.LengthSq());
 			}
-		}
+		});
+		return std::sqrt(maxLengthSq);
+	}
+
+	// 番号から、0〜1 の決まった乱数を作る（間引きで毎フレーム同じ物を残すため）。
+	float MakeKeepValue(uint32_t index)
+	{
+		uint32_t h = index * 2654435761u;
+		h ^= h >> 16;
+		return static_cast<float>(h & 0xFFFF) / 65536.0f;
 	}
 }
 
-void StageProps::CreateCollision(int modelNo, const Item& item)
+void StageProps::Init(
+	const std::vector<ModelDesc>& models,
+	const std::vector<std::vector<Item>>& itemsByModel,
+	const StageRenderSettings& settings)
 {
-	ModelEntry& entry = *m_models[modelNo];
+	m_filters = settings.CreateFilters();
+
+	for (int modelNo = 0; modelNo < static_cast<int>(models.size()); modelNo++) {
+		const auto& items = itemsByModel[modelNo];
+		auto entry = std::make_unique<ModelEntry>();
+		entry->desc = models[modelNo];
+		entry->info.kind = entry->desc.kind;
+		entry->info.drawDistance = entry->desc.drawDistance;
+		if (items.empty()) {
+			m_models.push_back(std::move(entry));
+			continue;
+		}
+		// エンジンは最大数が 2 以上のときだけインスタンス描画にするので、1個しかない部品でも 2 にする。
+		const int maxInstance = (std::max)(static_cast<int>(items.size()), 2);
+		entry->modelRender.Init(entry->desc.path.c_str(), nullptr, 0, enModelUpAxisZ, true, maxInstance);
+		entry->modelRender.SetShadowCasterFlag(entry->desc.isShadowCaster);
+
+		// 動かないので、行列・包む球・間引き用の乱数を最初に計算しておく。
+		const float modelRadius = CalcModelRadius(entry->modelRender.GetModel());
+		entry->instances.reserve(items.size());
+		for (const Item& item : items) {
+			PropInstance instance;
+			instance.position = item.position;
+			instance.radius = modelRadius * item.scale.x;
+			instance.world = entry->modelRender.CalcWorldMatrix(item.position, item.rotation, item.scale);
+			instance.keepValue = MakeKeepValue(static_cast<uint32_t>(entry->instances.size()));
+			entry->instances.push_back(instance);
+			CreateCollision(*entry, item, instance.world);
+		}
+		entry->spatialIndex = settings.CreateSpatialIndex();
+		entry->spatialIndex->Build(entry->instances);
+		m_models.push_back(std::move(entry));
+	}
+}
+
+void StageProps::CreateCollision(ModelEntry& entry, const Item& item, const Matrix& world)
+{
 	switch (entry.desc.collision) {
 	case ModelDesc::Collision::Mesh: {
-		// 岩はモデルの形のまま。インスタンス描画のモデルには置き場所の行列がないので、ここで計算して渡す。
-		Model& model = entry.modelRender.GetModel();
-		Matrix world = model.CalcWorldMatrix(item.position, item.rotation, item.scale);
+		// 岩はモデルの形のまま。
 		auto obj = std::make_unique<PhysicsStaticObject>();
-		obj->CreateFromModel(model, world);
+		obj->CreateFromModel(entry.modelRender.GetModel(), world);
 		obj->SetFriction(1.0f);
 		m_meshCollisions.push_back(std::move(obj));
 		break;
@@ -73,41 +102,25 @@ void StageProps::CreateCollision(int modelNo, const Item& item)
 
 void StageProps::Update()
 {
-	const Vector3 cameraPos = g_camera3D->GetPosition();
-	Vector3 forward = g_camera3D->GetForward();
-	forward.y = 0.0f;
-	forward.Normalize();
-
+	PropCullContext context = CullContextBuilder::Build(*g_camera3D);
 	for (auto& entry : m_models) {
 		entry->numInstance = 0;
-	}
-
-	for (int chunkNo = 0; chunkNo < static_cast<int>(m_chunkCenters.size()); chunkNo++) {
-		Vector3 toChunk = m_chunkCenters[chunkNo] - cameraPos;
-		toChunk.y = 0.0f;
-		// 区画まるごとカメラの後ろにあれば飛ばす。
-		if (toChunk.Dot(forward) < -m_chunkRadius) {
+		if (!entry->spatialIndex) {
 			continue;
 		}
-		const float chunkDistance = toChunk.Length() - m_chunkRadius;
+		context.model = &entry->info;
 
-		for (int modelNo = 0; modelNo < static_cast<int>(m_models.size()); modelNo++) {
-			ModelEntry& entry = *m_models[modelNo];
-			const float drawDistance = entry.desc.drawDistance;
-			// 区画のいちばん近いところでも描く距離より遠ければ飛ばす。
-			if (chunkDistance > drawDistance) {
-				continue;
-			}
-			const float drawDistanceSq = drawDistance * drawDistance;
-			for (const Item& item : m_itemsByChunk[chunkNo][modelNo]) {
-				Vector3 diff = item.position - cameraPos;
-				if (diff.LengthSq() > drawDistanceSq) {
-					continue;
-				}
-				// 渡した数だけ描かれるので、番号は 0 から詰めて渡す。
-				entry.modelRender.UpdateInstancingData(entry.numInstance, item.position, item.rotation, item.scale);
-				entry.numInstance++;
-			}
+		// 1. 区画の分け方で候補を集める。
+		m_candidates.clear();
+		entry->spatialIndex->Query(context, m_candidates);
+		// 2. フィルターを順に通す。
+		for (const auto& filter : m_filters) {
+			filter->Apply(m_candidates, context);
+		}
+		// 3. 残った物の行列を、番号 0 から詰めて渡す。渡した数だけ描かれる。
+		for (const PropInstance* instance : m_candidates) {
+			entry->modelRender.UpdateInstancingData(entry->numInstance, instance->world);
+			entry->numInstance++;
 		}
 	}
 }
