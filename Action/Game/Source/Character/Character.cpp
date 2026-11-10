@@ -64,6 +64,15 @@ void Character::Update()
 	const Quaternion modelRotation = m_bodyLean.Update(m_transform.position, m_mover.GetVisualRotation(), deltaTime);
 	m_model.SetTransform(m_transform.position, modelRotation);
 	m_bodyLink.SetRotation(modelRotation);
+	// 走っている度合い（歩く速さで 0、走る速さで 1）。走っているときだけ効かせる調整に使う。
+	{
+		const CharacterMoveSettings& move = m_mover.GetSettings();
+		const float runSpeed = move.walkSpeed * move.runSpeedMultiplier;
+		const float runWeight = runSpeed > move.walkSpeed
+			? (m_mover.GetHorizontalSpeed() - move.walkSpeed) / (runSpeed - move.walkSpeed)
+			: 0.0f;
+		m_bodyLink.SetRunWeight(max(0.0f, min(1.0f, runWeight)));
+	}
 	m_model.Update();
 	// ⑦ モデルを更新したあとの処理（派生クラス）
 	OnLateUpdate(deltaTime);

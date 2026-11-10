@@ -78,6 +78,11 @@ public:
 	{
 		return m_isMoving;
 	}
+	// 水平方向の速さ。
+	float GetHorizontalSpeed() const
+	{
+		return sqrtf(m_moveSpeed.x * m_moveSpeed.x + m_moveSpeed.z * m_moveSpeed.z);
+	}
 
 private:
 	// 本当の向きだけを変える。向けたら true。
