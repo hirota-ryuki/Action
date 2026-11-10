@@ -96,6 +96,9 @@
     <ClCompile Include="Source\Enemy\Enemy.cpp">
       <Filter>Source\Enemy</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Enemy\BlackKnightInputSource.cpp">
+      <Filter>Source\Enemy</Filter>
+    </ClCompile>
     <ClCompile Include="Source\UI\UIManager.cpp">
       <Filter>Source\UI</Filter>
     </ClCompile>
@@ -245,6 +248,9 @@
     <ClInclude Include="Source\Enemy\State\EnemyMoveState.h">
       <Filter>Source\Enemy\State</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Enemy\State\EnemyRunState.h">
+      <Filter>Source\Enemy\State</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Enemy\State\EnemyIdleState.h">
       <Filter>Source\Enemy\State</Filter>
     </ClInclude>
@@ -294,6 +300,9 @@
       <Filter>Source\Player</Filter>
     </ClInclude>
     <ClInclude Include="Source\Enemy\Enemy.h">
+      <Filter>Source\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\BlackKnightInputSource.h">
       <Filter>Source\Enemy</Filter>
     </ClInclude>
     <ClInclude Include="Source\UI\UIManager.h">

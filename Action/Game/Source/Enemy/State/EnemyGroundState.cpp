@@ -9,6 +9,9 @@ EnemyStateId EnemyGroundState::SelectByInput(const EnemyStateContext& context, c
 	if (input.moveDirection.Length() < context.settings.moveThreshold) {
 		return EnemyStateId::Idle;
 	}
+	if (input.isRun) {
+		return EnemyStateId::Run;
+	}
 	return EnemyStateId::Move;
 }
 

@@ -11,6 +11,7 @@ enum EnEnemyAnimClip
 {
 	enEnemyAnimClip_Idle,
 	enEnemyAnimClip_Walk,
+	enEnemyAnimClip_Run,
 	enEnemyAnimClip_Attack,
 	enEnemyAnimClip_Num,
 };
@@ -19,7 +20,8 @@ enum EnEnemyAnimClip
 enum class EnemyStateId
 {
 	Idle,    // 立ち止まっている
-	Move,    // 入力どおりに進んでいる
+	Move,    // 入力どおりに歩いている
+	Run,     // 入力どおりに走っている（AI が isRun を立てたとき。剣を肩に乗せて走る）
 	Attack,  // 剣を振っている（AI が fire を押したときに振る）
 	Frozen,  // 凍結などで行動できない
 	Num,

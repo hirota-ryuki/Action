@@ -1,0 +1,50 @@
+{
+  "target": "../../Game/Assets/modelData/enemy/BlackKnight/BlackKnight.fbx",
+  "out_dir": "../../Game/Assets/modelData/enemy/BlackKnight/Animation",
+  "clips": [
+    {
+      "name": "Idle",
+      "source": "D:/04_dawnload/BlackKnightAnim/extracted/Animations/Male/Idles/HumanM@Idle01.fbx",
+      "rig": "kevin",
+      "loop": true,
+      "adjust": [
+        {"bone": "J_Bip_R_Hand", "axis": [1, 0, 0], "deg": 45},
+        {"bone": "J_Bip_R_Hand", "axis": [0, 0, 1], "deg": -15}
+      ]
+    },
+    {
+      "name": "Walk",
+      "source": "D:/04_dawnload/mixamo/Walk.fbx",
+      "rig": "mixamo",
+      "loop": true,
+      "adjust": [
+        {"bone": "J_Bip_R_Hand", "axis": [1, 0, 0], "deg": 45},
+        {"bone": "J_Bip_R_Hand", "axis": [0, 0, 1], "deg": -15}
+      ]
+    },
+    {
+      "name": "Run",
+      "source": "D:/04_dawnload/BlackKnightAnim/extracted/Animations/Male/Movement/Run/HumanM@Run01_Forward.fbx",
+      "rig": "kevin",
+      "loop": true,
+      "mask": {
+        "fbx": "D:/04_dawnload/BlackKnightAnim/extracted/Animations/Masked Poses/HumanM@ObjectGripShoulder01_R.fbx",
+        "bones": ["B-shoulder.R", "B-upperArm.R", "B-forearm.R", "B-hand.R", "B-handProp.R",
+                  "B-indexFinger01.R", "B-indexFinger02.R", "B-indexFinger03.R",
+                  "B-middleFinger01.R", "B-middleFinger02.R", "B-middleFinger03.R",
+                  "B-ringFinger01.R", "B-ringFinger02.R", "B-ringFinger03.R",
+                  "B-pinky01.R", "B-pinky02.R", "B-pinky03.R",
+                  "B-thumb01.R", "B-thumb02.R", "B-thumb03.R"]
+      },
+      "adjust": [
+        {"bone": "J_Bip_R_Hand", "axis": [1, 0, 0], "deg": -55}
+      ]
+    },
+    {
+      "name": "Attack",
+      "source": "D:/04_dawnload/BlackKnightAnim/extracted/Animations/Male/Combat/1H/HumanM@Attack1H01_R.fbx",
+      "rig": "kevin",
+      "loop": false
+    }
+  ]
+}

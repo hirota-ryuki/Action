@@ -238,6 +238,7 @@
     <ClCompile Include="Source\Character\Character.cpp" />
     <ClCompile Include="Source\Player\PlayerAnimator.cpp" />
     <ClCompile Include="Source\Enemy\Enemy.cpp" />
+    <ClCompile Include="Source\Enemy\BlackKnightInputSource.cpp" />
     <ClCompile Include="Source\UI\UIManager.cpp" />
     <ClCompile Include="Source\UI\Hud\PlayerHud.cpp" />
     <ClCompile Include="Source\UI\Hud\BossHud.cpp" />
@@ -293,6 +294,7 @@
     <ClInclude Include="Source\Enemy\State\EnemyAttackState.h" />
     <ClInclude Include="Source\Enemy\State\EnemyFrozenState.h" />
     <ClInclude Include="Source\Enemy\State\EnemyMoveState.h" />
+    <ClInclude Include="Source\Enemy\State\EnemyRunState.h" />
     <ClInclude Include="Source\Enemy\State\EnemyIdleState.h" />
     <ClInclude Include="Source\Enemy\State\EnemyGroundState.h" />
     <ClInclude Include="Source\Enemy\State\EnemyState.h" />
@@ -310,6 +312,7 @@
     <ClInclude Include="Source\Actor\Actor.h" />
     <ClInclude Include="Source\Player\PlayerAnimator.h" />
     <ClInclude Include="Source\Enemy\Enemy.h" />
+    <ClInclude Include="Source\Enemy\BlackKnightInputSource.h" />
     <ClInclude Include="Source\UI\UIManager.h" />
     <ClInclude Include="Source\UI\Hud\PlayerHud.h" />
     <ClInclude Include="Source\UI\Hud\BossHud.h" />

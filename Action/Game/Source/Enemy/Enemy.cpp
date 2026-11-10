@@ -9,24 +9,25 @@ namespace
 	CharacterMoveSettings MakeMoveSettings()
 	{
 		CharacterMoveSettings settings;
-		settings.walkSpeed = 120.0f;   // 黒騎士は走らず、Walk の歩幅に合わせてゆっくり歩く。
+		settings.walkSpeed = 140.0f;          // 余裕たっぷりにゆっくり歩く。Walk の足が地面を送る速さ（約145）に合わせる。
+		settings.runSpeedMultiplier = 2.75f;  // 走るときは 385。Run の足が地面を送る速さ（約384）に合わせる。
 		settings.gravity = 980.0f;
 		settings.capsuleRadius = 30.0f;   // 黒騎士は肩当てが広いので、プレイヤー（20）より太くする。
 		settings.capsuleHeight = 140.0f;
 		return settings;
 	}
 
-	NpcInputSource::Settings MakeAiSettings()
+	BlackKnightInputSource::Settings MakeAiSettings()
 	{
-		NpcInputSource::Settings settings;
-		// 今は敵を止めておく（相手を探さないので、動かず・向きも変えず・撃たない）。動かすときは 900 に戻す。
-		settings.searchRange = 900.0f;     // この距離以内に入ると追跡を開始する。
-		settings.stopDistance = 150.0f;   // この距離まで近づいたら停止する（剣が届くところで止まる）。
-		// 黒騎士は魔法を持たず、fire（撃つ）の入力で剣を振る（EnemyAttackState）。
-		settings.canFire = true;
-		settings.fireRange = 220.0f;      // この距離以内なら剣を振る（剣の長さ＋踏み込み）。
-		settings.fireInterval = 2.5f;     // 剣を振る間隔（秒）。振るのに 1.1秒かかる。
-		settings.firstFireDelay = 0.6f;   // 近づいてから最初に振るまでの秒数。
+		BlackKnightInputSource::Settings settings;
+		settings.searchRange = 900.0f;     // この距離以内に入ると追いかけ始める（ここまでが「遠い」）。
+		settings.nearRange = 220.0f;       // この距離以内が「近い」。剣を振る（剣の長さ＋踏み込み）。
+		settings.midRange = 600.0f;        // この距離以内が「中くらい」。
+		settings.stopDistance = 150.0f;    // この距離まで近づいたら止まる（剣が届くところで止まる）。
+		settings.decideInterval = 2.0f;    // 歩いている間、走るかを決め直す間隔（秒）。
+		settings.runChance = 0.5f;         // 中くらい・遠いときに走る確率。残りは攻撃（攻撃1・3ができるまでは歩き続ける）。
+		settings.attackInterval = 2.5f;    // 近いときに剣を振る間隔（秒）。振るのに 1.1秒かかる。
+		settings.firstAttackDelay = 0.6f;  // 相手を見つけてから最初に振れるまでの秒数。
 		return settings;
 	}
 
@@ -34,14 +35,16 @@ namespace
 	{
 		CharacterModelDesc desc;
 		// 黒騎士。体は Meshy で作り、骨格を SK_Player に合わせる（tools/BlenderScripts/make_black_knight_meshy.py で作る）。
-		// アニメーションは黒騎士用に作ったもの（tools/BlenderScripts/make_black_knight_anims.py で作る）。
+		// アニメーションは既存のモーションを黒騎士の骨格へ移したもの（tools/BlenderScripts/retarget_black_knight.py で作る）。
+		// Attack は、攻撃1〜3のモーションができるまでの仮（Kevin Iglesias の片手剣の攻撃）。
 		desc.modelPath = "Assets/modelData/enemy/BlackKnight/BlackKnight.fbx";
 		desc.upAxis = enModelUpAxisZ;
 		desc.scale = 1.3f;   // プレイヤー（1.128）より一回り大きくする。
 		desc.clips.resize(enEnemyAnimClip_Num);
 		desc.clips[enEnemyAnimClip_Idle] = { "Assets/modelData/enemy/BlackKnight/Animation/Idle.fbx", true };
 		desc.clips[enEnemyAnimClip_Walk] = { "Assets/modelData/enemy/BlackKnight/Animation/Walk.fbx", true };
-		desc.clips[enEnemyAnimClip_Attack] = { "Assets/modelData/enemy/BlackKnight/Animation/DashSlash.fbx", false };
+		desc.clips[enEnemyAnimClip_Run] = { "Assets/modelData/enemy/BlackKnight/Animation/Run.fbx", true };
+		desc.clips[enEnemyAnimClip_Attack] = { "Assets/modelData/enemy/BlackKnight/Animation/Attack.fbx", false };
 		return desc;
 	}
 
@@ -49,7 +52,7 @@ namespace
 
 Enemy::Enemy()
 	: Character(Faction::Enemy)
-	, m_npcInputSource(MakeAiSettings())
+	, m_aiInputSource(MakeAiSettings())
 {
 }
 
