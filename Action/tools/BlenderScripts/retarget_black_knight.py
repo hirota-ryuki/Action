@@ -7,6 +7,8 @@
 # 設定（black_knight_anims.json）
 #   target    書き出す骨格とメッシュ（BlackKnight.fbx）
 #   out_dir   書き出すフォルダ。<out_dir>/<name>.fbx に書く
+#   grip      {"fbx": 手のポーズの FBX, "bones": [右手の指の骨, ...]}。全部のクリップで、剣を持つ右手の指をこのポーズにする
+#             （元のモーションが手を開いていても、拳で剣を握るように）。クリップに "grip": false と書くと重ねない
 #   clips     書き出すクリップの一覧。1つずつ次を書く
 #     name     書き出す名前
 #     source   元のモーションの FBX
@@ -43,6 +45,8 @@ PREVIEW_DIR = os.path.abspath(argv[argv.index("--preview") + 1]) if "--preview" 
 # プレビューの向き（度。0 = 正面、90 = 体の左から）とコマ数。--views 0,90 --count 12 のように変えられる
 PREVIEW_VIEWS = [float(v) for v in argv[argv.index("--views") + 1].split(",")] if "--views" in argv else [90.0, 30.0]
 PREVIEW_COUNT = int(argv[argv.index("--count") + 1]) if "--count" in argv else 6
+# --focus J_Bip_R_Hand のように骨の名前を渡すと、その骨に寄って描く（握りを確かめる用）
+PREVIEW_FOCUS = argv[argv.index("--focus") + 1] if "--focus" in argv else None
 with open(CONFIG_PATH, encoding="utf-8") as fp:
     CONFIG = json.load(fp)
 BASE = os.path.dirname(CONFIG_PATH)
@@ -234,15 +238,26 @@ def retarget_clip(clip):
         bmap = vrm_map({b.name for b in src.data.bones})
     bmap = {t: s for t, s in bmap.items() if t in REST_Q and s in src.data.bones}
 
-    # 腕だけのポーズ（mask）を読む
-    mask_basis = {}
-    if "mask" in clip:
-        mk = clip["mask"]
+    # 腕・手だけのポーズ（mask）を読む。設定全体の grip（剣を握る右手の指）を先に、クリップの mask をあとに重ねる
+    def read_mask(mk, bones):
         marm, mact = import_armature(resolve(mk["fbx"]))
         set_action(marm, mact)
         mb = read_basis(marm, mk.get("frame", int(mact.frame_range[0])))
-        mask_basis = {n: mb[n] for n in mk["bones"] if n in mb}
         bpy.data.objects.remove(marm, do_unlink=True)
+        if mact:
+            bpy.data.actions.remove(mact)
+        return {n: mb[n] for n in bones if n in mb}
+
+    mask_basis = {}
+    grip = CONFIG.get("grip")
+    if grip and clip.get("grip", True):
+        bones = grip["bones"]
+        if clip.get("mirror", False):
+            # 左右を反転するクリップでは、黒騎士の右手は元の左手から来る
+            bones = [b.replace(".R", ".L") for b in bones]
+        mask_basis.update(read_mask(grip, bones))
+    if "mask" in clip:
+        mask_basis.update(read_mask(clip["mask"], clip["mask"]["bones"]))
 
     src_rest = rest_world(src)
     if "rest" in clip:
@@ -623,6 +638,7 @@ def bake(clip):
         p_arm = M_INV @ hips_world[f]
         hb.location = REST_Q[hips].inverted() @ (p_arm - REST_H[hips])
         hb.keyframe_insert("location", frame=f)
+    fit_sword_to_grip(length)
     act = TGT.animation_data.action
     act.name = clip["name"]
     act.use_fake_user = True
@@ -633,6 +649,65 @@ def bake(clip):
 
 
 SWORD_BONE = "J_Sec_Sword"
+
+
+def sword_grip_in_hand():
+    """剣のメッシュの柄の中心と、柄から剣先への向きを、右手の骨の初期の空間で返す。"""
+    mesh = next(o for o in bpy.data.objects if o.type == "MESH")
+    vg = mesh.vertex_groups.get(SWORD_BONE)
+    to_hand = BONES[S("R", "Hand")].matrix_local.inverted() @ TGT.matrix_world.inverted() @ mesh.matrix_world
+    pts = [to_hand @ v.co for v in mesh.data.vertices
+           if any(g.group == vg.index and g.weight > 0.5 for g in v.groups)]
+    head = BONES[S("R", "Hand")].matrix_local.inverted() @ BONES[SWORD_BONE].head_local
+    tip = max(pts, key=lambda p: (p - head).length)
+    axis0 = (tip - head).normalized()
+    pommel = min(pts, key=lambda p: p.dot(axis0))
+    axis = (tip - pommel).normalized()
+    # 柄から剣先へ、輪切りにして太さを見る。いちばん太いところ（鍔）までの、根元側の半分が柄
+    length = (tip - pommel).dot(axis)
+    bins = 60
+    width = [0.0] * bins
+    for p in pts:
+        t = (p - pommel).dot(axis)
+        k = min(int(t / length * bins), bins - 1)
+        r = ((p - pommel) - axis * t).length
+        width[k] = max(width[k], r)
+    guard = max(range(bins // 2), key=lambda k: width[k])
+    t_guard = guard / bins * length
+    # 柄は両端にしか頂点がないので、根元から鍔までの頂点の、軸からのずれの平均を、柄の真ん中の高さに置く
+    grip = [p for p in pts if (p - pommel).dot(axis) < t_guard]
+    side = sum(((p - pommel) - axis * (p - pommel).dot(axis) for p in grip), Vector()) / max(len(grip), 1)
+    center = pommel + axis * (t_guard * 0.5) + side
+    print(f"SWORD GRIP 長さ {length:.1f} 鍔まで {t_guard:.1f}（剣の骨の空間ではなく右手の骨の空間）")
+    return center, axis
+
+
+def fit_sword_to_grip(length):
+    """剣の柄が、握った右手の指の輪の中を通るように、剣の骨を動かす（全部のコマで同じ）。
+    柄の中心は曲げた指の輪の真ん中、柄の向きは手のひらを横切る向き（刃は親指の側へ出る）。"""
+    if CONFIG.get("sword_fit") is False:
+        return
+    SCENE.frame_set(0)
+    hand = TGT.pose.bones[S("R", "Hand")]
+    to_hand = hand.matrix.inverted()
+    # 曲げた指（ミトン。中指の3本の骨に重みがある）の輪の真ん中
+    pts = [to_hand @ TGT.pose.bones[S("R", f"Middle{i}")].head for i in (1, 2, 3)]
+    pts.append(to_hand @ TGT.pose.bones[S("R", "Middle3")].tail)
+    want_center = sum(pts, Vector()) / len(pts)
+    # 柄の向きは、T ポーズの手のひらを横切る向き（前 = 親指の側）。手の骨の空間では変わらない
+    want_axis = (BONES[S("R", "Hand")].matrix_local.inverted().to_3x3() @ w2a_dir((0, -1, 0))).normalized()
+    if not hasattr(fit_sword_to_grip, "grip"):
+        fit_sword_to_grip.grip = sword_grip_in_hand()
+    have_center, have_axis = fit_sword_to_grip.grip
+    move = (Matrix.Translation(want_center) @ have_axis.rotation_difference(want_axis).to_matrix().to_4x4()
+            @ Matrix.Translation(-have_center))
+    rel = BONES[S("R", "Hand")].matrix_local.inverted() @ BONES[SWORD_BONE].matrix_local
+    basis = rel.inverted() @ move @ rel
+    pb = TGT.pose.bones[SWORD_BONE]
+    for f in range(length + 1):
+        pb.matrix_basis = basis
+        pb.keyframe_insert("location", frame=f)
+        pb.keyframe_insert("rotation_quaternion", frame=f)
 
 
 def sword_tip_local():
@@ -663,7 +738,9 @@ def print_sword_path(name, length):
         hips = TGT.matrix_world @ TGT.pose.bones[C("Hips")].head
         tip = TGT.matrix_world @ TGT.pose.bones[SWORD_BONE].matrix @ print_sword_path.tip
         d = (tip - hips) * 100
-        out.append(f"{f}:({-d.x:.0f},{-d.y:.0f},{d.z:.0f})")
+        yaw = math.degrees(math.atan2(*((TGT.matrix_world.to_quaternion() @ TGT.pose.bones[C("Hips")].matrix.to_quaternion()
+                                          @ REST_Q[C("Hips")].inverted() @ Vector((0, -1, 0))).xy * Vector((1, -1)))))
+        out.append(f"{f}:({-d.x:.0f},{-d.y:.0f},{d.z:.0f}) 腰{yaw:.0f}°")
     print(f"SWORD [{name}] " + " ".join(out))
 
 
@@ -717,6 +794,9 @@ def render_preview(name, act, length):
             SCENE.frame_set(f)
             a = math.radians(ang)
             t = Vector((0, 0, 1.0))
+            if PREVIEW_FOCUS:
+                t = TGT.matrix_world @ TGT.pose.bones[PREVIEW_FOCUS].head
+                cam.data.ortho_scale = 0.45
             cam.location = t + Vector((math.sin(a) * 5.0, -math.cos(a) * 5.0, 0.5))
             cam.rotation_euler = (t - cam.location).to_track_quat("-Z", "Y").to_euler()
             p = os.path.join(PREVIEW_DIR, "_tile.png")

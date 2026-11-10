@@ -13,7 +13,9 @@
 # - 骨は、関節の位置を Meshy の体に合わせて動かす（JOINTS）。腕・脚・背骨は、骨の向きも次の関節へ向け直す。
 #   モーション（retarget_black_knight.py）は、既存のモーションを、骨の世界での向きがそろうようにこの骨格へ移す。
 # - 重みは Blender の自動の重み付け（ボーンヒート）で付け、手・頭・剣を固く付け直す。
-#   VRoid の揺れ用の骨（髪・スカート・胸）とフードの骨・指の骨は、重みを付けない（親の骨に付いて動くだけ）。
+#   VRoid の揺れ用の骨（髪・スカート・胸）とフードの骨は、重みを付けない（親の骨に付いて動くだけ）。
+#   指は、籠手で分かれていないので、4本をまとめてミトンとして中指の3本の骨に付け、親指は親指の骨に付ける
+#   （剣を拳で握れるように）。人差し指・薬指・小指の骨は、重みを付けずに同じ並びに置くだけにする。
 # - マテリアルは2つ。BlackKnight（Meshy の色・メタリック・ラフネスから albedo と spec を作る）と、
 #   BlackKnightSword（剣。BlackKnightSource の画像を写す）。spec は r=メタリック、a=なめらかさ（1-ラフネス）。
 # - ゲームのエンジンには発光がない。紫の光は Meshy の色の画像に描かれているので、そのまま色で代わりにする。
@@ -63,6 +65,18 @@ CLOTH = {
 CLOTH["R"] = [(-x, y, z) for x, y, z in CLOTH["L"]]
 FINGER_SCALE = 1.15   # Meshy の手は SK_Player より大きいので、指の骨の間隔を広げる
 
+# 指（左手。右は x を反転する）。Meshy の手は籠手で指が分かれていないので、4本の指をまとめて
+# 1枚の板（ミトン）として曲げる。重みは中指の3本の骨に付け、ほかの指の骨は同じ並びに置くだけにする。
+# 手のメッシュ（右手）を x で輪切りにして測った値: 手首 0.61、指の付け根 0.735、指先 0.815、
+# 指の板の高さ 1.206〜1.230、親指は手のひらの前側（y < -0.076）の 0.66〜0.745。
+KNUCKLE_X = .735
+FINGERTIP_X = .815
+FINGER_Z = 1.218
+FINGER_ROWS = {"Index": -.050, "Middle": -.025, "Ring": -.005, "Little": .015}   # 指ごとの y
+THUMB = [(.660, -.062, 1.226), (.690, -.085, 1.218), (.715, -.098, 1.212), (.738, -.104, 1.206)]
+THUMB_MIN_X, THUMB_MAX_X, THUMB_MAX_Y = .655, .750, -.076
+WEIGHTED_FINGERS = ("Middle1", "Middle2", "Middle3", "Thumb1", "Thumb2", "Thumb3")
+
 # 骨の向けたい先（骨の名前 -> 向ける先の骨の名前）
 AIM = {
     "J_Bip_C_Hips": "J_Bip_C_Spine", "J_Bip_C_Spine": "J_Bip_C_Chest", "J_Bip_C_Chest": "J_Bip_C_UpperChest",
@@ -80,6 +94,20 @@ def targets():
         t[f"J_Bip_L_{k}"] = Vector((x, y, z))
         t[f"J_Bip_R_{k}"] = Vector((-x, y, z))
     ends = {}
+    # 指: 付け根から指先までを3つに分けて並べ、最後の骨は指先へ向ける
+    seg = (FINGERTIP_X - KNUCKLE_X) / 3
+    for s, sx in (("L", 1), ("R", -1)):
+        for f, y in FINGER_ROWS.items():
+            for k in range(3):
+                n = f"J_Bip_{s}_{f}{k + 1}"
+                t[n] = Vector((sx * (KNUCKLE_X + seg * k), y, FINGER_Z))
+                ends[n] = Vector((sx * (KNUCKLE_X + seg * (k + 1)), y, FINGER_Z))
+        for k in range(3):
+            n = f"J_Bip_{s}_Thumb{k + 1}"
+            x, y, z = THUMB[k]
+            x2, y2, z2 = THUMB[k + 1]
+            t[n] = Vector((sx * x, y, z))
+            ends[n] = Vector((sx * x2, y2, z2))
     for key, pts in CLOTH.items():
         for k in range(3):
             n = f"J_Sec_Cloth{key}_{k + 1}"
@@ -95,7 +123,7 @@ def is_finger(name):
 # 重みを付ける骨
 def deforms(name):
     if name.startswith("J_Bip_"):
-        return not is_finger(name)
+        return not is_finger(name) or name.endswith(WEIGHTED_FINGERS)
     return name.startswith("J_Sec_Cloth")
 
 
@@ -226,6 +254,36 @@ for v in BODY.data.vertices:
         set_weights(v.index, {f"J_Bip_{s}_Hand": t, f"J_Bip_{s}_LowerArm": 1 - t})
     elif p.z > head_z + 0.01 and abs(p.x) < 0.13:
         set_weights(v.index, {"J_Bip_C_Head": 1.0})
+
+# 指（ミトン）: 付け根から先を、付け根からの距離で中指の3本の骨に分けて付ける（境目はなめらかに）。
+# 親指は、手のひらの前側に出ているところを親指の3本の骨に付ける
+seg = (FINGERTIP_X - KNUCKLE_X) / 3
+for v in BODY.data.vertices:
+    p = v.co
+    ax = abs(p.x)
+    if p.z < 1.10 or ax < THUMB_MIN_X:
+        continue
+    s = "L" if p.x > 0 else "R"
+    if ax < THUMB_MAX_X and p.y < THUMB_MAX_Y:
+        k = 0 if ax < THUMB[1][0] else (1 if ax < THUMB[2][0] else 2)
+        set_weights(v.index, {f"J_Bip_{s}_Thumb{k + 1}": 1.0})
+    elif ax > KNUCKLE_X - 0.01:
+        u = (ax - KNUCKLE_X) / seg            # 付け根で 0、骨1本ごとに 1 増える
+        ws_ = {}
+        if u < 0.3:
+            t = smooth01(-0.3, 0.3, u)
+            ws_ = {f"J_Bip_{s}_Hand": 1 - t, f"J_Bip_{s}_Middle1": t}
+        else:
+            k = min(int(u), 2)
+            f = u - k
+            ws_[f"J_Bip_{s}_Middle{k + 1}"] = 1.0
+            if k < 2 and f > 0.7:
+                t = smooth01(0.7, 1.3, f)
+                ws_ = {f"J_Bip_{s}_Middle{k + 1}": 1 - t, f"J_Bip_{s}_Middle{k + 2}": t}
+            elif k > 0 and f < 0.3:
+                t = smooth01(-0.3, 0.3, f)
+                ws_ = {f"J_Bip_{s}_Middle{k}": 1 - t, f"J_Bip_{s}_Middle{k + 1}": t}
+        set_weights(v.index, ws_)
 
 # 1つの頂点に付ける骨を4本までにして、合計を1にする
 bpy.ops.object.select_all(action="DESELECT")

@@ -36,6 +36,7 @@ struct EnemyStateSettings
 	float moveThreshold = 0.1f;     // 移動入力の長さがこれより小さければ立ち止まっているとみなす。
 	float animBlendSeconds = 0.2f;  // アニメーションを切り替えるときの補間時間。
 	float walkAnimSpeed = 1.0f;     // Walk の再生の速さ。歩く速さと、Walk の足が地面を送る速さの比にすると、足が滑らない。
+	float playSpeed = 1.0f;         // 黒騎士の動き全体の速さ（アニメーションと移動の両方に掛ける）。動きを確かめるときに下げる。
 };
 
 // ステートが触ってよいもの。ステートは Enemy クラスを直接は知らない。

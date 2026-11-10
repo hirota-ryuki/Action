@@ -7,6 +7,8 @@ namespace
 	constexpr float HIT_CENTER_HEIGHT = 110.0f; // 足元から当たり判定の中心までの高さ（黒騎士の胸の下あたり）。
 	constexpr float WALK_SPEED = 140.0f;        // 余裕たっぷりにゆっくり歩く速さ。
 	constexpr float WALK_ANIM_FOOT_SPEED = 229.0f;  // Walk を等速で再生したときに、足が地面を送る速さ（Blender で測った）。
+	// 黒騎士の動き全体の速さ。アニメーションが崩れていないかを確かめるため、今は半分にしている。確かめ終わったら 1 に戻す。
+	constexpr float PLAY_SPEED = 0.5f;
 
 	CharacterMoveSettings MakeMoveSettings()
 	{
@@ -22,9 +24,9 @@ namespace
 	BlackKnightInputSource::Settings MakeAiSettings()
 	{
 		BlackKnightInputSource::Settings settings;
-		settings.searchRange = 900.0f;     // この距離以内に入ると追いかけ始める（ここまでが「遠い」）。
+		settings.searchRange = 1800.0f;    // この距離以内に入ると追いかけ始める（ここまでが「遠い」）。
 		settings.nearRange = 220.0f;       // この距離以内が「近い」。剣を振る（剣の長さ＋踏み込み）。
-		settings.midRange = 600.0f;        // この距離以内が「中くらい」。
+		settings.midRange = 1200.0f;       // この距離以内が「中くらい」。
 		settings.stopDistance = 150.0f;    // この距離まで近づいたら止まる（剣が届くところで止まる）。
 		settings.decideInterval = 2.0f;    // 歩いている間、走るかを決め直す間隔（秒）。
 		settings.runChance = 0.5f;         // 中くらい・遠いときに走る確率。残りは攻撃（中くらいなら攻撃1、遠いなら攻撃3）。
@@ -79,6 +81,7 @@ void Enemy::OnStart()
 	stateContext.owner = this;
 	stateContext.faction = GetFaction();
 	stateContext.settings.walkAnimSpeed = WALK_SPEED / WALK_ANIM_FOOT_SPEED;
+	stateContext.settings.playSpeed = PLAY_SPEED;
 	m_stateMachine.Init(stateContext);  // Idle から始める（Idle のアニメーションを流す）。
 	// 黒騎士は魔法を持たない（MagicCaster に何も足さないので、fire を押しても魔法は撃たない）。
 	// fire は剣の攻撃（EnemyAttackState）になり、攻撃3の斬撃はステートが飛ばす。
@@ -87,5 +90,6 @@ void Enemy::OnStart()
 void Enemy::UpdateAction(float deltaTime)
 {
 	// 移動とアニメーションはステートが行う。凍結中は Frozen ステートになり、重力で落ちるだけになる。
-	m_stateMachine.Update(m_input, deltaTime);
+	// PLAY_SPEED を掛けて、移動・攻撃の時間（突進・斬撃を出すとき）もアニメーションと同じだけ遅くする。
+	m_stateMachine.Update(m_input, deltaTime * PLAY_SPEED);
 }
