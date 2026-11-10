@@ -20,4 +20,9 @@ protected:
 	{
 		return enEnemyAnimClip_Walk;
 	}
+	// 歩く速さに合わせてゆっくり再生し、足が滑らないようにする。
+	float GetAnimSpeed(const EnemyStateContext& context) const override
+	{
+		return context.settings.walkAnimSpeed;
+	}
 };

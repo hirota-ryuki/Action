@@ -18,6 +18,7 @@ EnemyStateId EnemyGroundState::SelectByInput(const EnemyStateContext& context, c
 void EnemyGroundState::Enter(EnemyStateContext& context, const CharacterInput& input)
 {
 	context.model->PlayAnimation(GetAnimClip(), context.settings.animBlendSeconds);
+	context.model->GetModelRender().SetAnimationSpeed(GetAnimSpeed(context));
 }
 
 EnemyStateId EnemyGroundState::CheckTransition(const EnemyStateContext& context, const CharacterInput& input) const

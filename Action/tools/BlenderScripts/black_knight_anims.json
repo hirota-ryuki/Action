@@ -14,8 +14,8 @@
     },
     {
       "name": "Walk",
-      "source": "D:/04_dawnload/mixamo/Walk.fbx",
-      "rig": "mixamo",
+      "source": "D:/04_dawnload/BlackKnightAnim/basic/Animations/Male/Movement/Walk/HumanM@Walk01_Forward.fbx",
+      "rig": "kevin",
       "loop": true,
       "adjust": [
         {"bone": "J_Bip_R_Hand", "axis": [1, 0, 0], "deg": 45},

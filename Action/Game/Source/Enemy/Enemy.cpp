@@ -5,11 +5,13 @@ namespace
 {
 	constexpr float HIT_RADIUS = 60.0f;         // 弾に当たる球の半径。黒騎士の胴（肩当てまで）を覆う。
 	constexpr float HIT_CENTER_HEIGHT = 110.0f; // 足元から当たり判定の中心までの高さ（黒騎士の胸の下あたり）。
+	constexpr float WALK_SPEED = 140.0f;        // 余裕たっぷりにゆっくり歩く速さ。
+	constexpr float WALK_ANIM_FOOT_SPEED = 229.0f;  // Walk を等速で再生したときに、足が地面を送る速さ（Blender で測った）。
 
 	CharacterMoveSettings MakeMoveSettings()
 	{
 		CharacterMoveSettings settings;
-		settings.walkSpeed = 140.0f;          // 余裕たっぷりにゆっくり歩く。Walk の足が地面を送る速さ（約145）に合わせる。
+		settings.walkSpeed = WALK_SPEED;      // Walk は WALK_SPEED / WALK_ANIM_FOOT_SPEED 倍でゆっくり再生する（EnemyMoveState）。
 		settings.runSpeedMultiplier = 2.75f;  // 走るときは 385。Run の足が地面を送る速さ（約384）に合わせる。
 		settings.gravity = 980.0f;
 		settings.capsuleRadius = 30.0f;   // 黒騎士は肩当てが広いので、プレイヤー（20）より太くする。
@@ -76,6 +78,7 @@ void Enemy::OnStart()
 	stateContext.statusEffects = &m_statusEffects;
 	stateContext.owner = this;
 	stateContext.faction = GetFaction();
+	stateContext.settings.walkAnimSpeed = WALK_SPEED / WALK_ANIM_FOOT_SPEED;
 	m_stateMachine.Init(stateContext);  // Idle から始める（Idle のアニメーションを流す）。
 	// 黒騎士は魔法を持たない（MagicCaster に何も足さないので、fire を押しても魔法は撃たない）。
 	// fire は剣の攻撃（EnemyAttackState）になり、攻撃3の斬撃はステートが飛ばす。

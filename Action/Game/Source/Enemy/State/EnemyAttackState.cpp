@@ -55,6 +55,7 @@ void EnemyAttackState::Enter(EnemyStateContext& context, const CharacterInput& i
 	// 振り始めに相手の方を向く。あとは向きを変えない。
 	context.mover->FaceTo(input.lookDirection);
 	context.model->PlayAnimation(GetTiming(m_attackIndex).clip, context.settings.animBlendSeconds);
+	context.model->GetModelRender().SetAnimationSpeed(1.0f);  // Walk でゆっくりにした速さを戻す。
 }
 
 EnemyStateId EnemyAttackState::CheckTransition(const EnemyStateContext& context, const CharacterInput& input) const

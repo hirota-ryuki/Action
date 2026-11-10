@@ -18,4 +18,9 @@ public:
 
 protected:
 	virtual int GetAnimClip() const = 0;
+	// アニメーションの再生の速さ。ふつうは 1。
+	virtual float GetAnimSpeed(const EnemyStateContext& context) const
+	{
+		return 1.0f;
+	}
 };
