@@ -20,6 +20,8 @@ namespace
 		L"J_Bip_R_Foot",
 		L"J_Bip_L_UpperArm",
 		L"J_Bip_R_UpperArm",
+		L"J_Bip_L_LowerArm",
+		L"J_Bip_R_LowerArm",
 	};
 	// 背骨のひねり・傾きを、Spine・Chest・UpperChest に分ける割合。
 	constexpr float SPINE_SHARE = 0.4f;
@@ -208,4 +210,32 @@ void BodyLink::Update(Skeleton& skeleton)
 	// 頭: 水平に戻す。
 	RotateAround(skeleton, enBone_Neck, forward, -chestRoll * NECK_SHARE);
 	RotateAround(skeleton, enBone_Head, forward, -chestRoll * HEAD_SHARE);
+
+	// ── 腕の後ろへの振りを抑える ──
+	// 走りのクリップは、上腕が後ろへ最大約 100°（真下を 0°）まで振れる。原神は 40° くらいまでなので、後ろへ armBackStartDeg を超えた分だけを縮める。
+	LimitArmBackSwing(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward);
+	LimitArmBackSwing(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward);
+}
+
+void BodyLink::LimitArmBackSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward) const
+{
+	if (m_settings.armBackScale >= 1.0f) {
+		return;
+	}
+	const Vector3 down = Vector3::AxisY * -1.0f;
+	const Vector3 arm = GetPosition(skeleton, lowerArm) - GetPosition(skeleton, upperArm);
+	// 横から見た上腕の角度。真下を 0°、後ろを正にする。
+	const float backAngle = atan2f(-arm.Dot(forward), arm.Dot(down));
+	const float startAngle = Math::DegToRad(m_settings.armBackStartDeg);
+	if (backAngle <= startAngle) {
+		return;
+	}
+	// 上腕を真下へ近づける向き（上腕と真下の両方に直角な軸）に、縮めた分だけ回す。前腕・手も一緒に動く。
+	Vector3 axis;
+	axis.Cross(arm, down);
+	if (axis.LengthSq() <= FLT_EPSILON) {
+		return;
+	}
+	axis.Normalize();
+	RotateAround(skeleton, upperArm, axis, (backAngle - startAngle) * (1.0f - max(0.0f, m_settings.armBackScale)));
 }
