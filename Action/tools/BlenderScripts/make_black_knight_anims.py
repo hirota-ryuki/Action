@@ -162,7 +162,7 @@ def two_bone_ik(a, b0, c0, target, pole):
     return elbow, a + u * dist
 
 
-# 剣の初期の（T ポーズの）向き。make_black_knight.py の sword_axes と同じ。
+# 剣の初期の（T ポーズの）向き。PoseRig.fbx に入っている剣の向きと同じ。
 SWORD_ANGLE = math.radians(20)
 BLADE_D0 = Vector((-math.sin(SWORD_ANGLE), -math.cos(SWORD_ANGLE), 0)).normalized()
 BLADE_E0 = Vector((0, 0, -1))   # 刃のある側

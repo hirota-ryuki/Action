@@ -4,7 +4,7 @@
 #   blender -b --python make_black_knight_meshy.py -- <PoseRig.fbx> <Meshy の .fbx> <出力フォルダ> [--preview <フォルダ>]
 #
 #   PoseRig.fbx   BlackKnightSource/PoseRig.fbx。SK_Player の骨格に揺れ用の骨（J_Sec_Hood・J_Sec_Cloth*）と
-#                 剣の骨（J_Sec_Sword）を足したものと、剣のメッシュ（make_black_knight.py で作った剣）が入っている。
+#                 剣の骨（J_Sec_Sword）を足したものと、剣のメッシュ（前の自作の黒騎士の剣）が入っている。
 #   Meshy の .fbx  Meshy で作った体のメッシュ（T ポーズ、手は空）。同じフォルダに、名前の後ろに
 #                 なし・_metallic・_roughness を付けた3枚の PNG（色・メタリック・ラフネス）があること。
 #   --preview     正面・斜め・背面と、骨を曲げた確かめ用のポーズを <フォルダ>/meshy_*.png に書く。
