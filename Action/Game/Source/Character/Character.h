@@ -107,6 +107,11 @@ protected:
 	virtual void OnRender(RenderContext& rc)
 	{
 	}
+	// 体の連動の調整値。開発用の画面（ImGui）で変えるときに使う。
+	BodyLinkSettings& GetBodyLinkSettings()
+	{
+		return m_bodyLink.GetSettings();
+	}
 
 	CharacterInput m_input;
 	CharacterMover m_mover;

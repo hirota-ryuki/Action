@@ -265,8 +265,8 @@ namespace
 		settings.pelvisRollDeg = Read(section, "bodyLink", "pelvisRollDeg", 5.0f);
 		settings.chestRollRatio = Read(section, "bodyLink", "chestRollRatio", 0.5f);
 		settings.levelTorso = Read(section, "bodyLink", "levelTorso", true);
-		settings.armBackStartDeg = Read(section, "bodyLink", "armBackStartDeg", 20.0f);
-		settings.armBackScale = Read(section, "bodyLink", "armBackScale", 0.25f);
+		settings.armFrontMaxDeg = Read(section, "bodyLink", "armFrontMaxDeg", 60.0f);
+		settings.armBackMaxDeg = Read(section, "bodyLink", "armBackMaxDeg", 40.0f);
 		return settings;
 	}
 

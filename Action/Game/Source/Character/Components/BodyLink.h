@@ -16,9 +16,10 @@ struct BodyLinkSettings
 	// アニメーションの骨盤・肩の線の傾き・ひねりを、まっすぐに戻してから足すか。
 	// 走り・ダッシュ・止まるは、もとのクリップの1コマの胴の姿勢（骨盤が約 10° 傾き、約 14° ひねれている）を全コマに残しているため。
 	bool levelTorso = true;
-	// 上腕の後ろへの振り（真下を 0°）が armBackStartDeg を超えた分を、何倍に縮めるか。1 なら縮めない。前への振りは変えない。
-	float armBackStartDeg = 20.0f;
-	float armBackScale = 1.0f;
+	// 上腕を前まで出す・後ろまで引く角度（真下を 0°）。この角度に近づくほど進まなくなり、超えない。0 なら抑えない。
+	// 最大の角度の半分までは、アニメーションのまま。
+	float armFrontMaxDeg = 0.0f;
+	float armBackMaxDeg = 0.0f;
 };
 
 // 走る・歩くときに、脚の動きに合わせて骨盤・背骨・肩・首を連動させる部品。
@@ -41,6 +42,11 @@ public:
 		m_rotation = rotation;
 	}
 	void Update(Skeleton& skeleton);
+	// 調整値。開発用の画面（ImGui）で変えるときに使う。変えた値は次のフレームから効く。
+	BodyLinkSettings& GetSettings()
+	{
+		return m_settings;
+	}
 
 private:
 	enum EnBone
@@ -71,8 +77,8 @@ private:
 	float SignToward(Skeleton& skeleton, EnBone bone, EnBone pivot, const Vector3& axis, const Vector3& direction) const;
 	// left → right の線を、キャラクターの左右の向き（水平で、前の向きに直角）にそろえる回転を求める。回す必要があれば true。
 	bool MakeLevelRotation(Skeleton& skeleton, EnBone left, EnBone right, const Vector3& forward, Vector3& axis, float& angle) const;
-	// 上腕が後ろへ振れているとき、その角度を armBackScale 倍にする。
-	void LimitArmBackSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward) const;
+	// 上腕の前後の振りを、armFrontMaxDeg・armBackMaxDeg までに抑える。
+	void LimitArmSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward) const;
 
 	BodyLinkSettings m_settings;
 	int m_boneNos[enBone_Num] = {};

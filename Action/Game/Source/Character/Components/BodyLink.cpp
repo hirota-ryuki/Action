@@ -33,6 +33,8 @@ namespace
 	// 左右の足の高さの差が、脚の長さのこの割合になったら、骨盤の傾きをいっぱいにする。
 	// 走りでは足の高さの差がすぐこの割合を超えるので、小さいと傾きが左右に切り替わるだけになる（0.15 では切り替わるだけだった）。
 	constexpr float FULL_ROLL_FOOT_HEIGHT_RATIO = 0.4f;
+	// 腕の振りを抑えるとき、最大の角度のこの割合までは、そのままにする。
+	constexpr float ARM_LIMIT_KNEE_RATIO = 0.5f;
 	// 向きを調べるために試しに回す角度（ラジアン）。
 	constexpr float PROBE_ANGLE = 0.1f;
 
@@ -211,25 +213,29 @@ void BodyLink::Update(Skeleton& skeleton)
 	RotateAround(skeleton, enBone_Neck, forward, -chestRoll * NECK_SHARE);
 	RotateAround(skeleton, enBone_Head, forward, -chestRoll * HEAD_SHARE);
 
-	// ── 腕の後ろへの振りを抑える ──
-	// 走りのクリップは、上腕が後ろへ最大約 100°（真下を 0°）まで振れる。原神は 40° くらいまでなので、後ろへ armBackStartDeg を超えた分だけを縮める。
-	LimitArmBackSwing(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward);
-	LimitArmBackSwing(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward);
+	// ── 腕の振りの大きさをそろえる ──
+	// 走りのクリップは、上腕が後ろへ最大約 100°（真下を 0°）まで振れる。原神は 40° くらいまでなので、前・後ろの最大の角度で抑える。
+	LimitArmSwing(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward);
+	LimitArmSwing(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward);
 }
 
-void BodyLink::LimitArmBackSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward) const
+void BodyLink::LimitArmSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward) const
 {
-	if (m_settings.armBackScale >= 1.0f) {
-		return;
-	}
 	const Vector3 down = Vector3::AxisY * -1.0f;
 	const Vector3 arm = GetPosition(skeleton, lowerArm) - GetPosition(skeleton, upperArm);
-	// 横から見た上腕の角度。真下を 0°、後ろを正にする。
-	const float backAngle = atan2f(-arm.Dot(forward), arm.Dot(down));
-	const float startAngle = Math::DegToRad(m_settings.armBackStartDeg);
-	if (backAngle <= startAngle) {
+	// 横から見た上腕の角度。真下を 0°、後ろを正、前を負にする。
+	const float angle = atan2f(-arm.Dot(forward), arm.Dot(down));
+	const float maxAngle = Math::DegToRad(angle >= 0.0f ? m_settings.armBackMaxDeg : m_settings.armFrontMaxDeg);
+	if (maxAngle <= 0.0f) {
 		return;
 	}
+	// 最大の角度の半分までは、そのまま。そこから先は、最大の角度に近づくほど進まなくなる（なめらかに頭打ちにする）。
+	const float magnitude = fabsf(angle);
+	const float knee = maxAngle * ARM_LIMIT_KNEE_RATIO;
+	if (magnitude <= knee) {
+		return;
+	}
+	const float limited = knee + (maxAngle - knee) * tanhf((magnitude - knee) / (maxAngle - knee));
 	// 上腕を真下へ近づける向き（上腕と真下の両方に直角な軸）に、縮めた分だけ回す。前腕・手も一緒に動く。
 	Vector3 axis;
 	axis.Cross(arm, down);
@@ -237,5 +243,5 @@ void BodyLink::LimitArmBackSwing(Skeleton& skeleton, EnBone upperArm, EnBone low
 		return;
 	}
 	axis.Normalize();
-	RotateAround(skeleton, upperArm, axis, (backAngle - startAngle) * (1.0f - max(0.0f, m_settings.armBackScale)));
+	RotateAround(skeleton, upperArm, axis, magnitude - limited);
 }

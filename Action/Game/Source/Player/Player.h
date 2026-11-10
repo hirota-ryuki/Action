@@ -50,6 +50,8 @@ protected:
 
 private:
 	void Respawn();
+	// 開発用の画面（F1 の ImGui）に、体の動きの調整値を出す。
+	void UpdateDebugUI();
 
 	PlayerInputSource m_playerInputSource;
 	PlayerStatus m_status;
