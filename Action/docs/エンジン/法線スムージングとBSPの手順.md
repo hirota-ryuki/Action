@@ -1,6 +1,5 @@
 # 法線スムージングとBSPの手順
 
-作成日: 2026-11-08
 設計: [法線スムージングとBSPの設計](法線スムージングとBSPの設計.md)
 経緯: [起動時のモデルロード高速化の経緯](起動時のモデルロード高速化の経緯.md)
 
@@ -10,10 +9,9 @@ tkm を読み込むときの法線スムージングで使う BSP の探索を�
 
 **前提:**
 
-- Visual Studio 2022 で `Action/Game/Game.sln` を開き、構成は **Debug / x64** でビルドする。
+- Visual Studio で `Action/Game/Game.sln` を開き、構成は **Debug / x64** でビルドする。
 - 始める前は、エンジンにもとからある形になっている。法線スムージング（`TkmFile::BuildTangentAndBiNormal()`）と、BSP の作り方（`BSP::CreateBSPTreeEntity()` など）は、もとからある（変えない）。変えるのは、BSP の探索（`WalkTree()`）と、ノードが持っていた使っていないリストだけ。
 - ほかの手順書を先に済ませる必要はない。
-- 作業を始める前に、main からブランチを切る。
 
 | 手順 | 足すもの | 確かめ方 |
 |---|---|---|
@@ -21,16 +19,24 @@ tkm を読み込むときの法線スムージングで使う BSP の探索を�
 | 2 | ノードが持っていた、使っていないリストを消す | ビルドが通る |
 | 3 | 探索の引数を参照で渡す（毎回コピーしない） | 起動が速くなる |
 
+**読み方:**
+
+- 足す場所は「〇行目 `その行に書いてあること` の下」で示します。行番号は、それより前の小手順を済ませたときの番号です。
+- 枠の左の数字は、足したあとの行番号です。右の枠のコードを、そのまま書きます。
+- 消すところは、消す行を枠で示します（番号は消す前の番号）。書き換えるところは、「前」と「後」の枠を並べています。
+- 小手順の見出しは、足すコードのコメントか関数の名前です。何のためのコードかは、コードのコメントに書いてあります。
+- VSCode で `Ctrl+Shift+V` を押してプレビューで読みます。
+
 ---
 
 ## 触るファイルの一覧
 
 | ファイル | 何をするか | 手順 |
 |---|---|---|
-| [BSP.cpp](../../k2EngineLow/geometry/BSP.cpp) | 削除（何もしないループ、リストのコピー）・書き換え（`WalkTree()` の引数・ループの変数） | 1・2・3 |
-| [BSP.h](../../k2EngineLow/geometry/BSP.h) | 削除（`SNode::leafArray`）・書き換え（`WalkTree()` の宣言2つ） | 2・3 |
+| [BSP.cpp](../../k2EngineLow/geometry/BSP.cpp) | 削除・書き換え | 1・2・3 |
+| [BSP.h](../../k2EngineLow/geometry/BSP.h) | 削除・書き換え | 2・3 |
 
-新しく作るファイル・コメントアウトする行はありません。
+---
 
 **もとからあって、変えないもの:** 法線スムージングは、頂点ごとに `WalkTree()` で同じ座標の頂点を探します（[TkmFile.cpp](../../k2EngineLow/tkFile/TkmFile.cpp) の `BuildTangentAndBiNormal()`）。頂点の数だけ `WalkTree()` が呼ばれるので、`WalkTree()` の中の無駄が、そのまま読み込みの時間になっていました。
 
@@ -44,20 +50,30 @@ tkm を読み込むときの法線スムージングで使う BSP の探索を�
 
 | ファイル | 何をするか |
 |---|---|
-| [BSP.cpp](../../k2EngineLow/geometry/BSP.cpp) | 削除（`WalkTree()` の中の空の `for` 3行） |
+| [BSP.cpp](../../k2EngineLow/geometry/BSP.cpp) | 削除 |
 
-[BSP.cpp](../../k2EngineLow/geometry/BSP.cpp) の `BSP::WalkTree()`（ノードを受け取る方）で、空の `for` を**削除**します。
+### 1-1. `WalkTree()` の中の行を消す
 
-<!-- file: ../../k2EngineLow/geometry/BSP.cpp -->
+[BSP.cpp](../../k2EngineLow/geometry/BSP.cpp) の **372〜374行目**を消します。
 
-```diff
-             // 左に潜る？右に潜る？
-             SNode* node = static_cast<SNode*>(entityPtr.get());
--            for (SEntityPtr& entity : node->leafArray) {
--                 
--            }
-             float t = Dot(pos, node->plane.normal);
+<!-- del: Action/k2EngineLow/geometry/BSP.cpp 372 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+372
+373
+374
 ```
+
+</td><td>
+
+```cpp
+            for (SEntityPtr& entity : node->leafArray) {
+                 
+            }
+```
+
+</td></tr></table>
 
 **確かめ方:** ソリューションのビルドが通る。
 
@@ -71,36 +87,46 @@ tkm を読み込むときの法線スムージングで使う BSP の探索を�
 
 | ファイル | 何をするか |
 |---|---|
-| [BSP.h](../../k2EngineLow/geometry/BSP.h) | 削除（`SNode` のメンバー `leafArray`） |
-| [BSP.cpp](../../k2EngineLow/geometry/BSP.cpp) | 削除（`CreateBSPTreeEntity()` でリストをコピーする1行） |
+| [BSP.cpp](../../k2EngineLow/geometry/BSP.cpp) | 削除 |
+| [BSP.h](../../k2EngineLow/geometry/BSP.h) | 削除 |
 
-[BSP.h](../../k2EngineLow/geometry/BSP.h) の `SNode` から**削除**します。
+### 2-1. `CreateBSPTreeEntity()` の中の行を消す
 
-<!-- file: ../../k2EngineLow/geometry/BSP.h -->
+[BSP.cpp](../../k2EngineLow/geometry/BSP.cpp) の **336行目**を消します。
 
-```diff
- 			SEntityPtr rightEntity;		// 右の要素
- 			SEntityPtr leftEntity;		// 左の要素。
- 			Vector3 centerPos;			// 中心座標。
--			std::vector<SEntityPtr> leafArray;	// ノードが内包しているリーフ。
- 		};
- 		/// <summary>
- 		/// リーフ
+<!-- del: Action/k2EngineLow/geometry/BSP.cpp 336 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+336
 ```
 
-[BSP.cpp](../../k2EngineLow/geometry/BSP.cpp) の `CreateBSPTreeEntity()` から**削除**します。
+</td><td>
 
-<!-- file: ../../k2EngineLow/geometry/BSP.cpp -->
-
-```diff
-         auto newNodePtr = std::make_shared<SNode>();
-         newNodePtr->type = enEntityType_Node;
-         newNodePtr->centerPos = centerPos;
--        newNodePtr->leafArray = leafArray;
-         auto newNode = static_cast<SNode*>(newNodePtr.get());
- 
-         // 分散しているので、共分散行列を利用して
+```cpp
+        newNodePtr->leafArray = leafArray;
 ```
+
+</td></tr></table>
+
+### 2-2. 行を消す
+
+[BSP.h](../../k2EngineLow/geometry/BSP.h) の **45行目**を消します。
+
+<!-- del: Action/k2EngineLow/geometry/BSP.h 45 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+45
+```
+
+</td><td>
+
+```cpp
+			std::vector<SEntityPtr> leafArray;	// ノードが内包しているリーフ。
+```
+
+</td></tr></table>
 
 **確かめ方:** ソリューションのビルドが通る。
 
@@ -114,66 +140,197 @@ tkm を読み込むときの法線スムージングで使う BSP の探索を�
 
 | ファイル | 何をするか |
 |---|---|
-| [BSP.h](../../k2EngineLow/geometry/BSP.h) | 書き換え（`WalkTree()` の宣言2つの引数） |
-| [BSP.cpp](../../k2EngineLow/geometry/BSP.cpp) | 書き換え（`WalkTree()` の定義2つの引数、ループの変数） |
+| [BSP.cpp](../../k2EngineLow/geometry/BSP.cpp) | 書き換え |
+| [BSP.h](../../k2EngineLow/geometry/BSP.h) | 書き換え |
 
-[BSP.h](../../k2EngineLow/geometry/BSP.h) の宣言2つを**書き換え**ます。
+### 3-1. `WalkTree()` を書き換える
 
-<!-- file: ../../k2EngineLow/geometry/BSP.h -->
+[BSP.cpp](../../k2EngineLow/geometry/BSP.cpp) の **365行目**を、次のように書き換えます。
 
-```diff
- 		/// </remark>
- 		/// <param name="pos">座標</param>
- 		/// <param name="onEndWalk">探索が終了した時に呼ばれる処理</param>
--		void WalkTree(const Vector3& pos, std::function<void(SLeaf* leaf)> onEndWalk) const;
-+		void WalkTree(const Vector3& pos, const std::function<void(SLeaf* leaf)>& onEndWalk) const;
- 	private:
- 		/// <summary>
- 		/// 平面でリーフノードを分割していく
+**前**
+
+<!-- rewrite-before: Action/k2EngineLow/geometry/BSP.cpp 365 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+365
 ```
 
-<!-- file: ../../k2EngineLow/geometry/BSP.h -->
+</td><td>
 
-```diff
- 		/// <returns></returns>
- 		SEntityPtr CreateBSPTreeEntity_LeafList(const std::vector<SEntityPtr>& leafArray);
- 	
--		void WalkTree(SEntityPtr entity, const Vector3& pos, std::function<void(SLeaf* leaf)> onEndWalk ) const;
-+		void WalkTree(const SEntityPtr& entity, const Vector3& pos, const std::function<void(SLeaf* leaf)>& onEndWalk) const;
- 	};
- }
+```cpp
+    void BSP::WalkTree(SEntityPtr entityPtr, const Vector3& pos, std::function<void(SLeaf* leaf)> onEndWalk) const
 ```
 
-[BSP.cpp](../../k2EngineLow/geometry/BSP.cpp) の定義2つと、ループの変数を**書き換え**ます。まず、ノードを受け取る方の `WalkTree()` の1行目です。
+</td></tr></table>
 
-<!-- file: ../../k2EngineLow/geometry/BSP.cpp -->
+**後**
 
-```diff
--    void BSP::WalkTree(SEntityPtr entityPtr, const Vector3& pos, std::function<void(SLeaf* leaf)> onEndWalk) const
-+    void BSP::WalkTree(const SEntityPtr& entityPtr, const Vector3& pos, const std::function<void(SLeaf* leaf)>& onEndWalk) const
-     {
-         if (entityPtr->type == enEntityType_Node) {
+<!-- rewrite-after: Action/k2EngineLow/geometry/BSP.cpp 365 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+365
 ```
 
-次に、リーフのリストを回すループの変数と、位置だけを受け取る方の `WalkTree()` です。
+</td><td>
 
-<!-- file: ../../k2EngineLow/geometry/BSP.cpp -->
-
-```diff
-         else if (entityPtr->type == enEntityType_LeafList) {
-             // リーフのリストに到達した。
-             auto leafList = static_cast<SLeafList*>(entityPtr.get());
--            for (auto leaf : leafList->leafList) {
-+            for (const auto& leaf : leafList->leafList) {
-                 onEndWalk(static_cast<SLeaf*>(leaf.get()));
-             }
-         }
-     }
--    void BSP::WalkTree(const Vector3& pos, std::function<void(SLeaf* leaf)> onEndWalk) const
-+    void BSP::WalkTree(const Vector3& pos, const std::function<void(SLeaf* leaf)>& onEndWalk) const
-     {
-         WalkTree(m_rootNode, pos, onEndWalk);
-     }
+```cpp
+    void BSP::WalkTree(const SEntityPtr& entityPtr, const Vector3& pos, const std::function<void(SLeaf* leaf)>& onEndWalk) const
 ```
+
+</td></tr></table>
+
+### 3-2. `WalkTree()` の中を書き換える
+
+[BSP.cpp](../../k2EngineLow/geometry/BSP.cpp) の **388行目**を、次のように書き換えます。
+
+**前**
+
+<!-- rewrite-before: Action/k2EngineLow/geometry/BSP.cpp 388 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+388
+```
+
+</td><td>
+
+```cpp
+            for (auto leaf : leafList->leafList) {
+```
+
+</td></tr></table>
+
+**後**
+
+<!-- rewrite-after: Action/k2EngineLow/geometry/BSP.cpp 388 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+388
+```
+
+</td><td>
+
+```cpp
+            for (const auto& leaf : leafList->leafList) {
+```
+
+</td></tr></table>
+
+### 3-3. `WalkTree()` を書き換える
+
+[BSP.cpp](../../k2EngineLow/geometry/BSP.cpp) の **393行目**を、次のように書き換えます。
+
+**前**
+
+<!-- rewrite-before: Action/k2EngineLow/geometry/BSP.cpp 393 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+393
+```
+
+</td><td>
+
+```cpp
+    void BSP::WalkTree(const Vector3& pos, std::function<void(SLeaf* leaf)> onEndWalk) const
+```
+
+</td></tr></table>
+
+**後**
+
+<!-- rewrite-after: Action/k2EngineLow/geometry/BSP.cpp 393 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+393
+```
+
+</td><td>
+
+```cpp
+    void BSP::WalkTree(const Vector3& pos, const std::function<void(SLeaf* leaf)>& onEndWalk) const
+```
+
+</td></tr></table>
+
+### 3-4. 書き換える
+
+[BSP.h](../../k2EngineLow/geometry/BSP.h) の **92行目**を、次のように書き換えます。
+
+**前**
+
+<!-- rewrite-before: Action/k2EngineLow/geometry/BSP.h 92 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+92
+```
+
+</td><td>
+
+```cpp
+		void WalkTree(const Vector3& pos, std::function<void(SLeaf* leaf)> onEndWalk) const;
+```
+
+</td></tr></table>
+
+**後**
+
+<!-- rewrite-after: Action/k2EngineLow/geometry/BSP.h 92 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+92
+```
+
+</td><td>
+
+```cpp
+		void WalkTree(const Vector3& pos, const std::function<void(SLeaf* leaf)>& onEndWalk) const;
+```
+
+</td></tr></table>
+
+### 3-5. 書き換える
+
+[BSP.h](../../k2EngineLow/geometry/BSP.h) の **145行目**を、次のように書き換えます。
+
+**前**
+
+<!-- rewrite-before: Action/k2EngineLow/geometry/BSP.h 145 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+145
+```
+
+</td><td>
+
+```cpp
+		void WalkTree(SEntityPtr entity, const Vector3& pos, std::function<void(SLeaf* leaf)> onEndWalk ) const;
+```
+
+</td></tr></table>
+
+**後**
+
+<!-- rewrite-after: Action/k2EngineLow/geometry/BSP.h 145 -->
+<table class="code-lines"><tr><td>
+
+```cpp
+145
+```
+
+</td><td>
+
+```cpp
+		void WalkTree(const SEntityPtr& entity, const Vector3& pos, const std::function<void(SLeaf* leaf)>& onEndWalk) const;
+```
+
+</td></tr></table>
 
 **確かめ方（これで出来上がり）:** ソリューションのビルドが通る。Debug ビルドで起動すると、モデルのロードが前より速く終わる。モデルの見た目（陰影）は変わらない。
