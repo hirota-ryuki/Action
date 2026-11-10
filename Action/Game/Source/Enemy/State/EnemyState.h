@@ -10,7 +10,8 @@ class StatusEffects;
 enum EnEnemyAnimClip
 {
 	enEnemyAnimClip_Idle,
-	enEnemyAnimClip_Run,
+	enEnemyAnimClip_Walk,
+	enEnemyAnimClip_Attack,
 	enEnemyAnimClip_Num,
 };
 
@@ -19,6 +20,7 @@ enum class EnemyStateId
 {
 	Idle,    // 立ち止まっている
 	Move,    // 入力どおりに進んでいる
+	Attack,  // 剣を振っている（AI が fire を押したときに振る）
 	Frozen,  // 凍結などで行動できない
 	Num,
 };
