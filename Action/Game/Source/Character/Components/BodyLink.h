@@ -26,6 +26,8 @@ struct BodyLinkSettings
 	// 歩く速さから走る速さに近づくにつれて効かせる（立ち止まり・歩きは、アニメーションの角度のまま）。
 	float shoulderJointOffsetDeg = 0.0f;
 	float elbowJointOffsetDeg = 0.0f;
+	// 走っているときに、上腕を体の外へ開く角度。負なら内へ閉じる。
+	float upperArmSpreadDeg = 0.0f;
 };
 
 // 走る・歩くときに、脚の動きに合わせて骨盤・背骨・肩・首を連動させる部品。
@@ -101,6 +103,8 @@ private:
 	// 上腕の前後の振り（真下を 0°）を scale 倍にする。
 	void ScaleArmSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward, float scale) const;
 	void RotateJointForward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& forward, float angleDeg) const;
+	// joint（関節）から先を、キャラクターの前後の軸まわりに回し、tip（その先の骨）を体の外へ angleDeg 動かす。負なら内へ。
+	void RotateJointOutward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& forward, float angleDeg) const;
 
 	BodyLinkSettings m_settings;
 	BodyLinkSettings m_initialSettings;  // Init で受け取った値。ResetSettings() で戻す。

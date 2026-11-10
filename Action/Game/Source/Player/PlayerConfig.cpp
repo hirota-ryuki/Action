@@ -270,6 +270,7 @@ namespace
 		settings.armSwingScale = Read(section, "bodyLink", "armSwingScale", 1.0f);
 		settings.shoulderJointOffsetDeg = Read(section, "bodyLink", "shoulderJointOffsetDeg", 0.0f);
 		settings.elbowJointOffsetDeg = Read(section, "bodyLink", "elbowJointOffsetDeg", 0.0f);
+		settings.upperArmSpreadDeg = Read(section, "bodyLink", "upperArmSpreadDeg", 0.0f);
 		return settings;
 	}
 

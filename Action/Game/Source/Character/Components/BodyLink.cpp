@@ -233,6 +233,26 @@ void BodyLink::Update(Skeleton& skeleton)
 	RotateJointForward(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward, shoulderOffset);
 	RotateJointForward(skeleton, enBone_LowerArmL, enBone_HandL, forward, elbowOffset);
 	RotateJointForward(skeleton, enBone_LowerArmR, enBone_HandR, forward, elbowOffset);
+	// 上腕を体の外へ開く。
+	const float spreadOffset = m_settings.upperArmSpreadDeg * m_runWeight;
+	RotateJointOutward(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward, spreadOffset);
+	RotateJointOutward(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward, spreadOffset);
+}
+
+void BodyLink::RotateJointOutward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& forward, float angleDeg) const
+{
+	if (fabsf(angleDeg) <= 1.0e-3f) {
+		return;
+	}
+	// 外の向き: 胸の真ん中から、この腕の肩の方への水平な向き。
+	Vector3 outward = GetPosition(skeleton, joint) - GetPosition(skeleton, enBone_UpperChest);
+	Vector3 side;
+	side.Cross(Vector3::AxisY, forward);
+	side.Normalize();
+	outward = side * (outward.Dot(side) >= 0.0f ? 1.0f : -1.0f);
+	// 前後の軸まわりに回す。どちら向きに回すと tip が外へ出るかは、試しに回して決める。
+	const float sign = SignToward(skeleton, tip, joint, forward, outward);
+	RotateAround(skeleton, joint, forward, Math::DegToRad(angleDeg) * sign);
 }
 
 void BodyLink::ScaleArmSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward, float scale) const
