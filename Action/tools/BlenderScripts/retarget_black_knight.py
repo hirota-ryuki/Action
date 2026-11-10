@@ -796,7 +796,7 @@ def render_preview(name, act, length):
             t = Vector((0, 0, 1.0))
             if PREVIEW_FOCUS:
                 t = TGT.matrix_world @ TGT.pose.bones[PREVIEW_FOCUS].head
-                cam.data.ortho_scale = 0.45
+                cam.data.ortho_scale = 1.1
             cam.location = t + Vector((math.sin(a) * 5.0, -math.cos(a) * 5.0, 0.5))
             cam.rotation_euler = (t - cam.location).to_track_quat("-Z", "Y").to_euler()
             p = os.path.join(PREVIEW_DIR, "_tile.png")
