@@ -20,6 +20,8 @@ struct BodyLinkSettings
 	// 最大の角度の半分までは、アニメーションのまま。
 	float armFrontMaxDeg = 0.0f;
 	float armBackMaxDeg = 0.0f;
+	// 走っているときに、上腕の前後の振り（真下を 0°）を何倍にするか。1 ならアニメーションのまま。前・後ろの最大の角度で抑える前にかける。
+	float armSwingScale = 1.0f;
 	// 走っているときに、肩の関節（上腕のつけ根）・ひじの関節を、アニメーションから前後へ回しておく角度。正なら前、負なら後ろ。
 	// 歩く速さから走る速さに近づくにつれて効かせる（立ち止まり・歩きは、アニメーションの角度のまま）。
 	float shoulderJointOffsetDeg = 0.0f;
@@ -96,6 +98,8 @@ private:
 	// 上腕の前後の振りを、armFrontMaxDeg・armBackMaxDeg までに抑える。
 	void LimitArmSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward) const;
 	// joint（関節）から先を、キャラクターの左右の軸まわりに回し、tip（その先の骨）を前へ angleDeg 動かす。負なら後ろ。
+	// 上腕の前後の振り（真下を 0°）を scale 倍にする。
+	void ScaleArmSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward, float scale) const;
 	void RotateJointForward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& forward, float angleDeg) const;
 
 	BodyLinkSettings m_settings;

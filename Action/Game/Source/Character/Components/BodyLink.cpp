@@ -216,6 +216,11 @@ void BodyLink::Update(Skeleton& skeleton)
 	RotateAround(skeleton, enBone_Neck, forward, -chestRoll * NECK_SHARE);
 	RotateAround(skeleton, enBone_Head, forward, -chestRoll * HEAD_SHARE);
 
+	// ── 走っているときだけ、腕を振る量を変える ──
+	const float swingScale = 1.0f + (m_settings.armSwingScale - 1.0f) * m_runWeight;
+	ScaleArmSwing(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward, swingScale);
+	ScaleArmSwing(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward, swingScale);
+
 	// ── 腕の振りの大きさをそろえる ──
 	// 走りのクリップは、上腕が後ろへ最大約 100°（真下を 0°）まで振れる。原神は 40° くらいまでなので、前・後ろの最大の角度で抑える。
 	LimitArmSwing(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward);
@@ -228,6 +233,18 @@ void BodyLink::Update(Skeleton& skeleton)
 	RotateJointForward(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward, shoulderOffset);
 	RotateJointForward(skeleton, enBone_LowerArmL, enBone_HandL, forward, elbowOffset);
 	RotateJointForward(skeleton, enBone_LowerArmR, enBone_HandR, forward, elbowOffset);
+}
+
+void BodyLink::ScaleArmSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward, float scale) const
+{
+	if (fabsf(scale - 1.0f) <= 1.0e-3f) {
+		return;
+	}
+	const Vector3 arm = GetPosition(skeleton, lowerArm) - GetPosition(skeleton, upperArm);
+	// 横から見た上腕の角度。真下を 0°、後ろを正、前を負にする。
+	const float backAngleDeg = Math::RadToDeg(atan2f(-arm.Dot(forward), -arm.y));
+	// 後ろへ backAngleDeg × (scale - 1) だけ足す = 前へ その逆だけ回す。
+	RotateJointForward(skeleton, upperArm, lowerArm, forward, -backAngleDeg * (scale - 1.0f));
 }
 
 void BodyLink::RotateJointForward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& forward, float angleDeg) const

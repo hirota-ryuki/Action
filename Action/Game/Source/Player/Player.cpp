@@ -61,6 +61,9 @@ void Player::UpdateDebugUI()
 	// 変えた値は次のフレームから効く。保存はしないので、決まったら player.json の bodyLink に書き写す。
 	BodyLinkSettings& bodyLink = GetBodyLinkSettings();
 	ImGui::Begin(u8"プレイヤーの体");
+	ImGui::SliderFloat(u8"腕を振る量", &bodyLink.armSwingScale, 0.0f, 2.0f, u8"%.2f 倍");
+	ImGui::TextUnformatted(u8"走っているときの上腕の前後の振り。1 でアニメーションのまま。");
+	ImGui::Separator();
 	ImGui::SliderFloat(u8"腕を前まで出す角度", &bodyLink.armFrontMaxDeg, 0.0f, 120.0f, u8"%.0f°");
 	ImGui::SliderFloat(u8"腕を後ろまで引く角度", &bodyLink.armBackMaxDeg, 0.0f, 120.0f, u8"%.0f°");
 	ImGui::TextUnformatted(u8"上腕の角度（真下を 0°）。0 なら抑えない。");
