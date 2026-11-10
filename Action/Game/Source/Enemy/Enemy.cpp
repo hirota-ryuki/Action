@@ -33,7 +33,7 @@ namespace
 	CharacterModelDesc MakeModelDesc()
 	{
 		CharacterModelDesc desc;
-		// 黒騎士。骨格は SK_Player と同じ（tools/BlenderScripts/make_black_knight.py で作る）。
+		// 黒騎士。体は Meshy で作り、骨格を SK_Player に合わせる（tools/BlenderScripts/make_black_knight_meshy.py で作る）。
 		// アニメーションは黒騎士用に作ったもの（tools/BlenderScripts/make_black_knight_anims.py で作る）。
 		desc.modelPath = "Assets/modelData/enemy/BlackKnight/BlackKnight.fbx";
 		desc.upAxis = enModelUpAxisZ;
