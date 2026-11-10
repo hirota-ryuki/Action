@@ -18,6 +18,8 @@ namespace
 		L"J_Bip_R_UpperLeg",
 		L"J_Bip_R_LowerLeg",
 		L"J_Bip_R_Foot",
+		L"J_Bip_L_UpperArm",
+		L"J_Bip_R_UpperArm",
 	};
 	// 背骨のひねり・傾きを、Spine・Chest・UpperChest に分ける割合。
 	constexpr float SPINE_SHARE = 0.4f;
@@ -27,7 +29,8 @@ namespace
 	constexpr float NECK_SHARE = 0.5f;
 	constexpr float HEAD_SHARE = 0.5f;
 	// 左右の足の高さの差が、脚の長さのこの割合になったら、骨盤の傾きをいっぱいにする。
-	constexpr float FULL_ROLL_FOOT_HEIGHT_RATIO = 0.15f;
+	// 走りでは足の高さの差がすぐこの割合を超えるので、小さいと傾きが左右に切り替わるだけになる（0.15 では切り替わるだけだった）。
+	constexpr float FULL_ROLL_FOOT_HEIGHT_RATIO = 0.4f;
 	// 向きを調べるために試しに回す角度（ラジアン）。
 	constexpr float PROBE_ANGLE = 0.1f;
 
@@ -82,6 +85,31 @@ void BodyLink::RotateAround(Skeleton& skeleton, EnBone bone, const Vector3& axis
 	SpringBones::RotateBoneTree(*skeleton.GetBone(m_boneNos[bone]), MakeRotationAround(GetPosition(skeleton, bone), axis, angle));
 }
 
+bool BodyLink::MakeLevelRotation(Skeleton& skeleton, EnBone left, EnBone right, const Vector3& forward, Vector3& axis, float& angle) const
+{
+	angle = 0.0f;
+	Vector3 line = GetPosition(skeleton, right) - GetPosition(skeleton, left);
+	if (line.LengthSq() <= FLT_EPSILON) {
+		return false;
+	}
+	line.Normalize();
+	// まっすぐな線: 前の向きと上の向きの両方に直角な向き。左 → 右の向きに合わせる。
+	Vector3 target;
+	target.Cross(Vector3::AxisY, forward);
+	target.Normalize();
+	if (target.Dot(line) < 0.0f) {
+		target *= -1.0f;
+	}
+	axis.Cross(line, target);
+	const float sinAngle = axis.Length();
+	if (sinAngle <= 1.0e-5f) {
+		return false;
+	}
+	axis *= 1.0f / sinAngle;
+	angle = atan2f(sinAngle, line.Dot(target));
+	return true;
+}
+
 float BodyLink::SignToward(Skeleton& skeleton, EnBone bone, EnBone pivot, const Vector3& axis, const Vector3& direction) const
 {
 	const Vector3 position = GetPosition(skeleton, bone);
@@ -120,6 +148,31 @@ void BodyLink::Update(Skeleton& skeleton)
 	const float swing = Clamp(((kneeR - hipR).Dot(forward) - (kneeL - hipL).Dot(forward)) / (2.0f * thighLength), -1.0f, 1.0f);
 	// 右の足が高い（右脚が浮いている）ほど正。
 	const float footHeight = Clamp((footR - footL).Dot(up) / ((thighLength + shinLength) * FULL_ROLL_FOOT_HEIGHT_RATIO), -1.0f, 1.0f);
+
+	// ── アニメーションの胴の傾き・ひねりを、まっすぐに戻す ──
+	// 走り・ダッシュ・止まるは、もとのクリップの1コマの胴の姿勢を全コマに残しているため、骨盤が傾き・ひねれたままになっている。
+	// 骨盤の線（左右の太ももの付け根）と肩の線（左右の上腕の付け根）を、キャラクターの左右の向きにそろえる。
+	if (m_settings.levelTorso) {
+		// 骨盤の線をまっすぐにし、脚は戻して足の位置を保つ。
+		Vector3 pelvisAxis;
+		float pelvisAngle = 0.0f;
+		if (MakeLevelRotation(skeleton, enBone_UpperLegL, enBone_UpperLegR, forward, pelvisAxis, pelvisAngle)) {
+			RotateAround(skeleton, enBone_Hips, pelvisAxis, pelvisAngle);
+			RotateAround(skeleton, enBone_UpperLegL, pelvisAxis, -pelvisAngle);
+			RotateAround(skeleton, enBone_UpperLegR, pelvisAxis, -pelvisAngle);
+		}
+		// 肩の線をまっすぐにする（背骨に分けて回す）。
+		Vector3 chestAxis;
+		float chestAngle = 0.0f;
+		if (MakeLevelRotation(skeleton, enBone_UpperArmL, enBone_UpperArmR, forward, chestAxis, chestAngle)) {
+			RotateAround(skeleton, enBone_Spine, chestAxis, chestAngle * SPINE_SHARE);
+			RotateAround(skeleton, enBone_Chest, chestAxis, chestAngle * CHEST_SHARE);
+			RotateAround(skeleton, enBone_UpperChest, chestAxis, chestAngle * UPPER_CHEST_SHARE);
+		}
+		// 頭は、胴を戻した分を首で打ち消して、アニメーションの向きのままにする（逆の順に戻す）。
+		RotateAround(skeleton, enBone_Neck, chestAxis, -chestAngle);
+		RotateAround(skeleton, enBone_Neck, pelvisAxis, -pelvisAngle);
+	}
 
 	// ── ひねり（縦の軸まわり）──
 	// 骨盤: 右の膝が前なら、右の腰が前へ出る向き。骨盤を回した分だけ脚を戻して、足の位置を保つ。

@@ -264,6 +264,7 @@ namespace
 		settings.headFollow = Read(section, "bodyLink", "headFollow", 0.2f);
 		settings.pelvisRollDeg = Read(section, "bodyLink", "pelvisRollDeg", 5.0f);
 		settings.chestRollRatio = Read(section, "bodyLink", "chestRollRatio", 0.5f);
+		settings.levelTorso = Read(section, "bodyLink", "levelTorso", true);
 		return settings;
 	}
 
