@@ -74,6 +74,9 @@ void Player::UpdateDebugUI()
 	ImGui::SliderFloat(u8"上腕を横に広げる", &bodyLink.upperArmSpreadDeg, -30.0f, 60.0f, u8"%.0f°");
 	ImGui::TextUnformatted(u8"走っているときだけ。正なら体の外へ、負なら内へ。");
 	ImGui::Separator();
+	ImGui::Checkbox(u8"左右をそろえる", &bodyLink.symmetrize);
+	ImGui::TextUnformatted(u8"走っているときだけ。腕・足の形を左右でそろえ、頭を前に向ける。");
+	ImGui::Separator();
 	if (ImGui::Button(u8"初期値に戻す")) {
 		ResetBodyLinkSettings();
 	}

@@ -271,6 +271,7 @@ namespace
 		settings.shoulderJointOffsetDeg = Read(section, "bodyLink", "shoulderJointOffsetDeg", 0.0f);
 		settings.elbowJointOffsetDeg = Read(section, "bodyLink", "elbowJointOffsetDeg", 0.0f);
 		settings.upperArmSpreadDeg = Read(section, "bodyLink", "upperArmSpreadDeg", 0.0f);
+		settings.symmetrize = Read(section, "bodyLink", "symmetrize", true);
 		return settings;
 	}
 
