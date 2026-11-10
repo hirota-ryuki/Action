@@ -20,6 +20,9 @@ struct BodyLinkSettings
 	// 最大の角度の半分までは、アニメーションのまま。
 	float armFrontMaxDeg = 0.0f;
 	float armBackMaxDeg = 0.0f;
+	// 肩の関節（上腕のつけ根）・ひじの関節を、アニメーションからいつも前後へ回しておく角度。正なら前、負なら後ろ。
+	float shoulderJointOffsetDeg = 0.0f;
+	float elbowJointOffsetDeg = 0.0f;
 };
 
 // 走る・歩くときに、脚の動きに合わせて骨盤・背骨・肩・首を連動させる部品。
@@ -47,6 +50,11 @@ public:
 	{
 		return m_settings;
 	}
+	// 調整値を、Init で受け取った値（player.json の値）に戻す。
+	void ResetSettings()
+	{
+		m_settings = m_initialSettings;
+	}
 
 private:
 	enum EnBone
@@ -67,6 +75,8 @@ private:
 		enBone_UpperArmR,
 		enBone_LowerArmL,
 		enBone_LowerArmR,
+		enBone_HandL,
+		enBone_HandR,
 		enBone_Num,
 	};
 
@@ -79,8 +89,11 @@ private:
 	bool MakeLevelRotation(Skeleton& skeleton, EnBone left, EnBone right, const Vector3& forward, Vector3& axis, float& angle) const;
 	// 上腕の前後の振りを、armFrontMaxDeg・armBackMaxDeg までに抑える。
 	void LimitArmSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward) const;
+	// joint（関節）から先を、キャラクターの左右の軸まわりに回し、tip（その先の骨）を前へ angleDeg 動かす。負なら後ろ。
+	void RotateJointForward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& forward, float angleDeg) const;
 
 	BodyLinkSettings m_settings;
+	BodyLinkSettings m_initialSettings;  // Init で受け取った値。ResetSettings() で戻す。
 	int m_boneNos[enBone_Num] = {};
 	bool m_isActive = false;
 	Quaternion m_rotation = Quaternion::Identity;

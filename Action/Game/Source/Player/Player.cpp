@@ -65,10 +65,15 @@ void Player::UpdateDebugUI()
 	ImGui::SliderFloat(u8"腕を後ろまで引く角度", &bodyLink.armBackMaxDeg, 0.0f, 120.0f, u8"%.0f°");
 	ImGui::TextUnformatted(u8"上腕の角度（真下を 0°）。0 なら抑えない。");
 	ImGui::Separator();
-	ImGui::SliderFloat(u8"肩のひねり", &bodyLink.shoulderYawDeg, 0.0f, 60.0f, u8"%.0f°");
-	ImGui::TextUnformatted(u8"腰と逆向きに、前に出た腕の側の肩が前へ出る（脚の振りが 1 のときの角度。走りで 0.5〜0.6）。");
-	ImGui::SliderFloat(u8"肩の左右の傾き", &bodyLink.chestRollRatio, -1.0f, 1.0f, "%.2f");
-	ImGui::TextUnformatted(u8"骨盤の傾きに対して、肩を逆へ傾ける割合。0 で水平、負なら骨盤と同じ向き。");
+	ImGui::SliderFloat(u8"肩の関節を前後に", &bodyLink.shoulderJointOffsetDeg, -60.0f, 60.0f, u8"%.0f°");
+	ImGui::SliderFloat(u8"ひじの関節を前後に", &bodyLink.elbowJointOffsetDeg, -60.0f, 60.0f, u8"%.0f°");
+	ImGui::TextUnformatted(u8"アニメーションから、いつも回しておく角度。正なら前、負なら後ろ。");
+	ImGui::Separator();
+	if (ImGui::Button(u8"初期値に戻す")) {
+		ResetBodyLinkSettings();
+	}
+	ImGui::SameLine();
+	ImGui::TextUnformatted(u8"player.json の値に戻す");
 	ImGui::End();
 }
 

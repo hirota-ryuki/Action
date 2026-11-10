@@ -22,6 +22,8 @@ namespace
 		L"J_Bip_R_UpperArm",
 		L"J_Bip_L_LowerArm",
 		L"J_Bip_R_LowerArm",
+		L"J_Bip_L_Hand",
+		L"J_Bip_R_Hand",
 	};
 	// 背骨のひねり・傾きを、Spine・Chest・UpperChest に分ける割合。
 	constexpr float SPINE_SHARE = 0.4f;
@@ -63,6 +65,7 @@ void BodyLink::Init(ModelRender& model, const BodyLinkSettings& settings)
 {
 	static_assert(sizeof(BONE_NAMES) / sizeof(BONE_NAMES[0]) == enBone_Num, "BONE_NAMES と EnBone の数をそろえる");
 	m_settings = settings;
+	m_initialSettings = settings;
 	m_isActive = false;
 	if (!m_settings.isEnabled || !model.GetSkeleton().IsInited()) {
 		return;
@@ -217,6 +220,25 @@ void BodyLink::Update(Skeleton& skeleton)
 	// 走りのクリップは、上腕が後ろへ最大約 100°（真下を 0°）まで振れる。原神は 40° くらいまでなので、前・後ろの最大の角度で抑える。
 	LimitArmSwing(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward);
 	LimitArmSwing(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward);
+
+	// ── 肩の関節・ひじの関節を、前後へ回しておく ──
+	RotateJointForward(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward, m_settings.shoulderJointOffsetDeg);
+	RotateJointForward(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward, m_settings.shoulderJointOffsetDeg);
+	RotateJointForward(skeleton, enBone_LowerArmL, enBone_HandL, forward, m_settings.elbowJointOffsetDeg);
+	RotateJointForward(skeleton, enBone_LowerArmR, enBone_HandR, forward, m_settings.elbowJointOffsetDeg);
+}
+
+void BodyLink::RotateJointForward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& forward, float angleDeg) const
+{
+	if (fabsf(angleDeg) <= 1.0e-3f) {
+		return;
+	}
+	// キャラクターの左右の軸。どちら向きに回すと tip が前へ出るかは、試しに回して決める。
+	Vector3 side;
+	side.Cross(Vector3::AxisY, forward);
+	side.Normalize();
+	const float sign = SignToward(skeleton, tip, joint, side, forward);
+	RotateAround(skeleton, joint, side, Math::DegToRad(angleDeg) * sign);
 }
 
 void BodyLink::LimitArmSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward) const

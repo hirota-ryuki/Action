@@ -112,6 +112,11 @@ protected:
 	{
 		return m_bodyLink.GetSettings();
 	}
+	// 体の連動の調整値を、player.json の値に戻す。
+	void ResetBodyLinkSettings()
+	{
+		m_bodyLink.ResetSettings();
+	}
 
 	CharacterInput m_input;
 	CharacterMover m_mover;
