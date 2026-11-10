@@ -41,7 +41,7 @@ namespace
 		desc.clips.resize(enEnemyAnimClip_Num);
 		desc.clips[enEnemyAnimClip_Idle] = { "Assets/modelData/enemy/BlackKnight/Animation/Idle.fbx", true };
 		desc.clips[enEnemyAnimClip_Walk] = { "Assets/modelData/enemy/BlackKnight/Animation/Walk.fbx", true };
-		desc.clips[enEnemyAnimClip_Attack] = { "Assets/modelData/enemy/BlackKnight/Animation/Attack.fbx", false };
+		desc.clips[enEnemyAnimClip_Attack] = { "Assets/modelData/enemy/BlackKnight/Animation/DashSlash.fbx", false };
 		return desc;
 	}
 
