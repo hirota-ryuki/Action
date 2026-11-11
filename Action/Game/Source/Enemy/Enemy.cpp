@@ -3,8 +3,12 @@
 
 namespace
 {
-	constexpr float HIT_RADIUS = 60.0f;         // 弾に当たる球の半径。黒騎士の胴（肩当てまで）を覆う。
-	constexpr float HIT_CENTER_HEIGHT = 110.0f; // 足元から当たり判定の中心までの高さ（黒騎士の胸の下あたり）。
+	// 黒騎士の大きさ。兜のあご〜頭頂（モデルで 0.175）が、Player の顔のあご〜頭頂（0.217 × 1.128）と同じになる 1.128 × 0.217 ÷ 0.175。
+	constexpr float MODEL_SCALE = 1.4f;
+	// 当たり判定とカプセルは、前の大きさ（1.3）で体に合わせた値を、同じ割合で大きくする。
+	constexpr float SIZE_RATIO = MODEL_SCALE / 1.3f;
+	constexpr float HIT_RADIUS = 60.0f * SIZE_RATIO;         // 弾に当たる球の半径。黒騎士の胴（肩当てまで）を覆う。
+	constexpr float HIT_CENTER_HEIGHT = 110.0f * SIZE_RATIO; // 足元から当たり判定の中心までの高さ（黒騎士の胸の下あたり）。
 	constexpr float WALK_SPEED = 140.0f;        // 余裕たっぷりにゆっくり歩く速さ。
 	constexpr float WALK_ANIM_FOOT_SPEED = 229.0f;  // Walk を等速で再生したときに、足が地面を送る速さ（Blender で測った）。
 	// 黒騎士の動き全体の速さ。アニメーションが崩れていないかを確かめるため、今は半分にしている。確かめ終わったら 1 に戻す。
@@ -16,8 +20,8 @@ namespace
 		settings.walkSpeed = WALK_SPEED;      // Walk は WALK_SPEED / WALK_ANIM_FOOT_SPEED 倍でゆっくり再生する（EnemyMoveState）。
 		settings.runSpeedMultiplier = 2.75f;  // 走るときは 385。Run の足が地面を送る速さ（約384）に合わせる。
 		settings.gravity = 980.0f;
-		settings.capsuleRadius = 30.0f;   // 黒騎士は肩当てが広いので、プレイヤー（20）より太くする。
-		settings.capsuleHeight = 140.0f;
+		settings.capsuleRadius = 30.0f * SIZE_RATIO;   // 黒騎士は肩当てが広いので、プレイヤー（20）より太くする。
+		settings.capsuleHeight = 140.0f * SIZE_RATIO;
 		return settings;
 	}
 
@@ -42,7 +46,7 @@ namespace
 		// アニメーションは既存のモーションを黒騎士の骨格へ移したもの（tools/BlenderScripts/retarget_black_knight.py で作る）。
 		desc.modelPath = "Assets/modelData/enemy/BlackKnight/BlackKnight.fbx";
 		desc.upAxis = enModelUpAxisZ;
-		desc.scale = 1.3f;   // プレイヤー（1.128）より一回り大きくする。
+		desc.scale = MODEL_SCALE;
 		desc.clips.resize(enEnemyAnimClip_Num);
 		desc.clips[enEnemyAnimClip_Idle] = { "Assets/modelData/enemy/BlackKnight/Animation/Idle.fbx", true };
 		desc.clips[enEnemyAnimClip_Walk] = { "Assets/modelData/enemy/BlackKnight/Animation/Walk.fbx", true };
