@@ -4,7 +4,7 @@
 #include "StateMachine.h"
 
 // 敵のステートマシン。切り替えの手順と凍結の扱いは共通の StateMachine にある。
-// ここでは5つのステートを登録するだけ。
+// ここでは7つのステートを登録するだけ。
 class EnemyStateMachine : public StateMachine<EnemyStateId, EnemyStateContext>
 {
 public:

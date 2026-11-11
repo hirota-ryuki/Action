@@ -69,30 +69,11 @@
     },
     {
       "name": "Attack2",
-      "comment": "左上→右下（両手剣の斬り下ろしを左右反転）→ 右上→左下（両手剣の斬り下ろし）→ 横一閃（片手剣の斬りに、右へひねってから左へ回す回転を足す）",
+      "comment": "SnSAnimsetPro の片手剣の斬り3本（R → RL → RLLR）をつないで1本にする。モーションの見本帳で選んだもの",
       "segments": [
-        {
-          "source": "D:/04_dawnload/BlackKnightAnim/extracted/Animations/Male/Combat/2H/HumanM@Attack2H01.fbx", "rig": "kevin", "mirror": true, "frames": [1, 27],
-          "mask": {"fbx": "D:/04_dawnload/BlackKnightAnim/extracted/Animations/Male/Idles/HumanM@Idle01.fbx", "bones": ["B-shoulder.R", "B-upperArm.R", "B-forearm.R", "B-hand.R", "B-handProp.R",
-                  "B-indexFinger01.R", "B-indexFinger02.R", "B-indexFinger03.R",
-                  "B-middleFinger01.R", "B-middleFinger02.R", "B-middleFinger03.R",
-                  "B-ringFinger01.R", "B-ringFinger02.R", "B-ringFinger03.R",
-                  "B-pinky01.R", "B-pinky02.R", "B-pinky03.R",
-                  "B-thumb01.R", "B-thumb02.R", "B-thumb03.R"]}
-        },
-        {
-          "source": "D:/04_dawnload/BlackKnightAnim/extracted/Animations/Male/Combat/2H/HumanM@Attack2H01.fbx", "rig": "kevin", "frames": [8, 27],
-          "mask": {"fbx": "D:/04_dawnload/BlackKnightAnim/extracted/Animations/Male/Idles/HumanM@Idle01.fbx", "bones": ["B-shoulder.L", "B-upperArm.L", "B-forearm.L", "B-hand.L", "B-handProp.L",
-                  "B-indexFinger01.L", "B-indexFinger02.L", "B-indexFinger03.L",
-                  "B-middleFinger01.L", "B-middleFinger02.L", "B-middleFinger03.L",
-                  "B-ringFinger01.L", "B-ringFinger02.L", "B-ringFinger03.L",
-                  "B-pinky01.L", "B-pinky02.L", "B-pinky03.L",
-                  "B-thumb01.L", "B-thumb02.L", "B-thumb03.L"]}
-        },
-        {
-          "source": "D:/04_dawnload/BlackKnightAnim/extracted/Animations/Male/Combat/1H/HumanM@Attack1H01_R.fbx", "rig": "kevin", "frames": [1, 34],
-          "spin": [[0, 90], [4, 90], [16, -70], [30, 0]]
-        }
+        {"source": "D:/04_dawnload/SnS/EXPORT/InPlace/Sword_Attack_R.fbx", "rig": "ue4"},
+        {"source": "D:/04_dawnload/SnS/EXPORT/InPlace/Sword_Attack_RL.fbx", "rig": "ue4"},
+        {"source": "D:/04_dawnload/SnS/EXPORT/InPlace/Sword_Attack_RLLR.fbx", "rig": "ue4"}
       ]
     },
     {
@@ -145,6 +126,19 @@
                   "B-thumb01.R", "B-thumb02.R", "B-thumb03.R"]}
         }
       ]
+    },
+    {
+      "name": "Hit",
+      "comment": "やられ。SnSAnimsetPro の盾を構えた正面からの被弾",
+      "source": "D:/04_dawnload/SnS/EXPORT/InPlace/Sword_Shield_Hit_C_1.fbx",
+      "rig": "ue4"
+    },
+    {
+      "name": "Dead",
+      "comment": "死ぬ。Meshy のモーション集の Dead（スケルトンテンプレートは Mixamo）",
+      "source": "D:/04_dawnload/meshy/Dead/Meshy_AI_dark_knight_textured_30k_20261111_animated_mixamo_Dead/Meshy_AI_dark_knight_textured_30k_20261111_animated_mixamo_Dead.fbx",
+      "rig": "mixamo",
+      "rest": "D:/04_dawnload/meshy/Rig_TPose.fbx"
     }
   ]
 }

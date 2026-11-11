@@ -21,8 +21,27 @@ void EnemyGroundState::Enter(EnemyStateContext& context, const CharacterInput& i
 	context.model->GetModelRender().SetAnimationSpeed(GetAnimSpeed(context) * context.settings.playSpeed);
 }
 
+EnemyStateId EnemyGroundState::CheckDamage(const EnemyStateContext& context, bool canFlinch)
+{
+	if (context.damage == nullptr) {
+		return EnemyStateId::Num;
+	}
+	if (context.damage->IsDead()) {
+		return EnemyStateId::Dead;
+	}
+	// 当たったことは、ひるまないときも下ろしておく（攻撃が終わったあとに遅れてひるまないように）。
+	if (context.damage->ConsumeHit() && canFlinch) {
+		return EnemyStateId::Hit;
+	}
+	return EnemyStateId::Num;
+}
+
 EnemyStateId EnemyGroundState::CheckTransition(const EnemyStateContext& context, const CharacterInput& input) const
 {
+	const EnemyStateId damaged = CheckDamage(context, true);
+	if (damaged != EnemyStateId::Num) {
+		return damaged;
+	}
 	if (input.fire.isTrigger) {
 		return EnemyStateId::Attack;
 	}

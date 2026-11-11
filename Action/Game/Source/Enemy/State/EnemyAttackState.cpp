@@ -60,6 +60,10 @@ void EnemyAttackState::Enter(EnemyStateContext& context, const CharacterInput& i
 
 EnemyStateId EnemyAttackState::CheckTransition(const EnemyStateContext& context, const CharacterInput& input) const
 {
+	// 攻撃中は当たってもひるまない。死んだときだけ倒れる。
+	if (EnemyGroundState::CheckDamage(context, false) == EnemyStateId::Dead) {
+		return EnemyStateId::Dead;
+	}
 	if (context.model->IsPlayingAnimation()) {
 		return EnemyStateId::Attack;
 	}

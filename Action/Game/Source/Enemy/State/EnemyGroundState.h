@@ -11,6 +11,8 @@ class EnemyGroundState : public EnemyState
 public:
 	// 入力で行き先を決める。Frozen が解けたあとの行き先にも使う。
 	static EnemyStateId SelectByInput(const EnemyStateContext& context, const CharacterInput& input);
+	// 死んだら Dead、当たったら（canFlinch のときだけ）Hit を返す。どちらでもなければ Num。
+	static EnemyStateId CheckDamage(const EnemyStateContext& context, bool canFlinch);
 
 	void Enter(EnemyStateContext& context, const CharacterInput& input) override;
 	EnemyStateId CheckTransition(const EnemyStateContext& context, const CharacterInput& input) const override;

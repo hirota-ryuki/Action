@@ -229,6 +229,8 @@
     <ClCompile Include="Source\Enemy\State\EnemyStateMachine.cpp" />
     <ClCompile Include="Source\Enemy\State\EnemyAttackState.cpp" />
     <ClCompile Include="Source\Enemy\State\EnemyFrozenState.cpp" />
+    <ClCompile Include="Source\Enemy\State\EnemyHitState.cpp" />
+    <ClCompile Include="Source\Enemy\State\EnemyDeadState.cpp" />
     <ClCompile Include="Source\Enemy\State\EnemyGroundState.cpp" />
     <ClCompile Include="Source\Character\Components\WeaponAttachment.cpp" />
     <ClCompile Include="Source\Character\Components\SpringBones.cpp" />
@@ -295,6 +297,8 @@
     <ClInclude Include="Source\Enemy\State\EnemyStateMachine.h" />
     <ClInclude Include="Source\Enemy\State\EnemyAttackState.h" />
     <ClInclude Include="Source\Enemy\State\EnemyFrozenState.h" />
+    <ClInclude Include="Source\Enemy\State\EnemyHitState.h" />
+    <ClInclude Include="Source\Enemy\State\EnemyDeadState.h" />
     <ClInclude Include="Source\Enemy\State\EnemyMoveState.h" />
     <ClInclude Include="Source\Enemy\State\EnemyRunState.h" />
     <ClInclude Include="Source\Enemy\State\EnemyIdleState.h" />

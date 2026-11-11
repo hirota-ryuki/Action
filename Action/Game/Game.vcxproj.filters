@@ -69,6 +69,12 @@
     <ClCompile Include="Source\Enemy\State\EnemyFrozenState.cpp">
       <Filter>Source\Enemy\State</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Enemy\State\EnemyHitState.cpp">
+      <Filter>Source\Enemy\State</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Enemy\State\EnemyDeadState.cpp">
+      <Filter>Source\Enemy\State</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Enemy\State\EnemyGroundState.cpp">
       <Filter>Source\Enemy\State</Filter>
     </ClCompile>
@@ -249,6 +255,12 @@
       <Filter>Source\Enemy\State</Filter>
     </ClInclude>
     <ClInclude Include="Source\Enemy\State\EnemyFrozenState.h">
+      <Filter>Source\Enemy\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\State\EnemyHitState.h">
+      <Filter>Source\Enemy\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\State\EnemyDeadState.h">
       <Filter>Source\Enemy\State</Filter>
     </ClInclude>
     <ClInclude Include="Source\Enemy\State\EnemyMoveState.h">

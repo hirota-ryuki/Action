@@ -50,4 +50,5 @@ private:
 	Status m_status;
 	EnemyStateMachine m_stateMachine;
 	EnemyAnimCatalog m_animCatalog;
+	EnemyDamageState m_damage;  // 当たった・倒れて消えた（ステートと受け渡す）。
 };

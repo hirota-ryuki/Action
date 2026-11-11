@@ -7,6 +7,10 @@
 EnemyStateId EnemyFrozenState::CheckTransition(const EnemyStateContext& context, const CharacterInput& input) const
 {
 	// 行動できない間は StateMachine がここを呼ばないので、呼ばれたら解けている。
+	// 凍っている間に受けた攻撃ではひるまない。HP がなくなっていたら倒れる。
+	if (EnemyGroundState::CheckDamage(context, false) == EnemyStateId::Dead) {
+		return EnemyStateId::Dead;
+	}
 	return EnemyGroundState::SelectByInput(context, input);
 }
 
