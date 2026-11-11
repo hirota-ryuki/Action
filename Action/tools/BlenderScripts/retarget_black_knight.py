@@ -10,6 +10,8 @@
 #             basic（Human Basic Motions FREE を展開したもの）。どちらも Kevin Iglesias の無料パック
 #   target    書き出す骨格とメッシュ（BlackKnight.fbx）
 #   out_dir   書き出すフォルダ。<out_dir>/<name>.fbx に書く
+#   pose_keys ゲームの開発用の画面（F1 → 黒騎士のモーション）で打った、関節と剣のキーの JSON。
+#             キーがあるクリップは、キーを足したものを <out_dir>/<name>.fbx に、足す前のものを <out_dir>/Base/<name>.fbx に書く
 #   grip      {"fbx": 手のポーズの FBX, "bones": [右手の指の骨, ...]}。全部のクリップで、剣を持つ右手の指をこのポーズにする
 #             （元のモーションが手を開いていても、拳で剣を握るように）。クリップに "grip": false と書くと重ねない
 #   clips     書き出すクリップの一覧。1つずつ次を書く
@@ -613,8 +615,95 @@ def build_frames(clip):
     return frames_world, hips_world
 
 
-def bake(clip):
+# ---------------------------------------------------------------------------
+# ゲームの開発用の画面（F1 → 黒騎士のモーション）で打った、関節と剣のキー
+# 決まりはゲームの Game/Source/Enemy/EnemyPoseKeys.h と同じ。片方を変えたら、もう片方も同じように変える。
+#   - 角度は [左右の軸まわり, 前後の軸まわり, 縦の軸まわり]（度）。キャラクターの体の向き（前 -Y・上 +Z・左 +X）の軸で、この順に回す
+#   - 骨の付け根を中心に、その骨から先をまとめて回す（親の骨から順に）
+#   - 剣は、剣の骨の付け根を中心に回したあと、体の [左, 前, 上] へ動かす（cm。モデルの大きさを掛ける前の値）
+#   - コマは 1 から数える。打ったコマの間は、始めと終わりがゆっくりな曲線でつなぐ。最初のキーより前・最後のキーより後ろは端のキーの値
+# ---------------------------------------------------------------------------
+POSE_BONES = [S("L", "Shoulder"), S("L", "UpperArm"), S("L", "LowerArm"),
+              S("R", "Shoulder"), S("R", "UpperArm"), S("R", "LowerArm"),
+              S("L", "UpperLeg"), S("L", "LowerLeg"), S("R", "UpperLeg"), S("R", "LowerLeg")]
+BODY_LEFT, BODY_FRONT, BODY_UP = Vector((1, 0, 0)), Vector((0, -1, 0)), Vector((0, 0, 1))
+
+
+def load_pose_keys():
+    path = CONFIG.get("pose_keys")
+    if not path:
+        return {}
+    path = resolve(path)
+    if not os.path.isfile(path):
+        return {}
+    with open(path, encoding="utf-8") as fp:
+        return json.load(fp).get("clips", {})
+
+
+def evaluate_pose(keys, frame):
+    """frame コマ目（1 から）の {"bones": {骨: [3つ]}, "rot": [3つ], "pos": [3つ]}。"""
+    def values(k):
+        b = k.get("bones", {})
+        s = k.get("sword", {})
+        return ({n: list(b.get(n, [0, 0, 0])) for n in POSE_BONES},
+                list(s.get("rot", [0, 0, 0])), list(s.get("pos", [0, 0, 0])))
+    keys = sorted(keys, key=lambda k: k["frame"])
+    if frame <= keys[0]["frame"]:
+        return values(keys[0])
+    if frame >= keys[-1]["frame"]:
+        return values(keys[-1])
+    for a, b in zip(keys, keys[1:]):
+        if frame < b["frame"]:
+            t = (frame - a["frame"]) / (b["frame"] - a["frame"])
+            t = t * t * (3 - 2 * t)
+            va, vb = values(a), values(b)
+            lerp = lambda x, y: [x[i] + (y[i] - x[i]) * t for i in range(3)]
+            return ({n: lerp(va[0][n], vb[0][n]) for n in POSE_BONES}, lerp(va[1], vb[1]), lerp(va[2], vb[2]))
+    return values(keys[-1])
+
+
+def body_rotation(deg):
+    """[左右の軸, 前後の軸, 縦の軸] の順に回す回転（世界の向き）。"""
+    q = Quaternion(BODY_LEFT, math.radians(deg[0]))
+    q = Quaternion(BODY_FRONT, math.radians(deg[1])) @ q
+    return Quaternion(BODY_UP, math.radians(deg[2])) @ q
+
+
+def apply_pose_keys(frames_world, keys):
+    for i, W in enumerate(frames_world):
+        bones, _, _ = evaluate_pose(keys, i + 1)
+        for n in POSE_BONES:
+            deg = bones[n]
+            if not any(deg) or n not in W:
+                continue
+            q = body_rotation(deg)
+            for m in [n] + descendants(n):
+                if m in W:
+                    W[m] = (q @ W[m]).normalized()
+
+
+def apply_sword_keys(length, keys):
+    pb = TGT.pose.bones[SWORD_BONE]
+    to_arm = TGT.matrix_world.inverted()
+    for f in range(length + 1):
+        _, rot, pos = evaluate_pose(keys, f + 1)
+        if not any(rot) and not any(pos):
+            continue
+        SCENE.frame_set(f)
+        mw = TGT.matrix_world @ pb.matrix
+        head = mw.translation.copy()
+        move = (BODY_LEFT * pos[0] + BODY_FRONT * pos[1] + BODY_UP * pos[2]) * 0.01  # cm → m（世界）
+        mw = Matrix.Translation(head + move) @ body_rotation(rot).to_matrix().to_4x4() @ Matrix.Translation(-head) @ mw
+        pb.matrix = to_arm @ mw
+        pb.keyframe_insert("location", frame=f)
+        pb.keyframe_insert("rotation_quaternion", frame=f)
+
+
+def bake(clip, pose_keys=None):
+    """pose_keys を渡すと、ゲームの開発用の画面で打った関節と剣のキーを足して焼く。"""
     frames_world, hips_world = build_frames(clip)
+    if pose_keys:
+        apply_pose_keys(frames_world, pose_keys)
     loop = clip.get("loop", False)
     frames_basis = [to_basis(W) for W in frames_world]
     if loop:
@@ -648,6 +737,8 @@ def bake(clip):
         hb.location = REST_Q[hips].inverted() @ (p_arm - REST_H[hips])
         hb.keyframe_insert("location", frame=f)
     fit_sword_to_grip(length)
+    if pose_keys:
+        apply_sword_keys(length, pose_keys)
     act = TGT.animation_data.action
     act.name = clip["name"]
     act.use_fake_user = True
@@ -829,10 +920,24 @@ os.makedirs(OUT_DIR, exist_ok=True)
 if PREVIEW_DIR:
     os.makedirs(PREVIEW_DIR, exist_ok=True)
 only = argv[argv.index("--only") + 1].split(",") if "--only" in argv else None
+POSE_KEYS = load_pose_keys()
+BASE_DIR = os.path.join(OUT_DIR, "Base")
 for clip in CONFIG["clips"]:
     if only and clip["name"] not in only:
         continue
-    act, length = bake(clip)
+    keys = POSE_KEYS.get(clip["name"])
+    if keys:
+        # キーを焼く前のもの（ゲームの開発用の画面で、キーをその場で足して見せるのに使う）
+        os.makedirs(BASE_DIR, exist_ok=True)
+        bake(clip)
+        export(os.path.join(BASE_DIR, clip["name"] + ".fbx"))
+    else:
+        # キーがないクリップは、ふだんのものをそのまま使うので、前に作った Base は消す
+        for ext in (".fbx", ".tka"):
+            stale = os.path.join(BASE_DIR, clip["name"] + ext)
+            if os.path.exists(stale):
+                os.remove(stale)
+    act, length = bake(clip, keys)
     export(os.path.join(OUT_DIR, clip["name"] + ".fbx"))
     if PREVIEW_DIR:
         render_preview(clip["name"], act, length)

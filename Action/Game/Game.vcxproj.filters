@@ -102,6 +102,12 @@
     <ClCompile Include="Source\Enemy\SlashBullet.cpp">
       <Filter>Source\Enemy</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Enemy\EnemyPoseKeys.cpp">
+      <Filter>Source\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Enemy\EnemyMotionEditor.cpp">
+      <Filter>Source\Enemy</Filter>
+    </ClCompile>
     <ClCompile Include="Source\UI\UIManager.cpp">
       <Filter>Source\UI</Filter>
     </ClCompile>
@@ -309,6 +315,12 @@
       <Filter>Source\Enemy</Filter>
     </ClInclude>
     <ClInclude Include="Source\Enemy\SlashBullet.h">
+      <Filter>Source\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\EnemyPoseKeys.h">
+      <Filter>Source\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\EnemyMotionEditor.h">
       <Filter>Source\Enemy</Filter>
     </ClInclude>
     <ClInclude Include="Source\UI\UIManager.h">

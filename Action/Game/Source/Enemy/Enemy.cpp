@@ -39,6 +39,10 @@ namespace
 		return settings;
 	}
 
+	const std::string ANIM_DIR = "Assets/modelData/enemy/BlackKnight/Animation/";
+	// クリップの名前（EnEnemyAnimClip の順）。retarget_black_knight.py が書き出す FBX の名前と同じ。
+	constexpr const char* CLIP_NAMES[enEnemyAnimClip_Num] = { "Idle", "Walk", "Run", "Attack1", "Attack2", "Attack3" };
+
 	CharacterModelDesc MakeModelDesc()
 	{
 		CharacterModelDesc desc;
@@ -47,13 +51,18 @@ namespace
 		desc.modelPath = "Assets/modelData/enemy/BlackKnight/BlackKnight.fbx";
 		desc.upAxis = enModelUpAxisZ;
 		desc.scale = MODEL_SCALE;
-		desc.clips.resize(enEnemyAnimClip_Num);
-		desc.clips[enEnemyAnimClip_Idle] = { "Assets/modelData/enemy/BlackKnight/Animation/Idle.fbx", true };
-		desc.clips[enEnemyAnimClip_Walk] = { "Assets/modelData/enemy/BlackKnight/Animation/Walk.fbx", true };
-		desc.clips[enEnemyAnimClip_Run] = { "Assets/modelData/enemy/BlackKnight/Animation/Run.fbx", true };
-		desc.clips[enEnemyAnimClip_Attack1] = { "Assets/modelData/enemy/BlackKnight/Animation/Attack1.fbx", false };
-		desc.clips[enEnemyAnimClip_Attack2] = { "Assets/modelData/enemy/BlackKnight/Animation/Attack2.fbx", false };
-		desc.clips[enEnemyAnimClip_Attack3] = { "Assets/modelData/enemy/BlackKnight/Animation/Attack3.fbx", false };
+		// 0〜Num-1 がふだん流すクリップ（開発用の画面で打ったキーを焼いたもの）。
+		// Num〜 は、モーションを直すときに流す、キーを焼く前のクリップ（Animation/Base/。なければふだんのもの）。
+		desc.clips.resize(enEnemyAnimClip_Num * 2);
+		for (int i = 0; i < enEnemyAnimClip_Num; i++) {
+			const std::string name = CLIP_NAMES[i];
+			const bool isLoop = i == enEnemyAnimClip_Idle || i == enEnemyAnimClip_Walk || i == enEnemyAnimClip_Run;
+			const std::string path = ANIM_DIR + name + ".fbx";
+			const std::string basePath = ANIM_DIR + "Base/" + name + ".fbx";
+			desc.clips[i] = { path, isLoop };
+			const bool hasBase = GetFileAttributesA(basePath.c_str()) != INVALID_FILE_ATTRIBUTES;
+			desc.clips[enEnemyAnimClip_Num + i] = { hasBase ? basePath : path, isLoop };
+		}
 		return desc;
 	}
 
@@ -86,14 +95,43 @@ void Enemy::OnStart()
 	stateContext.faction = GetFaction();
 	stateContext.settings.walkAnimSpeed = WALK_SPEED / WALK_ANIM_FOOT_SPEED;
 	stateContext.settings.playSpeed = PLAY_SPEED;
+	m_stateContext = stateContext;
 	m_stateMachine.Init(stateContext);  // Idle から始める（Idle のアニメーションを流す）。
+
+	// モーションを直す開発用の画面（F1）。
+	std::vector<EnemyMotionEditor::ClipEntry> clips;
+	for (int i = 0; i < enEnemyAnimClip_Num; i++) {
+		clips.push_back({ CLIP_NAMES[i], i, enEnemyAnimClip_Num + i });
+	}
+	m_motionEditor.Init(&m_model, clips);
 	// 黒騎士は魔法を持たない（MagicCaster に何も足さないので、fire を押しても魔法は撃たない）。
 	// fire は剣の攻撃（EnemyAttackState）になり、攻撃3の斬撃はステートが飛ばす。
 }
 
 void Enemy::UpdateAction(float deltaTime)
 {
+	// モーションを直している間は、AI を止めてその場に立たせ、選んだクリップを流す。
+	if (m_motionEditor.IsEditing()) {
+		m_mover.Move(Vector3::Zero, deltaTime);
+		m_motionEditor.UpdatePlayback(deltaTime);
+		return;
+	}
+	if (m_motionEditor.ConsumeStopped()) {
+		m_stateMachine.Init(m_stateContext);  // 直し終わったら、Idle からふだんの動きに戻す
+	}
 	// 移動とアニメーションはステートが行う。凍結中は Frozen ステートになり、重力で落ちるだけになる。
 	// PLAY_SPEED を掛けて、移動・攻撃の時間（突進・斬撃を出すとき）もアニメーションと同じだけ遅くする。
 	m_stateMachine.Update(m_input, deltaTime * PLAY_SPEED);
+}
+
+void Enemy::OnLateUpdate(float deltaTime)
+{
+	// F1 で開発用の画面を出しているときだけ（Release では ImGui を起動しないので、見ないで呼ぶと落ちる）。
+	if (DebugUI::IsVisible()) {
+		m_motionEditor.DrawUI();
+	}}
+
+void Enemy::OnPostAnimationPose(Skeleton& skeleton)
+{
+	m_motionEditor.ApplyToSkeleton(skeleton, GetModelRotation(), m_model.GetScale());
 }

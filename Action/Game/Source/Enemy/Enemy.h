@@ -3,6 +3,7 @@
 #include "Character.h"
 #include "BlackKnightInputSource.h"
 #include "EnemyStateMachine.h"
+#include "EnemyMotionEditor.h"
 
 // 敵キャラクター（黒騎士）。
 // 入力元（既定では黒騎士の AI）から CharacterInput を受け取って動くだけで、何をするかは AI が決める。
@@ -43,9 +44,13 @@ protected:
 	}
 	void OnStart() override;
 	void UpdateAction(float deltaTime) override;
+	void OnLateUpdate(float deltaTime) override;
+	void OnPostAnimationPose(Skeleton& skeleton) override;
 
 private:
 	BlackKnightInputSource m_aiInputSource;
 	Status m_status;
 	EnemyStateMachine m_stateMachine;
+	EnemyStateContext m_stateContext;      // モーションを直し終わったときに、ステートマシンを初めからやり直すのに使う
+	EnemyMotionEditor m_motionEditor;      // F1 の開発用の画面で、モーションを直す
 };

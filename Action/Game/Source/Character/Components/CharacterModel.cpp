@@ -30,6 +30,7 @@ void CharacterModel::Init(const CharacterModelDesc& desc)
 
 	const int numClips = static_cast<int>(desc.clips.size());
 	m_animClips = std::make_unique<AnimationClip[]>(numClips);
+	m_numClips = numClips;
 
 	// FBX のアニメーションをリターゲットするにはモデルのスケルトン(.tks)が要る。
 	// .tks は FBX→tkm 変換で作られるので、ModelRender::Init より前に変換だけ済ませておく。

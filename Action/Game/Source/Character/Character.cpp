@@ -21,13 +21,16 @@ bool Character::Start()
 	m_bodyLean.Init(config.lean);
 	m_springBones.Init(m_model.GetModelRender(), config.springBones);
 	m_bodyLink.Init(m_model.GetModelRender(), config.bodyLink);
-	// アニメーションの姿勢ができたあとに、体の連動 → 揺れ物の順に手を加える（揺れ物は連動した体の動きに遅れて付いてくる）。
-	if (m_bodyLink.IsActive() || m_springBones.IsActive()) {
-		m_model.GetModelRender().GetSkeleton().SetOnPostUpdateWorldMatrix([this](Skeleton& skeleton) {
+	// アニメーションの姿勢ができたあとに、派生クラス → 体の連動 → 揺れ物の順に手を加える（揺れ物は連動した体の動きに遅れて付いてくる）。
+	m_model.GetModelRender().GetSkeleton().SetOnPostUpdateWorldMatrix([this](Skeleton& skeleton) {
+		OnPostAnimationPose(skeleton);
+		if (m_bodyLink.IsActive()) {
 			m_bodyLink.Update(skeleton);
+		}
+		if (m_springBones.IsActive()) {
 			m_springBones.Update(skeleton);
-		});
-	}
+		}
+	});
 
 	m_statusEffects.Init(&m_model.GetModelRender());
 
@@ -63,6 +66,7 @@ void Character::Update()
 	// 向きは、本当の向きへ少しずつ回る見た目の向きを使う。
 	const Quaternion modelRotation = m_bodyLean.Update(m_transform.position, m_mover.GetVisualRotation(), deltaTime);
 	m_model.SetTransform(m_transform.position, modelRotation);
+	m_modelRotation = modelRotation;
 	m_bodyLink.SetRotation(modelRotation);
 	// 走っている度合い（歩く速さで 0、走る速さで 1）。走っているときだけ効かせる調整に使う。
 	{

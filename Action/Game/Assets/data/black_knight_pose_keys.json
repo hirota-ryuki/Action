@@ -1,0 +1,4 @@
+{
+  "comment": "黒騎士のモーションに足す関節と剣の角度。F1 の開発用の画面（黒騎士のモーション）で打つ。決まりは Game/Source/Enemy/EnemyPoseKeys.h、FBX への焼き込みは tools/BlenderScripts/retarget_black_knight.py",
+  "clips": {}
+}

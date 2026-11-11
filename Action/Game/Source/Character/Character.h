@@ -103,6 +103,15 @@ protected:
 	virtual void OnLateUpdate(float deltaTime)
 	{
 	}
+	// アニメーションの姿勢ができた直後（体の連動・揺れ物より前）。骨の向きに手を加えるときに書く。
+	virtual void OnPostAnimationPose(Skeleton& skeleton)
+	{
+	}
+	// モデルの向き（体を傾けたあとの見た目の向き）。OnPostAnimationPose で体の前を知るのに使う。
+	const Quaternion& GetModelRotation() const
+	{
+		return m_modelRotation;
+	}
 	// 体を描いたあと、自分だけのものを描く。
 	virtual void OnRender(RenderContext& rc)
 	{
@@ -134,6 +143,7 @@ private:
 	SpringBones m_springBones;
 	BodyLink m_bodyLink;
 	IInputSource* m_inputSource = nullptr;  // nullptr なら GetDefaultInputSource()。
+	Quaternion m_modelRotation = Quaternion::Identity;
 	Faction m_faction = Faction::Neutral;
 	bool m_isRenderBody = true;
 };

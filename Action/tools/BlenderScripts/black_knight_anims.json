@@ -2,6 +2,7 @@
   "anim_dir": ["D:/04_dawnload/BlackKnightAnim", "C:/00_MyData/04_dawnload/BlackKnightAnim"],
   "target":"../../Game/Assets/modelData/enemy/BlackKnight/BlackKnight.fbx",
   "out_dir": "../../Game/Assets/modelData/enemy/BlackKnight/Animation",
+  "pose_keys": "../../Game/Assets/data/black_knight_pose_keys.json",
   "grip": {
     "fbx": "{anim_dir}/extracted/Animations/Masked Poses/Human@ObjectGripHands01.fbx",
     "bones": ["B-indexFinger01.R", "B-indexFinger02.R", "B-indexFinger03.R",

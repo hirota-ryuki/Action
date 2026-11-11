@@ -55,9 +55,24 @@ public:
 	{
 		return m_modelRender;
 	}
+	// クリップの長さ（秒）。最後のキーフレームの時間。
+	float GetClipLength(int animClip) const
+	{
+		if (animClip < 0 || animClip >= m_numClips) {
+			return 0.0f;
+		}
+		const auto& keys = m_animClips[animClip].GetTopBoneKeyFrameList();
+		return keys.empty() ? 0.0f : keys.back()->time;
+	}
+	// Init で指定した大きさ。
+	float GetScale() const
+	{
+		return m_scale.x;
+	}
 
 private:
 	std::unique_ptr<AnimationClip[]> m_animClips;  // ModelRender が指し続けるので、Init 後は動かさない。
+	int m_numClips = 0;
 	ModelRender m_modelRender;
 	Vector3 m_scale = Vector3::One;
 };
