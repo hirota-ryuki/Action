@@ -524,6 +524,8 @@ def secondary(frames_basis, hips_world, loop):
             return (b - a) / (2 * dt)
         a, b = vals[max(f - 1, 0)], vals[min(f + 1, n - 1)]
         span = (min(f + 1, n - 1) - max(f - 1, 0)) * dt
+        if span <= 0:
+            return b - a   # 1コマしかない（ポーズだけ）。動いていないので 0
         return (b - a) / span
 
     hips_v = [deriv(hips_world, f) for f in range(n)]
@@ -882,10 +884,23 @@ os.makedirs(OUT_DIR, exist_ok=True)
 if PREVIEW_DIR:
     os.makedirs(PREVIEW_DIR, exist_ok=True)
 only = argv[argv.index("--only") + 1].split(",") if "--only" in argv else None
+FAILED = []
 for clip in CONFIG["clips"]:
     if only and clip["name"] not in only:
         continue
-    act, length = bake(clip)
+    if "--keep-going" in argv:
+        # 見本帳のように数が多いときは、1本失敗しても残りを続ける（失敗したものは最後にまとめて出す）
+        try:
+            act, length = bake(clip)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            FAILED.append(clip["name"])
+            continue
+    else:
+        act, length = bake(clip)
     export(os.path.join(OUT_DIR, clip["name"] + ".fbx"))
     if PREVIEW_DIR:
         render_preview(clip["name"], act, length)
+if FAILED:
+    print("FAILED", ",".join(FAILED))
