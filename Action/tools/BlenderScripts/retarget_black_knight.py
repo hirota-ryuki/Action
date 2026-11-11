@@ -5,6 +5,9 @@
 #           [--views 90,30] [--count 6] [--only 名前,名前]
 #
 # 設定（black_knight_anims.json）
+#   anim_dir  元のモーションを置いたフォルダの候補（PC ごとに置き場所が違うので並べる）。あるものの最初を使い、
+#             パスの {anim_dir} をそれに置き換える。中は extracted（Human Melee Animations FREE を展開したもの）と
+#             basic（Human Basic Motions FREE を展開したもの）。どちらも Kevin Iglesias の無料パック
 #   target    書き出す骨格とメッシュ（BlackKnight.fbx）
 #   out_dir   書き出すフォルダ。<out_dir>/<name>.fbx に書く
 #   grip      {"fbx": 手のポーズの FBX, "bones": [右手の指の骨, ...]}。全部のクリップで、剣を持つ右手の指をこのポーズにする
@@ -50,9 +53,15 @@ PREVIEW_FOCUS = argv[argv.index("--focus") + 1] if "--focus" in argv else None
 with open(CONFIG_PATH, encoding="utf-8") as fp:
     CONFIG = json.load(fp)
 BASE = os.path.dirname(CONFIG_PATH)
+ANIM_DIRS = CONFIG.get("anim_dir", [])
+ANIM_DIR = next((d for d in ANIM_DIRS if os.path.isdir(d)), None)
 
 
 def resolve(p):
+    if "{anim_dir}" in p:
+        if ANIM_DIR is None:
+            raise FileNotFoundError(f"元のモーションのフォルダが見つかりません。anim_dir の候補: {ANIM_DIRS}")
+        p = p.replace("{anim_dir}", ANIM_DIR)
     return p if os.path.isabs(p) else os.path.normpath(os.path.join(BASE, p))
 
 
