@@ -9,6 +9,9 @@
 #include "BulletBase.h"
 #include "BurningGround.h"
 #include "UIManager.h"
+#include "ItemManager.h"
+#include "ItemConfig.h"
+#include "Potion.h"
 
 namespace
 {
@@ -31,6 +34,8 @@ Game::~Game()
 {
 	// UI はキャラクターを読んでいるので、キャラクターより先に消す。
 	DeleteGO(m_uiManager);
+	// 落ちているアイテムは ItemManager が消す。
+	DeleteGO(m_itemManager);
 	DeleteGO(m_stage);
 	DeleteGO(m_player);
 	DeleteGO(m_enemy);
@@ -68,6 +73,12 @@ bool Game::Start()
 	m_stage = NewGO<Stage>(0, "stage");
 	m_player = NewGO<Player>(1, "player");
 	m_player->SetPosition(PLAYER_START_POSITION);
+	// 落ちているアイテム。Player が拾えるように、Player に渡す。
+	m_itemManager = NewGO<ItemManager>(1, "itemManager");
+	for (const Vector3& position : ItemConfig::MakePotionSpawnPositions()) {
+		m_itemManager->Spawn<Potion>(position);
+	}
+	m_player->SetItemManager(m_itemManager);
 	m_enemy = NewGO<Enemy>(1, "enemy");
 	m_enemy->SetPosition(ENEMY_START_POSITION);
 	m_gameCamera = NewGO<GameCamera>(2, "gameCamera");

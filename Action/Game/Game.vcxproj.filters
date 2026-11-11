@@ -34,6 +34,9 @@
     <Filter Include="Source\Magic">
       <UniqueIdentifier>{9e3a7c51-2f4d-4b8a-a6c1-7d0e5f9b3a28}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Item">
+      <UniqueIdentifier>{7c1e5a3b-2f4d-4e8a-9b6c-1d2e3f4a5b6c}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\Objects">
       <UniqueIdentifier>{746964ec-ae1f-418c-a97c-a9ef78aaab8e}</UniqueIdentifier>
     </Filter>
@@ -146,6 +149,27 @@
     </ClCompile>
     <ClCompile Include="Source\Player\State\PlayerDashState.cpp">
       <Filter>Source\Player\State</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Item\Item.cpp">
+      <Filter>Source\Item</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Item\Potion.cpp">
+      <Filter>Source\Item</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Item\ItemManager.cpp">
+      <Filter>Source\Item</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Item\ItemConfig.cpp">
+      <Filter>Source\Item</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Player\ItemPicker.cpp">
+      <Filter>Source\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Player\State\PlayerDrinkState.cpp">
+      <Filter>Source\Player\State</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\UI\Hud\PickupHud.cpp">
+      <Filter>Source\UI\Hud</Filter>
     </ClCompile>
     <ClCompile Include="Source\Player\State\PlayerStopState.cpp">
       <Filter>Source\Player\State</Filter>
@@ -364,6 +388,27 @@
     </ClInclude>
     <ClInclude Include="Source\Player\State\PlayerDashState.h">
       <Filter>Source\Player\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Item\Item.h">
+      <Filter>Source\Item</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Item\Potion.h">
+      <Filter>Source\Item</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Item\ItemManager.h">
+      <Filter>Source\Item</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Item\ItemConfig.h">
+      <Filter>Source\Item</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Player\ItemPicker.h">
+      <Filter>Source\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Player\State\PlayerDrinkState.h">
+      <Filter>Source\Player\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\UI\Hud\PickupHud.h">
+      <Filter>Source\UI\Hud</Filter>
     </ClInclude>
     <ClInclude Include="Source\Player\State\PlayerStopState.h">
       <Filter>Source\Player\State</Filter>

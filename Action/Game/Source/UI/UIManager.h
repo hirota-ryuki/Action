@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "PlayerHud.h"
+#include "PickupHud.h"
 #include "BossHud.h"
 #include "DebugHud.h"
 
@@ -21,6 +22,7 @@ public:
 	void SetPlayer(const Player* player)
 	{
 		m_playerHud.SetTarget(player);
+		m_pickupHud.SetTarget(player);
 	}
 	// ボスの HPバーを出す。ボスを DeleteGO する前に、必ず HideBoss() を呼ぶ。
 	void ShowBoss(const Character* boss, const wchar_t* name)
@@ -34,6 +36,7 @@ public:
 
 private:
 	PlayerHud m_playerHud;
+	PickupHud m_pickupHud;  // 拾えるアイテムの一覧。
 	BossHud m_bossHud;
 	DebugHud m_debugHud;  // 開発用の表示（FPS）。いちばん上に描く。
 };

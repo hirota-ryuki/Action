@@ -29,6 +29,8 @@ struct CharacterInput
 	ButtonState dash;
 	ButtonState fire;                       // 選んでいる魔法を撃つ。
 	ButtonState subFire;                    // サブの魔法（MagicCaster::SetSubMagic）を撃つ。
+	ButtonState interact;                   // 落ちているアイテムを拾う。
+	ButtonState useItem;                    // 持っているポーションを飲む。
 	int magicSwitch = 0;                    // -1: 前の魔法へ、+1: 次の魔法へ、0: 切り替えない。
 	bool hasAim = false;                    // true なら aimOrigin/aimDirection の方向へ撃つ。false ならキャラクターの正面へ撃つ。
 	Vector3 aimOrigin = Vector3::Zero;

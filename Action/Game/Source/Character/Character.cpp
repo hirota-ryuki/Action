@@ -54,7 +54,7 @@ void Character::Update()
 	// ③ 動く（派生クラス）
 	UpdateAction(deltaTime);
 	// ④ 魔法（動いたあとの位置から撃つ）
-	m_magicCaster.Update(m_input, m_mover.GetPosition(), m_mover.GetForward(), deltaTime, m_statusEffects.CanAct());
+	m_magicCaster.Update(m_input, m_mover.GetPosition(), m_mover.GetForward(), deltaTime, m_statusEffects.CanAct() && CanUseMagic());
 	// ⑤ Transform に反映
 	SyncTransform();
 	// ⑥ 当たり判定・モデルを合わせる

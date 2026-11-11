@@ -4,7 +4,7 @@
 #include "StateMachine.h"
 
 // プレイヤーのステートマシン。切り替えの手順と凍結の扱いは共通の StateMachine にある。
-// ここでは7つのステートを登録し、Player だけの前処理を書く。
+// ここでは8つのステートを登録し、Player だけの前処理を書く。
 class PlayerStateMachine : public StateMachine<PlayerStateId, PlayerStateContext>
 {
 public:

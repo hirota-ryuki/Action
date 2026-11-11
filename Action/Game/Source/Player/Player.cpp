@@ -3,6 +3,7 @@
 #include "PlayerConfig.h"
 #include "IceMagic.h"
 #include "FireMagic.h"
+#include "ItemConfig.h"
 #include <imgui/imgui.h>
 
 Player::Player()
@@ -24,7 +25,12 @@ void Player::OnStart()
 	stateContext.mover = &m_mover;
 	stateContext.animator = &m_animator;
 	stateContext.statusEffects = &m_statusEffects;
+	stateContext.status = &m_status;
+	stateContext.picker = &m_itemPicker;
 	stateContext.settings = PlayerConfig::MakeStateSettings();
+	stateContext.itemSettings = ItemConfig::MakePlayerItemSettings();
+	m_itemPicker.SetRadius(stateContext.itemSettings.pickupRadius);
+	m_status.SetPotionCount(stateContext.itemSettings.potionStartCount);
 	m_animator.Init(&m_model.GetModelRender(), stateContext.settings.animBlendSeconds);
 	m_stateMachine.Init(stateContext);  // Idle から始める。
 
@@ -39,6 +45,8 @@ void Player::FillInputContext(InputSourceContext& context) const
 
 void Player::UpdateAction(float deltaTime)
 {
+	// 拾えるアイテムを探し直してから、ステートを動かす（ステートが拾うかどうかを決める）。
+	m_itemPicker.Update(m_mover.GetPosition());
 	// 移動とアニメーションはステートが行う。凍結中は Frozen ステートになり、重力で落ちるだけになる。
 	m_stateMachine.Update(m_input, deltaTime);
 	if (m_fallRespawn.IsFallen(m_mover.GetPosition())) {
@@ -88,6 +96,12 @@ void Player::UpdateDebugUI()
 void Player::OnRender(RenderContext& rc)
 {
 	m_sword.Draw(rc);
+}
+
+bool Player::CanUseMagic() const
+{
+	// ポーションを飲んだあとの硬直の間は撃てない。
+	return m_stateMachine.GetCurrentId() != PlayerStateId::Drink;
 }
 
 void Player::Respawn()

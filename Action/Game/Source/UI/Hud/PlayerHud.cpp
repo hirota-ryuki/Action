@@ -30,6 +30,21 @@ namespace
 	constexpr float ICON_GAP = 10.0f;
 	const Vector4 FROZEN_COLOR = { 0.4f, 0.85f, 1.0f, 1.0f };
 	const Vector4 BURNING_COLOR = { 1.0f, 0.45f, 0.1f, 1.0f };
+
+	// ポーション。画面の右下に、絵と、その右下に数を出す。
+	constexpr const char* POTION_ICON_PATH = "Assets/sprite/item/potion.dds";
+	constexpr float POTION_ICON_SIZE = 80.0f;
+	constexpr float POTION_RIGHT = 140.0f;   // 画面の右端から、絵の中央までの距離。
+	constexpr float POTION_BOTTOM = 90.0f;   // 画面の下端から、絵の中央までの高さ。
+	const Vector2 POTION_POSITION = {
+		static_cast<float>(UI_SPACE_WIDTH) * 0.5f - POTION_RIGHT,
+		-static_cast<float>(UI_SPACE_HEIGHT) * 0.5f + POTION_BOTTOM };
+	const Vector2 POTION_COUNT_OFFSET = { 34.0f, -26.0f };  // 絵の中央から、数の左端・中央まで。
+	constexpr float POTION_COUNT_SCALE = 0.6f;
+	const Vector4 POTION_EMPTY_COLOR = { 0.35f, 0.35f, 0.35f, 0.8f };  // 0 個のとき。
+	const Vector4 POTION_EMPTY_TEXT_COLOR = { 0.6f, 0.6f, 0.6f, 0.9f };
+	constexpr float POTION_POP_SECONDS = 0.2f;  // 拾ったときに大きくして戻すまでの秒数。
+	constexpr float POTION_POP_SCALE = 1.3f;    // 拾った瞬間の大きさ。
 }
 
 void PlayerHud::Init()
@@ -63,6 +78,13 @@ void PlayerHud::Init()
 	m_burning.Init(UISprite::WHITE_PATH, ICON_SIZE, ICON_SIZE);
 	m_burning.SetColor(BURNING_COLOR);
 	m_burning.SetPosition({ burningX, iconY });
+
+	m_potionIcon.Init(POTION_ICON_PATH, POTION_ICON_SIZE, POTION_ICON_SIZE);
+	m_potionIcon.SetPosition(POTION_POSITION);
+	m_potionCount.SetPosition({ POTION_POSITION.x + POTION_COUNT_OFFSET.x, POTION_POSITION.y + POTION_COUNT_OFFSET.y });
+	m_potionCount.SetAlign(Text::Align::Left);
+	m_potionCount.SetScale(POTION_COUNT_SCALE);
+	m_potionCount.SetShadow(NUMBER_SHADOW_OFFSET, NUMBER_SHADOW_COLOR);
 }
 
 void PlayerHud::Update(float deltaTime)
@@ -84,10 +106,33 @@ void PlayerHud::Update(float deltaTime)
 	m_frozen.SetVisible(effects.IsFrozen());
 	m_burning.SetVisible(effects.IsBurning());
 
+	UpdatePotion(status.GetPotionCount(), deltaTime);
+
 	m_hp.Update(deltaTime);
 	m_hpNumber.Update(deltaTime);
 	m_frozen.Update(deltaTime);
 	m_burning.Update(deltaTime);
+	m_potionIcon.Update(deltaTime);
+	m_potionCount.Update(deltaTime);
+}
+
+void PlayerHud::UpdatePotion(int count, float deltaTime)
+{
+	// 増えたら（拾ったら）一瞬大きくして、POTION_POP_SECONDS かけて戻す。最初のフレームは比べない。
+	if (m_lastPotionCount >= 0 && count > m_lastPotionCount) {
+		m_potionPopSeconds = POTION_POP_SECONDS;
+	}
+	m_lastPotionCount = count;
+	m_potionPopSeconds = max(0.0f, m_potionPopSeconds - deltaTime);
+	const float pop = m_potionPopSeconds / POTION_POP_SECONDS;
+	m_potionIcon.SetScale(1.0f + (POTION_POP_SCALE - 1.0f) * pop);
+
+	wchar_t text[32];
+	swprintf_s(text, L"x%d", count);
+	m_potionCount.SetText(text);
+	const bool isEmpty = count <= 0;
+	m_potionIcon.SetColor(isEmpty ? POTION_EMPTY_COLOR : g_vec4White);
+	m_potionCount.SetColor(isEmpty ? POTION_EMPTY_TEXT_COLOR : NUMBER_COLOR);
 }
 
 void PlayerHud::Draw(RenderContext& rc)
@@ -99,4 +144,6 @@ void PlayerHud::Draw(RenderContext& rc)
 	m_hpNumber.Draw(rc);
 	m_frozen.Draw(rc);
 	m_burning.Draw(rc);
+	m_potionIcon.Draw(rc);
+	m_potionCount.Draw(rc);
 }

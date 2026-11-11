@@ -7,6 +7,7 @@
 #include "PlayerDashState.h"
 #include "PlayerStopState.h"
 #include "PlayerFrozenState.h"
+#include "PlayerDrinkState.h"
 
 PlayerStateMachine::PlayerStateMachine()
 {
@@ -17,6 +18,7 @@ PlayerStateMachine::PlayerStateMachine()
 	Register<PlayerDashState>();
 	Register<PlayerStopState>();
 	Register<PlayerFrozenState>();
+	Register<PlayerDrinkState>();
 }
 
 void PlayerStateMachine::OnBeforeUpdate(PlayerStateContext& context, const CharacterInput& input)

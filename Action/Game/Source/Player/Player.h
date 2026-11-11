@@ -7,11 +7,14 @@
 #include "PlayerStateMachine.h"
 #include "WeaponAttachment.h"
 #include "FallRespawn.h"
+#include "ItemPicker.h"
+
+class ItemManager;
 
 // プレイヤーキャラクター。
 // 共通の部品と1フレームの順番は Character にある。ここでは Player だけの部品を組み立て、「動く」部分を書く。
 //   動く: 立ち止まる・歩く・走る・空中・ダッシュ・凍結の切り替えは PlayerStateMachine（ステートパターン）
-//   アニメーション: PlayerAnimator、剣: WeaponAttachment、落下: FallRespawn
+//   アニメーション: PlayerAnimator、剣: WeaponAttachment、落下: FallRespawn、拾えるアイテムの一覧: ItemPicker
 // 調整値は PlayerConfig にある。
 class Player : public Character
 {
@@ -35,6 +38,16 @@ public:
 	{
 		return m_stateMachine.GetCurrentName();
 	}
+	// 落ちているアイテムを持つ ItemManager。Game が渡す。渡すまでは何も拾えない。
+	void SetItemManager(ItemManager* manager)
+	{
+		m_itemPicker.SetManager(manager);
+	}
+	// 拾えるアイテムの一覧。UI（PickupHud）が読む。
+	const ItemPicker& GetItemPicker() const
+	{
+		return m_itemPicker;
+	}
 
 protected:
 	CharacterConfig MakeConfig() const override;
@@ -47,6 +60,7 @@ protected:
 	void UpdateAction(float deltaTime) override;
 	void OnLateUpdate(float deltaTime) override;
 	void OnRender(RenderContext& rc) override;
+	bool CanUseMagic() const override;
 
 private:
 	void Respawn();
@@ -59,4 +73,5 @@ private:
 	PlayerStateMachine m_stateMachine;
 	WeaponAttachment m_sword;
 	FallRespawn m_fallRespawn;
+	ItemPicker m_itemPicker;
 };

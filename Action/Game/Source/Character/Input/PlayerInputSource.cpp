@@ -33,6 +33,10 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	// パッド未接続時は右トリガー(RB2)が8キーに割り当てられている。
 	input.subFire.Update((CanUseMouse() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
 
+	// アイテムを拾う（F）・ポーションを飲む（R）。パッドの割り当てはまだない。
+	input.interact.Update(IsKeyPressed('F'));
+	input.useItem.Update(IsKeyPressed('R'));
+
 	m_prevMagicKey.Update(IsKeyPressed('Q'));
 	m_nextMagicKey.Update(IsKeyPressed('E'));
 	input.magicSwitch = 0;

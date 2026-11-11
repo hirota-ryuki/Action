@@ -107,6 +107,11 @@ protected:
 	virtual void OnRender(RenderContext& rc)
 	{
 	}
+	// 魔法を撃ってよいか。凍結中かどうかは別に見るので、ここでは派生クラスだけの理由（飲んでいる間など）を返す。
+	virtual bool CanUseMagic() const
+	{
+		return true;
+	}
 	// 体の連動の調整値。開発用の画面（ImGui）で変えるときに使う。
 	BodyLinkSettings& GetBodyLinkSettings()
 	{

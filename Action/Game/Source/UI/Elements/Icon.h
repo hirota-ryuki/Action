@@ -12,6 +12,11 @@ public:
 	{
 		m_color = color;
 	}
+	// Init の大きさに掛ける倍率。拾ったときに一瞬大きくする、などに使う。
+	void SetScale(float scale)
+	{
+		m_scale = scale;
+	}
 
 	void Update(float deltaTime) override;
 
@@ -21,4 +26,5 @@ protected:
 private:
 	SpriteRender m_sprite;
 	Vector4 m_color = g_vec4White;
+	float m_scale = 1.0f;
 };

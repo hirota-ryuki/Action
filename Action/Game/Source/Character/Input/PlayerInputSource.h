@@ -12,6 +12,8 @@
 //   ダッシュ    Xボタン / L
 //   発射        マウス左ボタン / Yボタン / I
 //   魔法切替    LB・RB / Q・E
+//   拾う        F
+//   飲む        R
 class PlayerInputSource : public IInputSource
 {
 public:

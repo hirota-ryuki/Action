@@ -5,6 +5,8 @@
 
 class CharacterMover;
 class StatusEffects;
+class PlayerStatus;
+class ItemPicker;
 struct CharacterInput;
 
 // プレイヤーのステートの種類。
@@ -17,6 +19,7 @@ enum class PlayerStateId
 	Dash,    // ダッシュ中（決まった距離を一気に進む）
 	Stop,    // 走っていて入力を離した。勢いで滑りながら踏ん張って止まる
 	Frozen,  // 凍結などで行動できない
+	Drink,   // ポーションを飲んだあとの硬直（ゆっくり歩ける）
 	Num,
 };
 
@@ -62,18 +65,37 @@ struct PlayerStateSettings
 	float walkAnimMoveSpeed = 0.0f;   // 歩くアニメーションを等速で再生したとき、足が地面を送る速さ。0なら等速で再生する。
 };
 
+// アイテムを拾う・飲むときの数値。item.json から読む（ItemConfig）。
+struct PlayerItemSettings
+{
+	float pickupRadius = 150.0f;            // 足元からこの距離以内のアイテムを拾える。
+	float pickupHoldDelaySeconds = 0.3f;    // 拾うボタンを押し続けて、この秒数たったら、まとめて拾い始める。
+	float pickupHoldIntervalSeconds = 0.05f; // まとめて拾うときに、1つ拾う間隔（秒）。
+	int potionStartCount = 2;               // 始めに持っているポーションの数。
+	float potionHealAmount = 30.0f;         // ポーション1つで回復する HP。
+	float drinkSeconds = 0.6f;              // 飲んだあとの硬直の長さ（秒）。
+	float drinkMoveSpeedRate = 0.5f;        // 硬直の間に歩ける速さ（歩く速さに掛ける）。
+};
+
 // ステートが触ってよいもの。ステートは Player クラスを直接は知らない。
 struct PlayerStateContext
 {
 	CharacterMover* mover = nullptr;
 	PlayerAnimator* animator = nullptr;
 	const StatusEffects* statusEffects = nullptr;
+	PlayerStatus* status = nullptr;  // ポーションの数と HP。
+	ItemPicker* picker = nullptr;    // 拾えるアイテムの一覧。
 	PlayerStateSettings settings;
+	PlayerItemSettings itemSettings;
 	// ひとつ前のステート。Enter の中で、どこから来たかを見るのに使う。StateMachine が入れる。
 	PlayerStateId previousId = PlayerStateId::Idle;
 	// ダッシュのあと、移動の入力を離すまで走り続ける（走るボタンを押していなくても Run）。
 	// Dash が立て（dashKeepRun のとき）、PlayerStateMachine が移動の入力がないフレームで下ろす。
 	bool keepRunAfterDash = false;
+	// 拾うボタンを押し続けている秒数と、次に拾う秒数。地上のステート（PlayerGroundState::UpdatePickUp）が使う。
+	// ステートが Idle・Walk・Run と入れ替わっても続けて数えるので、ステートではなくここに持つ。
+	float pickupHoldSeconds = 0.0f;
+	float nextPickupSeconds = 0.0f;
 };
 
 // プレイヤーのステートの基底クラス。中身は共通の State（Character/StateMachine/State.h）にある。
