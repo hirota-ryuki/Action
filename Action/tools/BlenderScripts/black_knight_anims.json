@@ -51,26 +51,22 @@
     },
     {
       "name": "Attack1",
-      "comment": "突進して突き（槍の突き。左腕は立ち姿の形にして片手にする）→ 回転斬り（片手剣の斬りに、体ごと1回転を足す）",
+      "comment": "槍の突き（左腕は立ち姿の形にして片手にする）。構え（1〜9コマ目）は外し、突いて構えに戻るまで",
       "segments": [
         {
-          "source": "{anim_dir}/extracted/Animations/Male/Combat/Polearm/HumanM@AttackPolearm01.fbx", "rig": "kevin", "frames": [1, 24],
+          "source": "{anim_dir}/extracted/Animations/Male/Combat/Polearm/HumanM@AttackPolearm01.fbx", "rig": "kevin", "frames": [10, 42],
           "mask": {"fbx": "{anim_dir}/extracted/Animations/Male/Idles/HumanM@Idle01.fbx", "bones": ["B-shoulder.L", "B-upperArm.L", "B-forearm.L", "B-hand.L", "B-handProp.L",
                   "B-indexFinger01.L", "B-indexFinger02.L", "B-indexFinger03.L",
                   "B-middleFinger01.L", "B-middleFinger02.L", "B-middleFinger03.L",
                   "B-ringFinger01.L", "B-ringFinger02.L", "B-ringFinger03.L",
                   "B-pinky01.L", "B-pinky02.L", "B-pinky03.L",
                   "B-thumb01.L", "B-thumb02.L", "B-thumb03.L"]}
-        },
-        {
-          "source": "{anim_dir}/extracted/Animations/Male/Combat/1H/HumanM@Attack1H01_R.fbx", "rig": "kevin", "frames": [1, 34],
-          "spin": [[3, 0], [22, 360]]
         }
       ]
     },
     {
       "name": "Attack2",
-      "comment": "左上→右下（両手剣の斬り下ろしを左右反転）→ 右上→左下（両手剣の斬り下ろし）→ 横一閃（片手剣の斬りに、右へひねってから左へ回す回転を足す）",
+      "comment": "左上→右下（両手剣の斬り下ろしを左右反転）→ 右上→左下（両手剣の斬り下ろし）→ 横一閃（片手剣の斬り。回転は足さない）",
       "segments": [
         {
           "source": "{anim_dir}/extracted/Animations/Male/Combat/2H/HumanM@Attack2H01.fbx", "rig": "kevin", "mirror": true, "frames": [1, 27],
@@ -91,8 +87,7 @@
                   "B-thumb01.L", "B-thumb02.L", "B-thumb03.L"]}
         },
         {
-          "source": "{anim_dir}/extracted/Animations/Male/Combat/1H/HumanM@Attack1H01_R.fbx", "rig": "kevin", "frames": [1, 34],
-          "spin": [[0, 90], [4, 90], [16, -70], [30, 0]]
+          "source": "{anim_dir}/extracted/Animations/Male/Combat/1H/HumanM@Attack1H01_R.fbx", "rig": "kevin", "frames": [1, 34]
         }
       ]
     },
