@@ -54,6 +54,8 @@ namespace
 		desc.clips[enEnemyAnimClip_Attack1] = { "Assets/modelData/enemy/BlackKnight/Animation/Attack1.fbx", false };
 		desc.clips[enEnemyAnimClip_Attack2] = { "Assets/modelData/enemy/BlackKnight/Animation/Attack2.fbx", false };
 		desc.clips[enEnemyAnimClip_Attack3] = { "Assets/modelData/enemy/BlackKnight/Animation/Attack3.fbx", false };
+		// 見本帳の枠。最初は Idle を入れておき、見本帳でモーションを選んだときに読み直す。
+		desc.clips[enEnemyAnimClip_Catalog] = { "Assets/modelData/enemy/BlackKnight/Animation/Idle.fbx", false };
 		return desc;
 	}
 
@@ -93,6 +95,16 @@ void Enemy::OnStart()
 
 void Enemy::UpdateAction(float deltaTime)
 {
+	// モーションの見本帳（F1 の開発用の画面）。見本を再生している間は AI とステートを止め、その場で立たせる。
+	m_animCatalog.UpdateUI();
+	if (m_animCatalog.IsActive()) {
+		m_mover.Update(CharacterInput(), deltaTime);
+		m_animCatalog.Update(m_model, deltaTime);
+		return;
+	}
+	if (m_animCatalog.ConsumeStopped()) {
+		m_stateMachine.Reset();  // 止めたら Idle から戻す（アニメーションと速さもステートが設定し直す）。
+	}
 	// 移動とアニメーションはステートが行う。凍結中は Frozen ステートになり、重力で落ちるだけになる。
 	// PLAY_SPEED を掛けて、移動・攻撃の時間（突進・斬撃を出すとき）もアニメーションと同じだけ遅くする。
 	m_stateMachine.Update(m_input, deltaTime * PLAY_SPEED);

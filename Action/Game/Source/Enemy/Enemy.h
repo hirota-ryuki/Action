@@ -3,6 +3,7 @@
 #include "Character.h"
 #include "BlackKnightInputSource.h"
 #include "EnemyStateMachine.h"
+#include "EnemyAnimCatalog.h"
 
 // 敵キャラクター（黒騎士）。
 // 入力元（既定では黒騎士の AI）から CharacterInput を受け取って動くだけで、何をするかは AI が決める。
@@ -48,4 +49,5 @@ private:
 	BlackKnightInputSource m_aiInputSource;
 	Status m_status;
 	EnemyStateMachine m_stateMachine;
+	EnemyAnimCatalog m_animCatalog;
 };

@@ -12,7 +12,9 @@
 #   clips     書き出すクリップの一覧。1つずつ次を書く
 #     name     書き出す名前
 #     source   元のモーションの FBX
-#     rig      元の骨格の種類。"kevin"（Kevin Iglesias の B-hips 式）、"mixamo"（mixamorig: 式）、"vrm"（J_Bip_ 式）
+#     rig      元の骨格の種類。"kevin"（Kevin Iglesias の B-hips 式）、"mixamo"（mixamorig: 式。Meshy の Mixamo テンプレートも）、
+#              "ue4"（UE4 のマネキンの pelvis・spine_01 式。SnSAnimsetPro など）、"vrm"（J_Bip_ 式）
+#              元が 30fps でないとき（SnSAnimsetPro は 60fps）は、30fps に間引いて読む
 #     loop     ループするか（true なら最後のコマを最初のコマと同じにする）
 #     rest     T ポーズを読む、元と同じ骨格のモデルの FBX（省くと source の中の初期の姿勢を使う）
 #     frames   使うコマの範囲 [最初, 最後]（元の FBX のコマ番号。省くと全部）
@@ -161,6 +163,25 @@ def mixamo_map():
     return m
 
 
+def ue4_map():
+    """UE4 のマネキン（pelvis・spine_01 式。SnSAnimsetPro など）。twist の骨と ik_ の骨は使わない。"""
+    m = {
+        C("Hips"): "pelvis", C("Spine"): "spine_01", C("Chest"): "spine_02", C("UpperChest"): "spine_03",
+        C("Neck"): "neck_01", C("Head"): "head",
+    }
+    for s, k in (("L", "l"), ("R", "r")):
+        m.update({
+            S(s, "Shoulder"): f"clavicle_{k}", S(s, "UpperArm"): f"upperarm_{k}",
+            S(s, "LowerArm"): f"lowerarm_{k}", S(s, "Hand"): f"hand_{k}",
+            S(s, "UpperLeg"): f"thigh_{k}", S(s, "LowerLeg"): f"calf_{k}",
+            S(s, "Foot"): f"foot_{k}", S(s, "ToeBase"): f"ball_{k}",
+        })
+        for vrm, ue in (("Index", "index"), ("Middle", "middle"), ("Ring", "ring"), ("Little", "pinky"), ("Thumb", "thumb")):
+            for i in (1, 2, 3):
+                m[S(s, f"{vrm}{i}")] = f"{ue}_0{i}_{k}"
+    return m
+
+
 def vrm_map(src_bones):
     return {b.name: b.name for b in BONES if b.name.startswith("J_Bip_") and b.name in src_bones}
 
@@ -226,14 +247,20 @@ def forward_of(world_rest, foot, toe):
 TGT_REST_W = rest_world(TGT)
 
 
+SRC_FPS = [FPS]
+
+
 def retarget_clip(clip):
     src, act = import_armature(resolve(clip["source"]))
+    SRC_FPS[0] = SCENE.render.fps / SCENE.render.fps_base
     set_action(src, act)
     rig = clip.get("rig", "kevin")
     if rig == "kevin":
         bmap = kevin_map()
     elif rig == "mixamo":
         bmap = mixamo_map()
+    elif rig == "ue4":
+        bmap = ue4_map()
     else:
         bmap = vrm_map({b.name for b in src.data.bones})
     bmap = {t: s for t, s in bmap.items() if t in REST_Q and s in src.data.bones}
@@ -273,6 +300,8 @@ def retarget_clip(clip):
         fs = forward_of(src_rest, "B-foot.L", "B-toe.L")
     elif rig == "mixamo":
         fs = forward_of(src_rest, "mixamorig:LeftFoot", "mixamorig:LeftToeBase")
+    elif rig == "ue4":
+        fs = forward_of(src_rest, "foot_l", "ball_l")
     else:
         fs = forward_of(src_rest, S("L", "Foot"), S("L", "ToeBase"))
     ft = forward_of(TGT_REST_W, S("L", "Foot"), S("L", "ToeBase"))
@@ -282,7 +311,31 @@ def retarget_clip(clip):
     # 黒騎士の骨の初期の向きを、元の初期の骨の向きに合わせたもの（REF）を、元の回転の差で回す。
     rest_q_src = {n: (G @ m.to_quaternion()) for n, m in src_rest.items()}
     REF = {}
+    if rig == "ue4":
+        # UE の骨は、Blender に読むと骨の Y 軸が骨の向き（次の関節への向き）にならない。
+        # そこで、骨の向きを「次の関節の位置への向き」で合わせる。次の関節が無い骨（頭・つま先・指先）は親と同じだけ回す。
+        A_of = {}
+        for t in ORDER:
+            if t not in bmap:
+                continue
+            s = bmap[t]
+            kids = [c for c in CHILDREN[t] if c in bmap]
+            pref = [c for c in kids if c in (C("Spine"), C("Neck"), S("L", "Middle1"), S("R", "Middle1"))]
+            tc = (pref or kids or [None])[0]
+            if tc is None:
+                p = PARENT[t]
+                while p is not None and p not in A_of:
+                    p = PARENT[p]
+                A = A_of.get(p, Quaternion())
+            else:
+                dt_ = (TGT_REST_W[tc].translation - TGT_REST_W[t].translation).normalized()
+                ds_ = (G @ (src_rest[bmap[tc]].translation - src_rest[s].translation)).normalized()
+                A = dt_.rotation_difference(ds_)
+            A_of[t] = A
+            REF[t] = A @ TGT_REST_W[t].to_quaternion()
     for t, s in bmap.items():
+        if t in REF:
+            continue
         bt, bs = BONES[t], src.data.bones[s]
         dt_ = (TGT_REST_W[t].to_3x3() @ Vector((0, 1, 0))).normalized()
         ds_ = (G @ (src_rest[s].to_3x3() @ Vector((0, 1, 0)))).normalized()
@@ -311,8 +364,17 @@ def retarget_clip(clip):
         return s
 
     f0, f1 = clip.get("frames", [int(act.frame_range[0]), int(act.frame_range[1])])
+    # 元が 30fps でないとき（SnSAnimsetPro は 60fps）は、30fps になるよう間引いて読む。
+    # 読み込むとシーンの fps が元の fps に変わるので、30 に戻しておく（書き出しは 30fps）
+    step = SRC_FPS[0] / FPS
+    SCENE.render.fps, SCENE.render.fps_base = FPS, 1.0
+    src_frames = []
+    f = float(f0)
+    while f <= f1 + 1e-6:
+        src_frames.append(round(f))
+        f += step
     frames_world, hips_world = [], []
-    for f in range(f0, f1 + 1):
+    for f in src_frames:
         basis = read_basis(src, f)
         basis.update(mask_basis)
         pw = posed_world(src, basis)

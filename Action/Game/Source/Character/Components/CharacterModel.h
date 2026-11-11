@@ -50,6 +50,18 @@ public:
 		return m_modelRender.IsPlayingAnimation();
 	}
 
+	// animClip 番の枠に、別のアニメーション（.tka か .fbx）を読み直す。モーションの見本帳など、開発用。
+	// 読み直した枠は、続けて PlayAnimationAtTime で再生し直すこと（前の再生の途中の状態は使えなくなる）。
+	// 読めなかったら false を返し、枠は前のまま。
+	bool ReloadAnimationClip(int animClip, const std::string& path, bool isLoop);
+	// 指定した時間のポーズで止める（補間なし）。時間は秒。
+	void PlayAnimationAtTime(int animClip, float time)
+	{
+		m_modelRender.PlayAnimationAtTime(animClip, time);
+	}
+	// クリップの長さ（最後のキーフレームの時間。秒）。
+	float GetAnimationClipLength(int animClip) const;
+
 	// アニメーション速度・ボーン・状態異常の色など、ModelRender を直接触る部品向け。
 	ModelRender& GetModelRender()
 	{
@@ -58,6 +70,8 @@ public:
 
 private:
 	std::unique_ptr<AnimationClip[]> m_animClips;  // ModelRender が指し続けるので、Init 後は動かさない。
+	int m_numAnimClips = 0;
+	std::string m_modelPath;                        // FBX のアニメーションを読み直すとき、スケルトン（.tks）を探すのに使う。
 	ModelRender m_modelRender;
 	Vector3 m_scale = Vector3::One;
 };

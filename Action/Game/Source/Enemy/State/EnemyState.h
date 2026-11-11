@@ -16,6 +16,7 @@ enum EnEnemyAnimClip
 	enEnemyAnimClip_Attack1,  // 突進して突き → 回転斬り
 	enEnemyAnimClip_Attack2,  // 左上→右下、右上→左下と斬り下ろし → 横一閃
 	enEnemyAnimClip_Attack3,  // 斜めの斬撃を5つ飛ばす
+	enEnemyAnimClip_Catalog,  // モーションの見本帳（EnemyAnimCatalog）が、選んだモーションを読み直して使う枠
 	enEnemyAnimClip_Num,
 };
 
