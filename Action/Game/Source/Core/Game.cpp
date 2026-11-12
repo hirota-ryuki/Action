@@ -24,9 +24,9 @@ namespace
 
 	// true で、草原の代わりにボス戦の広間（月明かりの玉座の間）を使う。
 	constexpr bool USE_BOSS_STAGE = true;
-	// 広間の光: 青白い月の光を、斜め上（玉座の方の右上）から入れる。
-	const Vector3 BOSS_MOON_DIRECTION = { -0.4f, -1.0f, 0.5f };
-	const Vector3 BOSS_MOON_COLOR = { 0.9f, 1.05f, 1.5f };
+	// 広間の光: 青白い月の光を、玉座の後ろの窓の方の上から入れる（見本の画像のように、玉座を逆光にする）。
+	const Vector3 BOSS_MOON_DIRECTION = { 0.35f, -1.0f, -0.45f };
+	const Vector3 BOSS_MOON_COLOR = { 0.8f, 1.0f, 1.9f };
 	constexpr float BOSS_SKY_LUMINANCE = 0.6f;
 	constexpr float BOSS_IBL_LUMINANCE = 0.08f;
 	// 露出は画面の平均の明るさに合わせて自動で変わる。暗い広間を昼のように持ち上げないよう、中間の明るさを下げる（ふつうは 0.18）。
