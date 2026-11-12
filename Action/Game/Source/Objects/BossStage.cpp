@@ -43,7 +43,7 @@ namespace
 	constexpr float SIDE_WINDOW_LIGHT_X = 1150.0f;
 	constexpr float SIDE_WINDOW_LIGHT_HEIGHT = 700.0f;
 	const float WINDOW_ZS[] = { -1400.0f, -600.0f, 200.0f, 1000.0f, 1800.0f };
-	const Vector3 SIDE_WINDOW_LIGHT_COLOR = { 0.35f, 0.5f, 1.6f };
+	const Vector3 SIDE_WINDOW_LIGHT_COLOR = { 0.2f, 0.3f, 0.9f };
 	constexpr float SIDE_WINDOW_LIGHT_RANGE = 900.0f;
 
 	// ---- 光の筋（ボリュームスポットライト） ----
@@ -68,12 +68,12 @@ namespace
 	// ---- 通り道の両側の紫の光る帯 ----
 	// 帯（make_boss_stage.py の RUNE_X・RUNE_Z_START・RUNE_Z_END）のすぐ上に、紫の小さなライトを並べて、帯が光って見えるようにする。
 	constexpr float RUNE_X = 560.0f;
-	constexpr float RUNE_LIGHT_HEIGHT = 40.0f;
+	constexpr float RUNE_LIGHT_HEIGHT = 15.0f;   // 低くして、床に丸い光の点が映りにくくする
 	constexpr float RUNE_Z_START = -2200.0f;
 	constexpr float RUNE_Z_END = 1300.0f;
-	constexpr float RUNE_LIGHT_STEP = 350.0f;
-	const Vector3 RUNE_LIGHT_COLOR = { 1.4f, 0.4f, 3.0f };
-	constexpr float RUNE_LIGHT_RANGE = 260.0f;
+	constexpr float RUNE_LIGHT_STEP = 250.0f;
+	const Vector3 RUNE_LIGHT_COLOR = { 0.6f, 0.18f, 1.3f };
+	constexpr float RUNE_LIGHT_RANGE = 180.0f;
 }
 
 BossStage::BossStage()
