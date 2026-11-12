@@ -7,6 +7,7 @@ Blender をウィンドウなしで動かす:
     MESHY_DIR/<部品>/<部品>.fbx と <部品>.png・_metallic.png・_roughness.png・_normal.png
     （Meshy の zip を展開し、ファイル名の頭を部品名にしたもの。リポジトリには入れない）
     Game/Assets/modelData/stage/boss/BossFloor_*.png（make_floor_texture.py で作る）
+    Game/Assets/modelData/stage/boss/BossWall_*.png（make_wall_texture.py で作る）
 
 出力（Game/Assets/modelData/stage/boss/）:
     BossHall.fbx       見た目（部品と床・壁・台座をまとめた1つのモデル）
@@ -83,8 +84,6 @@ RUBBLE = [
     (-9.6, -10.8, 30, 0.8), (9.8, 5.2, 250, 0.9),
 ]
 
-WALL_COLOR = (0.055, 0.060, 0.075)   # 壁の色（sRGB）。灰色がかった青の暗い石
-WALL_SMOOTH = 0.35
 PART_METALLIC_SCALE = 0.6   # Meshy の金属度に掛ける
 PART_SMOOTH_MAX = 0.6       # Meshy のつや（1 - 粗さ）の上限
 
@@ -159,19 +158,6 @@ def part_textures(name, size):
     save_png(alb, paths["albedo"], "sRGB")
     save_png(spec, paths["spec"], "Non-Color")
     nrm[..., 3] = 1.0
-    save_png(nrm, paths["normal"], "Non-Color")
-    return make_material(name, paths["albedo"], paths["spec"], paths["normal"])
-
-
-def flat_textures(name, color_srgb, smooth):
-    """1色のテクスチャ（法線は平ら）。"""
-    n = 16
-    alb = np.ones((n, n, 4), np.float32); alb[..., :3] = color_srgb
-    spec = np.zeros((n, n, 4), np.float32); spec[..., 3] = smooth
-    nrm = np.ones((n, n, 4), np.float32); nrm[..., 0] = 0.5; nrm[..., 1] = 0.5
-    paths = {k: os.path.join(OUT_DIR, f"{name}_{k}.png") for k in ("albedo", "spec", "normal")}
-    save_png(alb, paths["albedo"], "sRGB")
-    save_png(spec, paths["spec"], "Non-Color")
     save_png(nrm, paths["normal"], "Non-Color")
     return make_material(name, paths["albedo"], paths["spec"], paths["normal"])
 
@@ -270,7 +256,11 @@ def build():
         os.path.join(OUT_DIR, "BossFloor_albedo.png"),
         os.path.join(OUT_DIR, "BossFloor_spec.png"),
         os.path.join(OUT_DIR, "BossFloor_normal.png"))
-    wall_mat = flat_textures("BossWall", WALL_COLOR, WALL_SMOOTH)
+    wall_mat = make_material(
+        "BossWall",
+        os.path.join(OUT_DIR, "BossWall_albedo.png"),
+        os.path.join(OUT_DIR, "BossWall_spec.png"),
+        os.path.join(OUT_DIR, "BossWall_normal.png"))
 
     visual, col = [], []
     W, L, T = HALL_HALF_WIDTH, HALL_HALF_LENGTH, WALL_THICKNESS
