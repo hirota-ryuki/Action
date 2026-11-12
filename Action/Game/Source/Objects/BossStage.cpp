@@ -10,17 +10,17 @@ namespace
 	const Vector3 PLAYER_START_POSITION = { 0.0f, 100.0f, -1800.0f };
 	const Vector3 ENEMY_START_POSITION = { 0.0f, 100.0f, 1000.0f };
 
-	// 台座の手前の左右に置く、燭台の代わりの暖かい光。
+	// 燭台のろうそくの暖かい光。燭台の置き場所（make_boss_stage.py の CANDELABRA）と、ろうそくの高さ（約 2.3m）に合わせる。
 	struct LightDesc {
 		Vector3 position;
 		Vector3 color;
 		float range;
 	};
 	const LightDesc LIGHTS[] = {
-		{ { -500.0f, 250.0f, 1200.0f }, { 3.0f, 1.6f, 0.7f }, 900.0f },
-		{ {  500.0f, 250.0f, 1200.0f }, { 3.0f, 1.6f, 0.7f }, 900.0f },
-		{ { -500.0f, 250.0f, -2000.0f }, { 2.0f, 1.1f, 0.5f }, 700.0f },
-		{ {  500.0f, 250.0f, -2000.0f }, { 2.0f, 1.1f, 0.5f }, 700.0f },
+		{ { -450.0f, 230.0f, 1250.0f }, { 3.0f, 1.6f, 0.7f }, 900.0f },
+		{ {  450.0f, 230.0f, 1250.0f }, { 3.0f, 1.6f, 0.7f }, 900.0f },
+		{ { -400.0f, 230.0f, -2100.0f }, { 2.0f, 1.1f, 0.5f }, 700.0f },
+		{ {  400.0f, 230.0f, -2100.0f }, { 2.0f, 1.1f, 0.5f }, 700.0f },
 	};
 	constexpr float LIGHT_AFFECT_POW = 2.0f;
 }

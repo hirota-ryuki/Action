@@ -41,12 +41,16 @@ WALL_HEIGHT = 12.0
 WALL_THICKNESS = 1.0
 FLOOR_TEXTURE_METERS = 8.0  # 床のテクスチャ1枚（タイル 4×4 枚）を何 m 四方に貼るか（タイル1枚 2m）
 
-# ---- 部品: (目標の高さ m, テクスチャの1辺, 三角形を減らす割合) ----
+# ---- 部品: (目標の大きさ m, 合わせる向き, テクスチャの1辺, 三角形を減らす割合) ----
+# 合わせる向き: "height" は高さ、"width" は幅（Blender の X）をその大きさにする。
 PARTS = {
-    "Throne": (4.0, 2048, 1.0),
-    "Door":   (8.0, 2048, 0.6),
-    "Pillar": (9.0, 2048, 0.35),
-    "Window": (7.5, 2048, 0.35),
+    "Throne":      (4.0, "height", 2048, 1.0),
+    "Door":        (8.0, "height", 2048, 0.6),
+    "Pillar":      (9.0, "height", 2048, 0.35),
+    "Window":      (7.5, "height", 2048, 0.35),
+    "Arch":        (9.4, "width",  2048, 1.0),
+    "Candelabrum": (2.6, "height", 1024, 0.27),
+    "Statue":      (3.2, "height", 2048, 0.7),
 }
 
 # ---- 置き方 ----
@@ -60,6 +64,11 @@ DAIS_STEPS = 4
 DAIS_STEP_HEIGHT = 0.3
 DAIS_STEP_DEPTH = 1.0
 THRONE_Z = 21.0
+ARCH_ZS = [-14.0, -6.0, 2.0, 10.0]          # 同じ列の柱と柱の真ん中
+CANDELABRA = [(-4.5, 12.5), (4.5, 12.5), (-4.0, -21.0), (4.0, -21.0)]   # (x, z)。台座の手前と入口の左右
+STATUE_X = 3.2                               # 玉座の左右（台座の上）
+EMBLEM_CENTER_Z = 2.0                        # 床の紋章の真ん中（戦う場所）
+EMBLEM_DIAMETER = 8.0
 
 WALL_COLOR = (0.055, 0.060, 0.075)   # 壁の色（sRGB）。灰色がかった青の暗い石
 WALL_SMOOTH = 0.35
@@ -158,7 +167,7 @@ def flat_textures(name, color_srgb, smooth):
 # 部品
 # ---------------------------------------------------------------------------
 def load_part(name):
-    height, tex_size, ratio = PARTS[name]
+    target, fit, tex_size, ratio = PARTS[name]
     before = set(bpy.data.objects)
     bpy.ops.import_scene.fbx(filepath=os.path.join(MESHY_DIR, name, name + ".fbx"))
     new = [o for o in bpy.data.objects if o not in before]
@@ -174,7 +183,7 @@ def load_part(name):
     obj.matrix_world = Matrix.Identity(4)
     co = np.array([v.co[:] for v in obj.data.vertices])
     mn, mx = co.min(0), co.max(0)
-    k = height / (mx[2] - mn[2])
+    k = target / ((mx[2] - mn[2]) if fit == "height" else (mx[0] - mn[0]))
     # 足元の真ん中を原点にして、高さをそろえる
     t = Matrix.Scale(k, 4) @ Matrix.Translation(Vector((-(mn[0] + mx[0]) / 2, -(mn[1] + mx[1]) / 2, -mn[2])))
     obj.data.transform(t)
@@ -297,6 +306,27 @@ def build():
     place(t_obj, 0, dais_top, THRONE_Z, 180, visual)
     box("ThroneCol", (-t_size[0] / 2, dais_top, THRONE_Z - t_size[1] / 2),
         (t_size[0] / 2, dais_top + t_size[2], THRONE_Z + t_size[1] / 2), wall_mat, 4.0, col)
+    # アーチ（同じ列の柱の上に載せる。正面を広間の真ん中へ向ける）
+    a_obj, _ = parts["Arch"]
+    pillar_height = PARTS["Pillar"][0]
+    for z in ARCH_ZS:
+        for side in (-1, 1):
+            place(a_obj, side * PILLAR_X, pillar_height, z, 90 * side * -1, visual)
+    # 燭台（台座の手前と入口の左右）
+    c_obj, c_size = parts["Candelabrum"]
+    for x, z in CANDELABRA:
+        place(c_obj, x, 0, z, 180 if z > 0 else 0, visual)
+        r = max(c_size[0], c_size[1]) / 2
+        box("CandelabrumCol", (x - r, 0, z - r), (x + r, c_size[2], z + r), wall_mat, 4.0, col)
+    # 騎士の石像（玉座の左右、台座の上で入口の方を向く）
+    s_obj, s_size = parts["Statue"]
+    for side in (-1, 1):
+        x = side * STATUE_X
+        place(s_obj, x, dais_top, THRONE_Z, 180, visual)
+        box("StatueCol", (x - s_size[0] / 2, dais_top, THRONE_Z - s_size[1] / 2),
+            (x + s_size[0] / 2, dais_top + s_size[2], THRONE_Z + s_size[1] / 2), wall_mat, 4.0, col)
+    # 床の紋章（円の外は透明にして、床の上に少し浮かせて置く）
+    emblem_disc(visual)
 
     for n, (o, _) in parts.items():
         bpy.data.objects.remove(o)
@@ -313,6 +343,47 @@ def build():
     for o in col:
         o.hide_render = True
     render_previews(visual)
+
+
+EMBLEM_RADIUS_IN_IMAGE = 0.492   # Meshy の画像で、円の外の金の輪までの半径（画像の幅に対する割合。画像で測った）
+EMBLEM_LIFT = 0.01               # 床から浮かせる高さ（m）。床とちらつかないように
+
+
+def emblem_disc(objs):
+    """床の紋章。Meshy の画像の円の外を透明にし、金の部分だけ少し金属にする。"""
+    src = load_px(os.path.join(MESHY_DIR, "Emblem.png"), "sRGB")
+    h, w = src.shape[:2]
+    yy, xx = np.mgrid[0:h, 0:w]
+    r = np.hypot((xx + 0.5) / w - 0.5, (yy + 0.5) / h - 0.5)
+    alb = src.copy()
+    alb[..., 3] = (r < EMBLEM_RADIUS_IN_IMAGE).astype(np.float32)
+    # 金: 赤が青よりはっきり強いところ
+    gold = np.clip((src[..., 0] - src[..., 2] - 0.12) * 4.0, 0, 1)
+    spec = np.zeros_like(src)
+    spec[..., 0] = gold * 0.6
+    spec[..., 3] = 0.55 + 0.1 * gold
+    nrm = np.ones_like(src); nrm[..., 0] = 0.5; nrm[..., 1] = 0.5
+    paths = {k: os.path.join(OUT_DIR, f"Emblem_{k}.png") for k in ("albedo", "spec", "normal")}
+    save_png(alb, paths["albedo"], "sRGB")
+    save_png(spec, paths["spec"], "Non-Color")
+    save_png(nrm, paths["normal"], "Non-Color")
+    mat = make_material("Emblem", paths["albedo"], paths["spec"], paths["normal"])
+
+    half = EMBLEM_DIAMETER / 2
+    c = to_blender(0, EMBLEM_LIFT, EMBLEM_CENTER_Z)
+    bm = bmesh.new()
+    vs = [bm.verts.new(c + Vector((dx, dy, 0))) for dx, dy in ((-half, -half), (half, -half), (half, half), (-half, half))]
+    f = bm.faces.new(vs)
+    uv = bm.loops.layers.uv.new("UVMap")
+    # 画像の上（王冠）がゲームの +Z（玉座の方）を向くように、画像を 180° 回して貼る
+    for l, t in zip(f.loops, ((1, 1), (0, 1), (0, 0), (1, 0))):
+        l[uv].uv = t
+    me = bpy.data.meshes.new("Emblem")
+    bm.to_mesh(me); bm.free()
+    o = bpy.data.objects.new("Emblem", me)
+    bpy.context.scene.collection.objects.link(o)
+    me.materials.append(mat)
+    objs.append(o)
 
 
 def flat_textures_in(name, folder):
