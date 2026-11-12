@@ -24,6 +24,9 @@ public:
 	static Vector3 GetEnemyStartPosition();
 
 private:
+	// 燭台のろうそくの光を1つ足す。
+	void AddCandleLight(const Vector3& position, const Vector3& color, float range);
+
 	ModelRender m_model;
 	ModelRender m_collisionModel;   // 当たり判定を作るためだけに読む（描かない）。
 	PhysicsStaticObject m_physicsStaticObject;

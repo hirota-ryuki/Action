@@ -10,18 +10,17 @@ namespace
 	const Vector3 PLAYER_START_POSITION = { 0.0f, 100.0f, -1800.0f };
 	const Vector3 ENEMY_START_POSITION = { 0.0f, 100.0f, 1000.0f };
 
-	// 燭台のろうそくの暖かい光。燭台の置き場所（make_boss_stage.py の CANDELABRA）と、ろうそくの高さ（約 2.3m）に合わせる。
-	struct LightDesc {
-		Vector3 position;
-		Vector3 color;
-		float range;
-	};
-	const LightDesc LIGHTS[] = {
-		{ { -450.0f, 230.0f, 1250.0f }, { 3.0f, 1.6f, 0.7f }, 900.0f },
-		{ {  450.0f, 230.0f, 1250.0f }, { 3.0f, 1.6f, 0.7f }, 900.0f },
-		{ { -400.0f, 230.0f, -2100.0f }, { 2.0f, 1.1f, 0.5f }, 700.0f },
-		{ {  400.0f, 230.0f, -2100.0f }, { 2.0f, 1.1f, 0.5f }, 700.0f },
-	};
+	// 燭台のろうそくの暖かい光。燭台の置き場所と、ろうそくの高さに合わせる（make_boss_stage.py の CANDELABRUM_X・PILLAR_ZS・DAIS_CANDELABRA）。
+	// 柱の前の燭台: 柱ごとに1本（左右 × 5列）。燭台の高さ 3m、ろうそくは約 2.6m。
+	constexpr float CANDELABRUM_X = 680.0f;
+	constexpr float CANDLE_HEIGHT = 260.0f;
+	const float PILLAR_ZS[] = { -1800.0f, -1000.0f, -200.0f, 600.0f, 1400.0f };
+	const Vector3 PILLAR_CANDLE_COLOR = { 2.0f, 1.1f, 0.5f };
+	constexpr float PILLAR_CANDLE_RANGE = 700.0f;
+	// 台座の上、玉座の手前の小さな燭台（台座の上面 180cm + ろうそく約 156cm）。
+	const Vector3 DAIS_CANDLE_POSITIONS[] = { { -260.0f, 336.0f, 1870.0f }, { 260.0f, 336.0f, 1870.0f } };
+	const Vector3 DAIS_CANDLE_COLOR = { 3.0f, 1.6f, 0.7f };
+	constexpr float DAIS_CANDLE_RANGE = 900.0f;
 	constexpr float LIGHT_AFFECT_POW = 2.0f;
 }
 
@@ -45,16 +44,25 @@ bool BossStage::Start()
 	m_physicsStaticObject.CreateFromModel(m_collisionModel.GetModel(), m_collisionModel.GetModel().GetWorldMatrix());
 	m_physicsStaticObject.SetFriction(1.0f);
 
-	for (const auto& desc : LIGHTS) {
-		auto light = std::make_unique<nsK2Engine::PointLight>();
-		light->Init();
-		light->SetPosition(desc.position);
-		light->SetColor(desc.color);
-		light->SetRange(desc.range);
-		light->SetAffectPowParam(LIGHT_AFFECT_POW);
-		m_lights.push_back(std::move(light));
+	for (float z : PILLAR_ZS) {
+		AddCandleLight({ -CANDELABRUM_X, CANDLE_HEIGHT, z }, PILLAR_CANDLE_COLOR, PILLAR_CANDLE_RANGE);
+		AddCandleLight({ CANDELABRUM_X, CANDLE_HEIGHT, z }, PILLAR_CANDLE_COLOR, PILLAR_CANDLE_RANGE);
+	}
+	for (const auto& position : DAIS_CANDLE_POSITIONS) {
+		AddCandleLight(position, DAIS_CANDLE_COLOR, DAIS_CANDLE_RANGE);
 	}
 	return true;
+}
+
+void BossStage::AddCandleLight(const Vector3& position, const Vector3& color, float range)
+{
+	auto light = std::make_unique<nsK2Engine::PointLight>();
+	light->Init();
+	light->SetPosition(position);
+	light->SetColor(color);
+	light->SetRange(range);
+	light->SetAffectPowParam(LIGHT_AFFECT_POW);
+	m_lights.push_back(std::move(light));
 }
 
 void BossStage::Update()

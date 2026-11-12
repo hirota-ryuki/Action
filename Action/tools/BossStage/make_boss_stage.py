@@ -38,50 +38,59 @@ MESHY_DIR = os.environ.get("BOSS_MESHY_DIR", r"D:\03_data\BossStageMeshy")
 # ---- 広間の大きさ（ゲームの m） ----
 HALL_HALF_WIDTH = 14.0      # 壁の内側までの X
 HALL_HALF_LENGTH = 24.0     # 壁の内側までの Z
-WALL_HEIGHT = 12.0
+WALL_HEIGHT = 18.0         # アーチの上（約 17.8m）まで隠れる高さ
 WALL_THICKNESS = 1.0
 FLOOR_TEXTURE_METERS = 8.0  # 床のテクスチャ1枚（タイル 4×4 枚）を何 m 四方に貼るか（タイル1枚 2m）
 
 # ---- 部品: (目標の大きさ m, 合わせる向き, テクスチャの1辺, 三角形を減らす割合) ----
 # 合わせる向き: "height" は高さ、"width" は幅（Blender の X）をその大きさにする。
 PARTS = {
-    "Throne":      (4.0, "height", 2048, 1.0),
+    "Throne":      (5.0, "height", 2048, 1.0),
     "Door":        (8.0, "height", 2048, 0.6),
-    "Pillar":      (9.0, "height", 2048, 0.35),
-    "Window":      (7.5, "height", 2048, 0.35),
-    "Arch":        (9.4, "width",  2048, 1.0),
-    "Candelabrum": (2.6, "height", 1024, 0.27),
-    "Statue":      (3.2, "height", 2048, 0.7),
-    "Banner":      (5.5, "height", 2048, 1.0),
+    "Pillar":      (13.0, "height", 2048, 0.35),
+    "Window":      (11.0, "height", 2048, 0.35),
+    "Arch":        (10.0, "width",  2048, 1.0),
+    "Candelabrum": (3.0, "height", 1024, 0.27),
+    "Statue":      (3.8, "height", 2048, 0.7),
+    "Banner":      (6.5, "height", 2048, 1.0),
     "Rubble":      (2.5, "width",  1024, 1.0),
 }
 
 # ---- 置き方 ----
-PILLAR_X = 11.0
+# 見本の画像（太い柱が通り道の両側に迫り、柱の上の方に垂れ幕、柱の前に燭台、奥に大きな窓と玉座）に合わせる
+PILLAR_X = 9.0                               # 柱の真ん中。柱の内側の面は約 ±7.8m
 PILLAR_ZS = [-18.0, -10.0, -2.0, 6.0, 14.0]
-WINDOW_ZS = [-14.0, -6.0, 2.0, 10.0, 18.0]
-WINDOW_BASE_Y = 1.0
-DAIS_HALF_WIDTH = 6.0
+WINDOW_ZS = [-14.0, -6.0, 2.0, 10.0, 18.0]   # 柱と柱の間から見える
+WINDOW_BASE_Y = 1.5
+BACK_WINDOW_SCALE = 15.0 / 11.0              # 玉座の後ろの壁の大きな窓（高さ 15m）
+BACK_WINDOW_BASE_Y = 3.0                     # 下の方は玉座に隠れる
+DAIS_HALF_WIDTH = 7.5
 DAIS_FRONT_Z = 14.0
-DAIS_STEPS = 4
+DAIS_STEPS = 6
 DAIS_STEP_HEIGHT = 0.3
-DAIS_STEP_DEPTH = 1.0
+DAIS_STEP_DEPTH = 0.8
+DAIS_STEP_SHRINK = 0.3                       # 1段上がるごとに左右を縮める（m）
 THRONE_Z = 21.0
 ARCH_ZS = [-14.0, -6.0, 2.0, 10.0]          # 同じ列の柱と柱の真ん中
-CANDELABRA = [(-4.5, 12.5), (4.5, 12.5), (-4.0, -21.0), (4.0, -21.0)]   # (x, z)。台座の手前と入口の左右
-STATUE_X = 3.2                               # 玉座の左右（台座の上）
-EMBLEM_CENTER_Z = 2.0                        # 床の紋章の真ん中（戦う場所）
-EMBLEM_DIAMETER = 8.0
-BANNER_BASE_Y = 2.8                          # 柱の垂れ幕の下の端の高さ（上の端は約 8.3m で、アーチの下）
+# 燭台: 柱ごとに1本、柱の広間側の前に置く。台座の上にも玉座の手前に小さめを2本。
+# ゲームの灯り（BossStage.cpp の CANDLE_LIGHTS）もこの置き場所に合わせる。
+CANDELABRUM_X = 6.8
+DAIS_CANDELABRA = [(-2.6, 18.7), (2.6, 18.7)]   # (x, z)。いちばん上の段（z が 18 から奥）の手前
+DAIS_CANDELABRUM_SCALE = 0.6
+STATUE_X = 4.5                               # 玉座の左右（台座の上）
+STATUE_Z = 20.5
+EMBLEM_CENTER_Z = 3.0                        # 床の紋章の真ん中（戦う場所）
+EMBLEM_DIAMETER = 11.0
+BANNER_BASE_Y = 4.5                          # 柱の垂れ幕の下の端の高さ（上の端は約 11m で、柱の飾りの下）
 BANNER_GAP = 0.05                            # 柱の表から離す距離（m）。布が柱にめり込まないように
-WALL_BANNER_X = 8.5                          # 玉座の後ろの壁の垂れ幕（石像より外側）
-WALL_BANNER_SCALE = 7.0 / 5.5                # 壁の垂れ幕は柱のものより大きく（高さ 7m）
-WALL_BANNER_BASE_Y = 3.0
-# がれき: (x, z, 向き°, 大きさの倍率)。隅と柱の足元に置き、真ん中の通り道（x が ±8 の内側）には置かない
+WALL_BANNER_X = 7.0                          # 玉座の後ろの壁の垂れ幕（大きな窓の左右）
+WALL_BANNER_SCALE = 9.0 / 6.5                # 壁の垂れ幕は柱のものより大きく（高さ 9m）
+WALL_BANNER_BASE_Y = 6.0
+# がれき: (x, z, 向き°, 大きさの倍率)。隅と、柱と壁の間の足元に置く。通り道（x が ±7.8 の内側）には小さいものだけ
 RUBBLE = [
     (-12.0, -22.0, 0, 1.2), (12.3, -21.5, 140, 1.0),
-    (-12.0, 21.5, 200, 1.0), (12.0, 21.0, 60, 1.3),
-    (-9.6, -10.8, 30, 0.8), (9.8, 5.2, 250, 0.9),
+    (-11.8, -6.5, 30, 0.9), (11.8, 2.5, 250, 1.0),
+    (-11.6, 17.5, 200, 1.0), (7.0, -14.5, 60, 0.7),
 ]
 
 PART_METALLIC_SCALE = 0.6   # Meshy の金属度に掛ける
@@ -276,7 +285,7 @@ def build():
     for i in range(DAIS_STEPS):
         top = DAIS_STEP_HEIGHT * (i + 1)
         z0 = DAIS_FRONT_Z + DAIS_STEP_DEPTH * i
-        hw = DAIS_HALF_WIDTH - 0.5 * i
+        hw = DAIS_HALF_WIDTH - DAIS_STEP_SHRINK * i
         box(f"Dais{i}", (-hw, 0, z0), (hw, top, L), floor_mat, FLOOR_TEXTURE_METERS, visual)
     dais_top = DAIS_STEP_HEIGHT * DAIS_STEPS
 
@@ -294,13 +303,15 @@ def build():
         for side in (-1, 1):
             place(p_obj, side * PILLAR_X, 0, z, 90 * side * -1, visual)
             hx, hz = p_size[0] / 2, p_size[1] / 2
-            box("PillarCol", (side * PILLAR_X - hx, 0, z - hz), (side * PILLAR_X + hx, 9.0, z + hz), wall_mat, 4.0, col)
+            box("PillarCol", (side * PILLAR_X - hx, 0, z - hz), (side * PILLAR_X + hx, PARTS["Pillar"][0], z + hz), wall_mat, 4.0, col)
     # 窓（壁の内側に、正面を広間へ向けて付ける）
     w_obj, w_size = parts["Window"]
     for z in WINDOW_ZS:
         for side in (-1, 1):
             x = side * (W - w_size[1] / 2)
             place(w_obj, x, WINDOW_BASE_Y, z, 90 * side * -1, visual)
+    # 玉座の後ろの大きな窓（奥の壁の内側に、入口の方へ向けて）
+    place(w_obj, 0, BACK_WINDOW_BASE_Y, L - w_size[1] * BACK_WINDOW_SCALE / 2, 180, visual, BACK_WINDOW_SCALE)
     # 扉（入口の壁の内側）
     d_obj, d_size = parts["Door"]
     place(d_obj, 0, 0, -L + d_size[1] / 2, 0, visual)
@@ -317,17 +328,20 @@ def build():
             place(a_obj, side * PILLAR_X, pillar_height, z, 90 * side * -1, visual)
     # 燭台（台座の手前と入口の左右）
     c_obj, c_size = parts["Candelabrum"]
-    for x, z in CANDELABRA:
-        place(c_obj, x, 0, z, 180 if z > 0 else 0, visual)
-        r = max(c_size[0], c_size[1]) / 2
-        box("CandelabrumCol", (x - r, 0, z - r), (x + r, c_size[2], z + r), wall_mat, 4.0, col)
+    # (x, y, z, 向き°, 大きさの倍率)。柱の前のものは広間の真ん中へ、台座の上のものは入口の方へ向ける
+    candelabra = [(side * CANDELABRUM_X, 0, z, 90 * side * -1, 1.0) for z in PILLAR_ZS for side in (-1, 1)]
+    candelabra += [(x, dais_top, z, 180, DAIS_CANDELABRUM_SCALE) for x, z in DAIS_CANDELABRA]
+    for x, y, z, rot, k in candelabra:
+        place(c_obj, x, y, z, rot, visual, k)
+        r = max(c_size[0], c_size[1]) / 2 * k
+        box("CandelabrumCol", (x - r, y, z - r), (x + r, y + c_size[2] * k, z + r), wall_mat, 4.0, col)
     # 騎士の石像（玉座の左右、台座の上で入口の方を向く）
     s_obj, s_size = parts["Statue"]
     for side in (-1, 1):
         x = side * STATUE_X
-        place(s_obj, x, dais_top, THRONE_Z, 180, visual)
-        box("StatueCol", (x - s_size[0] / 2, dais_top, THRONE_Z - s_size[1] / 2),
-            (x + s_size[0] / 2, dais_top + s_size[2], THRONE_Z + s_size[1] / 2), wall_mat, 4.0, col)
+        place(s_obj, x, dais_top, STATUE_Z, 180, visual)
+        box("StatueCol", (x - s_size[0] / 2, dais_top, STATUE_Z - s_size[1] / 2),
+            (x + s_size[0] / 2, dais_top + s_size[2], STATUE_Z + s_size[1] / 2), wall_mat, 4.0, col)
     # 垂れ幕（柱の広間側の面に、柱と同じ向きで掛ける。玉座の後ろの壁にも大きめを2本）
     b_obj, b_size = parts["Banner"]
     for z in PILLAR_ZS:
