@@ -73,6 +73,25 @@
 		"stopRRunFrame": 2
 	},
 
+	// ジャンプ。JumpStart（跳ぶ、41コマ）→ JumpLoop（空中、77コマのループ）→ JumpLand（着地、40コマ）。
+	// 3本とも Universal Animation Library のマネキンのモーションを UE で SK_Player にリターゲットしたもの（tools/UnrealScripts/ual_jump.json）。
+	//   JumpStart: 0コマ目だけ腰が低い。1コマ目から足が離れはじめ、9コマ目で引きつけ終わり、30コマ目からほぼ JumpLoop の最初のポーズ。
+	//   JumpLand: 0コマ目で足が着き、6コマ目でいちばん深くしゃがみ（腰が 88 → 42）、24コマ目でほぼ立つ。
+	// 今の値は仮。実機で見て決める。
+	"jump": {
+		"startFrame": 1,          // 腰が低い 0コマ目は飛ばす。
+		"toLoopFrame": 30,        // ここから先は JumpLoop の最初とほぼ同じポーズ。
+		"animSpeed": 1.0,
+		"startBlendSeconds": 0.1,
+		"loopBlendSeconds": 0.2,  // JumpStart から JumpLoop へ・足場から落ちたとき。
+		"landStartFrame": 0,
+		"landEndFrame": 18,       // 腰が 77 まで戻ったところで Idle へ。残りは landExitBlendSeconds の補間で立つ。
+		"landAnimSpeed": 1.0,
+		"landBlendSeconds": 0.1,
+		"landExitBlendSeconds": 0.3,
+		"landCancelByMove": true  // 動きながら着地したら、しゃがまずにそのまま歩く・走る。
+	},
+
 	"model": {
 		"path": "Assets/modelData/player/Model/SK_Player.FBX",
 		"upAxis": "Z",  // 3ds Max（Z-up）で作られているので Z を上にして起こす（Y のままだと仰向けに倒れる）。
@@ -134,7 +153,7 @@
 		"blendSeconds": 0.2, // アニメーションを切り替えるときの補間時間。
 		// Walk.fbx（Mixamo の Female Walk）の足が地面を送る速さ。UE で足のボーンを測った 115/秒 × モデルの大きさ 1.128。
 		"walkMoveSpeed": 130.0,
-		// クリップの名前は PlayerConfig.cpp の対応表（Idle・Walk・Run・Jump・Dash・StopL・StopR）と同じにする。
+		// クリップの名前は PlayerConfig.cpp の対応表（Idle・Walk・Run・JumpStart・JumpLoop・JumpLand・Dash・StopL・StopR）と同じにする。
 		"clips": {
 			// Idle・Walk は Mixamo のモーションを UE で SK_Player にリターゲットしたもの。
 			"Idle": { "path": "Assets/modelData/player/Animation/Idle.fbx", "loop": true },
@@ -142,8 +161,10 @@
 			// Run・Dash は、原神の動画から MediaPipe で関節の位置を読み取り、その角度で SK_Player のポーズを作ったもの
 			// （tools/UnrealScripts/dash_roto.json）。Run は走りの1周期（34.25〜34.72秒）。
 			"Run": { "path": "Assets/modelData/player/Animation/Run.fbx", "loop": true },
-			// Jump はまだ SK_Player 用が無いので、暫定で Run を入れておく。
-			"Jump": { "path": "Assets/modelData/player/Animation/Run.fbx", "loop": true },
+			// JumpStart・JumpLoop・JumpLand は Universal Animation Library のジャンプを UE でリターゲットしたもの（上の "jump" を参照）。
+			"JumpStart": { "path": "Assets/modelData/player/Animation/JumpStart.fbx", "loop": false },
+			"JumpLoop": { "path": "Assets/modelData/player/Animation/JumpLoop.fbx", "loop": true },
+			"JumpLand": { "path": "Assets/modelData/player/Animation/JumpLand.fbx", "loop": false },
 			// Dash は「しゃがむ → 左足で蹴って低く滑る → 着地」の通し（33.41〜33.94秒）。原神と同じく、蹴る足はいつも同じ。
 			"Dash": { "path": "Assets/modelData/player/Animation/Dash.fbx", "loop": false },
 			// StopL・StopR は走りから止まる「前の足を突っ張って滑る → 起き上がる」の通し（29.78〜30.89秒、L・R は突っ張る足。

@@ -150,6 +150,9 @@
     <ClCompile Include="Source\Player\State\PlayerStopState.cpp">
       <Filter>Source\Player\State</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Player\State\PlayerLandState.cpp">
+      <Filter>Source\Player\State</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Player\State\PlayerFrozenState.cpp">
       <Filter>Source\Player\State</Filter>
     </ClCompile>
@@ -366,6 +369,9 @@
       <Filter>Source\Player\State</Filter>
     </ClInclude>
     <ClInclude Include="Source\Player\State\PlayerStopState.h">
+      <Filter>Source\Player\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Player\State\PlayerLandState.h">
       <Filter>Source\Player\State</Filter>
     </ClInclude>
     <ClInclude Include="Source\Player\State\PlayerFrozenState.h">

@@ -9,6 +9,7 @@ config.json:
   "source_mesh_fbx": "D:/.../YBot.fbx",           # これか source_mesh のどちらか
   "source_mesh": "/Game/.../SK_Mannequin",        # 既存のスケルタルメッシュを使う場合
   "align_source_to_target": false,                # 元が A ポーズなら true（T ポーズの VRM に合わせる）
+  "use_ik": true,                                  # false なら IK（Run IK Rig）を止める。深くしゃがむモーションで足が伸びるとき
   "clips": [
     {"name": "Idle", "fbx": "D:/.../Idle.fbx"},   # FBX から読み込む
     {"name": "Walk", "asset": "/Game/.../Walk"}   # 既存の AnimSequence を使う
@@ -133,6 +134,17 @@ def make_retargeter(work_dir, source_rig, source_mesh, align):
     return rtg
 
 
+def set_ik_enabled(rtg, enabled):
+    """IK（Run IK Rig）を使うかを切り替える。リターゲッターは使い回すので、毎回その設定にする。"""
+    c = unreal.IKRetargeterController.get_controller(rtg)
+    i = c.get_index_of_op_by_name("Run IK Rig")
+    if i < 0:
+        log("no IK op")
+        return
+    c.set_retarget_op_enabled(i, enabled)
+    log("IK op enabled:", enabled)
+
+
 def retarget(work_dir, rtg, source_mesh, anims):
     inputs = unreal.IKRetargetBatchOperationInputs()
     inputs.assets_to_retarget = [unreal.EditorAssetLibrary.find_asset_data(a.get_path_name()) for a in anims]
@@ -198,6 +210,7 @@ def main():
 
         rig = make_source_rig(work, source_mesh)
         rtg = make_retargeter(work, rig, source_mesh, cfg.get("align_source_to_target", False))
+        set_ik_enabled(rtg, cfg.get("use_ik", True))
         outs = retarget(work, rtg, source_mesh, anims)
 
         os.makedirs(cfg["export_dir"], exist_ok=True)
