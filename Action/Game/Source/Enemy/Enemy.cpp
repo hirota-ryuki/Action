@@ -12,8 +12,8 @@ namespace
 	constexpr float HIT_CENTER_HEIGHT = 110.0f * SIZE_RATIO; // 足元から当たり判定の中心までの高さ（黒騎士の胸の下あたり）。
 	constexpr float WALK_SPEED = 140.0f;        // 余裕たっぷりにゆっくり歩く速さ。
 	constexpr float WALK_ANIM_FOOT_SPEED = 229.0f;  // Walk を等速で再生したときに、足が地面を送る速さ（Blender で測った）。
-	// 黒騎士の動き全体の速さ。アニメーションが崩れていないかを確かめるため、今は半分にしている。確かめ終わったら 1 に戻す。
-	constexpr float PLAY_SPEED = 0.5f;
+	// 黒騎士の動き全体の速さ。アニメーションが崩れていないかを確かめるときは下げる（例: 0.5）。
+	constexpr float PLAY_SPEED = 1.0f;
 	constexpr float MAX_HP = 100.0f;
 	// 1回当たったときに減る HP（仮）。4回で倒れる。弾ごとの威力ができたら、そちらを使う。
 	constexpr float HIT_DAMAGE = 25.0f;
