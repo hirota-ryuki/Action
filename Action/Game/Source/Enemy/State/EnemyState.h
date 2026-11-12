@@ -19,7 +19,6 @@ enum EnEnemyAnimClip
 	enEnemyAnimClip_Attack3,  // 斜めの斬撃を5つ飛ばす
 	enEnemyAnimClip_Hit,      // やられ（攻撃中以外で当たったとき）
 	enEnemyAnimClip_Dead,     // 死ぬ
-	enEnemyAnimClip_Catalog,  // モーションの見本帳（EnemyAnimCatalog）が、選んだモーションを読み直して使う枠
 	enEnemyAnimClip_Num,
 };
 

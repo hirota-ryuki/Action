@@ -40,7 +40,7 @@ namespace
 		settings.stopDistance = 150.0f;    // この距離まで近づいたら止まる（剣が届くところで止まる）。
 		settings.decideInterval = 2.0f;    // 歩いている間、走るかを決め直す間隔（秒）。
 		settings.runChance = 0.5f;         // 中くらい・遠いときに走る確率。残りは攻撃（中くらいなら攻撃1、遠いなら攻撃3）。
-		settings.attackInterval = 4.8f;    // 近いときに攻撃2をする間隔（秒）。攻撃2は 3.7秒かかる（PLAY_SPEED が 1 のとき）。
+		settings.attackInterval = 5.5f;    // 近いときに攻撃2をする間隔（秒）。攻撃2は 4.4秒かかる（PLAY_SPEED が 1 のとき）。
 		settings.firstAttackDelay = 0.6f;  // 相手を見つけてから最初に振れるまでの秒数。
 		return settings;
 	}
@@ -62,8 +62,6 @@ namespace
 		desc.clips[enEnemyAnimClip_Attack3] = { "Assets/modelData/enemy/BlackKnight/Animation/Attack3.fbx", false };
 		desc.clips[enEnemyAnimClip_Hit] = { "Assets/modelData/enemy/BlackKnight/Animation/Hit.fbx", false };
 		desc.clips[enEnemyAnimClip_Dead] = { "Assets/modelData/enemy/BlackKnight/Animation/Dead.fbx", false };
-		// 見本帳の枠。最初は Idle を入れておき、見本帳でモーションを選んだときに読み直す。
-		desc.clips[enEnemyAnimClip_Catalog] = { "Assets/modelData/enemy/BlackKnight/Animation/Idle.fbx", false };
 		return desc;
 	}
 
@@ -122,7 +120,7 @@ void Enemy::UpdateAction(float deltaTime)
 		m_hitTarget.SetEnabled(false);
 		return;
 	}
-	// モーションの見本帳（F1 の開発用の画面）。見本を再生している間は AI とステートを止め、その場で立たせる。
+	// モーションの確認（F1 の開発用の画面）。再生している間は AI とステートを止め、その場で立たせる。
 	m_animCatalog.UpdateUI();
 	if (m_animCatalog.IsActive()) {
 		m_mover.Update(CharacterInput(), deltaTime);

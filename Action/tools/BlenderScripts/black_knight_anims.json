@@ -50,19 +50,15 @@
     },
     {
       "name": "Attack1",
-      "comment": "居合いのように左腰に構えて溜め → 低く一気に踏み込み → 右手で横に斬り抜ける（KinemIQ の Sword - dash slash）。前へ進む分は消し、ゲームが黒騎士ごと動かす。溜めの長さはゲームが構えのコマで止めて決める",
-      "source": "D:/04_dawnload/kinemiq/Sword_-_dash_slash.glb",
-      "rig": "ue4",
-      "in_place": true
+      "comment": "居合いのように左腰に構えて溜め → 低く一気に踏み込み → 右手で横に斬り抜ける（KinemIQ の Sword - dash slash の In Place 版）。踏み込む分はゲームが黒騎士ごと動かし、溜めの長さはゲームが構えのコマで止めて決める",
+      "source": "D:/04_dawnload/kinemiq/Sword_-_dash_slash.fbx",
+      "rig": "ue4"
     },
     {
       "name": "Attack2",
-      "comment": "SnSAnimsetPro の片手剣の斬り3本（R → RL → RLLR）をつないで1本にする。モーションの見本帳で選んだもの",
-      "segments": [
-        {"source": "D:/04_dawnload/SnS/EXPORT/InPlace/Sword_Attack_R.fbx", "rig": "ue4"},
-        {"source": "D:/04_dawnload/SnS/EXPORT/InPlace/Sword_Attack_RL.fbx", "rig": "ue4"},
-        {"source": "D:/04_dawnload/SnS/EXPORT/InPlace/Sword_Attack_RLLR.fbx", "rig": "ue4"}
-      ]
+      "comment": "片手剣の連続斬り（KinemIQ の Sword - slash combo。In Place）",
+      "source": "D:/04_dawnload/kinemiq/Sword_-_slash_Sword_-_slash_combo.fbx",
+      "rig": "ue4"
     },
     {
       "name": "Attack3",

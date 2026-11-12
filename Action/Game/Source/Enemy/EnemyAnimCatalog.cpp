@@ -2,58 +2,32 @@
 #include "EnemyAnimCatalog.h"
 #include "EnemyState.h"
 #include "CharacterModel.h"
-#include "System/JsonFile.h"
 #include <imgui/imgui.h>
 
 namespace
 {
-	// 見本帳の一覧（make_anim_catalog.py が書く）。
-	constexpr const char* CATALOG_LIST_PATH = "Assets/modelData/enemy/BlackKnight/AnimCatalog/catalog.json";
 	constexpr float MIN_SPEED = 0.1f;
 	constexpr float MAX_SPEED = 2.0f;
+	constexpr float ANIM_FPS = 30.0f;
 
-	// 大文字・小文字を区別せずに、name に filter が含まれるか。
-	bool ContainsNoCase(const std::string& name, const char* filter)
+	// 今の黒騎士に入っているモーション（Enemy.cpp の MakeModelDesc と同じ並び）。
+	struct Entry
 	{
-		if (filter[0] == '\0') {
-			return true;
-		}
-		auto lower = [](std::string s) {
-			for (char& c : s) {
-				c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
-			}
-			return s;
-		};
-		return lower(name).find(lower(filter)) != std::string::npos;
-	}
-}
-
-void EnemyAnimCatalog::LoadList()
-{
-	m_isListLoaded = true;
-	m_entries.clear();
-	m_categories.clear();
-	m_listError.clear();
-
-	JsonFile::Json json;
-	if (!JsonFile::TryLoad(CATALOG_LIST_PATH, json) || !json.contains("clips")) {
-		m_listError = u8"一覧（AnimCatalog/catalog.json）がありません。make_anim_catalog.py で作ってください。";
-		return;
-	}
-	for (const auto& clip : json["clips"]) {
-		Entry entry;
-		entry.name = clip.value("name", "");
-		entry.category = clip.value("category", u8"その他");
-		entry.path = clip.value("path", "");
-		entry.isLoop = clip.value("loop", false);
-		if (entry.name.empty() || entry.path.empty()) {
-			continue;
-		}
-		if (std::find(m_categories.begin(), m_categories.end(), entry.category) == m_categories.end()) {
-			m_categories.push_back(entry.category);
-		}
-		m_entries.push_back(entry);
-	}
+		const char* name;
+		int clip;
+		bool isLoop;
+	};
+	constexpr Entry ENTRIES[] = {
+		{ u8"Idle（立ち止まる）", enEnemyAnimClip_Idle, true },
+		{ u8"Walk（歩く）", enEnemyAnimClip_Walk, true },
+		{ u8"Run（剣を肩に乗せて走る）", enEnemyAnimClip_Run, true },
+		{ u8"Attack1（溜めて踏み込み、横に斬り抜ける。溜めと踏み込みは入らない）", enEnemyAnimClip_Attack1, false },
+		{ u8"Attack2（連続斬り）", enEnemyAnimClip_Attack2, false },
+		{ u8"Attack3（斬撃を5つ飛ばす。斬撃は出ない）", enEnemyAnimClip_Attack3, false },
+		{ u8"Hit（やられ）", enEnemyAnimClip_Hit, false },
+		{ u8"Dead（死ぬ）", enEnemyAnimClip_Dead, false },
+	};
+	constexpr int ENTRY_NUM = sizeof(ENTRIES) / sizeof(ENTRIES[0]);
 }
 
 void EnemyAnimCatalog::Stop()
@@ -70,37 +44,11 @@ void EnemyAnimCatalog::UpdateUI()
 	if (!DebugUI::IsVisible()) {
 		return;
 	}
-	if (!m_isListLoaded) {
-		LoadList();
-	}
-
-	ImGui::SetNextWindowSize(ImVec2(360.0f, 560.0f), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(360.0f, 420.0f), ImGuiCond_FirstUseEver);
 	ImGui::Begin(u8"黒騎士のモーション");
 
-	if (!m_listError.empty()) {
-		ImGui::TextWrapped("%s", m_listError.c_str());
-	}
-	if (ImGui::Button(u8"一覧を読み直す")) {
-		LoadList();
-		m_selected = -1;
-		m_loaded = -1;
-		Stop();
-	}
-	ImGui::SameLine();
-	ImGui::Text(u8"%d 本", static_cast<int>(m_entries.size()));
-
-	// 再生の操作
-	ImGui::Separator();
-	if (m_selected >= 0 && m_selected < static_cast<int>(m_entries.size())) {
-		ImGui::Text(u8"再生中: %s", m_entries[m_selected].name.c_str());
-	}
-	else {
-		ImGui::TextUnformatted(u8"下の一覧から選ぶと、黒騎士がその場で再生する。");
-	}
-	if (m_loadFailed) {
-		ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), u8"読めませんでした（ファイルがないか、変換に失敗）。");
-	}
-	if (m_isActive) {
+	if (m_isActive && m_selected >= 0) {
+		ImGui::Text(u8"再生中: %s", ENTRIES[m_selected].name);
 		if (ImGui::Button(m_isPlaying ? u8"止める" : u8"再生")) {
 			m_isPlaying = !m_isPlaying;
 		}
@@ -115,59 +63,39 @@ void EnemyAnimCatalog::UpdateUI()
 		}
 		ImGui::SliderFloat(u8"速さ", &m_speed, MIN_SPEED, MAX_SPEED, u8"%.2f 倍");
 		ImGui::Checkbox(u8"ループ", &m_isLoop);
-		const float fps = 30.0f;
 		ImGui::SliderFloat(u8"時間", &m_time, 0.0f, max(m_length, 0.001f), u8"%.2f 秒");
 		ImGui::Text(u8"長さ %.2f 秒（%d コマ）。コマ %d", m_length,
-			static_cast<int>(m_length * fps + 0.5f) + 1, static_cast<int>(m_time * fps + 0.5f));
+			static_cast<int>(m_length * ANIM_FPS + 0.5f) + 1, static_cast<int>(m_time * ANIM_FPS + 0.5f));
+	}
+	else {
+		ImGui::TextUnformatted(u8"選ぶと、黒騎士が AI を止めてその場で再生する。");
 	}
 
-	// 一覧
 	ImGui::Separator();
-	ImGui::InputText(u8"検索", m_filter, sizeof(m_filter));
-	ImGui::BeginChild("list");
-	for (const std::string& category : m_categories) {
-		const bool isFiltering = m_filter[0] != '\0';
-		if (isFiltering) {
-			ImGui::SetNextItemOpen(true);
+	for (int i = 0; i < ENTRY_NUM; i++) {
+		if (ImGui::Selectable(ENTRIES[i].name, m_isActive && m_selected == i)) {
+			m_selected = i;
+			m_isChanged = true;
+			m_isLoop = ENTRIES[i].isLoop;
+			m_time = 0.0f;
+			m_isPlaying = true;
+			m_isActive = true;
 		}
-		if (!ImGui::TreeNode(category.c_str())) {
-			continue;
-		}
-		for (int i = 0; i < static_cast<int>(m_entries.size()); i++) {
-			const Entry& entry = m_entries[i];
-			if (entry.category != category || !ContainsNoCase(entry.name, m_filter)) {
-				continue;
-			}
-			if (ImGui::Selectable(entry.name.c_str(), m_selected == i && m_isActive)) {
-				m_selected = i;
-				m_isLoop = entry.isLoop;
-				m_time = 0.0f;
-				m_isPlaying = true;
-				m_isActive = true;
-			}
-		}
-		ImGui::TreePop();
 	}
-	ImGui::EndChild();
 	ImGui::End();
 }
 
 void EnemyAnimCatalog::Update(CharacterModel& model, float deltaTime)
 {
-	if (m_selected < 0 || m_selected >= static_cast<int>(m_entries.size())) {
+	if (m_selected < 0 || m_selected >= ENTRY_NUM) {
 		return;
 	}
-	// 選び直したら、枠に読み直す（押したときに初めて読む）。
-	if (m_loaded != m_selected) {
-		const Entry& entry = m_entries[m_selected];
-		m_loadFailed = !model.ReloadAnimationClip(enEnemyAnimClip_Catalog, entry.path, false);
-		m_loaded = m_selected;
-		m_length = m_loadFailed ? 0.0f : model.GetAnimationClipLength(enEnemyAnimClip_Catalog);
-		m_time = 0.0f;
-		// 時間はこちらで進めるので、エンジンでは進めない。
-		model.GetModelRender().SetAnimationSpeed(0.0f);
+	const int clip = ENTRIES[m_selected].clip;
+	if (m_isChanged) {
+		m_isChanged = false;
+		m_length = model.GetAnimationClipLength(clip);
 	}
-	if (m_loadFailed || m_length <= 0.0f) {
+	if (m_length <= 0.0f) {
 		return;
 	}
 	if (m_isPlaying) {
@@ -183,6 +111,7 @@ void EnemyAnimCatalog::Update(CharacterModel& model, float deltaTime)
 		}
 	}
 	m_time = max(0.0f, min(m_time, m_length));
+	// 時間はこちらで進めるので、エンジンでは進めない。
 	model.GetModelRender().SetAnimationSpeed(0.0f);
-	model.PlayAnimationAtTime(enEnemyAnimClip_Catalog, m_time);
+	model.PlayAnimationAtTime(clip, m_time);
 }

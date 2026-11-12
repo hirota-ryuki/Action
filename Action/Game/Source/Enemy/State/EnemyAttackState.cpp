@@ -44,7 +44,7 @@ namespace
 	constexpr AttackTiming ATTACKS[ATTACK_NUM] = {
 		// 攻撃1: 左腰に剣を構えてかがみ（6コマ目）、そこで溜めてから、一気に踏み込んで横に斬り抜ける。
 		{ enEnemyAnimClip_Attack1, 0.0f, 0.0f, 0.0f, 0, {}, {}, 5.5f / ANIM_FPS, ATTACK1_ROOT, ATTACK1_ROOT_NUM },
-		// 攻撃2: その場で、斬り3本（R → RL → RLLR）を続けて振る。
+		// 攻撃2: その場で連続斬り（KinemIQ の slash combo）。
 		{ enEnemyAnimClip_Attack2, 0.0f, 0.0f, 0.0f, 0, {}, {}, -1.0f, nullptr, 0 },
 		// 攻撃3: 左上→右下から始めて、左右交互に5回。剣が前を通るコマで斬撃を出す。
 		{ enEnemyAnimClip_Attack3, 0.0f, 0.0f, 0.0f, 5,

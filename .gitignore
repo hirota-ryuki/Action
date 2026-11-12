@@ -340,6 +340,3 @@ ASALocalRun/
 
 # ステージを作るスクリプトの確かめ用の画像と .blend（スクリプトを動かせば作り直せる）
 Action/tools/StageGenerator/preview/
-
-# 黒騎士のモーションの見本帳（make_anim_catalog.py と retarget_black_knight.py で作る。数が多いので入れない）
-Action/Game/Assets/modelData/enemy/BlackKnight/AnimCatalog/
