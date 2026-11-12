@@ -21,6 +21,14 @@ namespace
 	const Vector3 DAIS_CANDLE_POSITIONS[] = { { -260.0f, 336.0f, 1870.0f }, { 260.0f, 336.0f, 1870.0f } };
 	const Vector3 DAIS_CANDLE_COLOR = { 3.0f, 1.6f, 0.7f };
 	constexpr float DAIS_CANDLE_RANGE = 900.0f;
+	// 壁の灯りのランタン（make_boss_stage.py の SCONCES。書き出すときに出る位置）。入口の壁に4つ、玉座の後ろの壁の両端に2つ。
+	const Vector3 SCONCE_LIGHT_POSITIONS[] = {
+		{ -500.0f, 350.0f, -2318.0f }, { 500.0f, 350.0f, -2318.0f },
+		{ -1000.0f, 350.0f, -2318.0f }, { 1000.0f, 350.0f, -2318.0f },
+		{ -1050.0f, 350.0f, 2318.0f }, { 1050.0f, 350.0f, 2318.0f },
+	};
+	const Vector3 SCONCE_LIGHT_COLOR = { 2.0f, 1.1f, 0.5f };
+	constexpr float SCONCE_LIGHT_RANGE = 600.0f;
 	constexpr float LIGHT_AFFECT_POW = 2.0f;
 }
 
@@ -50,6 +58,9 @@ bool BossStage::Start()
 	}
 	for (const auto& position : DAIS_CANDLE_POSITIONS) {
 		AddCandleLight(position, DAIS_CANDLE_COLOR, DAIS_CANDLE_RANGE);
+	}
+	for (const auto& position : SCONCE_LIGHT_POSITIONS) {
+		AddCandleLight(position, SCONCE_LIGHT_COLOR, SCONCE_LIGHT_RANGE);
 	}
 	return true;
 }

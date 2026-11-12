@@ -54,6 +54,11 @@ PARTS = {
     "Statue":      (3.8, "height", 2048, 0.7),
     "Banner":      (6.5, "height", 2048, 1.0),
     "Rubble":      (2.5, "width",  1024, 1.0),
+    "Sconce":      (1.8, "height", 1024, 1.0),
+}
+# 正面（ランタンが出ている方）が -Y を向いていない部品を、読み込むときに Z まわりに回す（度）
+PART_ROTATION = {
+    "Sconce": 90.0,   # Meshy の出力はランタンが -X へ伸びている
 }
 
 # ---- 置き方 ----
@@ -92,6 +97,10 @@ RUBBLE = [
     (-11.8, -6.5, 30, 0.9), (11.8, 2.5, 250, 1.0),
     (-11.6, 17.5, 200, 1.0), (7.0, -14.5, 60, 0.7),
 ]
+# 壁の灯り: (x, 壁)。"front" は入口の壁、"back" は玉座の後ろの壁。横の壁は柱の真後ろになって隠れるので付けない。
+# ゲームの灯り（BossStage.cpp の SCONCE_LIGHTS）も、書き出すときに出る位置に合わせる。
+SCONCES = [(-5.0, "front"), (5.0, "front"), (-10.0, "front"), (10.0, "front"), (-10.5, "back"), (10.5, "back")]
+SCONCE_BASE_Y = 2.6
 
 PART_METALLIC_SCALE = 0.6   # Meshy の金属度に掛ける
 PART_SMOOTH_MAX = 0.6       # Meshy のつや（1 - 粗さ）の上限
@@ -189,6 +198,8 @@ def load_part(name):
     # 変形を焼き込む
     obj.data.transform(obj.matrix_world)
     obj.matrix_world = Matrix.Identity(4)
+    if name in PART_ROTATION:
+        obj.data.transform(Matrix.Rotation(math.radians(PART_ROTATION[name]), 4, "Z"))
     co = np.array([v.co[:] for v in obj.data.vertices])
     mn, mx = co.min(0), co.max(0)
     k = target / ((mx[2] - mn[2]) if fit == "height" else (mx[0] - mn[0]))
@@ -357,6 +368,17 @@ def build():
         place(r_obj, x, 0, z, rot, visual, k)
         hr = 0.35 * min(r_size[0], r_size[1]) * k
         box("RubbleCol", (x - hr, 0, z - hr), (x + hr, 0.6 * r_size[2] * k, z + hr), wall_mat, 4.0, col)
+    # 壁の灯り（壁に背中を付け、ランタンを広間の方へ向ける）
+    sc_obj, sc_size = parts["Sconce"]
+    for x, wall in SCONCES:
+        if wall == "front":
+            z, rot = -L + sc_size[1] / 2, 0
+        else:
+            z, rot = L - sc_size[1] / 2, 180
+        place(sc_obj, x, SCONCE_BASE_Y, z, rot, visual)
+        # ランタンのろうそくの位置（ゲームの cm）。BossStage.cpp の灯りに使う
+        forward = sc_size[1] * 0.3 * (1 if wall == "front" else -1)
+        log("SCONCE LIGHT cm", round(x * 100), round((SCONCE_BASE_Y + sc_size[2] * 0.5) * 100), round((z + forward) * 100))
     # 床の紋章（円の外は透明にして、床の上に少し浮かせて置く）
     emblem_disc(visual)
 
@@ -474,6 +496,7 @@ def render_previews(visual):
         ("entrance", (0, 2.0, -21), (0, 3.0, 20)),
         ("high", (-12, 10, -22), (2, 0, 8)),
         ("throne", (3, 2.0, 6), (0, 3.5, 21)),
+        ("door", (3, 3.0, -12), (-2, 3.0, -24)),
     ]:
         cam.location = to_blender(*pos)
         cam.rotation_euler = (to_blender(*target) - cam.location).to_track_quat("-Z", "Y").to_euler()
