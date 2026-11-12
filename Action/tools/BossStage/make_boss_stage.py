@@ -51,6 +51,8 @@ PARTS = {
     "Arch":        (9.4, "width",  2048, 1.0),
     "Candelabrum": (2.6, "height", 1024, 0.27),
     "Statue":      (3.2, "height", 2048, 0.7),
+    "Banner":      (5.5, "height", 2048, 1.0),
+    "Rubble":      (2.5, "width",  1024, 1.0),
 }
 
 # ---- 置き方 ----
@@ -69,6 +71,17 @@ CANDELABRA = [(-4.5, 12.5), (4.5, 12.5), (-4.0, -21.0), (4.0, -21.0)]   # (x, z)
 STATUE_X = 3.2                               # 玉座の左右（台座の上）
 EMBLEM_CENTER_Z = 2.0                        # 床の紋章の真ん中（戦う場所）
 EMBLEM_DIAMETER = 8.0
+BANNER_BASE_Y = 2.8                          # 柱の垂れ幕の下の端の高さ（上の端は約 8.3m で、アーチの下）
+BANNER_GAP = 0.05                            # 柱の表から離す距離（m）。布が柱にめり込まないように
+WALL_BANNER_X = 8.5                          # 玉座の後ろの壁の垂れ幕（石像より外側）
+WALL_BANNER_SCALE = 7.0 / 5.5                # 壁の垂れ幕は柱のものより大きく（高さ 7m）
+WALL_BANNER_BASE_Y = 3.0
+# がれき: (x, z, 向き°, 大きさの倍率)。隅と柱の足元に置き、真ん中の通り道（x が ±8 の内側）には置かない
+RUBBLE = [
+    (-12.0, -22.0, 0, 1.2), (12.3, -21.5, 140, 1.0),
+    (-12.0, 21.5, 200, 1.0), (12.0, 21.0, 60, 1.3),
+    (-9.6, -10.8, 30, 0.8), (9.8, 5.2, 250, 0.9),
+]
 
 WALL_COLOR = (0.055, 0.060, 0.075)   # 壁の色（sRGB）。灰色がかった青の暗い石
 WALL_SMOOTH = 0.35
@@ -201,13 +214,13 @@ def load_part(name):
     return obj, size
 
 
-def place(src, x, y, z, rot_deg, placed):
+def place(src, x, y, z, rot_deg, placed, scale=1.0):
     o = src.copy()
     o.data = src.data.copy()
     bpy.context.scene.collection.objects.link(o)
     o.hide_render = False
     o.hide_set(False)
-    o.matrix_world = Matrix.Translation(to_blender(x, y, z)) @ Matrix.Rotation(math.radians(rot_deg), 4, "Z")
+    o.matrix_world = Matrix.Translation(to_blender(x, y, z)) @ Matrix.Rotation(math.radians(rot_deg), 4, "Z") @ Matrix.Scale(scale, 4)
     placed.append(o)
     return o
 
@@ -325,6 +338,21 @@ def build():
         place(s_obj, x, dais_top, THRONE_Z, 180, visual)
         box("StatueCol", (x - s_size[0] / 2, dais_top, THRONE_Z - s_size[1] / 2),
             (x + s_size[0] / 2, dais_top + s_size[2], THRONE_Z + s_size[1] / 2), wall_mat, 4.0, col)
+    # 垂れ幕（柱の広間側の面に、柱と同じ向きで掛ける。玉座の後ろの壁にも大きめを2本）
+    b_obj, b_size = parts["Banner"]
+    for z in PILLAR_ZS:
+        for side in (-1, 1):
+            x = side * (PILLAR_X - p_size[1] / 2 - b_size[1] / 2 - BANNER_GAP)
+            place(b_obj, x, BANNER_BASE_Y, z, 90 * side * -1, visual)
+    for side in (-1, 1):
+        z = L - b_size[1] * WALL_BANNER_SCALE / 2 - BANNER_GAP
+        place(b_obj, side * WALL_BANNER_X, WALL_BANNER_BASE_Y, z, 180, visual, WALL_BANNER_SCALE)
+    # がれき（低い山なので、足元の小さめの箱だけ当たり判定にする）
+    r_obj, r_size = parts["Rubble"]
+    for x, z, rot, k in RUBBLE:
+        place(r_obj, x, 0, z, rot, visual, k)
+        hr = 0.35 * min(r_size[0], r_size[1]) * k
+        box("RubbleCol", (x - hr, 0, z - hr), (x + hr, 0.6 * r_size[2] * k, z + hr), wall_mat, 4.0, col)
     # 床の紋章（円の外は透明にして、床の上に少し浮かせて置く）
     emblem_disc(visual)
 
