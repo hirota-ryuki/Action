@@ -56,12 +56,9 @@
     },
     {
       "name": "Attack2",
-      "comment": "SnSAnimsetPro の片手剣の斬り3本（R → RL → RLLR）をつないで1本にする",
-      "segments": [
-        {"source": "D:/04_dawnload/SnS/EXPORT/InPlace/Sword_Attack_R.fbx", "rig": "ue4"},
-        {"source": "D:/04_dawnload/SnS/EXPORT/InPlace/Sword_Attack_RL.fbx", "rig": "ue4"},
-        {"source": "D:/04_dawnload/SnS/EXPORT/InPlace/Sword_Attack_RLLR.fbx", "rig": "ue4"}
-      ]
+      "comment": "片手剣の重い連続斬り（KinemIQ の Sword - heavy combo）",
+      "source": "D:/04_dawnload/kinemiq/Sword_-_heavy_combo.fbx",
+      "rig": "ue4"
     },
     {
       "name": "Attack3",

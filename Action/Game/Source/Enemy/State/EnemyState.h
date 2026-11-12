@@ -15,7 +15,7 @@ enum EnEnemyAnimClip
 	enEnemyAnimClip_Walk,
 	enEnemyAnimClip_Run,
 	enEnemyAnimClip_Attack1,  // 突進して突き → 回転斬り
-	enEnemyAnimClip_Attack2,  // 左上→右下、右上→左下と斬り下ろし → 横一閃
+	enEnemyAnimClip_Attack2,  // 片手剣の重い連続斬り
 	enEnemyAnimClip_Attack3,  // 斜めの斬撃を5つ飛ばす
 	enEnemyAnimClip_Hit,      // やられ（攻撃中以外で当たったとき）
 	enEnemyAnimClip_Dead,     // 死ぬ

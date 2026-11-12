@@ -44,7 +44,7 @@ namespace
 	constexpr AttackTiming ATTACKS[ATTACK_NUM] = {
 		// 攻撃1: 左腰に剣を構えてかがみ（6コマ目）、そこで溜めてから、一気に踏み込んで横に斬り抜ける。
 		{ enEnemyAnimClip_Attack1, 0.0f, 0.0f, 0.0f, 0, {}, {}, 5.5f / ANIM_FPS, ATTACK1_ROOT, ATTACK1_ROOT_NUM },
-		// 攻撃2: その場で、片手剣の斬り3本（SnS の R → RL → RLLR）を続けて振る。
+		// 攻撃2: その場で、片手剣の重い連続斬り（KinemIQ の Sword - heavy combo）を振る。
 		{ enEnemyAnimClip_Attack2, 0.0f, 0.0f, 0.0f, 0, {}, {}, -1.0f, nullptr, 0 },
 		// 攻撃3: 連続斬り（KinemIQ の slash combo）。剣が体の前を通る5回の振りで、斬撃を出す。
 		// コマは retarget_black_knight.py --sword の剣先の通り道から読んだ（27〜33コマ目の振りは体の横〜後ろを通るので出さない）。
