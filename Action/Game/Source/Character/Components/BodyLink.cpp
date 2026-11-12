@@ -292,6 +292,42 @@ void BodyLink::Update(Skeleton& skeleton)
 	RotateJointOutward(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward, spreadOffset);
 	RotateJointOutward(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward, spreadOffset);
 
+	// ── 空中だけ、太ももを上げる量・膝の曲がりを変える ──
+	const float hipFlexScale = 1.0f + (m_settings.jumpHipFlexScale - 1.0f) * m_airWeight;
+	const float kneeBendScale = 1.0f + (m_settings.jumpKneeBendScale - 1.0f) * m_airWeight;
+	const EnBone legs[2][3] = {
+		{ enBone_UpperLegL, enBone_LowerLegL, enBone_FootL },
+		{ enBone_UpperLegR, enBone_LowerLegR, enBone_FootR },
+	};
+	const float kneeForward = m_settings.jumpKneeForwardDeg * m_airWeight;
+	Vector3 debugSide;
+	debugSide.Cross(Vector3::AxisY, forward);
+	debugSide.Normalize();
+	auto kneeLocal = [&](const EnBone* leg) {
+		return ToLocal(GetPosition(skeleton, leg[1]) - GetPosition(skeleton, leg[0]), debugSide, forward);
+	};
+	for (int i = 0; i < 2; i++) {
+		m_debug.kneeBefore[i] = kneeLocal(legs[i]);
+	}
+	{
+		const Matrix& head = skeleton.GetBone(m_boneNos[enBone_Head])->GetWorldMatrix();
+		m_debug.faceYawDeg = Math::RadToDeg(atan2f(Vector3(head.m[2][0], 0.0f, head.m[2][2]).Dot(debugSide), Vector3(head.m[2][0], 0.0f, head.m[2][2]).Dot(forward)));
+	}
+	for (const auto& leg : legs) {
+		ScaleJointAngle(skeleton, leg[0], leg[1], Vector3(0.0f, -1.0f, 0.0f), hipFlexScale);
+		RotateJointForward(skeleton, leg[0], leg[1], forward, kneeForward);
+		m_debug.kneeAfterForward[&leg - legs] = kneeLocal(leg);
+		const Vector3 thigh = GetPosition(skeleton, leg[1]) - GetPosition(skeleton, leg[0]);
+		ScaleJointAngle(skeleton, leg[1], leg[2], thigh, kneeBendScale);
+	}
+	// ── ジャンプ中だけ、太ももを股関節から開く（負なら閉じる）──
+	const float legSpread = m_settings.jumpLegSpreadDeg * m_jumpWeight;
+	SpreadLeg(skeleton, enBone_UpperLegL, enBone_LowerLegL, forward, legSpread);
+	SpreadLeg(skeleton, enBone_UpperLegR, enBone_LowerLegR, forward, legSpread);
+	for (int i = 0; i < 2; i++) {
+		m_debug.kneeAfter[i] = kneeLocal(legs[i]);
+	}
+
 	// ── 左右の腕の形をそろえる ──
 	SymmetrizeArms(skeleton, forward, swing);
 }
@@ -441,6 +477,50 @@ void BodyLink::SymmetrizeArms(Skeleton& skeleton, const Vector3& forward, float 
 			RotateToward(skeleton, joints[self + part][0], joints[self + part][1], ToWorld(target, side, forward));
 		}
 	}
+}
+
+void BodyLink::SpreadLeg(Skeleton& skeleton, EnBone upperLeg, EnBone lowerLeg, const Vector3& forward, float angleDeg) const
+{
+	if (fabsf(angleDeg) <= 1.0e-3f) {
+		return;
+	}
+	// 外の向き: 腰の真ん中から、この脚の股関節の方への水平な向き。
+	const Vector3 hip = GetPosition(skeleton, upperLeg);
+	Vector3 side;
+	side.Cross(Vector3::AxisY, forward);
+	side.Normalize();
+	const Vector3 outward = side * ((hip - GetPosition(skeleton, enBone_Hips)).Dot(side) >= 0.0f ? 1.0f : -1.0f);
+	// 軸: 太ももの向きと外の向きの両方に直角。この軸で回すと、膝が外（内）へ動く。
+	const Vector3 thigh = Normalized(GetPosition(skeleton, lowerLeg) - hip);
+	Vector3 axis;
+	axis.Cross(thigh, outward);
+	if (axis.LengthSq() <= 1.0e-6f) {
+		return;  // 太ももが真横を向いている。
+	}
+	axis.Normalize();
+	const float sign = SignToward(skeleton, lowerLeg, upperLeg, axis, outward);
+	RotateAround(skeleton, upperLeg, axis, Math::DegToRad(angleDeg) * sign);
+}
+
+void BodyLink::ScaleJointAngle(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& base, float scale) const
+{
+	if (fabsf(scale - 1.0f) <= 1.0e-3f) {
+		return;
+	}
+	const Vector3 from = Normalized(base);
+	const Vector3 current = Normalized(GetPosition(skeleton, tip) - GetPosition(skeleton, joint));
+	Vector3 axis;
+	axis.Cross(from, current);
+	const float sinAngle = axis.Length();
+	if (sinAngle <= 1.0e-4f) {
+		return;  // まっすぐで、曲げる向きが決まらない。
+	}
+	axis *= 1.0f / sinAngle;
+	const float angle = atan2f(sinAngle, from.Dot(current));
+	// 角度が大きくなる向き: current の、base に直角な成分の向き。
+	const Vector3 away = current - from * from.Dot(current);
+	const float sign = SignToward(skeleton, tip, joint, axis, away);
+	RotateAround(skeleton, joint, axis, angle * (scale - 1.0f) * sign);
 }
 
 void BodyLink::RotateJointOutward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& forward, float angleDeg) const

@@ -117,6 +117,15 @@ protected:
 	{
 		m_bodyLink.ResetSettings();
 	}
+	const BodyLink::DebugInfo& GetBodyLinkDebugInfo() const
+	{
+		return m_bodyLink.GetDebugInfo();
+	}
+	// ジャンプ中（跳ぶ・空中・着地）・空中（着地を除く）の度合い（0〜1）を体の連動に渡す。モデルを更新する前（UpdateAction）に呼ぶ。
+	void SetBodyLinkJumpWeight(float jumpWeight, float airWeight)
+	{
+		m_bodyLink.SetJumpWeight(jumpWeight, airWeight);
+	}
 
 	CharacterInput m_input;
 	CharacterMover m_mover;
