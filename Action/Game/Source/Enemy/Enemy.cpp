@@ -40,7 +40,7 @@ namespace
 		settings.stopDistance = 150.0f;    // この距離まで近づいたら止まる（剣が届くところで止まる）。
 		settings.decideInterval = 2.0f;    // 歩いている間、走るかを決め直す間隔（秒）。
 		settings.runChance = 0.5f;         // 中くらい・遠いときに走る確率。残りは攻撃（中くらいなら攻撃1、遠いなら攻撃3）。
-		settings.attackInterval = 5.5f;    // 近いときに攻撃2をする間隔（秒）。攻撃2は 4.4秒かかる（PLAY_SPEED が 1 のとき）。
+		settings.attackInterval = 4.8f;    // 近いときに攻撃2をする間隔（秒）。攻撃2は 3.7秒かかる（PLAY_SPEED が 1 のとき）。
 		settings.firstAttackDelay = 0.6f;  // 相手を見つけてから最初に振れるまでの秒数。
 		return settings;
 	}
@@ -142,7 +142,7 @@ void Enemy::UpdateTuningUI(CharacterInput& input)
 	// 「攻撃1を繰り返す」は、F1 の画面を閉じても続ける（見ながら溜めの長さを決めるため）。
 	const bool canAttack = m_stateMachine.GetCurrentId() != EnemyStateId::Attack
 		&& m_stateMachine.GetCurrentId() != EnemyStateId::Dead;
-	bool fireAttack1 = m_isRepeatAttack1 && canAttack;
+	int fireIndex = (m_isRepeatAttack1 && canAttack) ? 0 : -1;  // 出させる攻撃（0〜2）。-1 なら出させない。
 
 	// F1 で開発用の画面を出しているときだけ（Release では ImGui を起動しないので、見ないで呼ぶと落ちる）。
 	if (DebugUI::IsVisible()) {
@@ -151,15 +151,22 @@ void Enemy::UpdateTuningUI(CharacterInput& input)
 		ImGui::TextUnformatted(u8"左腰に剣を構えてかがんだところで止める秒数。");
 		ImGui::TextUnformatted(u8"黒騎士は今、半分の速さ（PLAY_SPEED）なので、見た目は2倍の長さになる。");
 		if (ImGui::Button(u8"攻撃1を出す") && canAttack) {
-			fireAttack1 = true;
+			fireIndex = 0;
 		}
 		ImGui::SameLine();
 		ImGui::Checkbox(u8"攻撃1を繰り返す", &m_isRepeatAttack1);
+		if (ImGui::Button(u8"攻撃2を出す") && canAttack) {
+			fireIndex = 1;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button(u8"攻撃3を出す") && canAttack) {
+			fireIndex = 2;
+		}
 		ImGui::Text(u8"今のステート: %s", m_stateMachine.GetCurrentName());
 		ImGui::End();
 	}
-	if (fireAttack1) {
+	if (fireIndex >= 0) {
 		input.fire.isTrigger = true;
-		input.attackIndex = 0;
+		input.attackIndex = fireIndex;
 	}
 }

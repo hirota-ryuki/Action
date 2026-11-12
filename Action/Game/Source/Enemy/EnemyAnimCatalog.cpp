@@ -22,8 +22,8 @@ namespace
 		{ u8"Walk（歩く）", enEnemyAnimClip_Walk, true },
 		{ u8"Run（剣を肩に乗せて走る）", enEnemyAnimClip_Run, true },
 		{ u8"Attack1（溜めて踏み込み、横に斬り抜ける。溜めと踏み込みは入らない）", enEnemyAnimClip_Attack1, false },
-		{ u8"Attack2（連続斬り）", enEnemyAnimClip_Attack2, false },
-		{ u8"Attack3（斬撃を5つ飛ばす。斬撃は出ない）", enEnemyAnimClip_Attack3, false },
+		{ u8"Attack2（斬り3本を続けて振る）", enEnemyAnimClip_Attack2, false },
+		{ u8"Attack3（連続斬り。斬撃を5つ飛ばす。ここでは斬撃は出ない）", enEnemyAnimClip_Attack3, false },
 		{ u8"Hit（やられ）", enEnemyAnimClip_Hit, false },
 		{ u8"Dead（死ぬ）", enEnemyAnimClip_Dead, false },
 	};

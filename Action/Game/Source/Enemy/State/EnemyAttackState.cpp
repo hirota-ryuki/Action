@@ -44,12 +44,14 @@ namespace
 	constexpr AttackTiming ATTACKS[ATTACK_NUM] = {
 		// 攻撃1: 左腰に剣を構えてかがみ（6コマ目）、そこで溜めてから、一気に踏み込んで横に斬り抜ける。
 		{ enEnemyAnimClip_Attack1, 0.0f, 0.0f, 0.0f, 0, {}, {}, 5.5f / ANIM_FPS, ATTACK1_ROOT, ATTACK1_ROOT_NUM },
-		// 攻撃2: その場で連続斬り（KinemIQ の slash combo）。
+		// 攻撃2: その場で、片手剣の斬り3本（SnS の R → RL → RLLR）を続けて振る。
 		{ enEnemyAnimClip_Attack2, 0.0f, 0.0f, 0.0f, 0, {}, {}, -1.0f, nullptr, 0 },
-		// 攻撃3: 左上→右下から始めて、左右交互に5回。剣が前を通るコマで斬撃を出す。
+		// 攻撃3: 連続斬り（KinemIQ の slash combo）。剣が体の前を通る5回の振りで、斬撃を出す。
+		// コマは retarget_black_knight.py --sword の剣先の通り道から読んだ（27〜33コマ目の振りは体の横〜後ろを通るので出さない）。
+		//   12 右上→左下、49.5 右下→左上（斬り上げ）、62 右上→左下、78 右→左（横に払う）、90 上→下（振り下ろし）
 		{ enEnemyAnimClip_Attack3, 0.0f, 0.0f, 0.0f, 5,
-			{ 17.0f / 30.0f, 28.0f / 30.0f, 38.0f / 30.0f, 50.0f / 30.0f, 61.0f / 30.0f },
-			{ -45.0f, 45.0f, -45.0f, 45.0f, -45.0f }, -1.0f, nullptr, 0 },
+			{ 12.0f / 30.0f, 49.5f / 30.0f, 62.0f / 30.0f, 78.0f / 30.0f, 90.0f / 30.0f },
+			{ 45.0f, -45.0f, 45.0f, 0.0f, 90.0f }, -1.0f, nullptr, 0 },
 	};
 
 	// コマごとの距離の表を、time 秒のところで読む（間はまっすぐつなぐ）。
