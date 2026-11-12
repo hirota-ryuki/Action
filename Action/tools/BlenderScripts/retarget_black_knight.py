@@ -196,9 +196,18 @@ BLEND_BONES = [(C("Chest"), C("Spine"), C("UpperChest"))]
 def import_armature(path):
     before_obj = set(bpy.data.objects)
     before_act = set(bpy.data.actions)
-    bpy.ops.import_scene.fbx(filepath=path)
+    if path.lower().endswith((".glb", ".gltf")):
+        # KinemIQ などの glTF。時間は秒で入っていて、今のシーンの fps（30）のコマに直して読まれる
+        bpy.ops.import_scene.gltf(filepath=path)
+    else:
+        bpy.ops.import_scene.fbx(filepath=path)
     new = [o for o in bpy.data.objects if o not in before_obj]
     arm = next(o for o in new if o.type == "ARMATURE")
+    # 親（glTF のシーンの空のオブジェクトなど）を消しても世界での位置が変わらないよう、先に親から外す
+    if arm.parent is not None:
+        mw = arm.matrix_world.copy()
+        arm.parent = None
+        arm.matrix_world = mw
     for o in new:
         if o is not arm:
             bpy.data.objects.remove(o, do_unlink=True)
@@ -263,6 +272,9 @@ def retarget_clip(clip):
         bmap = ue4_map()
     else:
         bmap = vrm_map({b.name for b in src.data.bones})
+    # 骨の名前は大文字・小文字の違いを許す（KinemIQ の UE 式の骨格は頭だけ "Head"）
+    lower_names = {b.name.lower(): b.name for b in src.data.bones}
+    bmap = {t: (s if s in src.data.bones else lower_names.get(s.lower(), s)) for t, s in bmap.items()}
     bmap = {t: s for t, s in bmap.items() if t in REST_Q and s in src.data.bones}
 
     # 腕・手だけのポーズ（mask）を読む。設定全体の grip（剣を握る右手の指）を先に、クリップの mask をあとに重ねる
@@ -679,6 +691,23 @@ def bake(clip):
     secondary(frames_basis, hips_world[:-1] if loop else hips_world, loop)
     if loop:
         frames_basis[-1] = dict(frames_basis[0])
+    if clip.get("in_place", False):
+        # 元が前へ進むモーション（KinemIQ の dash slash など）は、腰の水平の動きを消して、その場の動きにする。
+        # 進む分はゲームが黒騎士ごと動かすので、何コマ目にどれだけ進んだかを出しておく（垂れ布の揺れは進んだまま計算済み）。
+        base = hips_world[0].copy()
+        fwd = []
+        for h in hips_world:
+            fwd.append(-(h - base).y)   # 黒騎士の前は -Y（世界の向き）
+        total = fwd[-1]
+        steps = [fwd[i + 1] - fwd[i] for i in range(len(fwd) - 1)]
+        peak = max(steps) if steps else 0.0
+        fast = [i for i, s in enumerate(steps) if s > peak * 0.2]
+        if fast:
+            a, b = fast[0], fast[-1] + 1
+            moved = fwd[b] - fwd[a]
+            print(f"ROOT [{clip['name']}] 前へ {total:.3f} m（{a}〜{b} コマ目で {moved:.3f} m）。"
+                  f"横へ {(hips_world[-1] - base).x:.3f} m。コマごと: " + " ".join(f"{v:.2f}" for v in fwd))
+        hips_world = [Vector((base.x, base.y, h.z)) for h in hips_world]
 
     TGT.animation_data_create()
     TGT.animation_data.action = None

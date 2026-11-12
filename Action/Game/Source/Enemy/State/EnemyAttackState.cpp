@@ -13,6 +13,20 @@ namespace
 
 	// 攻撃ごとの動き。時間はアニメーションの始まりからの秒数（30コマで1秒）。
 	// コマは tools/BlenderScripts/retarget_black_knight.py が書き出すときに出す「出来上がりの何コマ目から」を元にした。
+	constexpr float ANIM_FPS = 30.0f;
+
+	// 攻撃1（KinemIQ の dash slash）で、腰が前へ進んだ距離（黒騎士のモデルの m）。30コマで1秒、1コマ目が 0。
+	// retarget_black_knight.py が "in_place" で腰の水平の動きを消すときに出す「ROOT [Attack1] … コマごと」の値。
+	// 7〜12コマ目で一気に 3m 踏み込み、そのあと少しずつ止まる。ゲームはこの分だけ黒騎士ごと前へ動かす。
+	constexpr float ATTACK1_ROOT[] = {
+		0.00f, 0.01f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.85f, 1.66f, 2.33f,
+		2.80f, 3.05f, 3.19f, 3.30f, 3.40f, 3.47f, 3.53f, 3.58f, 3.61f, 3.63f,
+		3.65f, 3.65f, 3.66f, 3.66f, 3.66f, 3.66f, 3.66f, 3.66f, 3.66f, 3.66f,
+		3.66f, 3.66f, 3.66f, 3.66f, 3.66f, 3.66f, 3.68f, 3.70f, 3.71f, 3.72f,
+		3.72f, 3.72f, 3.72f, 3.72f, 3.72f, 3.72f, 3.72f, 3.72f,
+	};
+	constexpr int ATTACK1_ROOT_NUM = sizeof(ATTACK1_ROOT) / sizeof(ATTACK1_ROOT[0]);
+
 	struct AttackTiming
 	{
 		int clip;
@@ -22,18 +36,36 @@ namespace
 		int slashNum;               // 飛ばす斬撃の数。
 		float slashTimes[MAX_SLASH];
 		float slashRollDeg[MAX_SLASH];  // 斬撃を進む向きのまわりに回す角度。黒騎士から見て、- で左上→右下、+ で右上→左下。
+		float chargeAt;             // この時間のコマでアニメーションを止めて溜める（tuning の秒数だけ）。負なら溜めない。
+		const float* root;          // コマごとに前へ進んだ距離（モデルの m）。nullptr なら使わない。
+		int rootNum;
 	};
 
 	constexpr AttackTiming ATTACKS[ATTACK_NUM] = {
-		// 攻撃1: 槍の突きの踏み込み（5〜12コマ目）で前へ出る。回転斬りは 23〜33コマ目。
-		{ enEnemyAnimClip_Attack1, 5.0f / 30.0f, 12.0f / 30.0f, 900.0f, 0, {}, {} },
-		// 攻撃2: その場で3回振る（17・32・45コマ目あたり）。
-		{ enEnemyAnimClip_Attack2, 0.0f, 0.0f, 0.0f, 0, {}, {} },
+		// 攻撃1: 左腰に剣を構えてかがみ（6コマ目）、そこで溜めてから、一気に踏み込んで横に斬り抜ける。
+		{ enEnemyAnimClip_Attack1, 0.0f, 0.0f, 0.0f, 0, {}, {}, 5.5f / ANIM_FPS, ATTACK1_ROOT, ATTACK1_ROOT_NUM },
+		// 攻撃2: その場で、斬り3本（R → RL → RLLR）を続けて振る。
+		{ enEnemyAnimClip_Attack2, 0.0f, 0.0f, 0.0f, 0, {}, {}, -1.0f, nullptr, 0 },
 		// 攻撃3: 左上→右下から始めて、左右交互に5回。剣が前を通るコマで斬撃を出す。
 		{ enEnemyAnimClip_Attack3, 0.0f, 0.0f, 0.0f, 5,
 			{ 17.0f / 30.0f, 28.0f / 30.0f, 38.0f / 30.0f, 50.0f / 30.0f, 61.0f / 30.0f },
-			{ -45.0f, 45.0f, -45.0f, 45.0f, -45.0f } },
+			{ -45.0f, 45.0f, -45.0f, 45.0f, -45.0f }, -1.0f, nullptr, 0 },
 	};
+
+	// コマごとの距離の表を、time 秒のところで読む（間はまっすぐつなぐ）。
+	float SampleRoot(const AttackTiming& timing, float time)
+	{
+		if (timing.root == nullptr || timing.rootNum == 0) {
+			return 0.0f;
+		}
+		const float f = max(0.0f, time * ANIM_FPS);
+		const int i = static_cast<int>(f);
+		if (i >= timing.rootNum - 1) {
+			return timing.root[timing.rootNum - 1];
+		}
+		const float t = f - static_cast<float>(i);
+		return timing.root[i] + (timing.root[i + 1] - timing.root[i]) * t;
+	}
 
 	constexpr float SLASH_HEIGHT = 110.0f;   // 足元から、斬撃を出す高さ（黒騎士の胸のあたり）。
 	constexpr float SLASH_FORWARD = 80.0f;   // 体の前へ出して、自分のカプセルに当たらないようにする。
@@ -52,6 +84,9 @@ void EnemyAttackState::Enter(EnemyStateContext& context, const CharacterInput& i
 	m_attackIndex = input.attackIndex;
 	m_time = 0.0f;
 	m_nextSlash = 0;
+	m_isCharging = false;
+	m_isChargeDone = false;
+	m_chargeLeft = 0.0f;
 	// 振り始めに相手の方を向く。あとは向きを変えない。
 	context.mover->FaceTo(input.lookDirection);
 	context.model->PlayAnimation(GetTiming(m_attackIndex).clip, context.settings.animBlendSeconds);
@@ -73,15 +108,39 @@ EnemyStateId EnemyAttackState::CheckTransition(const EnemyStateContext& context,
 void EnemyAttackState::Update(EnemyStateContext& context, const CharacterInput& input, float deltaTime)
 {
 	const AttackTiming& timing = GetTiming(m_attackIndex);
+
+	// 溜め: 構えのコマに来たら、アニメーションを止めて、決めた秒数だけ待つ。その間は時間を進めない。
+	if (timing.chargeAt >= 0.0f && !m_isChargeDone && m_time >= timing.chargeAt) {
+		if (!m_isCharging) {
+			m_isCharging = true;
+			m_chargeLeft = context.tuning != nullptr ? context.tuning->attack1ChargeSeconds : 0.0f;
+			context.model->GetModelRender().SetAnimationSpeed(0.0f);
+		}
+		m_chargeLeft -= deltaTime;
+		if (m_chargeLeft > 0.0f) {
+			context.mover->Move(Vector3::Zero, deltaTime);
+			return;
+		}
+		m_isCharging = false;
+		m_isChargeDone = true;
+		context.model->GetModelRender().SetAnimationSpeed(context.settings.playSpeed);
+	}
+
+	const float prevTime = m_time;
 	m_time += deltaTime;
 
 	// 突進のあいだは前へ進む。それ以外は止まる（重力はかかる）。
+	Vector3 forward = context.mover->GetForward();
+	forward.y = 0.0f;
+	forward.Normalize();
 	Vector3 velocity = Vector3::Zero;
 	if (m_time >= timing.dashStart && m_time < timing.dashEnd) {
-		velocity = context.mover->GetForward();
-		velocity.y = 0.0f;
-		velocity.Normalize();
-		velocity *= timing.dashSpeed;
+		velocity = forward * timing.dashSpeed;
+	}
+	// アニメーションの中で腰が進んだ分（コマごとの表）だけ、黒騎士ごと前へ動かす。
+	if (timing.root != nullptr && deltaTime > 0.0f) {
+		const float moved = (SampleRoot(timing, m_time) - SampleRoot(timing, prevTime)) * context.settings.rootMoveScale;
+		velocity += forward * (moved / deltaTime);
 	}
 	context.mover->Move(velocity, deltaTime);
 

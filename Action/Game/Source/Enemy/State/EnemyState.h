@@ -44,6 +44,13 @@ struct EnemyStateSettings
 	float walkAnimSpeed = 1.0f;     // Walk の再生の速さ。歩く速さと、Walk の足が地面を送る速さの比にすると、足が滑らない。
 	float playSpeed = 1.0f;         // 黒騎士の動き全体の速さ（アニメーションと移動の両方に掛ける）。動きを確かめるときに下げる。
 	float vanishDelay = 2.0f;       // 倒れ終わってから消えるまでの秒数。
+	float rootMoveScale = 100.0f;   // アニメーションの中で進む距離（モデルの m）を、ゲームの距離にする倍率（100 × モデルの大きさ）。
+};
+
+// ゲームを動かしたまま変えたい調整値（F1 の画面で変える）。持ち主が持ち、ステートはポインタで読む。
+struct EnemyTuning
+{
+	float attack1ChargeSeconds = 0.6f;  // 攻撃1で、構え（左腰に剣を構えてかがむ）のコマで止めて溜める秒数。
 };
 
 // 攻撃を受けたこと・死んだことを、持ち主（Enemy）とステートの間で受け渡す。持ち主が持ち、ステートはポインタで触る。
@@ -76,6 +83,7 @@ struct EnemyStateContext
 	Faction faction = Faction::Enemy;    // 飛ばした斬撃が当たる相手を決める。
 	EnemyStateSettings settings;
 	EnemyDamageState* damage = nullptr;  // 当たった・死んだ。持ち主が持つ。
+	const EnemyTuning* tuning = nullptr; // F1 の画面で変える調整値。持ち主が持つ。
 	// ひとつ前のステート。StateMachine が入れる。
 	EnemyStateId previousId = EnemyStateId::Idle;
 };

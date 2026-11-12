@@ -50,22 +50,10 @@
     },
     {
       "name": "Attack1",
-      "comment": "突進して突き（槍の突き。左腕は立ち姿の形にして片手にする）→ 回転斬り（片手剣の斬りに、体ごと1回転を足す）",
-      "segments": [
-        {
-          "source": "D:/04_dawnload/BlackKnightAnim/extracted/Animations/Male/Combat/Polearm/HumanM@AttackPolearm01.fbx", "rig": "kevin", "frames": [1, 24],
-          "mask": {"fbx": "D:/04_dawnload/BlackKnightAnim/extracted/Animations/Male/Idles/HumanM@Idle01.fbx", "bones": ["B-shoulder.L", "B-upperArm.L", "B-forearm.L", "B-hand.L", "B-handProp.L",
-                  "B-indexFinger01.L", "B-indexFinger02.L", "B-indexFinger03.L",
-                  "B-middleFinger01.L", "B-middleFinger02.L", "B-middleFinger03.L",
-                  "B-ringFinger01.L", "B-ringFinger02.L", "B-ringFinger03.L",
-                  "B-pinky01.L", "B-pinky02.L", "B-pinky03.L",
-                  "B-thumb01.L", "B-thumb02.L", "B-thumb03.L"]}
-        },
-        {
-          "source": "D:/04_dawnload/BlackKnightAnim/extracted/Animations/Male/Combat/1H/HumanM@Attack1H01_R.fbx", "rig": "kevin", "frames": [1, 34],
-          "spin": [[3, 0], [22, 360]]
-        }
-      ]
+      "comment": "居合いのように左腰に構えて溜め → 低く一気に踏み込み → 右手で横に斬り抜ける（KinemIQ の Sword - dash slash）。前へ進む分は消し、ゲームが黒騎士ごと動かす。溜めの長さはゲームが構えのコマで止めて決める",
+      "source": "D:/04_dawnload/kinemiq/Sword_-_dash_slash.glb",
+      "rig": "ue4",
+      "in_place": true
     },
     {
       "name": "Attack2",
