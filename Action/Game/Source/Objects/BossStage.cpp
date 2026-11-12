@@ -4,7 +4,7 @@
 namespace
 {
 	const char* HALL_MODEL_PATH = "Assets/modelData/stage/boss/BossHall.fbx";
-	const char* CEILING_MODEL_PATH = "Assets/modelData/stage/boss/BossHallCeiling.fbx";
+	const char* NO_SHADOW_MODEL_PATH = "Assets/modelData/stage/boss/BossHallNoShadow.fbx";   // 天井と炎
 	const char* HALL_COLLISION_PATH = "Assets/modelData/stage/boss/collision/BossHallCollision.fbx";
 
 	// ゲームの +Z が玉座の方、-Z が入口の扉の方（cm）。広間は X が ±1400、Z が ±2400。
@@ -33,6 +33,25 @@ namespace
 	};
 	const Vector3 SCONCE_LIGHT_COLOR = { 2.0f, 1.0f, 0.4f };
 	constexpr float SCONCE_LIGHT_RANGE = 600.0f;
+
+	// ---- 炎を照らすライト ----
+	// 炎は板の法線を真下に向けてあるので、炎の段ごとに、根元のすぐ下に置いた明るいライトで光って見せる（上からの月の光や夜空の映り込みを拾わない）。
+	// 高さは make_boss_stage.py が書き出すときに出す「FLAME LIGHT cm」。燭台は炎が2段なので、ライトも2つ。
+	const float CANDELABRUM_FLAME_LIGHT_HEIGHTS[] = { 209.0f, 258.0f };
+	const float DAIS_FLAME_LIGHT_HEIGHTS[] = { 306.0f, 335.0f };
+	constexpr float SCONCE_FLAME_LIGHT_HEIGHT = 360.0f;
+	constexpr float SCONCE_FLAME_LIGHT_Z = 2322.0f;   // 入口の壁は -、玉座の後ろの壁は +
+	const Vector3 FLAME_LIGHT_COLOR = { 14.0f, 7.0f, 2.0f };
+	constexpr float FLAME_LIGHT_RANGE = 160.0f;   // 燭台の外側の炎（ライトから横に約 50cm）までしっかり届く
+
+	// ---- 炎の揺らめき ----
+	// ろうそくの光の明るさを、2つの速さの波を重ねて少しだけ揺らす。
+	constexpr float FLICKER_SPEED_1 = 9.0f;      // 1秒に何ラジアン進むか
+	constexpr float FLICKER_SPEED_2 = 23.0f;
+	constexpr float FLICKER_AMOUNT_1 = 0.6f;     // 2つの波の割合
+	constexpr float FLICKER_AMOUNT_2 = 0.4f;
+	constexpr float FLAME_FLICKER = 0.15f;       // 炎のライトの揺れ幅（明るさの割合）
+	constexpr float CANDLE_FLICKER = 0.06f;      // 広間を照らすろうそくのライトの揺れ幅
 
 	// ---- 窓から入る青い月の光 ----
 	// 玉座の後ろの大きな窓の前。玉座と石像を後ろから青く照らし、影絵のように見せる。
@@ -91,10 +110,10 @@ bool BossStage::Start()
 	m_model.SetShadowCasterFlag(true);
 	m_model.Update();
 
-	// 天井は影を落とさない（落とすと、月の光が広間に入らなくなる）。
-	m_ceilingModel.Init(CEILING_MODEL_PATH, nullptr, 0, enModelUpAxisZ, false);
-	m_ceilingModel.SetShadowCasterFlag(false);
-	m_ceilingModel.Update();
+	// 天井と炎は影を落とさない（天井が落とすと、月の光が広間に入らなくなる）。
+	m_noShadowModel.Init(NO_SHADOW_MODEL_PATH, nullptr, 0, enModelUpAxisZ, false);
+	m_noShadowModel.SetShadowCasterFlag(false);
+	m_noShadowModel.Update();
 
 	m_collisionModel.Init(HALL_COLLISION_PATH, nullptr, 0, enModelUpAxisZ, false);
 	m_collisionModel.Update();
@@ -102,14 +121,29 @@ bool BossStage::Start()
 	m_physicsStaticObject.SetFriction(1.0f);
 
 	for (float z : PILLAR_ZS) {
-		AddPointLight({ -CANDELABRUM_X, CANDLE_HEIGHT, z }, PILLAR_CANDLE_COLOR, PILLAR_CANDLE_RANGE);
-		AddPointLight({ CANDELABRUM_X, CANDLE_HEIGHT, z }, PILLAR_CANDLE_COLOR, PILLAR_CANDLE_RANGE);
+		AddPointLight({ -CANDELABRUM_X, CANDLE_HEIGHT, z }, PILLAR_CANDLE_COLOR, PILLAR_CANDLE_RANGE, CANDLE_FLICKER);
+		AddPointLight({ CANDELABRUM_X, CANDLE_HEIGHT, z }, PILLAR_CANDLE_COLOR, PILLAR_CANDLE_RANGE, CANDLE_FLICKER);
 	}
 	for (const auto& position : DAIS_CANDLE_POSITIONS) {
-		AddPointLight(position, DAIS_CANDLE_COLOR, DAIS_CANDLE_RANGE);
+		AddPointLight(position, DAIS_CANDLE_COLOR, DAIS_CANDLE_RANGE, CANDLE_FLICKER);
 	}
 	for (const auto& position : SCONCE_LIGHT_POSITIONS) {
-		AddPointLight(position, SCONCE_LIGHT_COLOR, SCONCE_LIGHT_RANGE);
+		AddPointLight(position, SCONCE_LIGHT_COLOR, SCONCE_LIGHT_RANGE, CANDLE_FLICKER);
+	}
+	for (float height : CANDELABRUM_FLAME_LIGHT_HEIGHTS) {
+		for (float z : PILLAR_ZS) {
+			AddPointLight({ -CANDELABRUM_X, height, z }, FLAME_LIGHT_COLOR, FLAME_LIGHT_RANGE, FLAME_FLICKER);
+			AddPointLight({ CANDELABRUM_X, height, z }, FLAME_LIGHT_COLOR, FLAME_LIGHT_RANGE, FLAME_FLICKER);
+		}
+	}
+	for (float height : DAIS_FLAME_LIGHT_HEIGHTS) {
+		for (const auto& candle : DAIS_CANDLE_POSITIONS) {
+			AddPointLight({ candle.x, height, candle.z }, FLAME_LIGHT_COLOR, FLAME_LIGHT_RANGE, FLAME_FLICKER);
+		}
+	}
+	for (const auto& sconce : SCONCE_LIGHT_POSITIONS) {
+		const float z = sconce.z < 0.0f ? -SCONCE_FLAME_LIGHT_Z : SCONCE_FLAME_LIGHT_Z;
+		AddPointLight({ sconce.x, SCONCE_FLAME_LIGHT_HEIGHT, z }, FLAME_LIGHT_COLOR, FLAME_LIGHT_RANGE, FLAME_FLICKER);
 	}
 	AddPointLight(BACK_WINDOW_LIGHT_POSITION, BACK_WINDOW_LIGHT_COLOR, BACK_WINDOW_LIGHT_RANGE);
 	for (float z : WINDOW_ZS) {
@@ -141,7 +175,7 @@ bool BossStage::Start()
 	return true;
 }
 
-void BossStage::AddPointLight(const Vector3& position, const Vector3& color, float range)
+void BossStage::AddPointLight(const Vector3& position, const Vector3& color, float range, float flicker)
 {
 	auto light = std::make_unique<nsK2Engine::PointLight>();
 	light->Init();
@@ -149,11 +183,22 @@ void BossStage::AddPointLight(const Vector3& position, const Vector3& color, flo
 	light->SetColor(color);
 	light->SetRange(range);
 	light->SetAffectPowParam(LIGHT_AFFECT_POW);
+	if (flicker > 0.0f) {
+		// 揺れの始まりを位置からずらして、どのろうそくも同じ拍子で揺れないようにする。
+		const float phase = position.x * 0.013f + position.z * 0.007f;
+		m_flickers.push_back({ light.get(), color, phase, flicker });
+	}
 	m_lights.push_back(std::move(light));
 }
 
 void BossStage::UpdateLights()
 {
+	m_time += g_gameTime->GetFrameDeltaTime();
+	for (const auto& flicker : m_flickers) {
+		const float wave = FLICKER_AMOUNT_1 * sinf(m_time * FLICKER_SPEED_1 + flicker.phase)
+			+ FLICKER_AMOUNT_2 * sinf(m_time * FLICKER_SPEED_2 + flicker.phase * 2.3f);
+		flicker.light->SetColor(flicker.baseColor * (1.0f + flicker.amount * wave));
+	}
 	// ライトのカメラから見た位置は、カメラが動くたびに計算し直す必要がある（エンジンが画面のどこを照らすかをこれで選ぶ）。
 	for (auto& light : m_lights) {
 		light->Update();
@@ -174,7 +219,7 @@ void BossStage::Update()
 void BossStage::Render(RenderContext& rc)
 {
 	m_model.Draw(rc);
-	m_ceilingModel.Draw(rc);
+	m_noShadowModel.Draw(rc);
 }
 
 Vector3 BossStage::GetPlayerStartPosition()
