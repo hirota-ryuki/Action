@@ -27,9 +27,9 @@ VEIN_COLOR = np.array([150, 148, 140]) / 255.0     # 白い筋（sRGB）
 FINE_VEIN_COLOR = np.array([70, 70, 68]) / 255.0   # 細かいひび（sRGB）
 GOLD_COLOR = np.array([196, 164, 108]) / 255.0     # シャンパンゴールド（sRGB）
 
-SMOOTH_MARBLE = 0.90
-SMOOTH_VEIN = 0.80
-SMOOTH_GOLD = 0.70
+SMOOTH_MARBLE = 0.75
+SMOOTH_VEIN = 0.65
+SMOOTH_GOLD = 0.55
 GOLD_DEPTH = 1.5            # 目地のへこみ（法線の強さに効く）
 
 rng = np.random.default_rng(SEED)
