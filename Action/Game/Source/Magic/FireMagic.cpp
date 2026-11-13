@@ -78,6 +78,7 @@ void FireMagic::OnRelease(const MagicCastContext& context)
 	bullet->SetCharge(GetChargeRate());
 	bullet->Init(context.origin, context.direction, context.caster, context.faction);
 	StartCooldown(m_cooldownSeconds);
+	NotifyCast();
 	StopCharge();
 }
 

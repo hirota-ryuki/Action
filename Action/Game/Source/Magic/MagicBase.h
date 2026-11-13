@@ -45,12 +45,29 @@ public:
 		return m_cooldown <= 0.0f;
 	}
 
+	// これまでに撃った回数。一人称の腕が、撃った瞬間に手を動かすのに使う（前のフレームと比べる）。
+	int GetCastCount() const
+	{
+		return m_castCount;
+	}
+	// 溜めている最中か。溜め撃ちの魔法だけが true を返す。一人称の腕が、溜めている間は両手を上げるのに使う。
+	virtual bool IsCharging() const
+	{
+		return false;
+	}
+
 protected:
 	void StartCooldown(float seconds)
 	{
 		m_cooldown = seconds;
 	}
+	// 弾を撃ったときに呼ぶ。
+	void NotifyCast()
+	{
+		++m_castCount;
+	}
 
 private:
 	float m_cooldown = 0.0f;  // 再び使えるまでの残り秒数。
+	int m_castCount = 0;
 };

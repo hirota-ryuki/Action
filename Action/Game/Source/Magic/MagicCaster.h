@@ -31,10 +31,16 @@ public:
 	void Update(const CharacterInput& input, const Vector3& position, const Vector3& forward, float deltaTime, bool canAct);
 
 	MagicBase* GetCurrentMagic() const;
+	const MagicBase* GetSubMagic() const
+	{
+		return m_subMagic.get();
+	}
 	void SelectMagic(int index);
 
 private:
 	MagicCastContext MakeContext(const CharacterInput& input, const Vector3& position, const Vector3& forward, float deltaTime) const;
+	// メインの魔法に渡す情報。input.mainAimOffset があれば、撃つ位置をずらす。
+	static MagicCastContext MakeMainContext(const CharacterInput& input, const MagicCastContext& context);
 	// ボタンの状態に応じて魔法の OnPress / OnHold / OnRelease を呼ぶ。
 	static void UpdateButton(MagicBase& magic, const ButtonState& button, const MagicCastContext& context, bool& isHolding);
 	void CancelHolding();

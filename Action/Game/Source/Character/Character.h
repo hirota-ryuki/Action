@@ -72,6 +72,12 @@ public:
 	// 読むだけの側（UI など）に渡す const 版。
 	virtual const Status& GetStatus() const = 0;
 
+	// 持っている魔法。一人称の腕が、撃った・溜めているを見るのに使う。
+	const MagicCaster& GetMagicCaster() const
+	{
+		return m_magicCaster;
+	}
+
 	// 体を描くか。一人称カメラのときは false にする。
 	void SetRenderBody(bool isRenderBody)
 	{

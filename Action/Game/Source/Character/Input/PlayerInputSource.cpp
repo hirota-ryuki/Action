@@ -2,6 +2,13 @@
 #include "PlayerInputSource.h"
 #include "system.h"
 
+namespace
+{
+	// 一人称で、メインの魔法（氷）を右手から撃つ。撃つ位置を、カメラから見て右（x）と上（y）へこれだけずらす。
+	// 右手を突き出しきったときの手のひらの前に合わせてある。
+	const Vector3 FIRST_PERSON_RIGHT_HAND_OFFSET = Vector3(18.0f, -14.0f, 0.0f);
+}
+
 PlayerInputSource::PlayerInputSource(int padNo)
 	: m_padNo(padNo)
 {
@@ -45,9 +52,14 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 
 	// 一人称では視線の方向へ目の位置から撃つ。三人称ではキャラクターの正面へ撃つ（hasAim = false）。
 	input.hasAim = context.isFirstPerson;
+	input.mainAimOffset = Vector3::Zero;
 	if (input.hasAim) {
 		input.aimOrigin = g_camera3D->GetPosition();
 		input.aimDirection = g_camera3D->GetForward();
+		const Matrix& cameraRotation = g_camera3D->GetCameraRotation();
+		const Vector3 cameraUp(cameraRotation.m[1][0], cameraRotation.m[1][1], cameraRotation.m[1][2]);
+		input.mainAimOffset = g_camera3D->GetRight() * FIRST_PERSON_RIGHT_HAND_OFFSET.x
+			+ cameraUp * FIRST_PERSON_RIGHT_HAND_OFFSET.y;
 	}
 }
 

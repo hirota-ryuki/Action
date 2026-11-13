@@ -21,6 +21,10 @@ public:
 	void OnHold(const MagicCastContext& context) override;
 	void OnRelease(const MagicCastContext& context) override;
 	void OnCancel() override;
+	bool IsCharging() const override
+	{
+		return m_isCharging;
+	}
 
 private:
 	float GetChargeRate() const;

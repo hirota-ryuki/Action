@@ -2,6 +2,12 @@
 #include "MagicCaster.h"
 #include "CharacterInput.h"
 
+namespace
+{
+	// メインの魔法の撃つ位置をずらしたとき（mainAimOffset）、照準のこの距離先の点へ向けて撃つ。
+	constexpr float AIM_POINT_DISTANCE = 3000.0f;
+}
+
 void MagicCaster::Init(IGameObject* owner, Faction faction, const Settings& settings)
 {
 	m_owner = owner;
@@ -67,7 +73,7 @@ void MagicCaster::Update(const CharacterInput& input, const Vector3& position, c
 
 	const MagicCastContext context = MakeContext(input, position, forward, deltaTime);
 	if (MagicBase* magic = GetCurrentMagic()) {
-		UpdateButton(*magic, input.fire, context, m_isHolding);
+		UpdateButton(*magic, input.fire, MakeMainContext(input, context), m_isHolding);
 	}
 	if (m_subMagic != nullptr) {
 		UpdateButton(*m_subMagic, input.subFire, context, m_isSubHolding);
@@ -112,6 +118,20 @@ MagicCastContext MagicCaster::MakeContext(const CharacterInput& input, const Vec
 	context.direction.Normalize();
 	context.origin += context.direction * m_settings.castForward;
 	return context;
+}
+
+MagicCastContext MagicCaster::MakeMainContext(const CharacterInput& input, const MagicCastContext& context)
+{
+	if (!input.hasAim || input.mainAimOffset.LengthSq() <= FLT_EPSILON) {
+		return context;
+	}
+	// 撃つ位置だけずらし、向きは照準の先の点へ向け直す。
+	MagicCastContext mainContext = context;
+	const Vector3 aimPoint = context.origin + context.direction * AIM_POINT_DISTANCE;
+	mainContext.origin = context.origin + input.mainAimOffset;
+	mainContext.direction = aimPoint - mainContext.origin;
+	mainContext.direction.Normalize();
+	return mainContext;
 }
 
 void MagicCaster::CancelHolding()

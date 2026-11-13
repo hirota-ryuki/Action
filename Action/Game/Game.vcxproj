@@ -239,6 +239,7 @@
     <ClCompile Include="Source\Player\PlayerConfig.cpp" />
     <ClCompile Include="Source\Character\Character.cpp" />
     <ClCompile Include="Source\Player\PlayerAnimator.cpp" />
+    <ClCompile Include="Source\Player\FirstPersonArms.cpp" />
     <ClCompile Include="Source\Enemy\Enemy.cpp" />
     <ClCompile Include="Source\Enemy\BlackKnightInputSource.cpp" />
     <ClCompile Include="Source\Enemy\SlashBullet.cpp" />
@@ -319,6 +320,7 @@
     <ClInclude Include="Source\Character\Status.h" />
     <ClInclude Include="Source\Actor\Actor.h" />
     <ClInclude Include="Source\Player\PlayerAnimator.h" />
+    <ClInclude Include="Source\Player\FirstPersonArms.h" />
     <ClInclude Include="Source\Enemy\Enemy.h" />
     <ClInclude Include="Source\Enemy\BlackKnightInputSource.h" />
     <ClInclude Include="Source\Enemy\SlashBullet.h" />

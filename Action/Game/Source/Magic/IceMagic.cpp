@@ -15,4 +15,5 @@ void IceMagic::OnPress(const MagicCastContext& context)
 	IceBullet* bullet = NewGO<IceBullet>(1, BulletBase::OBJECT_NAME);
 	bullet->Init(context.origin, context.direction, context.caster, context.faction);
 	StartCooldown(m_cooldownSeconds);
+	NotifyCast();
 }
