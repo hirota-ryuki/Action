@@ -171,6 +171,21 @@ void SpringBones::Update(Skeleton& skeleton)
 			direction = animDirection;
 			limitRotation.Apply(direction);
 		}
+		// ジャンプ中は、アニメーションの形より上へ上がらない（向きの高さをアニメーションの高さまで下げる）。
+		// 左右・前後の揺れは残す。脚に押し出す前に行うので、脚に押される分は上がってよい。
+		if (joint.group->noLiftInJump && m_jumpWeight > 0.0f && direction.y > animDirection.y) {
+			Vector3 horizontal(direction.x, 0.0f, direction.z);
+			if (horizontal.LengthSq() <= 1.0e-6f) {
+				horizontal = Vector3(animDirection.x, 0.0f, animDirection.z);
+			}
+			if (horizontal.LengthSq() > 1.0e-6f) {
+				horizontal.Normalize();
+				const float horizontalLength = sqrtf(max(0.0f, 1.0f - animDirection.y * animDirection.y));
+				const Vector3 lowered = horizontal * horizontalLength + Vector3::AxisY * animDirection.y;
+				direction = direction + (lowered - direction) * m_jumpWeight;
+				direction.Normalize();
+			}
+		}
 		Vector3 tail = head + direction * length;
 
 		// 脚にめり込まないように押し出し、もう一度長さをそろえる。
@@ -184,6 +199,22 @@ void SpringBones::Update(Skeleton& skeleton)
 			tail = head + direction * length;
 		}
 
+		// ジャンプ中は、真下から jumpMaxAngleFromDownDeg より上へ上げない（脚に押したあとに抑える）。
+		// スカートの骨はアニメーションの中で太ももと一緒に動き、跳んで太ももを上げると水平より上まで上がって中が見えるため。
+		// 太ももを大きく上げたときは、太ももがスカートに少し入り込む。
+		if (joint.group->noLiftInJump && m_jumpWeight > 0.0f && m_settings.jumpMaxAngleFromDownDeg > 0.0f) {
+			const float maxAngle = Math::DegToRad(m_settings.jumpMaxAngleFromDownDeg);
+			const float angle = acosf(max(-1.0f, min(1.0f, -direction.y)));
+			if (angle > maxAngle) {
+				Vector3 horizontal(direction.x, 0.0f, direction.z);
+				if (horizontal.LengthSq() > 1.0e-6f) {
+					horizontal.Normalize();
+					const float limited = angle + (maxAngle - angle) * m_jumpWeight;
+					direction = horizontal * sinf(limited) + Vector3::AxisY * -cosf(limited);
+					tail = head + direction * length;
+				}
+			}
+		}
 		joint.velocity = (tail - joint.tail) * (1.0f / deltaTime);
 		joint.tail = tail;
 		joint.prevAnimTail = animTail;

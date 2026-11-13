@@ -134,6 +134,13 @@
 		// ジャンプ中（跳ぶ・空中・着地）に、股関節から太ももを内へ回して左右の膝をそろえる（足先の左右の位置は変えない）。
 		// ジャンプのクリップは膝が体の真ん中から約 25 外へ開いている。false ならアニメーションのまま。
 		"jumpCloseLegs": true,
+		// ジャンプ中に、高く上がる方の腕（骨は J_Bip_R）の上腕を上げる角度の上限（真下を 0°、水平を 90°）。0 なら抑えない。
+		// ジャンプのクリップはこの腕だけ約 105° まで上がる（反対の腕は約 77°）。実機で見て 68° にした。
+		"jumpLeftArmMaxRaiseDeg": 68.0,
+		// ジャンプ中に、足首から先を縦の軸で回し、上から見たつま先を外へ向ける角度（負なら内へ）。L・R は骨の名前（J_Bip_L・J_Bip_R）。
+		// 実機で見て、J_Bip_L の足を 24° にした。
+		"jumpFootYawDegL": 24.0,
+		"jumpFootYawDegR": 0.0,
 		// 走っているときに、左右の腕・足の形をそろえ、頭を前に向ける（走りのクリップは左腕が右腕より外へ開き、右足だけが内へ入っている）。
 		"symmetrize": true
 	},
@@ -144,10 +151,14 @@
 	"springBone": {
 		"enabled": true,
 		"legRadius": 8.0, // 太もも・すねの太さ。揺れ物の先がこれより脚に近づかない（アニメーションの形がもとから近いときはそこまで）。
+		// ジャンプ中に、noLiftInJump のまとまり（スカート）を真下からこの角度より上へ上げない。0 なら抑えない。
+		// スカートの骨はアニメーションの中で太もも＋約 13° の向きに動き、JumpLand でしゃがむと 110°（水平より上）まで上がって中が見えた。
+		"jumpMaxAngleFromDownDeg": 50.0,
 		"groups": {
 			"hair":      { "match": "Hair",      "frequency": 3.5, "dampingRatio": 0.6,  "maxAngleDeg": 20.0 }, // 2.5・0.35・40 では揺れすぎた。
-			"coatSkirt": { "match": "CoatSkirt", "frequency": 2.5, "dampingRatio": 0.4,  "maxAngleDeg": 35.0 },
-			"skirt":     { "match": "Skirt",     "frequency": 3.0, "dampingRatio": 0.5,  "maxAngleDeg": 25.0 },
+			// noLiftInJump: ジャンプ中は、揺れでアニメーションの形より上へめくれない（落ちるときにスカートの中が見えないように）。
+			"coatSkirt": { "match": "CoatSkirt", "frequency": 2.5, "dampingRatio": 0.4,  "maxAngleDeg": 35.0, "noLiftInJump": true },
+			"skirt":     { "match": "Skirt",     "frequency": 3.0, "dampingRatio": 0.5,  "maxAngleDeg": 25.0, "noLiftInJump": true },
 			"bust":      { "match": "Bust",      "frequency": 4.0, "dampingRatio": 0.25, "maxAngleDeg": 8.0 }
 		}
 	},

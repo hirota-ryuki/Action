@@ -50,7 +50,9 @@ protected:
 
 private:
 	void Respawn();
-	// ジャンプ中（Air・Land）の度合いを、体の連動に渡す。入る・出るときは少しずつ変える。
+	// 開発用の画面（F1 の ImGui）に、調整値を出す。
+	void UpdateDebugUI();
+	// ジャンプ中（Air・Land）の度合いを、体の連動と揺れ物に渡す。入る・出るときは少しずつ変える。
 	void UpdateJumpWeight(float deltaTime);
 
 	PlayerInputSource m_playerInputSource;

@@ -292,6 +292,9 @@ namespace
 		settings.elbowJointOffsetDeg = Read(section, "bodyLink", "elbowJointOffsetDeg", 0.0f);
 		settings.upperArmSpreadDeg = Read(section, "bodyLink", "upperArmSpreadDeg", 0.0f);
 		settings.jumpCloseLegs = Read(section, "bodyLink", "jumpCloseLegs", false);
+		settings.jumpLeftArmMaxRaiseDeg = Read(section, "bodyLink", "jumpLeftArmMaxRaiseDeg", 0.0f);
+		settings.jumpFootYawDeg[0] = Read(section, "bodyLink", "jumpFootYawDegL", 0.0f);
+		settings.jumpFootYawDeg[1] = Read(section, "bodyLink", "jumpFootYawDegR", 0.0f);
 		settings.symmetrize = Read(section, "bodyLink", "symmetrize", true);
 		return settings;
 	}
@@ -302,6 +305,7 @@ namespace
 		SpringBonesSettings settings;
 		settings.isEnabled = Read(section, "springBone", "enabled", true);
 		settings.legRadius = Read(section, "springBone", "legRadius", 8.0f);
+		settings.jumpMaxAngleFromDownDeg = Read(section, "springBone", "jumpMaxAngleFromDownDeg", 0.0f);
 		auto groups = section.find("groups");
 		if (groups == section.end() || !groups->is_object()) {
 			Log(std::string(JSON_PATH) + " に springBone.groups がないので、揺れ物を使いません。");
@@ -317,6 +321,7 @@ namespace
 			groupSettings.frequency = Read(group, sectionName.c_str(), "frequency", 3.0f);
 			groupSettings.dampingRatio = Read(group, sectionName.c_str(), "dampingRatio", 0.5f);
 			groupSettings.maxAngleDeg = Read(group, sectionName.c_str(), "maxAngleDeg", 30.0f);
+			groupSettings.noLiftInJump = Read(group, sectionName.c_str(), "noLiftInJump", false);
 			settings.groups.push_back(groupSettings);
 		}
 		return settings;

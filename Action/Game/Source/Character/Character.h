@@ -107,10 +107,16 @@ protected:
 	virtual void OnRender(RenderContext& rc)
 	{
 	}
-	// ジャンプ中の度合い（0〜1）を体の連動に渡す。モデルを更新する前（UpdateAction）に呼ぶ。
-	void SetBodyLinkJumpWeight(float jumpWeight)
+	// 揺れ物の調整値。開発用の画面（ImGui）で変えるときに使う。
+	SpringBonesSettings& GetSpringBonesSettings()
+	{
+		return m_springBones.GetSettings();
+	}
+	// ジャンプ中の度合い（0〜1）を、体の連動と揺れ物に渡す。モデルを更新する前（UpdateAction）に呼ぶ。
+	void SetJumpWeight(float jumpWeight)
 	{
 		m_bodyLink.SetJumpWeight(jumpWeight);
+		m_springBones.SetJumpWeight(jumpWeight);
 	}
 
 	CharacterInput m_input;
