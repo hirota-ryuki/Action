@@ -30,15 +30,9 @@ struct BodyLinkSettings
 	float elbowJointOffsetDeg = 0.0f;
 	// 走っているときに、上腕を体の外へ開く角度。負なら内へ閉じる。
 	float upperArmSpreadDeg = 0.0f;
-	// ジャンプ中（跳ぶ・空中・着地）に、太ももを股関節から体の外へ開く角度。負なら内へ閉じる。
-	// ジャンプのクリップはもとのマネキンが脚を開き気味に立つ姿勢のままなので、股の開きをここで直す。
-	float jumpLegSpreadDeg = 0.0f;
-	// 空中（跳ぶ・空中のクリップ）で、太ももを上げる角度（真下からの角度）・膝の曲がりを何倍にするか。1 ならアニメーションのまま。
-	// 着地では変えない（足が地面から浮く・地面に入るため）。
-	float jumpHipFlexScale = 1.0f;
-	float jumpKneeBendScale = 1.0f;
-	// 空中で、太ももを股関節から体の左右の軸まわりに回し、膝を前へ出す角度。負なら後ろへ。着地では変えない。
-	float jumpKneeForwardDeg = 0.0f;
+	// ジャンプ中（跳ぶ・空中・着地）に、股関節から太ももを内へ回して左右の膝をそろえる。足先の左右の位置は変えない。
+	// ジャンプのクリップはもとのマネキンの脚の開き方のままで、膝が体の真ん中から約 25 も外へ開いているため。
+	bool jumpCloseLegs = false;
 	// 走っているときに、左右の腕・脚の形をそろえ、頭を前に向ける。
 	// 走りのクリップは左右がそろっておらず、後ろから見ると、左腕が右腕より約 11° 外へ開いて約 9° 後ろへ振れ、右足だけが内へ入り、頭が約 5° 横を向いている。
 	bool symmetrize = true;
@@ -68,36 +62,12 @@ public:
 	{
 		m_runWeight = runWeight;
 	}
-	// ジャンプ中（跳ぶ・空中・着地）の度合いと、空中（着地を除く）の度合い（どちらも 0〜1）。
-	// 持ち主が、入る・出るときに少しずつ変えて渡す。
-	void SetJumpWeight(float jumpWeight, float airWeight)
+	// ジャンプ中の度合い（0〜1）。持ち主が、ジャンプに入る・出るときに少しずつ変えて渡す。
+	void SetJumpWeight(float jumpWeight)
 	{
 		m_jumpWeight = jumpWeight;
-		m_airWeight = airWeight;
 	}
 	void Update(Skeleton& skeleton);
-	// 調整値。開発用の画面（ImGui）で変えるときに使う。変えた値は次のフレームから効く。
-	BodyLinkSettings& GetSettings()
-	{
-		return m_settings;
-	}
-	// 調べる用: 脚を変える前と後の、股関節から見た膝の位置（キャラクターの横・上・前）。顔の向きと前の向きの角度。
-	struct DebugInfo
-	{
-		Vector3 kneeBefore[2];
-		Vector3 kneeAfterForward[2];
-		Vector3 kneeAfter[2];
-		float faceYawDeg = 0.0f;
-	};
-	const DebugInfo& GetDebugInfo() const
-	{
-		return m_debug;
-	}
-	// 調整値を、Init で受け取った値（player.json の値）に戻す。
-	void ResetSettings()
-	{
-		m_settings = m_initialSettings;
-	}
 
 private:
 	enum EnBone
@@ -138,12 +108,11 @@ private:
 	void RotateJointForward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& forward, float angleDeg) const;
 	// joint（関節）から先を、キャラクターの前後の軸まわりに回し、tip（その先の骨）を体の外へ angleDeg 動かす。負なら内へ。
 	void RotateJointOutward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& forward, float angleDeg) const;
-	// 太もも（upperLeg から先）を股関節を中心に回し、膝を体の外へ angleDeg 動かす。負なら内へ。
-	// 軸は太ももの向きと横の向きの両方に直角にするので、太ももが前へ上がっていても、ねじれずに開く・閉じる。
-	void SpreadLeg(Skeleton& skeleton, EnBone upperLeg, EnBone lowerLeg, const Vector3& forward, float angleDeg) const;
-	// joint から tip への向きと、base の向きとの角度を scale 倍にする（joint から先を回す）。
-	// 太ももを上げる量（base は真下）・膝の曲がり（base は太ももの向き）に使う。
-	void ScaleJointAngle(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& base, float scale) const;
+	// joint（関節）から先を回し、tip（その先の骨）の、腰の真ん中からの横の距離（outward の向きを正）を offset にする。
+	// 回す軸は joint → tip の向きと outward の両方に直角なので、tip は横へだけ動く（前後・上下の形は変わらない）。
+	void MoveSideways(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& outward, float offset) const;
+	// 股関節から太ももを内へ回して膝をそろえ、膝から下を回し返して足先の横の位置を戻す。
+	void CloseLeg(Skeleton& skeleton, EnBone upperLeg, EnBone lowerLeg, EnBone foot, const Vector3& forward) const;
 	// joint（関節）から先を回し、joint から tip（その先の骨）への向きを direction にそろえる。
 	void RotateToward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& direction) const;
 	// 頭の左右の向きを、キャラクターの前の向きにそろえる。
@@ -162,14 +131,11 @@ private:
 	};
 
 	BodyLinkSettings m_settings;
-	BodyLinkSettings m_initialSettings;  // Init で受け取った値。ResetSettings() で戻す。
 	int m_boneNos[enBone_Num] = {};
 	bool m_isActive = false;
 	Quaternion m_rotation = Quaternion::Identity;
 	float m_runWeight = 0.0f;
 	float m_jumpWeight = 0.0f;
-	float m_airWeight = 0.0f;
-	DebugInfo m_debug;
 	// 腕をそろえるための記録。
 	std::deque<ArmSample> m_armHistory;
 	float m_time = 0.0f;

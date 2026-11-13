@@ -50,9 +50,7 @@ protected:
 
 private:
 	void Respawn();
-	// 開発用の画面（F1 の ImGui）に、体の動きの調整値を出す。
-	void UpdateDebugUI();
-	// ジャンプ中（Air・Land）・空中（Air）の度合いを、体の連動に渡す。入る・出るときは少しずつ変える。
+	// ジャンプ中（Air・Land）の度合いを、体の連動に渡す。入る・出るときは少しずつ変える。
 	void UpdateJumpWeight(float deltaTime);
 
 	PlayerInputSource m_playerInputSource;
@@ -62,5 +60,4 @@ private:
 	WeaponAttachment m_sword;
 	FallRespawn m_fallRespawn;
 	float m_jumpWeight = 0.0f;  // ジャンプ中（Air・Land）の度合い（0〜1）。
-	float m_airWeight = 0.0f;   // 空中（Air）の度合い（0〜1）。
 };

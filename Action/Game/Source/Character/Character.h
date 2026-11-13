@@ -107,24 +107,10 @@ protected:
 	virtual void OnRender(RenderContext& rc)
 	{
 	}
-	// 体の連動の調整値。開発用の画面（ImGui）で変えるときに使う。
-	BodyLinkSettings& GetBodyLinkSettings()
+	// ジャンプ中の度合い（0〜1）を体の連動に渡す。モデルを更新する前（UpdateAction）に呼ぶ。
+	void SetBodyLinkJumpWeight(float jumpWeight)
 	{
-		return m_bodyLink.GetSettings();
-	}
-	// 体の連動の調整値を、player.json の値に戻す。
-	void ResetBodyLinkSettings()
-	{
-		m_bodyLink.ResetSettings();
-	}
-	const BodyLink::DebugInfo& GetBodyLinkDebugInfo() const
-	{
-		return m_bodyLink.GetDebugInfo();
-	}
-	// ジャンプ中（跳ぶ・空中・着地）・空中（着地を除く）の度合い（0〜1）を体の連動に渡す。モデルを更新する前（UpdateAction）に呼ぶ。
-	void SetBodyLinkJumpWeight(float jumpWeight, float airWeight)
-	{
-		m_bodyLink.SetJumpWeight(jumpWeight, airWeight);
+		m_bodyLink.SetJumpWeight(jumpWeight);
 	}
 
 	CharacterInput m_input;

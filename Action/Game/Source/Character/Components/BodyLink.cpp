@@ -52,6 +52,9 @@ namespace
 	constexpr float ARM_HISTORY_SECONDS = 1.0f;
 	// 腕をそろえる強さが 0 から 1 まで変わるのにかかる時間（秒）。
 	constexpr float ARM_SYMMETRY_FADE_SECONDS = 0.25f;
+	// 足を閉じるときの、腰の真ん中から膝までの横の距離（左右の膝の間はこの2倍）。
+	// Idle では股関節が真ん中から約 9、膝が約 11 なので、それより少し内にして膝をつける。
+	constexpr float CLOSED_KNEE_OFFSET = 7.0f;
 
 	// キャラクターの左右・上・前の座標にする（x が side、y が上、z が forward）。
 	Vector3 ToLocal(const Vector3& v, const Vector3& side, const Vector3& forward)
@@ -114,7 +117,6 @@ void BodyLink::Init(ModelRender& model, const BodyLinkSettings& settings)
 {
 	static_assert(sizeof(BONE_NAMES) / sizeof(BONE_NAMES[0]) == enBone_Num, "BONE_NAMES と EnBone の数をそろえる");
 	m_settings = settings;
-	m_initialSettings = settings;
 	m_isActive = false;
 	if (!m_settings.isEnabled || !model.GetSkeleton().IsInited()) {
 		return;
@@ -292,44 +294,59 @@ void BodyLink::Update(Skeleton& skeleton)
 	RotateJointOutward(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward, spreadOffset);
 	RotateJointOutward(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward, spreadOffset);
 
-	// ── 空中だけ、太ももを上げる量・膝の曲がりを変える ──
-	const float hipFlexScale = 1.0f + (m_settings.jumpHipFlexScale - 1.0f) * m_airWeight;
-	const float kneeBendScale = 1.0f + (m_settings.jumpKneeBendScale - 1.0f) * m_airWeight;
-	const EnBone legs[2][3] = {
-		{ enBone_UpperLegL, enBone_LowerLegL, enBone_FootL },
-		{ enBone_UpperLegR, enBone_LowerLegR, enBone_FootR },
-	};
-	const float kneeForward = m_settings.jumpKneeForwardDeg * m_airWeight;
-	Vector3 debugSide;
-	debugSide.Cross(Vector3::AxisY, forward);
-	debugSide.Normalize();
-	auto kneeLocal = [&](const EnBone* leg) {
-		return ToLocal(GetPosition(skeleton, leg[1]) - GetPosition(skeleton, leg[0]), debugSide, forward);
-	};
-	for (int i = 0; i < 2; i++) {
-		m_debug.kneeBefore[i] = kneeLocal(legs[i]);
-	}
-	{
-		const Matrix& head = skeleton.GetBone(m_boneNos[enBone_Head])->GetWorldMatrix();
-		m_debug.faceYawDeg = Math::RadToDeg(atan2f(Vector3(head.m[2][0], 0.0f, head.m[2][2]).Dot(debugSide), Vector3(head.m[2][0], 0.0f, head.m[2][2]).Dot(forward)));
-	}
-	for (const auto& leg : legs) {
-		ScaleJointAngle(skeleton, leg[0], leg[1], Vector3(0.0f, -1.0f, 0.0f), hipFlexScale);
-		RotateJointForward(skeleton, leg[0], leg[1], forward, kneeForward);
-		m_debug.kneeAfterForward[&leg - legs] = kneeLocal(leg);
-		const Vector3 thigh = GetPosition(skeleton, leg[1]) - GetPosition(skeleton, leg[0]);
-		ScaleJointAngle(skeleton, leg[1], leg[2], thigh, kneeBendScale);
-	}
-	// ── ジャンプ中だけ、太ももを股関節から開く（負なら閉じる）──
-	const float legSpread = m_settings.jumpLegSpreadDeg * m_jumpWeight;
-	SpreadLeg(skeleton, enBone_UpperLegL, enBone_LowerLegL, forward, legSpread);
-	SpreadLeg(skeleton, enBone_UpperLegR, enBone_LowerLegR, forward, legSpread);
-	for (int i = 0; i < 2; i++) {
-		m_debug.kneeAfter[i] = kneeLocal(legs[i]);
+	// ── ジャンプ中だけ、左右の膝をそろえる ──
+	if (m_settings.jumpCloseLegs && m_jumpWeight > 0.0f) {
+		CloseLeg(skeleton, enBone_UpperLegL, enBone_LowerLegL, enBone_FootL, forward);
+		CloseLeg(skeleton, enBone_UpperLegR, enBone_LowerLegR, enBone_FootR, forward);
 	}
 
 	// ── 左右の腕の形をそろえる ──
 	SymmetrizeArms(skeleton, forward, swing);
+}
+
+void BodyLink::MoveSideways(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& outward, float offset) const
+{
+	const Vector3 center = GetPosition(skeleton, enBone_Hips);
+	const Vector3 jointPos = GetPosition(skeleton, joint);
+	const Vector3 bone = GetPosition(skeleton, tip) - jointPos;
+	const float length = bone.Length();
+	if (length <= 1.0e-3f) {
+		return;
+	}
+	// tip は、joint を中心に、bone と outward が作る面の上を回る。
+	// 面の中で outward に直角な向きから測った角度を、今の角度（from）から目当ての角度（to）へ回す。
+	const float side = bone.Dot(outward);
+	const float other = (bone - outward * side).Length();
+	if (other <= 1.0e-3f) {
+		return;  // bone が真横を向いていて、回す面が決まらない。
+	}
+	const float targetSide = Clamp(offset - (jointPos - center).Dot(outward), -length, length);
+	const float from = atan2f(side, other);
+	const float to = asinf(targetSide / length);
+	Vector3 axis;
+	axis.Cross(bone, outward);
+	axis.Normalize();
+	const float sign = SignToward(skeleton, tip, joint, axis, outward);
+	RotateAround(skeleton, joint, axis, (to - from) * sign);
+}
+
+void BodyLink::CloseLeg(Skeleton& skeleton, EnBone upperLeg, EnBone lowerLeg, EnBone foot, const Vector3& forward) const
+{
+	// 外の向き: 腰の真ん中から、この脚の股関節の方への水平な向き。
+	const Vector3 center = GetPosition(skeleton, enBone_Hips);
+	Vector3 side;
+	side.Cross(Vector3::AxisY, forward);
+	side.Normalize();
+	const Vector3 outward = side * ((GetPosition(skeleton, upperLeg) - center).Dot(side) >= 0.0f ? 1.0f : -1.0f);
+	const float kneeOffset = (GetPosition(skeleton, lowerLeg) - center).Dot(outward);
+	if (kneeOffset <= CLOSED_KNEE_OFFSET) {
+		return;  // もう閉じている。
+	}
+	const float footOffset = (GetPosition(skeleton, foot) - center).Dot(outward);
+	// 股関節から太ももを内へ回して膝をそろえる（ジャンプに入る・出るときは途中まで）。
+	MoveSideways(skeleton, upperLeg, lowerLeg, outward, kneeOffset + (CLOSED_KNEE_OFFSET - kneeOffset) * m_jumpWeight);
+	// 膝から下を回し返して、足先の横の位置を戻す（太ももと一緒に内へ動くと、左右の足が交差するため）。
+	MoveSideways(skeleton, lowerLeg, foot, outward, footOffset);
 }
 
 void BodyLink::RotateToward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& direction) const
@@ -477,50 +494,6 @@ void BodyLink::SymmetrizeArms(Skeleton& skeleton, const Vector3& forward, float 
 			RotateToward(skeleton, joints[self + part][0], joints[self + part][1], ToWorld(target, side, forward));
 		}
 	}
-}
-
-void BodyLink::SpreadLeg(Skeleton& skeleton, EnBone upperLeg, EnBone lowerLeg, const Vector3& forward, float angleDeg) const
-{
-	if (fabsf(angleDeg) <= 1.0e-3f) {
-		return;
-	}
-	// 外の向き: 腰の真ん中から、この脚の股関節の方への水平な向き。
-	const Vector3 hip = GetPosition(skeleton, upperLeg);
-	Vector3 side;
-	side.Cross(Vector3::AxisY, forward);
-	side.Normalize();
-	const Vector3 outward = side * ((hip - GetPosition(skeleton, enBone_Hips)).Dot(side) >= 0.0f ? 1.0f : -1.0f);
-	// 軸: 太ももの向きと外の向きの両方に直角。この軸で回すと、膝が外（内）へ動く。
-	const Vector3 thigh = Normalized(GetPosition(skeleton, lowerLeg) - hip);
-	Vector3 axis;
-	axis.Cross(thigh, outward);
-	if (axis.LengthSq() <= 1.0e-6f) {
-		return;  // 太ももが真横を向いている。
-	}
-	axis.Normalize();
-	const float sign = SignToward(skeleton, lowerLeg, upperLeg, axis, outward);
-	RotateAround(skeleton, upperLeg, axis, Math::DegToRad(angleDeg) * sign);
-}
-
-void BodyLink::ScaleJointAngle(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& base, float scale) const
-{
-	if (fabsf(scale - 1.0f) <= 1.0e-3f) {
-		return;
-	}
-	const Vector3 from = Normalized(base);
-	const Vector3 current = Normalized(GetPosition(skeleton, tip) - GetPosition(skeleton, joint));
-	Vector3 axis;
-	axis.Cross(from, current);
-	const float sinAngle = axis.Length();
-	if (sinAngle <= 1.0e-4f) {
-		return;  // まっすぐで、曲げる向きが決まらない。
-	}
-	axis *= 1.0f / sinAngle;
-	const float angle = atan2f(sinAngle, from.Dot(current));
-	// 角度が大きくなる向き: current の、base に直角な成分の向き。
-	const Vector3 away = current - from * from.Dot(current);
-	const float sign = SignToward(skeleton, tip, joint, axis, away);
-	RotateAround(skeleton, joint, axis, angle * (scale - 1.0f) * sign);
 }
 
 void BodyLink::RotateJointOutward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& forward, float angleDeg) const
