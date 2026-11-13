@@ -9,10 +9,12 @@ namespace
 	constexpr float FULL_PULSE_DEPTH = 0.12f;  // 脈打ちで大きさが変わる割合。
 }
 
-FireMagic::FireMagic(float cooldown, float maxChargeSeconds)
-	: m_cooldownSeconds(cooldown)
-	, m_maxChargeSeconds(maxChargeSeconds > 0.0f ? maxChargeSeconds : 1.0f)
+FireMagic::FireMagic(const FireMagicSettings& settings)
+	: m_settings(settings)
 {
+	if (m_settings.maxChargeSeconds <= 0.0f) {
+		m_settings.maxChargeSeconds = 1.0f;  // 0 で割らないようにする。
+	}
 }
 
 FireMagic::~FireMagic()
@@ -52,8 +54,8 @@ void FireMagic::OnHold(const MagicCastContext& context)
 		return;
 	}
 	m_chargeSeconds += context.deltaTime;
-	if (m_chargeSeconds >= m_maxChargeSeconds) {
-		m_chargeSeconds = m_maxChargeSeconds;
+	if (m_chargeSeconds >= m_settings.maxChargeSeconds) {
+		m_chargeSeconds = m_settings.maxChargeSeconds;
 		if (!m_isFullCharged) {
 			// 溜まり切った瞬間に一度だけ閃光を出す。
 			m_isFullCharged = true;
@@ -75,9 +77,9 @@ void FireMagic::OnRelease(const MagicCastContext& context)
 		return;
 	}
 	FireBullet* bullet = NewGO<FireBullet>(1, BulletBase::OBJECT_NAME);
-	bullet->SetCharge(GetChargeRate());
+	bullet->Setup(m_settings, GetChargeRate());
 	bullet->Init(context.origin, context.direction, context.caster, context.faction);
-	StartCooldown(m_cooldownSeconds);
+	StartCooldown(m_settings.cooldown);
 	StopCharge();
 }
 
@@ -89,7 +91,7 @@ void FireMagic::OnCancel()
 
 float FireMagic::GetChargeRate() const
 {
-	return m_chargeSeconds / m_maxChargeSeconds;
+	return m_chargeSeconds / m_settings.maxChargeSeconds;
 }
 
 void FireMagic::UpdateChargeEffect(const MagicCastContext& context)

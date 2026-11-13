@@ -14,20 +14,20 @@ namespace
 	constexpr const char16_t* HIT_EFFECT_PATH = u"Assets/effect/ice_hit.efk";
 
 	const Vector3 EFFECT_SCALE = { 10.0f, 10.0f, 10.0f };  // Effekseerの1単位をワールド10単位に拡大。
-	constexpr float FREEZE_SECONDS = 2.5f;                  // 命中した相手を凍らせる時間。
 
-	BulletSettings MakeSettings()
+	BulletSettings MakeSettings(const IceMagicSettings& magicSettings)
 	{
 		BulletSettings settings;
-		settings.speed = 1500.0f;
-		settings.range = 2000.0f;
-		settings.radius = 10.0f;
+		settings.speed = magicSettings.speed;
+		settings.range = magicSettings.range;
+		settings.radius = magicSettings.radius;
 		return settings;
 	}
 }
 
 IceBullet::IceBullet()
-	: BulletBase(MakeSettings())
+	: BulletBase(MakeSettings(IceMagicSettings()))
+	, m_freezeSeconds(IceMagicSettings().freezeSeconds)
 {
 }
 
@@ -40,6 +40,12 @@ IceBullet::~IceBullet()
 	}
 	m_bulletEffect.Stop();
 	m_hitEffect.Stop();
+}
+
+void IceBullet::Setup(const IceMagicSettings& settings)
+{
+	SetSettings(MakeSettings(settings));
+	m_freezeSeconds = settings.freezeSeconds;
 }
 
 bool IceBullet::OnStart()
@@ -80,7 +86,7 @@ void IceBullet::OnHitTarget(HitTarget& target, const Vector3& hitPosition)
 {
 	(void)hitPosition;
 	if (StatusEffects* statusEffects = target.GetStatusEffects()) {
-		statusEffects->Freeze(FREEZE_SECONDS);
+		statusEffects->Freeze(m_freezeSeconds);
 	}
 }
 

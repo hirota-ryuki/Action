@@ -3,6 +3,7 @@
 #include "PlayerConfig.h"
 #include "IceMagic.h"
 #include "FireMagic.h"
+#include "MagicSettings.h"
 #include <imgui/imgui.h>
 
 Player::Player()
@@ -28,8 +29,9 @@ void Player::OnStart()
 	m_animator.Init(&m_model.GetModelRender(), stateContext.settings.animBlendSeconds);
 	m_stateMachine.Init(stateContext);  // Idle から始める。
 
-	m_magicCaster.AddMagic(std::make_unique<IceMagic>());
-	m_magicCaster.SetSubMagic(std::make_unique<FireMagic>());  // 右クリックで撃つ。
+	// 魔法の強さは magic.json の値（敵が同じ魔法を持つときも同じ値を渡す）。
+	m_magicCaster.AddMagic(std::make_unique<IceMagic>(MagicSettings::GetIce()));
+	m_magicCaster.SetSubMagic(std::make_unique<FireMagic>(MagicSettings::GetFire()));  // 右クリックで撃つ。
 }
 
 void Player::FillInputContext(InputSourceContext& context) const

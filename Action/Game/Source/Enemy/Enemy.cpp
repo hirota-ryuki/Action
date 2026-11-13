@@ -22,11 +22,12 @@ namespace
 		// 今は敵を止めておく（相手を探さないので、動かず・向きも変えず・撃たない）。動かすときは 900 に戻す。
 		settings.searchRange = 900.0f;     // この距離以内に入ると追跡を開始する。
 		settings.stopDistance = 150.0f;   // この距離まで近づいたら停止する（剣が届くところで止まる）。
-		// 黒騎士は魔法を持たず、fire（撃つ）の入力で剣を振る（EnemyAttackState）。
-		settings.canFire = true;
-		settings.fireRange = 220.0f;      // この距離以内なら剣を振る（剣の長さ＋踏み込み）。
-		settings.fireInterval = 2.5f;     // 剣を振る間隔（秒）。振るのに 1.1秒かかる。
-		settings.firstFireDelay = 0.6f;   // 近づいてから最初に振るまでの秒数。
+		// 黒騎士は魔法を持たず、attack の入力で剣を振る（EnemyAttackState）。
+		settings.attack.isEnabled = true;
+		settings.attack.range = 220.0f;      // この距離以内なら剣を振る（剣の長さ＋踏み込み）。
+		settings.attack.interval = 2.5f;     // 剣を振る間隔（秒）。振るのに 1.1秒かかる。
+		settings.attack.firstDelay = 0.6f;   // 近づいてから最初に振るまでの秒数。
+		// 魔法を撃つ敵は、OnStart で m_magicCaster.AddMagic() し、ここで settings.fire を設定する。
 		return settings;
 	}
 
@@ -71,7 +72,7 @@ void Enemy::OnStart()
 	stateContext.model = &m_model;
 	stateContext.statusEffects = &m_statusEffects;
 	m_stateMachine.Init(stateContext);  // Idle から始める（Idle のアニメーションを流す）。
-	// 黒騎士は魔法を持たない（MagicCaster に何も足さないので、fire を押しても何も撃たない）。
+	// 黒騎士は魔法を持たない（MagicCaster に何も足さず、AI の fire も使わない）。
 }
 
 void Enemy::UpdateAction(float deltaTime)

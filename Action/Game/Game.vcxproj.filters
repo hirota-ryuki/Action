@@ -177,6 +177,9 @@
     <ClCompile Include="Source\Magic\BurningGround.cpp">
       <Filter>Source\Magic</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Magic\MagicSettings.cpp">
+      <Filter>Source\Magic</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Objects\GameCamera.cpp">
       <Filter>Source\Objects</Filter>
     </ClCompile>
@@ -393,6 +396,9 @@
       <Filter>Source\Magic</Filter>
     </ClInclude>
     <ClInclude Include="Source\Magic\BurningGround.h">
+      <Filter>Source\Magic</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Magic\MagicSettings.h">
       <Filter>Source\Magic</Filter>
     </ClInclude>
     <ClInclude Include="Source\Character\Faction.h">

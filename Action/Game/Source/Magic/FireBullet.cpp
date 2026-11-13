@@ -26,18 +26,11 @@ namespace
 	};
 
 	// 溜めなし(0)〜最大まで溜めた(1)ときの値。間は線形に補間する。
-	constexpr float MIN_RADIUS = 14.0f;               // 弾の当たり判定の半径。
-	constexpr float MAX_RADIUS = 45.0f;
+	// 弾の速さ・半径、燃える床の広さなど強さに関わる値は magic.json（FireMagicSettings）にある。
 	constexpr float MIN_BULLET_EFFECT_SCALE = 8.0f;     // 弾のエフェクトの拡大率。
 	constexpr float MAX_BULLET_EFFECT_SCALE = 26.0f;
 	constexpr float MIN_HIT_EFFECT_SCALE = 12.0f;       // 着弾エフェクトの拡大率。
 	constexpr float MAX_HIT_EFFECT_SCALE = 26.0f;
-	constexpr float MIN_GROUND_RADIUS = 130.0f;        // 燃える床の半径。
-	constexpr float MAX_GROUND_RADIUS = 300.0f;
-
-	constexpr float SPEED = 1300.0f;
-	constexpr float RANGE = 2000.0f;
-	constexpr float GROUND_BURN_SECONDS = 4.0f;        // 床が燃えている時間。
 
 	// 燃える床を置く場所を探すレイ。着弾点の少し手前・少し上から真下へ飛ばす。
 	constexpr float FLOOR_RAY_BACK_OFF = 20.0f;         // 壁に当たったとき、壁にめり込まないよう手前に戻す距離。
@@ -49,18 +42,18 @@ namespace
 		return a + (b - a) * rate;
 	}
 
-	BulletSettings MakeSettings(float chargeRate)
+	BulletSettings MakeSettings(const FireMagicSettings& magicSettings, float chargeRate)
 	{
 		BulletSettings settings;
-		settings.speed = SPEED;
-		settings.range = RANGE;
-		settings.radius = Lerp(chargeRate, MIN_RADIUS, MAX_RADIUS);
+		settings.speed = magicSettings.speed;
+		settings.range = magicSettings.range;
+		settings.radius = Lerp(chargeRate, magicSettings.minRadius, magicSettings.maxRadius);
 		return settings;
 	}
 }
 
 FireBullet::FireBullet()
-	: BulletBase(MakeSettings(0.0f))
+	: BulletBase(MakeSettings(FireMagicSettings(), 0.0f))
 {
 }
 
@@ -75,10 +68,11 @@ FireBullet::~FireBullet()
 	m_hitEffect.Stop();
 }
 
-void FireBullet::SetCharge(float chargeRate)
+void FireBullet::Setup(const FireMagicSettings& settings, float chargeRate)
 {
+	m_settings = settings;
 	m_chargeRate = chargeRate < 0.0f ? 0.0f : (chargeRate > 1.0f ? 1.0f : chargeRate);
-	SetSettings(MakeSettings(m_chargeRate));
+	SetSettings(MakeSettings(m_settings, m_chargeRate));
 }
 
 bool FireBullet::RegisterEffects()
@@ -182,8 +176,8 @@ void FireBullet::SpawnBurningGround(const Vector3& hitPosition)
 	BurningGround* ground = NewGO<BurningGround>(1, BurningGround::OBJECT_NAME);
 	ground->Init(
 		floorPosition,
-		Lerp(m_chargeRate, MIN_GROUND_RADIUS, MAX_GROUND_RADIUS),
-		GROUND_BURN_SECONDS,
+		Lerp(m_chargeRate, m_settings.minGroundRadius, m_settings.maxGroundRadius),
+		m_settings.groundBurnSeconds,
 		GetOwner(),
 		GetFaction());
 }

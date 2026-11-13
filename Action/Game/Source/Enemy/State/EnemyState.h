@@ -20,7 +20,7 @@ enum class EnemyStateId
 {
 	Idle,    // 立ち止まっている
 	Move,    // 入力どおりに進んでいる
-	Attack,  // 剣を振っている（AI が fire を押したときに振る）
+	Attack,  // 剣を振っている（AI が attack を押したときに振る）
 	Frozen,  // 凍結などで行動できない
 	Num,
 };

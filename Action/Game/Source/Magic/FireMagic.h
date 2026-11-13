@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "MagicBase.h"
+#include "MagicSettings.h"
 
 // 炎魔法。発射ボタンを押している間に溜め、離すと炎の弾（FireBullet）を撃つ。
 // 長く溜めるほど弾が大きくなり、着弾後に燃える床が広くなる。
@@ -9,8 +10,8 @@
 class FireMagic : public MagicBase
 {
 public:
-	// cooldown: 撃ってから次に溜め始められるまでの秒数。maxChargeSeconds: 最大まで溜まる秒数。
-	explicit FireMagic(float cooldown = 0.6f, float maxChargeSeconds = 1.2f);
+	// settings: 強さ。ふつうは MagicSettings::GetFire()（magic.json の値）を渡す。
+	explicit FireMagic(const FireMagicSettings& settings);
 	~FireMagic() override;
 
 	const char* GetName() const override
@@ -29,8 +30,7 @@ private:
 
 	Effect m_chargeEffect;   // 溜め中の火の玉。
 	Effect m_chargedEffect;  // 最大まで溜まった瞬間の閃光。
-	float m_cooldownSeconds = 0.0f;
-	float m_maxChargeSeconds = 0.0f;
+	FireMagicSettings m_settings;
 	float m_chargeSeconds = 0.0f;  // ここまでに溜めた秒数。
 	float m_fullElapsed = 0.0f;    // 最大まで溜まってからの秒数。脈打ちに使う。
 	bool m_isCharging = false;

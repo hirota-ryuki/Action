@@ -265,6 +265,7 @@
     <ClCompile Include="Source\Magic\FireMagic.cpp" />
     <ClCompile Include="Source\Magic\FireBullet.cpp" />
     <ClCompile Include="Source\Magic\BurningGround.cpp" />
+    <ClCompile Include="Source\Magic\MagicSettings.cpp" />
     <ClCompile Include="Source\Objects\GameCamera.cpp" />
     <ClCompile Include="Source\Core\Game.cpp" />
     <ClCompile Include="Source\App\main.cpp" />
@@ -343,6 +344,7 @@
     <ClInclude Include="Source\Magic\FireMagic.h" />
     <ClInclude Include="Source\Magic\FireBullet.h" />
     <ClInclude Include="Source\Magic\BurningGround.h" />
+    <ClInclude Include="Source\Magic\MagicSettings.h" />
     <ClInclude Include="Source\Character\Faction.h" />
     <ClInclude Include="Source\Character\Input\CharacterInput.h" />
     <ClInclude Include="Source\Magic\MagicBase.h" />

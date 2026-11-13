@@ -19,7 +19,7 @@ void EnemyGroundState::Enter(EnemyStateContext& context, const CharacterInput& i
 
 EnemyStateId EnemyGroundState::CheckTransition(const EnemyStateContext& context, const CharacterInput& input) const
 {
-	if (input.fire.isTrigger) {
+	if (input.attack.isTrigger) {
 		return EnemyStateId::Attack;
 	}
 	return SelectByInput(context, input);

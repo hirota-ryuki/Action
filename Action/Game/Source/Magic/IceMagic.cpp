@@ -2,8 +2,8 @@
 #include "IceMagic.h"
 #include "IceBullet.h"
 
-IceMagic::IceMagic(float cooldown)
-	: m_cooldownSeconds(cooldown)
+IceMagic::IceMagic(const IceMagicSettings& settings)
+	: m_settings(settings)
 {
 }
 
@@ -13,6 +13,7 @@ void IceMagic::OnPress(const MagicCastContext& context)
 		return;
 	}
 	IceBullet* bullet = NewGO<IceBullet>(1, BulletBase::OBJECT_NAME);
+	bullet->Setup(m_settings);
 	bullet->Init(context.origin, context.direction, context.caster, context.faction);
-	StartCooldown(m_cooldownSeconds);
+	StartCooldown(m_settings.cooldown);
 }
