@@ -4,6 +4,7 @@ class Player;
 class Enemy;
 class GameCamera;
 class Stage;
+class BossStage;
 class FireEffect;
 class UIManager;
 
@@ -23,7 +24,8 @@ public:
 	void Render(RenderContext& rc);
 
 private:
-	Stage* m_stage = nullptr;
+	Stage* m_stage = nullptr;           // 草原（USE_BOSS_STAGE が false のとき）。
+	BossStage* m_bossStage = nullptr;   // ボス戦の広間（USE_BOSS_STAGE が true のとき）。
 	Player* m_player = nullptr;
 	Enemy* m_enemy = nullptr;
 	GameCamera* m_gameCamera = nullptr;
