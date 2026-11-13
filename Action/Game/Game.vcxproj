@@ -229,6 +229,8 @@
     <ClCompile Include="Source\Enemy\State\EnemyStateMachine.cpp" />
     <ClCompile Include="Source\Enemy\State\EnemyAttackState.cpp" />
     <ClCompile Include="Source\Enemy\State\EnemyFrozenState.cpp" />
+    <ClCompile Include="Source\Enemy\State\EnemyHitState.cpp" />
+    <ClCompile Include="Source\Enemy\State\EnemyDeadState.cpp" />
     <ClCompile Include="Source\Enemy\State\EnemyGroundState.cpp" />
     <ClCompile Include="Source\Character\Components\WeaponAttachment.cpp" />
     <ClCompile Include="Source\Character\Components\SpringBones.cpp" />
@@ -238,6 +240,9 @@
     <ClCompile Include="Source\Character\Character.cpp" />
     <ClCompile Include="Source\Player\PlayerAnimator.cpp" />
     <ClCompile Include="Source\Enemy\Enemy.cpp" />
+    <ClCompile Include="Source\Enemy\BlackKnightInputSource.cpp" />
+    <ClCompile Include="Source\Enemy\SlashBullet.cpp" />
+    <ClCompile Include="Source\Enemy\EnemyAnimCatalog.cpp" />
     <ClCompile Include="Source\UI\UIManager.cpp" />
     <ClCompile Include="Source\UI\Hud\PlayerHud.cpp" />
     <ClCompile Include="Source\UI\Hud\BossHud.cpp" />
@@ -292,7 +297,10 @@
     <ClInclude Include="Source\Enemy\State\EnemyStateMachine.h" />
     <ClInclude Include="Source\Enemy\State\EnemyAttackState.h" />
     <ClInclude Include="Source\Enemy\State\EnemyFrozenState.h" />
+    <ClInclude Include="Source\Enemy\State\EnemyHitState.h" />
+    <ClInclude Include="Source\Enemy\State\EnemyDeadState.h" />
     <ClInclude Include="Source\Enemy\State\EnemyMoveState.h" />
+    <ClInclude Include="Source\Enemy\State\EnemyRunState.h" />
     <ClInclude Include="Source\Enemy\State\EnemyIdleState.h" />
     <ClInclude Include="Source\Enemy\State\EnemyGroundState.h" />
     <ClInclude Include="Source\Enemy\State\EnemyState.h" />
@@ -310,6 +318,9 @@
     <ClInclude Include="Source\Actor\Actor.h" />
     <ClInclude Include="Source\Player\PlayerAnimator.h" />
     <ClInclude Include="Source\Enemy\Enemy.h" />
+    <ClInclude Include="Source\Enemy\BlackKnightInputSource.h" />
+    <ClInclude Include="Source\Enemy\SlashBullet.h" />
+    <ClInclude Include="Source\Enemy\EnemyAnimCatalog.h" />
     <ClInclude Include="Source\UI\UIManager.h" />
     <ClInclude Include="Source\UI\Hud\PlayerHud.h" />
     <ClInclude Include="Source\UI\Hud\BossHud.h" />

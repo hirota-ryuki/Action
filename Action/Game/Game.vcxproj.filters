@@ -69,6 +69,12 @@
     <ClCompile Include="Source\Enemy\State\EnemyFrozenState.cpp">
       <Filter>Source\Enemy\State</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Enemy\State\EnemyHitState.cpp">
+      <Filter>Source\Enemy\State</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Enemy\State\EnemyDeadState.cpp">
+      <Filter>Source\Enemy\State</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Enemy\State\EnemyGroundState.cpp">
       <Filter>Source\Enemy\State</Filter>
     </ClCompile>
@@ -94,6 +100,15 @@
       <Filter>Source\Player</Filter>
     </ClCompile>
     <ClCompile Include="Source\Enemy\Enemy.cpp">
+      <Filter>Source\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Enemy\BlackKnightInputSource.cpp">
+      <Filter>Source\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Enemy\SlashBullet.cpp">
+      <Filter>Source\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Enemy\EnemyAnimCatalog.cpp">
       <Filter>Source\Enemy</Filter>
     </ClCompile>
     <ClCompile Include="Source\UI\UIManager.cpp">
@@ -242,7 +257,16 @@
     <ClInclude Include="Source\Enemy\State\EnemyFrozenState.h">
       <Filter>Source\Enemy\State</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Enemy\State\EnemyHitState.h">
+      <Filter>Source\Enemy\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\State\EnemyDeadState.h">
+      <Filter>Source\Enemy\State</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Enemy\State\EnemyMoveState.h">
+      <Filter>Source\Enemy\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\State\EnemyRunState.h">
       <Filter>Source\Enemy\State</Filter>
     </ClInclude>
     <ClInclude Include="Source\Enemy\State\EnemyIdleState.h">
@@ -294,6 +318,15 @@
       <Filter>Source\Player</Filter>
     </ClInclude>
     <ClInclude Include="Source\Enemy\Enemy.h">
+      <Filter>Source\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\BlackKnightInputSource.h">
+      <Filter>Source\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\SlashBullet.h">
+      <Filter>Source\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Enemy\EnemyAnimCatalog.h">
       <Filter>Source\Enemy</Filter>
     </ClInclude>
     <ClInclude Include="Source\UI\UIManager.h">

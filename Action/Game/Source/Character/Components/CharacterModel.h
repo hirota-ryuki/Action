@@ -50,6 +50,14 @@ public:
 		return m_modelRender.IsPlayingAnimation();
 	}
 
+	// 指定した時間のポーズで止める（補間なし）。時間は秒。モーションの確認など、開発用。
+	void PlayAnimationAtTime(int animClip, float time)
+	{
+		m_modelRender.PlayAnimationAtTime(animClip, time);
+	}
+	// クリップの長さ（最後のキーフレームの時間。秒）。
+	float GetAnimationClipLength(int animClip) const;
+
 	// アニメーション速度・ボーン・状態異常の色など、ModelRender を直接触る部品向け。
 	ModelRender& GetModelRender()
 	{
@@ -58,6 +66,7 @@ public:
 
 private:
 	std::unique_ptr<AnimationClip[]> m_animClips;  // ModelRender が指し続けるので、Init 後は動かさない。
+	int m_numAnimClips = 0;
 	ModelRender m_modelRender;
 	Vector3 m_scale = Vector3::One;
 };

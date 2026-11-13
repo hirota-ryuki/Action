@@ -27,7 +27,8 @@ struct CharacterInput
 	bool isRun = false;
 	ButtonState jump;
 	ButtonState dash;
-	ButtonState fire;                       // 選んでいる魔法を撃つ。
+	ButtonState fire;                       // 選んでいる魔法を撃つ（黒騎士は剣で攻撃する）。
+	int attackIndex = 0;                    // fire で出す攻撃の番号。黒騎士の攻撃1〜3を 0〜2 で選ぶ。プレイヤーは使わない。
 	ButtonState subFire;                    // サブの魔法（MagicCaster::SetSubMagic）を撃つ。
 	int magicSwitch = 0;                    // -1: 前の魔法へ、+1: 次の魔法へ、0: 切り替えない。
 	bool hasAim = false;                    // true なら aimOrigin/aimDirection の方向へ撃つ。false ならキャラクターの正面へ撃つ。

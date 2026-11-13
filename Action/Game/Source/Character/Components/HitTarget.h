@@ -72,6 +72,11 @@ public:
 	}
 	// 持ち主が削除待ちになっていたら当たらないようにする。
 	bool IsActive() const;
+	// false にすると当たらなくなる（倒れて消えた敵など）。
+	void SetEnabled(bool isEnabled)
+	{
+		m_isEnabled = isEnabled;
+	}
 
 private:
 	IGameObject* m_owner = nullptr;
@@ -82,6 +87,7 @@ private:
 	float m_radius = 0.0f;
 	float m_centerHeight = 0.0f;
 	bool m_isRegistered = false;
+	bool m_isEnabled = true;
 };
 
 // 全キャラクターの当たり判定の一覧。弾の命中判定とAIの索敵に使う。

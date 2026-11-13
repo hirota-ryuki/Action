@@ -52,7 +52,7 @@ Vector3 HitTarget::GetCenter() const
 
 bool HitTarget::IsActive() const
 {
-	return m_owner != nullptr && !m_owner->IsDead();
+	return m_isEnabled && m_owner != nullptr && !m_owner->IsDead();
 }
 
 void HitTargetRegistry::Register(HitTarget* target)

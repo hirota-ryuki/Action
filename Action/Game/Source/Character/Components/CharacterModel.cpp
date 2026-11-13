@@ -22,6 +22,26 @@ namespace
 		const size_t dot = tkmPath.find_last_of('.');
 		return tkmPath.substr(0, dot) + ".tks";
 	}
+
+	// クリップの長さ（いちばん遅いキーフレームの時間。秒）。キーフレームがなければ 0。
+	float GetClipLength(const AnimationClip& clip)
+	{
+		float length = 0.0f;
+		for (const auto& keys : clip.GetKeyFramePtrListArray()) {
+			if (!keys.empty()) {
+				length = max(length, keys.back()->time);
+			}
+		}
+		return length;
+	}
+}
+
+float CharacterModel::GetAnimationClipLength(int animClip) const
+{
+	if (animClip < 0 || animClip >= m_numAnimClips) {
+		return 0.0f;
+	}
+	return GetClipLength(m_animClips[animClip]);
 }
 
 void CharacterModel::Init(const CharacterModelDesc& desc)
@@ -29,6 +49,7 @@ void CharacterModel::Init(const CharacterModelDesc& desc)
 	m_scale = Vector3(desc.scale, desc.scale, desc.scale);
 
 	const int numClips = static_cast<int>(desc.clips.size());
+	m_numAnimClips = numClips;
 	m_animClips = std::make_unique<AnimationClip[]>(numClips);
 
 	// FBX のアニメーションをリターゲットするにはモデルのスケルトン(.tks)が要る。
