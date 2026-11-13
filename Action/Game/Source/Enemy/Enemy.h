@@ -3,7 +3,6 @@
 #include "Character.h"
 #include "BlackKnightInputSource.h"
 #include "EnemyStateMachine.h"
-#include "EnemyAnimCatalog.h"
 
 // 敵キャラクター（黒騎士）。
 // 入力元（既定では黒騎士の AI）から CharacterInput を受け取って動くだけで、何をするかは AI が決める。
@@ -49,11 +48,6 @@ private:
 	BlackKnightInputSource m_aiInputSource;
 	Status m_status;
 	EnemyStateMachine m_stateMachine;
-	EnemyAnimCatalog m_animCatalog;
 	EnemyDamageState m_damage;  // 当たった・倒れて消えた（ステートと受け渡す）。
-	EnemyTuning m_tuning;       // F1 の画面「黒騎士の攻撃」で変える調整値。
-	bool m_isRepeatAttack1 = false;
-
-	// F1 の画面「黒騎士の攻撃」。溜めの長さを変え、攻撃1を出させる（input に fire を足す）。
-	void UpdateTuningUI(CharacterInput& input);
+	EnemyTuning m_tuning;       // 攻撃の調整値。
 };

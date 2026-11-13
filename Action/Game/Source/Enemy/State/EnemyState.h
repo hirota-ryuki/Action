@@ -46,7 +46,7 @@ struct EnemyStateSettings
 	float rootMoveScale = 100.0f;   // アニメーションの中で進む距離（モデルの m）を、ゲームの距離にする倍率（100 × モデルの大きさ）。
 };
 
-// ゲームを動かしたまま変えたい調整値（F1 の画面で変える）。持ち主が持ち、ステートはポインタで読む。
+// 攻撃の調整値。持ち主が持ち、ステートはポインタで読む。
 struct EnemyTuning
 {
 	float attack1ChargeSeconds = 0.6f;  // 攻撃1で、構え（左腰に剣を構えてかがむ）のコマで止めて溜める秒数。
@@ -82,7 +82,7 @@ struct EnemyStateContext
 	Faction faction = Faction::Enemy;    // 飛ばした斬撃が当たる相手を決める。
 	EnemyStateSettings settings;
 	EnemyDamageState* damage = nullptr;  // 当たった・死んだ。持ち主が持つ。
-	const EnemyTuning* tuning = nullptr; // F1 の画面で変える調整値。持ち主が持つ。
+	const EnemyTuning* tuning = nullptr; // 攻撃の調整値。持ち主が持つ。
 	// ひとつ前のステート。StateMachine が入れる。
 	EnemyStateId previousId = EnemyStateId::Idle;
 };
