@@ -24,6 +24,8 @@ namespace
 		L"J_Bip_R_LowerArm",
 		L"J_Bip_L_Hand",
 		L"J_Bip_R_Hand",
+		L"J_Bip_L_ToeBase",
+		L"J_Bip_R_ToeBase",
 	};
 	// 背骨のひねり・傾きを、Spine・Chest・UpperChest に分ける割合。
 	constexpr float SPINE_SHARE = 0.4f;
@@ -52,6 +54,9 @@ namespace
 	constexpr float ARM_HISTORY_SECONDS = 1.0f;
 	// 腕をそろえる強さが 0 から 1 まで変わるのにかかる時間（秒）。
 	constexpr float ARM_SYMMETRY_FADE_SECONDS = 0.25f;
+	// 足を閉じるときの、腰の真ん中から膝までの横の距離（左右の膝の間はこの2倍）。
+	// Idle では股関節が真ん中から約 9、膝が約 11 なので、それより少し内にして膝をつける。
+	constexpr float CLOSED_KNEE_OFFSET = 7.0f;
 
 	// キャラクターの左右・上・前の座標にする（x が side、y が上、z が forward）。
 	Vector3 ToLocal(const Vector3& v, const Vector3& side, const Vector3& forward)
@@ -114,7 +119,6 @@ void BodyLink::Init(ModelRender& model, const BodyLinkSettings& settings)
 {
 	static_assert(sizeof(BONE_NAMES) / sizeof(BONE_NAMES[0]) == enBone_Num, "BONE_NAMES と EnBone の数をそろえる");
 	m_settings = settings;
-	m_initialSettings = settings;
 	m_isActive = false;
 	if (!m_settings.isEnabled || !model.GetSkeleton().IsInited()) {
 		return;
@@ -271,29 +275,134 @@ void BodyLink::Update(Skeleton& skeleton)
 	RotateAround(skeleton, enBone_Head, forward, -chestRoll * HEAD_SHARE);
 
 	// ── 走っているときだけ、腕を振る量を変える ──
-	const float swingScale = 1.0f + (m_settings.armSwingScale - 1.0f) * m_runWeight;
+	// 腕の調整は走り・歩き用なので、ジャンプ中は外す。腕を横へ上げたジャンプの姿勢では、振りを抑える処理が
+	// 腕を「後ろへ振りすぎ」とみなして真下へ引き寄せ、脇が締まって見えたため。
+	const float armWeight = 1.0f - m_jumpWeight;
+	const float armRunWeight = m_runWeight * armWeight;
+	const float swingScale = 1.0f + (m_settings.armSwingScale - 1.0f) * armRunWeight;
 	ScaleArmSwing(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward, swingScale);
 	ScaleArmSwing(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward, swingScale);
 
 	// ── 腕の振りの大きさをそろえる ──
 	// 走りのクリップは、上腕が後ろへ最大約 100°（真下を 0°）まで振れる。原神は 40° くらいまでなので、前・後ろの最大の角度で抑える。
-	LimitArmSwing(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward);
-	LimitArmSwing(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward);
+	LimitArmSwing(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward, armWeight);
+	LimitArmSwing(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward, armWeight);
 
 	// ── 走っているときだけ、肩の関節・ひじの関節を前後へ回しておく ──
-	const float shoulderOffset = m_settings.shoulderJointOffsetDeg * m_runWeight;
-	const float elbowOffset = m_settings.elbowJointOffsetDeg * m_runWeight;
+	const float shoulderOffset = m_settings.shoulderJointOffsetDeg * armRunWeight;
+	const float elbowOffset = m_settings.elbowJointOffsetDeg * armRunWeight;
 	RotateJointForward(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward, shoulderOffset);
 	RotateJointForward(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward, shoulderOffset);
 	RotateJointForward(skeleton, enBone_LowerArmL, enBone_HandL, forward, elbowOffset);
 	RotateJointForward(skeleton, enBone_LowerArmR, enBone_HandR, forward, elbowOffset);
 	// 上腕を体の外へ開く。
-	const float spreadOffset = m_settings.upperArmSpreadDeg * m_runWeight;
+	const float spreadOffset = m_settings.upperArmSpreadDeg * armRunWeight;
 	RotateJointOutward(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward, spreadOffset);
 	RotateJointOutward(skeleton, enBone_UpperArmR, enBone_LowerArmR, forward, spreadOffset);
 
+	// ── ジャンプ中だけ、左腕を上げる角度を抑える ──
+	// 抑えるのは、ジャンプのクリップで高く上がる方の腕（骨は J_Bip_R）。
+	LimitArmRaise(skeleton, enBone_UpperArmR, enBone_LowerArmR, m_settings.jumpLeftArmMaxRaiseDeg, m_jumpWeight);
+
+	// ── ジャンプ中だけ、左右の膝をそろえる ──
+	if (m_settings.jumpCloseLegs && m_jumpWeight > 0.0f) {
+		CloseLeg(skeleton, enBone_UpperLegL, enBone_LowerLegL, enBone_FootL, forward);
+		CloseLeg(skeleton, enBone_UpperLegR, enBone_LowerLegR, enBone_FootR, forward);
+	}
+	// ── ジャンプ中だけ、足首の向き（上から見たつま先の向き）を変える ──
+	TurnFoot(skeleton, enBone_FootL, enBone_ToeBaseL, m_settings.jumpFootYawDeg[0] * m_jumpWeight);
+	TurnFoot(skeleton, enBone_FootR, enBone_ToeBaseR, m_settings.jumpFootYawDeg[1] * m_jumpWeight);
+
 	// ── 左右の腕の形をそろえる ──
 	SymmetrizeArms(skeleton, forward, swing);
+}
+
+void BodyLink::MoveSideways(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& outward, float offset) const
+{
+	const Vector3 center = GetPosition(skeleton, enBone_Hips);
+	const Vector3 jointPos = GetPosition(skeleton, joint);
+	const Vector3 bone = GetPosition(skeleton, tip) - jointPos;
+	const float length = bone.Length();
+	if (length <= 1.0e-3f) {
+		return;
+	}
+	// tip は、joint を中心に、bone と outward が作る面の上を回る。
+	// 面の中で outward に直角な向きから測った角度を、今の角度（from）から目当ての角度（to）へ回す。
+	const float side = bone.Dot(outward);
+	const float other = (bone - outward * side).Length();
+	if (other <= 1.0e-3f) {
+		return;  // bone が真横を向いていて、回す面が決まらない。
+	}
+	const float targetSide = Clamp(offset - (jointPos - center).Dot(outward), -length, length);
+	const float from = atan2f(side, other);
+	const float to = asinf(targetSide / length);
+	Vector3 axis;
+	axis.Cross(bone, outward);
+	axis.Normalize();
+	const float sign = SignToward(skeleton, tip, joint, axis, outward);
+	RotateAround(skeleton, joint, axis, (to - from) * sign);
+}
+
+void BodyLink::LimitArmRaise(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, float maxDeg, float weight) const
+{
+	if (maxDeg <= 0.0f || weight <= 0.0f) {
+		return;
+	}
+	const Vector3 down = Vector3::AxisY * -1.0f;
+	const Vector3 arm = GetPosition(skeleton, lowerArm) - GetPosition(skeleton, upperArm);
+	const float length = arm.Length();
+	if (length <= 1.0e-3f) {
+		return;
+	}
+	const float angle = acosf(Clamp(arm.Dot(down) / length, -1.0f, 1.0f));
+	const float maxAngle = Math::DegToRad(maxDeg);
+	if (angle <= maxAngle) {
+		return;
+	}
+	// 上腕を真下へ近づける向き（上腕と真下の両方に直角な軸）に、超えた分だけ回す。前腕・手も一緒に動く。
+	Vector3 axis;
+	axis.Cross(arm, down);
+	if (axis.LengthSq() <= FLT_EPSILON) {
+		return;  // 真上を向いていて、下ろす向きが決まらない。
+	}
+	axis.Normalize();
+	RotateAround(skeleton, upperArm, axis, (angle - maxAngle) * weight);
+}
+
+void BodyLink::TurnFoot(Skeleton& skeleton, EnBone foot, EnBone toe, float angleDeg) const
+{
+	if (fabsf(angleDeg) <= 1.0e-3f) {
+		return;
+	}
+	// 外の向き: 腰の真ん中から、この足首の方への水平な向き。
+	Vector3 outward = GetPosition(skeleton, foot) - GetPosition(skeleton, enBone_Hips);
+	outward.y = 0.0f;
+	if (outward.LengthSq() <= 1.0e-6f) {
+		return;
+	}
+	outward.Normalize();
+	// 縦の軸まわりに、どちら向きに回すとつま先が外へ動くかは、試しに回して決める。
+	const float sign = SignToward(skeleton, toe, foot, Vector3::AxisY, outward);
+	RotateAround(skeleton, foot, Vector3::AxisY, Math::DegToRad(angleDeg) * sign);
+}
+
+void BodyLink::CloseLeg(Skeleton& skeleton, EnBone upperLeg, EnBone lowerLeg, EnBone foot, const Vector3& forward) const
+{
+	// 外の向き: 腰の真ん中から、この脚の股関節の方への水平な向き。
+	const Vector3 center = GetPosition(skeleton, enBone_Hips);
+	Vector3 side;
+	side.Cross(Vector3::AxisY, forward);
+	side.Normalize();
+	const Vector3 outward = side * ((GetPosition(skeleton, upperLeg) - center).Dot(side) >= 0.0f ? 1.0f : -1.0f);
+	const float kneeOffset = (GetPosition(skeleton, lowerLeg) - center).Dot(outward);
+	if (kneeOffset <= CLOSED_KNEE_OFFSET) {
+		return;  // もう閉じている。
+	}
+	const float footOffset = (GetPosition(skeleton, foot) - center).Dot(outward);
+	// 股関節から太ももを内へ回して膝をそろえる（ジャンプに入る・出るときは途中まで）。
+	MoveSideways(skeleton, upperLeg, lowerLeg, outward, kneeOffset + (CLOSED_KNEE_OFFSET - kneeOffset) * m_jumpWeight);
+	// 膝から下を回し返して、足先の横の位置を戻す（太ももと一緒に内へ動くと、左右の足が交差するため）。
+	MoveSideways(skeleton, lowerLeg, foot, outward, footOffset);
 }
 
 void BodyLink::RotateToward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& direction) const
@@ -411,7 +520,7 @@ void BodyLink::SymmetrizeArms(Skeleton& skeleton, const Vector3& forward, float 
 
 	// 走っていて、1歩の時間がわかっているときだけそろえる。止まったら少しずつやめる。
 	const bool isStepping = m_stepDuration > 0.0f && m_time - m_lastStepTime < m_stepDuration * STEP_TIMEOUT_RATIO;
-	const float targetWeight = (m_settings.symmetrize && isStepping) ? m_runWeight : 0.0f;
+	const float targetWeight = (m_settings.symmetrize && isStepping) ? m_runWeight * (1.0f - m_jumpWeight) : 0.0f;
 	const float fadeStep = deltaTime / ARM_SYMMETRY_FADE_SECONDS;
 	m_armSymmetryWeight = Clamp(targetWeight, m_armSymmetryWeight - fadeStep, m_armSymmetryWeight + fadeStep);
 	if (m_armSymmetryWeight <= 0.0f) {
@@ -484,8 +593,11 @@ void BodyLink::RotateJointForward(Skeleton& skeleton, EnBone joint, EnBone tip, 
 	RotateAround(skeleton, joint, side, Math::DegToRad(angleDeg) * sign);
 }
 
-void BodyLink::LimitArmSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward) const
+void BodyLink::LimitArmSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward, float weight) const
 {
+	if (weight <= 0.0f) {
+		return;
+	}
 	const Vector3 down = Vector3::AxisY * -1.0f;
 	const Vector3 arm = GetPosition(skeleton, lowerArm) - GetPosition(skeleton, upperArm);
 	// 横から見た上腕の角度。真下を 0°、後ろを正、前を負にする。
@@ -508,5 +620,5 @@ void BodyLink::LimitArmSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerAr
 		return;
 	}
 	axis.Normalize();
-	RotateAround(skeleton, upperArm, axis, magnitude - limited);
+	RotateAround(skeleton, upperArm, axis, (magnitude - limited) * weight);
 }

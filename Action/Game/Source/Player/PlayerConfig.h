@@ -9,7 +9,7 @@ namespace PlayerConfig
 {
 	// 移動・モデル・魔法を撃つ位置・当たり判定・HP。
 	CharacterConfig MakeCharacterConfig();
-	// ステート（ダッシュ・止まるなど）の数値。
+	// ステート（ダッシュ・止まる・ジャンプなど）の数値。
 	PlayerStateSettings MakeStateSettings();
 	// 右手に持つ剣。
 	WeaponAttachmentDesc MakeSwordDesc();

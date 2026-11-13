@@ -1,0 +1,13 @@
+{
+  "work_dir": "/Game/04_Retarget/UALJump",
+  "source_mesh_fbx": "D:/04_dawnload/ual_jump/JumpStart.fbx",
+  "align_source_to_target": true,
+  "use_ik": false,
+  "clips": [
+    {"name": "JumpStart", "fbx": "D:/04_dawnload/ual_jump/JumpStart.fbx"},
+    {"name": "JumpLoop", "fbx": "D:/04_dawnload/ual_jump/JumpLoop.fbx"},
+    {"name": "JumpLand", "fbx": "D:/04_dawnload/ual_jump/JumpLand.fbx"}
+  ],
+  "export_dir": "D:/02_git/01_my/Action-jump/Action/Game/Assets/modelData/player/Animation",
+  "log": "D:/04_dawnload/ual_jump/retarget_result.txt"
+}

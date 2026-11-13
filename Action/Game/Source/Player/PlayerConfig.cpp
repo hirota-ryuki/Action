@@ -137,11 +137,29 @@ namespace
 		settings.stopRRunTime = ReadFramesAsSeconds(section, "stop", "stopRRunFrame", 2.0f);
 	}
 
+	// ジャンプ（跳ぶ・空中・着地）の数値を settings に入れる。
+	void ReadJumpSettings(PlayerStateSettings& settings)
+	{
+		const Json section = GetSection("jump");
+		settings.jumpStartTime = ReadFramesAsSeconds(section, "jump", "startFrame", 1.0f);
+		settings.jumpToLoopTime = ReadFramesAsSeconds(section, "jump", "toLoopFrame", 30.0f);
+		settings.jumpAnimSpeed = Read(section, "jump", "animSpeed", 1.0f);
+		settings.jumpStartBlendSeconds = Read(section, "jump", "startBlendSeconds", 0.1f);
+		settings.jumpLoopBlendSeconds = Read(section, "jump", "loopBlendSeconds", 0.2f);
+		settings.landStartTime = ReadFramesAsSeconds(section, "jump", "landStartFrame", 0.0f);
+		settings.landEndTime = ReadFramesAsSeconds(section, "jump", "landEndFrame", 18.0f);
+		settings.landAnimSpeed = Read(section, "jump", "landAnimSpeed", 1.0f);
+		settings.landBlendSeconds = Read(section, "jump", "landBlendSeconds", 0.1f);
+		settings.landExitBlendSeconds = Read(section, "jump", "landExitBlendSeconds", 0.3f);
+		settings.landCancelByMove = Read(section, "jump", "landCancelByMove", true);
+	}
+
 	PlayerStateSettings BuildStateSettings()
 	{
 		PlayerStateSettings settings;
 		ReadDashSettings(settings);
 		ReadStopSettings(settings);
+		ReadJumpSettings(settings);
 
 		const Json move = GetSection("move");
 		settings.moveThreshold = Read(move, "move", "moveThreshold", 0.1f);
@@ -163,7 +181,9 @@ namespace
 		{ "Idle",  enPlayerAnimClip_Idle,  { "Assets/modelData/player/Animation/Idle.fbx",  true } },
 		{ "Walk",  enPlayerAnimClip_Walk,  { "Assets/modelData/player/Animation/Walk.fbx",  true } },
 		{ "Run",   enPlayerAnimClip_Run,   { "Assets/modelData/player/Animation/Run.fbx",   true } },
-		{ "Jump",  enPlayerAnimClip_Jump,  { "Assets/modelData/player/Animation/Run.fbx",   true } },
+		{ "JumpStart", enPlayerAnimClip_JumpStart, { "Assets/modelData/player/Animation/JumpStart.fbx", false } },
+		{ "JumpLoop",  enPlayerAnimClip_JumpLoop,  { "Assets/modelData/player/Animation/JumpLoop.fbx",  true } },
+		{ "JumpLand",  enPlayerAnimClip_JumpLand,  { "Assets/modelData/player/Animation/JumpLand.fbx",  false } },
 		{ "Dash",  enPlayerAnimClip_Dash,  { "Assets/modelData/player/Animation/Dash.fbx",  false } },
 		{ "StopL", enPlayerAnimClip_StopL, { "Assets/modelData/player/Animation/StopL.fbx", false } },
 		{ "StopR", enPlayerAnimClip_StopR, { "Assets/modelData/player/Animation/StopR.fbx", false } },
@@ -271,6 +291,10 @@ namespace
 		settings.shoulderJointOffsetDeg = Read(section, "bodyLink", "shoulderJointOffsetDeg", 0.0f);
 		settings.elbowJointOffsetDeg = Read(section, "bodyLink", "elbowJointOffsetDeg", 0.0f);
 		settings.upperArmSpreadDeg = Read(section, "bodyLink", "upperArmSpreadDeg", 0.0f);
+		settings.jumpCloseLegs = Read(section, "bodyLink", "jumpCloseLegs", false);
+		settings.jumpLeftArmMaxRaiseDeg = Read(section, "bodyLink", "jumpLeftArmMaxRaiseDeg", 0.0f);
+		settings.jumpFootYawDeg[0] = Read(section, "bodyLink", "jumpFootYawDegL", 0.0f);
+		settings.jumpFootYawDeg[1] = Read(section, "bodyLink", "jumpFootYawDegR", 0.0f);
 		settings.symmetrize = Read(section, "bodyLink", "symmetrize", true);
 		return settings;
 	}
@@ -281,6 +305,7 @@ namespace
 		SpringBonesSettings settings;
 		settings.isEnabled = Read(section, "springBone", "enabled", true);
 		settings.legRadius = Read(section, "springBone", "legRadius", 8.0f);
+		settings.jumpMaxAngleFromDownDeg = Read(section, "springBone", "jumpMaxAngleFromDownDeg", 0.0f);
 		auto groups = section.find("groups");
 		if (groups == section.end() || !groups->is_object()) {
 			Log(std::string(JSON_PATH) + " に springBone.groups がないので、揺れ物を使いません。");
@@ -296,6 +321,7 @@ namespace
 			groupSettings.frequency = Read(group, sectionName.c_str(), "frequency", 3.0f);
 			groupSettings.dampingRatio = Read(group, sectionName.c_str(), "dampingRatio", 0.5f);
 			groupSettings.maxAngleDeg = Read(group, sectionName.c_str(), "maxAngleDeg", 30.0f);
+			groupSettings.noLiftInJump = Read(group, sectionName.c_str(), "noLiftInJump", false);
 			settings.groups.push_back(groupSettings);
 		}
 		return settings;

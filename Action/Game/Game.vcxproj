@@ -261,6 +261,7 @@
     <ClCompile Include="Source\Player\State\PlayerAirState.cpp" />
     <ClCompile Include="Source\Player\State\PlayerDashState.cpp" />
     <ClCompile Include="Source\Player\State\PlayerStopState.cpp" />
+    <ClCompile Include="Source\Player\State\PlayerLandState.cpp" />
     <ClCompile Include="Source\Player\State\PlayerFrozenState.cpp" />
     <ClCompile Include="Source\Character\Components\StatusEffects.cpp" />
     <ClCompile Include="Source\Magic\MagicCaster.cpp" />
@@ -345,6 +346,7 @@
     <ClInclude Include="Source\Player\State\PlayerAirState.h" />
     <ClInclude Include="Source\Player\State\PlayerDashState.h" />
     <ClInclude Include="Source\Player\State\PlayerStopState.h" />
+    <ClInclude Include="Source\Player\State\PlayerLandState.h" />
     <ClInclude Include="Source\Player\State\PlayerFrozenState.h" />
     <ClInclude Include="Source\Character\Components\StatusEffects.h" />
     <ClInclude Include="Source\Magic\MagicCaster.h" />

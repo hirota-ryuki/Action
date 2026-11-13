@@ -6,6 +6,7 @@
 #include "PlayerAirState.h"
 #include "PlayerDashState.h"
 #include "PlayerStopState.h"
+#include "PlayerLandState.h"
 #include "PlayerFrozenState.h"
 
 PlayerStateMachine::PlayerStateMachine()
@@ -16,6 +17,7 @@ PlayerStateMachine::PlayerStateMachine()
 	Register<PlayerAirState>();
 	Register<PlayerDashState>();
 	Register<PlayerStopState>();
+	Register<PlayerLandState>();
 	Register<PlayerFrozenState>();
 }
 

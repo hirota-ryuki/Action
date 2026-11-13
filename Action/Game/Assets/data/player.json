@@ -73,6 +73,25 @@
 		"stopRRunFrame": 2
 	},
 
+	// ジャンプ。JumpStart（跳ぶ、41コマ）→ JumpLoop（空中、77コマのループ）→ JumpLand（着地、40コマ）。
+	// 3本とも Universal Animation Library のマネキンのモーションを UE で SK_Player にリターゲットしたもの（tools/UnrealScripts/ual_jump.json）。
+	//   JumpStart: 0コマ目だけ腰が低い。1コマ目から足が離れはじめ、9コマ目で引きつけ終わり、30コマ目からほぼ JumpLoop の最初のポーズ。
+	//   JumpLand: 0コマ目で足が着き、6コマ目でいちばん深くしゃがみ（腰が 88 → 42）、24コマ目でほぼ立つ。
+	// 今の値は仮。実機で見て決める。
+	"jump": {
+		"startFrame": 1,          // 腰が低い 0コマ目は飛ばす。
+		"toLoopFrame": 30,        // ここから先は JumpLoop の最初とほぼ同じポーズ。
+		"animSpeed": 1.0,
+		"startBlendSeconds": 0.1,
+		"loopBlendSeconds": 0.2,  // JumpStart から JumpLoop へ・足場から落ちたとき。
+		"landStartFrame": 0,
+		"landEndFrame": 18,       // 腰が 77 まで戻ったところで Idle へ。残りは landExitBlendSeconds の補間で立つ。
+		"landAnimSpeed": 1.0,
+		"landBlendSeconds": 0.1,
+		"landExitBlendSeconds": 0.3,
+		"landCancelByMove": true  // 動きながら着地したら、しゃがまずにそのまま歩く・走る。
+	},
+
 	"model": {
 		"path": "Assets/modelData/player/Model/SK_Player.FBX",
 		"upAxis": "Z",  // 3ds Max（Z-up）で作られているので Z を上にして起こす（Y のままだと仰向けに倒れる）。
@@ -101,17 +120,27 @@
 		// 骨盤が約 10° 傾き約 14° ひねれたままで、片方の肩が上がって見えた。
 		"levelTorso": true,
 		// 上腕を前まで出す・後ろまで引く角度（真下を 0°）。この角度に近づくほど進まなくなり、超えない。半分まではアニメーションのまま。0 なら抑えない。
-		// 走りのクリップは後ろへ最大約 100°・前へ約 44° 振れていたので、後ろを原神くらい（40°）にする。F1 の開発用の画面でも変えられる。
+		// 走りのクリップは後ろへ最大約 100°・前へ約 44° 振れていたので、後ろを原神くらい（40°）にする。
 		"armFrontMaxDeg": 60.0,
 		"armBackMaxDeg": 40.0,
 		// 走っているときに、上腕の前後の振り（真下を 0°）を何倍にするか。1 ならアニメーションのまま。前・後ろの最大の角度で抑える前にかける。
-		// 腕の4つの値（振る量・肩・ひじ・横に広げる）は、F1 の開発用の画面で原神の走りに近づけて決めた。
+		// 腕の4つの値（振る量・肩・ひじ・横に広げる）は、開発用の画面（F1、今は消した）で原神の走りに近づけて決めた。
 		"armSwingScale": 0.56,
-		// 走っているときに、肩の関節（上腕のつけ根）・ひじの関節を前後へ回しておく角度。正なら前、負なら後ろ。立ち止まり・歩きはアニメーションのまま。F1 の開発用の画面でも変えられる。
+		// 走っているときに、肩の関節（上腕のつけ根）・ひじの関節を前後へ回しておく角度。正なら前、負なら後ろ。立ち止まり・歩きはアニメーションのまま。
 		"shoulderJointOffsetDeg": -28.0,
 		"elbowJointOffsetDeg": 22.0,
-		// 走っているときに、上腕を体の外へ開く角度。負なら内へ閉じる。F1 の開発用の画面でも変えられる。
+		// 走っているときに、上腕を体の外へ開く角度。負なら内へ閉じる。
 		"upperArmSpreadDeg": 11.0,
+		// ジャンプ中（跳ぶ・空中・着地）に、股関節から太ももを内へ回して左右の膝をそろえる（足先の左右の位置は変えない）。
+		// ジャンプのクリップは膝が体の真ん中から約 25 外へ開いている。false ならアニメーションのまま。
+		"jumpCloseLegs": true,
+		// ジャンプ中に、高く上がる方の腕（骨は J_Bip_R）の上腕を上げる角度の上限（真下を 0°、水平を 90°）。0 なら抑えない。
+		// ジャンプのクリップはこの腕だけ約 105° まで上がる（反対の腕は約 77°）。実機で見て 68° にした。
+		"jumpLeftArmMaxRaiseDeg": 68.0,
+		// ジャンプ中に、足首から先を縦の軸で回し、上から見たつま先を外へ向ける角度（負なら内へ）。L・R は骨の名前（J_Bip_L・J_Bip_R）。
+		// 実機で見て、J_Bip_L の足を 24° にした。
+		"jumpFootYawDegL": 24.0,
+		"jumpFootYawDegR": 0.0,
 		// 走っているときに、左右の腕・足の形をそろえ、頭を前に向ける（走りのクリップは左腕が右腕より外へ開き、右足だけが内へ入っている）。
 		"symmetrize": true
 	},
@@ -122,10 +151,14 @@
 	"springBone": {
 		"enabled": true,
 		"legRadius": 8.0, // 太もも・すねの太さ。揺れ物の先がこれより脚に近づかない（アニメーションの形がもとから近いときはそこまで）。
+		// ジャンプ中に、noLiftInJump のまとまり（スカート）を真下からこの角度より上へ上げない。0 なら抑えない。
+		// スカートの骨はアニメーションの中で太もも＋約 13° の向きに動き、JumpLand でしゃがむと 110°（水平より上）まで上がって中が見えた。
+		"jumpMaxAngleFromDownDeg": 50.0,
 		"groups": {
 			"hair":      { "match": "Hair",      "frequency": 3.5, "dampingRatio": 0.6,  "maxAngleDeg": 20.0 }, // 2.5・0.35・40 では揺れすぎた。
-			"coatSkirt": { "match": "CoatSkirt", "frequency": 2.5, "dampingRatio": 0.4,  "maxAngleDeg": 35.0 },
-			"skirt":     { "match": "Skirt",     "frequency": 3.0, "dampingRatio": 0.5,  "maxAngleDeg": 25.0 },
+			// noLiftInJump: ジャンプ中は、揺れでアニメーションの形より上へめくれない（落ちるときにスカートの中が見えないように）。
+			"coatSkirt": { "match": "CoatSkirt", "frequency": 2.5, "dampingRatio": 0.4,  "maxAngleDeg": 35.0, "noLiftInJump": true },
+			"skirt":     { "match": "Skirt",     "frequency": 3.0, "dampingRatio": 0.5,  "maxAngleDeg": 25.0, "noLiftInJump": true },
 			"bust":      { "match": "Bust",      "frequency": 4.0, "dampingRatio": 0.25, "maxAngleDeg": 8.0 }
 		}
 	},
@@ -134,7 +167,7 @@
 		"blendSeconds": 0.2, // アニメーションを切り替えるときの補間時間。
 		// Walk.fbx（Mixamo の Female Walk）の足が地面を送る速さ。UE で足のボーンを測った 115/秒 × モデルの大きさ 1.128。
 		"walkMoveSpeed": 130.0,
-		// クリップの名前は PlayerConfig.cpp の対応表（Idle・Walk・Run・Jump・Dash・StopL・StopR）と同じにする。
+		// クリップの名前は PlayerConfig.cpp の対応表（Idle・Walk・Run・JumpStart・JumpLoop・JumpLand・Dash・StopL・StopR）と同じにする。
 		"clips": {
 			// Idle・Walk は Mixamo のモーションを UE で SK_Player にリターゲットしたもの。
 			"Idle": { "path": "Assets/modelData/player/Animation/Idle.fbx", "loop": true },
@@ -142,8 +175,10 @@
 			// Run・Dash は、原神の動画から MediaPipe で関節の位置を読み取り、その角度で SK_Player のポーズを作ったもの
 			// （tools/UnrealScripts/dash_roto.json）。Run は走りの1周期（34.25〜34.72秒）。
 			"Run": { "path": "Assets/modelData/player/Animation/Run.fbx", "loop": true },
-			// Jump はまだ SK_Player 用が無いので、暫定で Run を入れておく。
-			"Jump": { "path": "Assets/modelData/player/Animation/Run.fbx", "loop": true },
+			// JumpStart・JumpLoop・JumpLand は Universal Animation Library のジャンプを UE でリターゲットしたもの（上の "jump" を参照）。
+			"JumpStart": { "path": "Assets/modelData/player/Animation/JumpStart.fbx", "loop": false },
+			"JumpLoop": { "path": "Assets/modelData/player/Animation/JumpLoop.fbx", "loop": true },
+			"JumpLand": { "path": "Assets/modelData/player/Animation/JumpLand.fbx", "loop": false },
 			// Dash は「しゃがむ → 左足で蹴って低く滑る → 着地」の通し（33.41〜33.94秒）。原神と同じく、蹴る足はいつも同じ。
 			"Dash": { "path": "Assets/modelData/player/Animation/Dash.fbx", "loop": false },
 			// StopL・StopR は走りから止まる「前の足を突っ張って滑る → 起き上がる」の通し（29.78〜30.89秒、L・R は突っ張る足。

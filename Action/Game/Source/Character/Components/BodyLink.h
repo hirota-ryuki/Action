@@ -30,6 +30,15 @@ struct BodyLinkSettings
 	float elbowJointOffsetDeg = 0.0f;
 	// 走っているときに、上腕を体の外へ開く角度。負なら内へ閉じる。
 	float upperArmSpreadDeg = 0.0f;
+	// ジャンプ中（跳ぶ・空中・着地）に、股関節から太ももを内へ回して左右の膝をそろえる。足先の左右の位置は変えない。
+	// ジャンプのクリップはもとのマネキンの脚の開き方のままで、膝が体の真ん中から約 25 も外へ開いているため。
+	bool jumpCloseLegs = false;
+	// ジャンプ中に、高く上がる方の腕（骨は J_Bip_R）の上腕を上げる角度の上限（真下を 0°、水平を 90°）。
+	// 超えた分だけ肩から下へ戻す。0 なら抑えない。ジャンプのクリップはこの腕だけ約 105° まで上がるため。
+	float jumpLeftArmMaxRaiseDeg = 0.0f;
+	// ジャンプ中に、足首から先を縦の軸で回し、上から見たつま先を外へ向ける角度。負なら内へ。0 ならアニメーションのまま。
+	// [0] が J_Bip_L、[1] が J_Bip_R の足。
+	float jumpFootYawDeg[2] = { 0.0f, 0.0f };
 	// 走っているときに、左右の腕・脚の形をそろえ、頭を前に向ける。
 	// 走りのクリップは左右がそろっておらず、後ろから見ると、左腕が右腕より約 11° 外へ開いて約 9° 後ろへ振れ、右足だけが内へ入り、頭が約 5° 横を向いている。
 	bool symmetrize = true;
@@ -59,17 +68,13 @@ public:
 	{
 		m_runWeight = runWeight;
 	}
+	// ジャンプ中の度合い（0〜1）。持ち主が、ジャンプに入る・出るときに少しずつ変えて渡す。
+	// ジャンプ中は膝をそろえ（jumpCloseLegs のとき）、走り用の腕の調整は外す。
+	void SetJumpWeight(float jumpWeight)
+	{
+		m_jumpWeight = jumpWeight;
+	}
 	void Update(Skeleton& skeleton);
-	// 調整値。開発用の画面（ImGui）で変えるときに使う。変えた値は次のフレームから効く。
-	BodyLinkSettings& GetSettings()
-	{
-		return m_settings;
-	}
-	// 調整値を、Init で受け取った値（player.json の値）に戻す。
-	void ResetSettings()
-	{
-		m_settings = m_initialSettings;
-	}
 
 private:
 	enum EnBone
@@ -92,6 +97,8 @@ private:
 		enBone_LowerArmR,
 		enBone_HandL,
 		enBone_HandR,
+		enBone_ToeBaseL,
+		enBone_ToeBaseR,
 		enBone_Num,
 	};
 
@@ -102,14 +109,23 @@ private:
 	float SignToward(Skeleton& skeleton, EnBone bone, EnBone pivot, const Vector3& axis, const Vector3& direction) const;
 	// left → right の線を、キャラクターの左右の向き（水平で、前の向きに直角）にそろえる回転を求める。回す必要があれば true。
 	bool MakeLevelRotation(Skeleton& skeleton, EnBone left, EnBone right, const Vector3& forward, Vector3& axis, float& angle) const;
-	// 上腕の前後の振りを、armFrontMaxDeg・armBackMaxDeg までに抑える。
-	void LimitArmSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward) const;
+	// 上腕の前後の振りを、armFrontMaxDeg・armBackMaxDeg までに抑える。weight（0〜1）は抑える強さ。
+	void LimitArmSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward, float weight) const;
 	// joint（関節）から先を、キャラクターの左右の軸まわりに回し、tip（その先の骨）を前へ angleDeg 動かす。負なら後ろ。
 	// 上腕の前後の振り（真下を 0°）を scale 倍にする。
 	void ScaleArmSwing(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, const Vector3& forward, float scale) const;
 	void RotateJointForward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& forward, float angleDeg) const;
 	// joint（関節）から先を、キャラクターの前後の軸まわりに回し、tip（その先の骨）を体の外へ angleDeg 動かす。負なら内へ。
 	void RotateJointOutward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& forward, float angleDeg) const;
+	// joint（関節）から先を回し、tip（その先の骨）の、腰の真ん中からの横の距離（outward の向きを正）を offset にする。
+	// 回す軸は joint → tip の向きと outward の両方に直角なので、tip は横へだけ動く（前後・上下の形は変わらない）。
+	void MoveSideways(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& outward, float offset) const;
+	// 上腕（upperArm → lowerArm）の真下からの角度が maxDeg を超えていたら、超えた分の weight 倍だけ肩から下へ戻す。
+	void LimitArmRaise(Skeleton& skeleton, EnBone upperArm, EnBone lowerArm, float maxDeg, float weight) const;
+	// 足首から先を縦の軸で回し、上から見たつま先（foot → toe）を外へ angleDeg 向ける。負なら内へ。
+	void TurnFoot(Skeleton& skeleton, EnBone foot, EnBone toe, float angleDeg) const;
+	// 股関節から太ももを内へ回して膝をそろえ、膝から下を回し返して足先の横の位置を戻す。
+	void CloseLeg(Skeleton& skeleton, EnBone upperLeg, EnBone lowerLeg, EnBone foot, const Vector3& forward) const;
 	// joint（関節）から先を回し、joint から tip（その先の骨）への向きを direction にそろえる。
 	void RotateToward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& direction) const;
 	// 頭の左右の向きを、キャラクターの前の向きにそろえる。
@@ -128,11 +144,11 @@ private:
 	};
 
 	BodyLinkSettings m_settings;
-	BodyLinkSettings m_initialSettings;  // Init で受け取った値。ResetSettings() で戻す。
 	int m_boneNos[enBone_Num] = {};
 	bool m_isActive = false;
 	Quaternion m_rotation = Quaternion::Identity;
 	float m_runWeight = 0.0f;
+	float m_jumpWeight = 0.0f;
 	// 腕をそろえるための記録。
 	std::deque<ArmSample> m_armHistory;
 	float m_time = 0.0f;
