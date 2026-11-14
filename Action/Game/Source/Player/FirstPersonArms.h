@@ -38,7 +38,7 @@ private:
 	// 握り具合（m_grip）に合わせて指を握り込む。SpreadArms の前に呼ぶ。
 	void CurlFingers(Skeleton& skeleton);
 	// 親指を、握った人差し指と中指の外側に重ねる（親指の先を目標へ合わせる IK）。CurlFingers から呼ぶ。
-	void PlaceThumb(Skeleton& skeleton, int side, float grip, float tipCurlDeg);
+	void PlaceThumb(Skeleton& skeleton, int side, float grip);
 	static Vector3 BonePosition(Skeleton& skeleton, int boneNo);
 	// chain[from] の関節を中心に、chain[from] から指先（chain[2]）までの骨をまとめて回す。
 	static void RotateChain(Skeleton& skeleton, const int* chain, int from, Vector3 axis, float deg);

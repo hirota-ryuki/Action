@@ -56,7 +56,7 @@ namespace
 void FirstPersonArms::Init()
 {
 	CharacterModelDesc desc;
-	desc.modelPath = getenv("FP_TEST_MODEL") ? getenv("FP_TEST_MODEL") : MODEL_PATH; // FP_TEST_TEMP
+	desc.modelPath = MODEL_PATH;
 	desc.upAxis = enModelUpAxisZ;
 	desc.scale = MODEL_SCALE;
 	desc.isShadowCaster = false;  // 体を描いていないので、腕だけの影が床に落ちないようにする。
@@ -66,9 +66,6 @@ void FirstPersonArms::Init()
 	desc.clips[enClip_CastRight] = { dir + "FpCastRight.fbx", false };
 	desc.clips[enClip_ChargeStart] = { dir + "FpChargeStart.fbx", false };
 	desc.clips[enClip_Charge] = { dir + "FpCharge.fbx", true };
-	if (getenv("FP_TEST_NOANIM")) { desc.clips.clear(); } // FP_TEST_TEMP
-	if (getenv("FP_TEST_SHADOW")) { desc.isShadowCaster = true; } // FP_TEST_TEMP
-	if (const char* e = getenv("FP_TEST_IDLE")) { desc.clips[enClip_Idle].path = e; } // FP_TEST_TEMP
 	m_model.Init(desc);
 	m_clip = enClip_Idle;
 	InitHiddenBones();
@@ -120,7 +117,6 @@ void FirstPersonArms::InitHiddenBones()
 	// ボーンのワールド行列を計算したあとで、腕以外の骨を、その骨の位置で大きさ 0 にする。
 	// 体・頭・髪の頂点は骨の位置の1点に集まって見えなくなる。肩の近くで腕と体の両方に重みがある頂点は、
 	// 体の骨の側へ引っ張られるが、一人称では画面の外になる。
-	if (getenv("FP_TEST_NOHIDE")) { return; } // FP_TEST_TEMP
 	skeleton.SetOnPostUpdateWorldMatrix([this](Skeleton& sk) {
 		for (int boneNo : m_hiddenBones) {
 			Bone* bone = sk.GetBone(boneNo);
@@ -139,8 +135,6 @@ void FirstPersonArms::InitHiddenBones()
 
 void FirstPersonArms::CurlFingers(Skeleton& skeleton)
 {
-	float curlDegs[3] = { FINGER_CURL_DEGS[0], FINGER_CURL_DEGS[1], FINGER_CURL_DEGS[2] }, thumbDeg = THUMB_CURL_DEG; // FP_TEST_TEMP
-	if (const char* e = getenv("FP_TEST_CURL")) { sscanf_s(e, "%f,%f,%f,%f", &curlDegs[0], &curlDegs[1], &curlDegs[2], &thumbDeg); } // FP_TEST_TEMP
 	for (int side = 0; side < 2; side++) {
 		// 握り具合（1 で握りこぶし、0 で手を開く）。
 		const float w = m_grip[side];
@@ -173,14 +167,14 @@ void FirstPersonArms::CurlFingers(Skeleton& skeleton)
 				if (axis.LengthSq() <= FLT_EPSILON) {
 					continue;
 				}
-				RotateChain(skeleton, chain, j, axis, curlDegs[j] * w);
+				RotateChain(skeleton, chain, j, axis, FINGER_CURL_DEGS[j] * w);
 			}
 		}
-		PlaceThumb(skeleton, side, w, thumbDeg);
+		PlaceThumb(skeleton, side, w);
 	}
 }
 
-void FirstPersonArms::PlaceThumb(Skeleton& skeleton, int side, float grip, float tipCurlDeg)
+void FirstPersonArms::PlaceThumb(Skeleton& skeleton, int side, float grip)
 {
 	// 握りこぶしの親指は、手のひらの中に入れず、曲げた人差し指と中指の中節（第二関節と第一関節の間）の外側に重ねる。
 	// 親指の先の目標をそこに置き、付け根側の関節から順に、親指の先が目標へ向くように回して合わせる（CCD の IK）。
@@ -197,7 +191,7 @@ void FirstPersonArms::PlaceThumb(Skeleton& skeleton, int side, float grip, float
 		Vector3 axis;
 		axis.Cross(before, after);
 		if (axis.LengthSq() > FLT_EPSILON) {
-			RotateChain(skeleton, thumb, 2, axis, tipCurlDeg * grip);
+			RotateChain(skeleton, thumb, 2, axis, THUMB_CURL_DEG * grip);
 		}
 	}
 
@@ -240,15 +234,6 @@ void FirstPersonArms::PlaceThumb(Skeleton& skeleton, int side, float grip, float
 			RotateChain(skeleton, thumb, j, axis, deg * grip);
 		}
 	}
-	if (const char* path = getenv("FP_TEST_THUMBLOG")) { // FP_TEST_TEMP
-		static int s_count = 0; if (++s_count == 240) { FILE* fp = nullptr; fopen_s(&fp, path, "a"); if (fp) {
-			const Vector3 tip = thumbTip(); const Vector3 hand = BonePosition(skeleton, m_handBone[side]);
-			Vector3 palmFwd = BonePosition(skeleton, middle[0]) - hand; const float palmLen = palmFwd.Length(); palmFwd.Normalize();
-			fprintf(fp, "side%d tip-target=%.2f tip-indexMid=%.2f tip-palmCenter=%.2f target-palmCenter=%.2f palmLen=%.2f thumb1-tip=%.2f\n", side,
-				(tip - target).Length(), (tip - indexMid).Length(), (tip - palmCenter).Length(), (target - palmCenter).Length(), palmLen,
-				(tip - BonePosition(skeleton, thumb[0])).Length());
-			fclose(fp); } }
-	}
 }
 
 Vector3 FirstPersonArms::BonePosition(Skeleton& skeleton, int boneNo)
@@ -280,9 +265,6 @@ void FirstPersonArms::RotateChain(Skeleton& skeleton, const int* chain, int from
 
 void FirstPersonArms::SpreadArms(Skeleton& skeleton)
 {
-	ArmPose idlePose = IDLE_POSE, castPose = CAST_POSE; // FP_TEST_TEMP
-	if (const char* e = getenv("FP_TEST_SPREAD")) { sscanf_s(e, "%f,%f,%f", &idlePose.spreadDeg, &idlePose.raiseDeg, &idlePose.sideShift); } // FP_TEST_TEMP
-	if (const char* e = getenv("FP_TEST_CAST")) { sscanf_s(e, "%f,%f,%f,%f,%f", &castPose.spreadDeg, &castPose.raiseDeg, &castPose.sideShift, &castPose.drop, &castPose.push); } // FP_TEST_TEMP
 	const Matrix& cameraRotationMatrix = g_camera3D->GetCameraRotation();
 	const Vector3 cameraUp(cameraRotationMatrix.m[1][0], cameraRotationMatrix.m[1][1], cameraRotationMatrix.m[1][2]);
 	for (int side = 0; side < 2; side++) {
@@ -291,11 +273,11 @@ void FirstPersonArms::SpreadArms(Skeleton& skeleton)
 		}
 		// 構えと撃つときの置き方を、この腕の混ぜ具合で混ぜる。
 		const float w = m_castWeight[side];
-		const float spreadDeg = idlePose.spreadDeg + (castPose.spreadDeg - idlePose.spreadDeg) * w;
-		const float raiseDeg = idlePose.raiseDeg + (castPose.raiseDeg - idlePose.raiseDeg) * w;
-		const float sideShift = idlePose.sideShift + (castPose.sideShift - idlePose.sideShift) * w;
-		const float drop = idlePose.drop + (castPose.drop - idlePose.drop) * w;
-		const float push = idlePose.push + (castPose.push - idlePose.push) * w;
+		const float spreadDeg = IDLE_POSE.spreadDeg + (CAST_POSE.spreadDeg - IDLE_POSE.spreadDeg) * w;
+		const float raiseDeg = IDLE_POSE.raiseDeg + (CAST_POSE.raiseDeg - IDLE_POSE.raiseDeg) * w;
+		const float sideShift = IDLE_POSE.sideShift + (CAST_POSE.sideShift - IDLE_POSE.sideShift) * w;
+		const float drop = IDLE_POSE.drop + (CAST_POSE.drop - IDLE_POSE.drop) * w;
+		const float push = IDLE_POSE.push + (CAST_POSE.push - IDLE_POSE.push) * w;
 		// 左腕（side 0）は画面の左へ、右腕は右へ回す（カメラの上の軸まわりに、左腕は +、右腕は -）。
 		// そのあと、カメラの右の軸まわりに - へ回して持ち上げる。
 		Quaternion spread;
@@ -346,8 +328,6 @@ void FirstPersonArms::Reset(const Player& player)
 
 void FirstPersonArms::Update(const Player& player)
 {
-	if (getenv("FP_TEST_NOANIM")) { UpdateTransform(); m_model.Update(); return; } // FP_TEST_TEMP
-	if (const char* c = getenv("FP_TEST_CLIP")) { const char* t = getenv("FP_TEST_TIME"); m_clip = (EnClip)atoi(c); m_releaseTimer = getenv("FP_TEST_RELEASE") ? 1.0f : 0.0f; for (int s = 0; s < 2; s++) { m_castWeight[s] = GetCastWeightTarget(s); m_grip[s] = GetGripTarget(s); } m_model.PlayAnimationAtTime(atoi(c), t ? (float)atof(t) : 0.0f); UpdateTransform(); m_model.Update(); return; } // FP_TEST_TEMP
 	const float deltaTime = g_gameTime->GetFrameDeltaTime();
 	UpdateClip(player, deltaTime);
 	// 構えと撃つときの置き方を、急に変わらないよう、少しずつ混ぜて切り替える。
@@ -358,11 +338,6 @@ void FirstPersonArms::Update(const Player& player)
 		const float gripTarget = GetGripTarget(side);
 		const float gripSpeed = gripTarget < m_grip[side] ? GRIP_OPEN_SPEED : GRIP_CLOSE_SPEED;
 		m_grip[side] += (gripTarget - m_grip[side]) * min(1.0f, deltaTime * gripSpeed);
-	}
-	if (const char* path = getenv("FP_TEST_STATE")) { // FP_TEST_TEMP
-		static float s_t = 0.0f; static float s_next = 0.0f; s_t += deltaTime;
-		if (s_t >= s_next) { s_next = s_t + 0.1f; FILE* fp = nullptr; fopen_s(&fp, path, "a"); if (fp) {
-			fprintf(fp, "t=%.2f clip=%d cast=(%.2f,%.2f) grip=(%.2f,%.2f) release=%.2f playing=%d\n", s_t, (int)m_clip, m_castWeight[0], m_castWeight[1], m_grip[0], m_grip[1], m_releaseTimer, (int)m_model.IsPlayingAnimation()); fclose(fp); } }
 	}
 	UpdateTransform();
 	m_model.Update();
@@ -397,45 +372,6 @@ float FirstPersonArms::GetGripTarget(int side) const
 
 void FirstPersonArms::Draw(RenderContext& rc)
 {
-	if (const char* path = getenv("FP_TEST_FINGERS")) { // FP_TEST_TEMP: 関節ごとの曲がり（前の骨と次の骨の向きの角度）
-		static int s_frame3 = 0; if (++s_frame3 == 120) { FILE* fp = nullptr; fopen_s(&fp, path, "a"); if (fp) {
-			Skeleton& sk = m_model.GetModelRender().GetSkeleton();
-			auto pos = [&](int no) { const Matrix& w = sk.GetBone(no)->GetWorldMatrix(); return Vector3(w.m[3][0], w.m[3][1], w.m[3][2]); };
-			for (int side = 0; side < 2; side++) { for (int f = 0; f < FINGER_COUNT; f++) {
-				const int hand = sk.FindBoneID(side == 0 ? L"J_Bip_L_Hand" : L"J_Bip_R_Hand");
-				int chain[4] = { hand, m_fingerBones[side][f][0], m_fingerBones[side][f][1], m_fingerBones[side][f][2] };
-				fprintf(fp, "side%d finger%d:", side, f);
-				// 関節 j の曲がり = (j-1 → j の向き) と (j → j+1 の向き) の角度。指先は骨の X 軸の向きで代わりにする。
-				for (int j = 1; j < 4; j++) {
-					Vector3 a = pos(chain[j]) - pos(chain[j - 1]);
-					Vector3 b;
-					if (j < 3) { b = pos(chain[j + 1]) - pos(chain[j]); }
-					else { const Matrix& w = sk.GetBone(chain[3])->GetWorldMatrix(); b = Vector3(w.m[0][0], w.m[0][1], w.m[0][2]); }
-					a.Normalize(); b.Normalize();
-					fprintf(fp, " j%d=%.0f", j, acosf(max(-1.0f, min(1.0f, a.Dot(b)))) * 57.2958f);
-				}
-				fprintf(fp, "\n"); } }
-			fclose(fp); } }
-	}
-	if (const char* path = getenv("FP_TEST_HANDS")) { // FP_TEST_TEMP
-		static int s_frame2 = 0; if (++s_frame2 == 120) { FILE* fp = nullptr; fopen_s(&fp, path, "a"); if (fp) {
-			Skeleton& sk = m_model.GetModelRender().GetSkeleton();
-			const Matrix& cr = g_camera3D->GetCameraRotation(); const Vector3 up(cr.m[1][0], cr.m[1][1], cr.m[1][2]);
-			for (const wchar_t* n : { L"J_Bip_L_UpperArm", L"J_Bip_L_LowerArm", L"J_Bip_L_Hand", L"J_Bip_R_UpperArm", L"J_Bip_R_LowerArm", L"J_Bip_R_Hand" }) {
-				const Matrix& w = sk.GetBone(sk.FindBoneID(n))->GetWorldMatrix();
-				Vector3 d(w.m[3][0], w.m[3][1], w.m[3][2]); d -= g_camera3D->GetPosition();
-				fprintf(fp, "%ls right %.1f up %.1f fwd %.1f\n", n, d.Dot(g_camera3D->GetRight()), d.Dot(up), d.Dot(g_camera3D->GetForward())); }
-			fprintf(fp, "---\n"); fclose(fp); } }
-	}
-	if (const char* path = getenv("FP_TEST_LOG")) { // FP_TEST_TEMP
-		static int s_frame = 0; if (++s_frame % 60 == 0) { FILE* fp = nullptr; fopen_s(&fp, path, "a"); if (fp) {
-			Skeleton& sk = m_model.GetModelRender().GetSkeleton();
-			const wchar_t* names[] = { L"J_Bip_C_Hips", L"J_Bip_C_Head", L"J_Bip_L_Hand", L"Root" };
-			for (auto n : names) { int id = sk.FindBoneID(n); if (id < 0) { fprintf(fp, "%ls missing\n", n); continue; }
-				const Matrix& w = sk.GetBone(id)->GetWorldMatrix(); const Matrix* bm = sk.GetBoneMatricesTopAddress();
-				fprintf(fp, "%ls id%d world(%.1f %.1f %.1f) scaleX %.3f boneMat t(%.1f %.1f %.1f)\n", n, id, w.m[3][0], w.m[3][1], w.m[3][2], sqrtf(w.m[0][0]*w.m[0][0]+w.m[0][1]*w.m[0][1]+w.m[0][2]*w.m[0][2]), bm[id].m[3][0], bm[id].m[3][1], bm[id].m[3][2]); }
-			const Vector3& c = g_camera3D->GetPosition(); fprintf(fp, "camera(%.1f %.1f %.1f) playing %d\n---\n", c.x, c.y, c.z, (int)m_model.IsPlayingAnimation()); fclose(fp); } }
-	}
 	m_model.Draw(rc);
 }
 
@@ -500,16 +436,13 @@ void FirstPersonArms::UpdateTransform()
 	const Matrix& cameraRotationMatrix = g_camera3D->GetCameraRotation();
 	const Vector3 cameraUp(cameraRotationMatrix.m[1][0], cameraRotationMatrix.m[1][1], cameraRotationMatrix.m[1][2]);
 
-	Vector3 ofs = ARMS_OFFSET; float yaw = 0.0f; // FP_TEST_TEMP
-	if (const char* e = getenv("FP_TEST_OFS")) { sscanf_s(e, "%f,%f,%f,%f", &ofs.x, &ofs.y, &ofs.z, &yaw); } // FP_TEST_TEMP
 	Vector3 position = cameraPosition;
-	position += g_camera3D->GetRight() * ofs.x;
-	position += cameraUp * ofs.y;
-	position += g_camera3D->GetForward() * ofs.z;
+	position += g_camera3D->GetRight() * ARMS_OFFSET.x;
+	position += cameraUp * ARMS_OFFSET.y;
+	position += g_camera3D->GetForward() * ARMS_OFFSET.z;
 
 	Quaternion rotation;
 	rotation.SetRotation(cameraRotationMatrix);
-	{ Quaternion y; y.SetRotationDegY(yaw); rotation = y * rotation; } // FP_TEST_TEMP
 	m_model.SetTransform(position, rotation);
 }
 

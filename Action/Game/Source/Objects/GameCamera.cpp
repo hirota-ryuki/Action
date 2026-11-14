@@ -74,7 +74,6 @@ void GameCamera::Update()
 		return;
 	}
 
-	if (getenv("FP_TEST") != nullptr && m_cameraMode == EnCameraMode::ThirdPerson) { ToggleCameraMode(); } // FP_TEST_TEMP
 	if (IsToggleTriggered()) {
 		ToggleCameraMode();
 	}
@@ -116,9 +115,7 @@ void GameCamera::ToggleCameraMode()
 		}
 		m_firstPersonForward.Normalize();
 		g_camera3D->SetNear(FIRST_PERSON_NEAR);
-		float viewAngleDeg = FIRST_PERSON_VIEW_ANGLE_DEG; // FP_TEST_TEMP
-		if (const char* e = getenv("FP_TEST_FOV")) { viewAngleDeg = (float)atof(e); } // FP_TEST_TEMP
-		g_camera3D->SetViewAngle(Math::DegToRad(viewAngleDeg));
+				g_camera3D->SetViewAngle(Math::DegToRad(FIRST_PERSON_VIEW_ANGLE_DEG));
 		m_firstPersonArms.Reset(*m_player);
 	}
 	else {
@@ -171,7 +168,7 @@ void GameCamera::UpdateFirstPersonCamera()
 	RotateFirstPersonForward();
 
 	Vector3 eyePosition = m_player->GetPosition();
-	eyePosition.y += getenv("FP_TEST_EYE") ? (float)atof(getenv("FP_TEST_EYE")) : FIRST_PERSON_EYE_HEIGHT; // FP_TEST_TEMP
+	eyePosition.y += FIRST_PERSON_EYE_HEIGHT;
 
 	const Vector3 target = eyePosition + m_firstPersonForward * FIRST_PERSON_LOOK_DISTANCE;
 	g_camera3D->SetPosition(eyePosition);

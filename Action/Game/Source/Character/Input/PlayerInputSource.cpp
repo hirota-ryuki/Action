@@ -36,15 +36,9 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	const bool isDashPress = IsKeyPressed(VK_LSHIFT) || pad.IsPress(enButtonX);
 	input.dash.Update(isDashPress);
 	input.isRun = isDashPress;
-	if (getenv("FP_TEST_SCRIPT")) { // FP_TEST_TEMP: 決まった時間にボタンを押したことにする（炎を 10〜12 秒溜めて撃ち、14 秒に氷を撃つ）
-		static float s_time = 0.0f; s_time += context.deltaTime;
-		input.fire.Update(s_time >= 14.0f && s_time < 14.1f);
-		input.subFire.Update(s_time >= 10.0f && s_time < 12.0f);
-	} else {
 	input.fire.Update((CanUseMouse() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
 	// パッド未接続時は右トリガー(RB2)が8キーに割り当てられている。
 	input.subFire.Update((CanUseMouse() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
-	} // FP_TEST_TEMP
 
 	m_prevMagicKey.Update(IsKeyPressed('Q'));
 	m_nextMagicKey.Update(IsKeyPressed('E'));
