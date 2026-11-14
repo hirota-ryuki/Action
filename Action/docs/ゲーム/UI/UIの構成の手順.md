@@ -1900,13 +1900,13 @@ class UIManager;
 
 ### 4-7. UIManager.h を読み込む
 
-[Game.cpp](../../../Game/Source/Core/Game.cpp) の **10行目** `#include "BurningGround.h"` の下に、1行足します（11〜11行目になります）。
+[Game.cpp](../../../Game/Source/Core/Game.cpp) の **11行目** `#include "BurningGround.h"` の下に、1行足します（12〜12行目になります）。
 
-<!-- add: Action/Game/Source/Core/Game.cpp 11 -->
+<!-- add: Action/Game/Source/Core/Game.cpp 12 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
-11
+12
 ```
 
 </td><td>
@@ -1919,14 +1919,14 @@ class UIManager;
 
 ### 4-8. 終わるときに、UI を先に消す
 
-[Game.cpp](../../../Game/Source/Core/Game.cpp) の **31行目** `{` の下、`DeleteGO(m_stage);` の上に、2行足します（32〜33行目になります）。
+[Game.cpp](../../../Game/Source/Core/Game.cpp) の **32行目** `{` の下、`DeleteGO(m_stage);` の上に、2行足します（33〜34行目になります）。
 
-<!-- add: Action/Game/Source/Core/Game.cpp 32 -->
+<!-- add: Action/Game/Source/Core/Game.cpp 33 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
-32
 33
+34
 ```
 
 </td><td>
@@ -1940,19 +1940,19 @@ class UIManager;
 
 | 行 | 何をしているか |
 |---|---|
-| 32〜33 | UI はキャラクターを読んでいるので、キャラクターより先に消す |
+| 33〜34 | UI はキャラクターを読んでいるので、キャラクターより先に消す |
 
 ### 4-9. 優先度のコメントを書き換える
 
-[Game.cpp](../../../Game/Source/Core/Game.cpp) の **67行目**を、次のように書き換えます。
+[Game.cpp](../../../Game/Source/Core/Game.cpp) の **68行目**を、次のように書き換えます。
 
 **前**
 
-<!-- rewrite-before: Action/Game/Source/Core/Game.cpp 67 -->
+<!-- rewrite-before: Action/Game/Source/Core/Game.cpp 68 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
-67
+68
 ```
 
 </td><td>
@@ -1965,11 +1965,11 @@ class UIManager;
 
 **後**
 
-<!-- rewrite-after: Action/Game/Source/Core/Game.cpp 67 -->
+<!-- rewrite-after: Action/Game/Source/Core/Game.cpp 68 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
-67
+68
 ```
 
 </td><td>
@@ -1982,13 +1982,13 @@ class UIManager;
 
 ### 4-10. Start() で UIManager を作る
 
-[Game.cpp](../../../Game/Source/Core/Game.cpp) の **76行目** `m_fireEffect->SetScale(FIRE_SCALE);` の下に、1行足します（77〜77行目になります）。
+[Game.cpp](../../../Game/Source/Core/Game.cpp) の **77行目** `m_fireEffect->SetScale(FIRE_SCALE);` の下に、1行足します（78〜78行目になります）。
 
-<!-- add: Action/Game/Source/Core/Game.cpp 77 -->
+<!-- add: Action/Game/Source/Core/Game.cpp 78 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
-77
+78
 ```
 
 </td><td>
@@ -2001,7 +2001,7 @@ class UIManager;
 
 | 行 | 何をしているか |
 |---|---|
-| 77 | 優先度 3 で作る。キャラクターとカメラが動いたあとに更新する |
+| 78 | 優先度 3 で作る。キャラクターとカメラが動いたあとに更新する |
 
 ### 出来上がった UIManager.h
 
