@@ -201,80 +201,82 @@ namespace nsK2EngineLow {
 			}
 		}
 
+		// 前のフレームに押されていたか。パッドとキーボードを合わせたあとで、押した瞬間を出すのに使う。
+		int prevPress[enButtonNum];
+		memcpy(prevPress, m_press, sizeof(prevPress));
+
 		if (result == ERROR_SUCCESS) {
 			//接続されている。
 			m_state.bConnected = true;
 			UpdateCore(m_state.state);
-			
 		}
 		else {
-			//接続されていない場合はキーボードの入力でエミュレートする。
 			if (m_state.bConnected) {
 				//未接続になった。
 				memset(&m_state, 0, sizeof(m_state));
-				memset(m_trigger, 0, sizeof(m_trigger));
-				memset(m_press, 0, sizeof(m_press));
 			}
+			memset(m_press, 0, sizeof(m_press));
 			m_lStickX = 0.0f;
 			m_lStickY = 0.0f;
 			m_rStickX = 0.0f;
 			m_rStickY = 0.0f;
+		}
+		// パッドが繋がっていてもいなくても、キーボードの入力を重ねる（どちらでも操作できるように）。
+		UpdateKeyboard(prevPress);
+	}
+	void GamePad::UpdateKeyboard(const int prevPress[enButtonNum])
+	{
+		float keyRStickX = 0.0f;
+		float keyRStickY = 0.0f;
+		if (GetAsyncKeyState(VK_LEFT)) {
+			keyRStickX = -1.0f;
+		}
+		else if (GetAsyncKeyState(VK_RIGHT)) {
+			keyRStickX = 1.0f;
+		}
+		if (GetAsyncKeyState(VK_UP)) {
+			keyRStickY = 1.0f;
+		}
+		else if (GetAsyncKeyState(VK_DOWN)) {
+			keyRStickY = -1.0f;
+		}
+		//スティックの入力量を正規化。キーが押されているときだけ、パッドのスティックの代わりに使う。
+		float t = fabsf(keyRStickX) + fabsf(keyRStickY);
+		if (t > 0.0f) {
+			m_rStickX = keyRStickX / t;
+			m_rStickY = keyRStickY / t;
+		}
 
-			if (GetAsyncKeyState(VK_LEFT)) {
-				m_rStickX = -1.0f;
-			}
-			else if (GetAsyncKeyState(VK_RIGHT)) {
-				m_rStickX = 1.0f;
-			}
-			if (GetAsyncKeyState(VK_UP)) {
-				m_rStickY = 1.0f;
-			}
-			else if (GetAsyncKeyState(VK_DOWN)) {
-				m_rStickY = -1.0f;
-			}
-			//スティックの入力量を正規化。
-			float t = fabsf(m_rStickX) + fabsf(m_rStickY);
-			if (t > 0.0f) {
-				m_rStickX /= t;
-				m_rStickY /= t;
-			}
+		float keyLStickX = 0.0f;
+		float keyLStickY = 0.0f;
+		if (GetAsyncKeyState('A')) {
+			keyLStickX = -1.0f;
+		}
+		else if (GetAsyncKeyState('D')) {
+			keyLStickX = 1.0f;
+		}
+		if (GetAsyncKeyState('W')) {
+			keyLStickY = 1.0f;
+		}
+		else if (GetAsyncKeyState('S')) {
+			keyLStickY = -1.0f;
+		}
+		t = fabsf(keyLStickX) + fabsf(keyLStickY);
+		if (t > 0.0f) {
+			m_lStickX = keyLStickX / t;
+			m_lStickY = keyLStickY / t;
+		}
 
-			if (GetAsyncKeyState('A')) {
-				m_lStickX = -1.0f;
+		for (const VirtualPadToKeyboard& vPadToKeyboard : vPadToKeyboardTable) {
+			if (GetAsyncKeyState(vPadToKeyboard.keyCoord1)
+				|| (vPadToKeyboard.keyCoord2 != 0xFFFFFFFF
+					&& GetAsyncKeyState(vPadToKeyboard.keyCoord2))) {
+				m_press[vPadToKeyboard.vButton] = 1;
 			}
-			else if (GetAsyncKeyState('D')) {
-				m_lStickX = 1.0f;
-			}
-			if (GetAsyncKeyState('W')) {
-				m_lStickY = 1.0f;
-			}
-			else if (GetAsyncKeyState('S')) {
-				m_lStickY = -1.0f;
-			}
-			//スティックの入力量を正規化。
-			t = fabsf(m_lStickX) + fabsf(m_lStickY);
-			if (t > 0.0f) {
-				m_lStickX /= t;
-				m_lStickY /= t;
-			}
-
-			for (const VirtualPadToKeyboard& vPadToKeyboard : vPadToKeyboardTable) {
-				if (GetAsyncKeyState(vPadToKeyboard.keyCoord1)) {
-					//優先順位１番目のキー。
-					m_trigger[vPadToKeyboard.vButton] = 1 ^ m_press[vPadToKeyboard.vButton];
-					m_press[vPadToKeyboard.vButton] = 1;
-				}
-				else if (vPadToKeyboard.keyCoord2 != 0xFFFFFFFF
-					&& GetAsyncKeyState(vPadToKeyboard.keyCoord2)) {
-					//優先順位２番目のキー。
-					m_trigger[vPadToKeyboard.vButton] = 1 ^ m_press[vPadToKeyboard.vButton];
-					m_press[vPadToKeyboard.vButton] = 1;
-				}
-				else {
-					m_trigger[vPadToKeyboard.vButton] = 0;
-					m_press[vPadToKeyboard.vButton] = 0;
-				}
-			}
+		}
+		// パッドかキーボードのどちらかで、前のフレームに押されていなくて今押されていれば、押した瞬間。
+		for (int i = 0; i < enButtonNum; i++) {
+			m_trigger[i] = (m_press[i] != 0 && prevPress[i] == 0) ? 1 : 0;
 		}
 	}
 }

@@ -30,16 +30,16 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	// 攻撃した瞬間に、カメラが向いている方向を向く。
 	input.attackDirection = cameraForward;
 
-	// ジャンプはスペース（パッドは A）。パッド未接続時は A ボタンが J キーに割り当てられているので、J でも跳べる。
+	// ジャンプはスペース（パッドは A）。パッドの A ボタンが J キーに割り当てられているので、J でも跳べる。
 	input.jump.Update(IsKeyPressed(VK_SPACE) || pad.IsPress(enButtonA));
 	// 左Shift（パッドは X）: 押した瞬間にダッシュ、押しっぱなしで走る。
 	// 走るのはダッシュが終わったあとなので、単押しを繰り返すとダッシュが続けて出る。
-	// パッド未接続時は X ボタンが L キーに割り当てられているので、L でも同じ動きになる。
+	// パッドの X ボタンが L キーに割り当てられているので、L でも同じ動きになる。
 	const bool isDashPress = IsKeyPressed(VK_LSHIFT) || pad.IsPress(enButtonX);
 	input.dash.Update(isDashPress);
 	input.isRun = isDashPress;
 	input.Action(ActionButton::Action1).Update((CanUseMouse() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
-	// パッド未接続時は右トリガー(RB2)が8キーに割り当てられている。
+	// パッドの右トリガー(RB2)は8キーにも割り当てられている（パッドが繋がっていても使える）。
 	input.Action(ActionButton::Action2).Update((CanUseMouse() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
 
 	// 一人称では視線の方向へ目の位置から撃つ。三人称ではキャラクターの正面へ撃つ（hasAim = false）。
