@@ -43,6 +43,9 @@ struct CharacterInput
 	bool hasAim = false;                    // true なら aimOrigin/aimDirection の方向へ撃つ。false ならキャラクターの正面へ撃つ。
 	Vector3 aimOrigin = Vector3::Zero;
 	Vector3 aimDirection = Vector3::AxisZ;
+	// hasAim のとき、そのボタンのスキルだけ、撃つ位置をこれだけずらす（一人称で、Action1 の氷魔法を右手から撃つ）。
+	// 向きは、照準の先の点へ向け直す（画面の真ん中に飛んでいくように）。
+	Vector3 aimOffsets[static_cast<int>(ActionButton::Num)];
 
 	ButtonState& Action(ActionButton button)
 	{
@@ -51,6 +54,14 @@ struct CharacterInput
 	const ButtonState& Action(ActionButton button) const
 	{
 		return actions[static_cast<int>(button)];
+	}
+	Vector3& AimOffset(ActionButton button)
+	{
+		return aimOffsets[static_cast<int>(button)];
+	}
+	const Vector3& AimOffset(ActionButton button) const
+	{
+		return aimOffsets[static_cast<int>(button)];
 	}
 };
 

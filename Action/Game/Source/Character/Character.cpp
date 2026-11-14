@@ -1,6 +1,12 @@
 ﻿#include "stdafx.h"
 #include "Character.h"
 
+namespace
+{
+	// 撃つ位置をずらしたとき（aimOffsets）、照準のこの距離先の点へ向けて撃つ。
+	constexpr float AIM_POINT_DISTANCE = 3000.0f;
+}
+
 Character::Character(Faction faction)
 	: m_faction(faction)
 {
@@ -129,8 +135,27 @@ void Character::UpdateSkill()
 	// 派生クラスが入力の写しを書き換える（攻撃のモーションに合わせて撃つ、など）。
 	CharacterInput castInput = m_input;
 	FilterSkillInput(castInput);
+	// ボタンごとの撃つ位置と向き。入力にずらす量（aimOffsets）があれば、そのボタンのスキルだけずらす。
+	SkillPose poses[static_cast<int>(ActionButton::Num)];
+	for (int button = 0; button < static_cast<int>(ActionButton::Num); button++) {
+		poses[button].origin = origin;
+		poses[button].direction = direction;
+		ApplyAimOffset(m_input.aimOffsets[button], poses[button].origin, poses[button].direction);
+	}
 	// 入力をそのまま渡す。どのボタンでどのスキルを使うか、押した・押している・離したの判断は SkillController がする。
-	m_skillController.Update(castInput, origin, direction);
+	m_skillController.Update(castInput, poses);
+}
+
+void Character::ApplyAimOffset(const Vector3& offset, Vector3& origin, Vector3& direction) const
+{
+	if (!m_input.hasAim || offset.LengthSq() <= FLT_EPSILON) {
+		return;
+	}
+	// 撃つ位置だけずらし、向きは照準の先の点へ向け直す（画面の真ん中に飛んでいくように）。
+	const Vector3 aimPoint = origin + direction * AIM_POINT_DISTANCE;
+	origin += offset;
+	direction = aimPoint - origin;
+	direction.Normalize();
 }
 
 void Character::MakeCastPose(Vector3& origin, Vector3& direction) const

@@ -1,0 +1,218 @@
+{
+  "target": "../../Game/Assets/modelData/player/Model/SK_Player.FBX",
+  "out_dir": "../../Game/Assets/modelData/player/Animation/FirstPerson",
+  "secondary": false,
+  "sword_fit": false,
+  "clips": [
+    {
+      "name": "FpIdle",
+      "comment": "両手を胸の下で軽く構えたまま止める（KinemIQ の Spell - start の途中の1コマを、両手にしたもの）",
+      "source": "D:/04_dawnload/kinemiq/Spell_-_start.fbx",
+      "rig": "ue4",
+      "arms": "both",
+      "frames": [
+        11,
+        12
+      ],
+      "loop": true,
+      "adjust": [
+        {
+          "bone": "J_Bip_L_UpperArm",
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "deg": -14
+        },
+        {
+          "bone": "J_Bip_R_UpperArm",
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "deg": 14
+        }
+      ],
+      "hold": {
+        "clip": "FpIdle",
+        "frame": 0,
+        "parts": [
+          "body",
+          "left_arm",
+          "right_arm"
+        ]
+      }
+    },
+    {
+      "name": "FpCastRight",
+      "comment": "右手だけを前へ突き出して戻す（氷魔法）。Spell - start の構えから上げきるまでを速く再生し、逆にして戻す。ゲームではモデルの左の骨（J_Bip_L）が画面の右に映るので、元の左手の動きをそのまま使う",
+      "segments": [
+        {
+          "source": "D:/04_dawnload/kinemiq/Spell_-_start.fbx",
+          "rig": "ue4",
+          "mirror": false,
+          "frames": [
+            11,
+            17
+          ],
+          "speed": 1.5,
+          "adjust": [
+            {
+              "bone": "J_Bip_L_UpperArm",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "deg": -14
+            }
+          ]
+        },
+        {
+          "source": "D:/04_dawnload/kinemiq/Spell_-_start.fbx",
+          "rig": "ue4",
+          "mirror": false,
+          "frames": [
+            11,
+            17
+          ],
+          "speed": 1.0,
+          "reverse": true,
+          "blend": 2,
+          "adjust": [
+            {
+              "bone": "J_Bip_L_UpperArm",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "deg": -14
+            }
+          ]
+        }
+      ],
+      "hold": {
+        "clip": "FpIdle",
+        "frame": 0,
+        "parts": [
+          "body",
+          "right_arm"
+        ]
+      }
+    },
+    {
+      "name": "FpChargeStart",
+      "comment": "両手を前へ上げて構える（炎魔法を溜め始める）",
+      "source": "D:/04_dawnload/kinemiq/Spell_-_start.fbx",
+      "rig": "ue4",
+      "arms": "both",
+      "frames": [
+        11,
+        17
+      ],
+      "adjust": [
+        {
+          "bone": "J_Bip_L_UpperArm",
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "deg": -12
+        },
+        {
+          "bone": "J_Bip_R_UpperArm",
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "deg": 12
+        }
+      ],
+      "hold": {
+        "clip": "FpIdle",
+        "frame": 0,
+        "parts": [
+          "body"
+        ]
+      }
+    },
+    {
+      "name": "FpCharge",
+      "comment": "両手を前に上げたまま溜める（KinemIQ の Spell - cast）",
+      "source": "D:/04_dawnload/kinemiq/Spell_-_cast.fbx",
+      "rig": "ue4",
+      "arms": "both",
+      "loop": true,
+      "adjust": [
+        {
+          "bone": "J_Bip_L_UpperArm",
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "deg": -30
+        },
+        {
+          "bone": "J_Bip_R_UpperArm",
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "deg": 30
+        }
+      ],
+      "hold": {
+        "clip": "FpIdle",
+        "frame": 0,
+        "parts": [
+          "body"
+        ]
+      }
+    },
+    {
+      "name": "FpRelease",
+      "comment": "溜めた炎を放って、両手を構えの高さまで下ろす（KinemIQ の Spell - end の前半）",
+      "source": "D:/04_dawnload/kinemiq/Spell_-_end.fbx",
+      "rig": "ue4",
+      "arms": "both",
+      "frames": [
+        1,
+        7
+      ],
+      "adjust": [
+        {
+          "bone": "J_Bip_L_UpperArm",
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "deg": -30
+        },
+        {
+          "bone": "J_Bip_R_UpperArm",
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "deg": 30
+        }
+      ],
+      "hold": {
+        "clip": "FpIdle",
+        "frame": 0,
+        "parts": [
+          "body"
+        ]
+      }
+    }
+  ]
+}

@@ -30,6 +30,14 @@ namespace
 	constexpr float ICON_GAP = 10.0f;
 	const Vector4 FROZEN_COLOR = { 0.4f, 0.85f, 1.0f, 1.0f };
 	const Vector4 BURNING_COLOR = { 1.0f, 0.45f, 0.1f, 1.0f };
+
+	// 一人称のレティクル（十字）。中央から RETICLE_GAP あけて、長さ RETICLE_LENGTH の線を上下左右に出す。
+	constexpr float RETICLE_GAP = 6.0f;
+	constexpr float RETICLE_LENGTH = 12.0f;
+	constexpr float RETICLE_THICKNESS = 2.0f;
+	constexpr float RETICLE_SHADOW = 1.0f;  // 明るい背景でも見えるように、黒い縁をこの太さだけはみ出させる。
+	const Vector4 RETICLE_COLOR = { 1.0f, 1.0f, 1.0f, 0.9f };
+	const Vector4 RETICLE_SHADOW_COLOR = { 0.0f, 0.0f, 0.0f, 0.6f };
 }
 
 void PlayerHud::Init()
@@ -63,6 +71,21 @@ void PlayerHud::Init()
 	m_burning.Init(UISprite::WHITE_PATH, ICON_SIZE, ICON_SIZE);
 	m_burning.SetColor(BURNING_COLOR);
 	m_burning.SetPosition({ burningX, iconY });
+
+	// 上・下・左・右の順。縦の線は幅が細く、横の線は高さが細い。
+	const float offset = RETICLE_GAP + RETICLE_LENGTH * 0.5f;
+	const Vector2 positions[4] = { { 0.0f, offset }, { 0.0f, -offset }, { -offset, 0.0f }, { offset, 0.0f } };
+	for (int i = 0; i < 4; i++) {
+		const bool isVertical = i < 2;
+		const float width = isVertical ? RETICLE_THICKNESS : RETICLE_LENGTH;
+		const float height = isVertical ? RETICLE_LENGTH : RETICLE_THICKNESS;
+		m_reticleShadow[i].Init(UISprite::WHITE_PATH, width + RETICLE_SHADOW * 2.0f, height + RETICLE_SHADOW * 2.0f);
+		m_reticleShadow[i].SetColor(RETICLE_SHADOW_COLOR);
+		m_reticleShadow[i].SetPosition(positions[i]);
+		m_reticle[i].Init(UISprite::WHITE_PATH, width, height);
+		m_reticle[i].SetColor(RETICLE_COLOR);
+		m_reticle[i].SetPosition(positions[i]);
+	}
 }
 
 void PlayerHud::Update(float deltaTime)
@@ -88,6 +111,15 @@ void PlayerHud::Update(float deltaTime)
 	m_hpNumber.Update(deltaTime);
 	m_frozen.Update(deltaTime);
 	m_burning.Update(deltaTime);
+
+	// 一人称のとき（体を描いていないとき）だけ出す。
+	const bool isFirstPerson = !m_player->IsRenderBody();
+	for (int i = 0; i < 4; i++) {
+		m_reticleShadow[i].SetVisible(isFirstPerson);
+		m_reticle[i].SetVisible(isFirstPerson);
+		m_reticleShadow[i].Update(deltaTime);
+		m_reticle[i].Update(deltaTime);
+	}
 }
 
 void PlayerHud::Draw(RenderContext& rc)
@@ -99,4 +131,10 @@ void PlayerHud::Draw(RenderContext& rc)
 	m_hpNumber.Draw(rc);
 	m_frozen.Draw(rc);
 	m_burning.Draw(rc);
+	for (int i = 0; i < 4; i++) {
+		m_reticleShadow[i].Draw(rc);
+	}
+	for (int i = 0; i < 4; i++) {
+		m_reticle[i].Draw(rc);
+	}
 }

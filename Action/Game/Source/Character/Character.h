@@ -79,6 +79,12 @@ public:
 	// 読むだけの側（UI など）に渡す const 版。
 	virtual const Status& GetStatus() const = 0;
 
+	// 持っているスキル。一人称の腕が、撃った・溜めているを見るのに使う。
+	const SkillController& GetSkillController() const
+	{
+		return m_skillController;
+	}
+
 	// 体を描くか。一人称カメラのときは false にする。
 	void SetRenderBody(bool isRenderBody)
 	{
@@ -149,6 +155,8 @@ private:
 	void UpdateSkill();
 	// スキル（魔法など）を撃つ位置と向き。照準があればそちら、なければ足元から castHeight の高さで正面（水平）へ。
 	void MakeCastPose(Vector3& origin, Vector3& direction) const;
+	// 照準があるとき、撃つ位置を offset だけずらし、向きを照準の先の点へ向け直す（一人称で、右手から撃つ）。
+	void ApplyAimOffset(const Vector3& offset, Vector3& origin, Vector3& direction) const;
 	// キャラコンの位置・回転を Transform に書く。
 	void SyncTransform();
 
