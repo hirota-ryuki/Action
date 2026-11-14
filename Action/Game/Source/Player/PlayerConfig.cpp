@@ -141,12 +141,25 @@ namespace
 		settings.landCancelByMove = Read(section, "jump", "landCancelByMove", true);
 	}
 
+	// 3段攻撃の数値を settings に入れる。
+	void ReadAttackSettings(PlayerStateSettings& settings)
+	{
+		const Json section = GetSection("attack");
+		settings.attackFireTime = ReadFramesAsSeconds(section, "attack", "fireFrame", 10.0f);
+		settings.attackCancelTime = ReadFramesAsSeconds(section, "attack", "cancelFrame", 17.0f);
+		settings.attackEndTime = ReadFramesAsSeconds(section, "attack", "endFrame", 24.0f);
+		settings.attackAnimSpeed = Read(section, "attack", "animSpeed", 1.0f);
+		settings.attackBlendSeconds = Read(section, "attack", "blendSeconds", 0.1f);
+		settings.attackExitBlendSeconds = Read(section, "attack", "exitBlendSeconds", 0.2f);
+	}
+
 	PlayerStateSettings BuildStateSettings()
 	{
 		PlayerStateSettings settings;
 		ReadDashSettings(settings);
 		ReadStopSettings(settings);
 		ReadJumpSettings(settings);
+		ReadAttackSettings(settings);
 
 		const Json move = GetSection("move");
 		settings.moveThreshold = Read(move, "move", "moveThreshold", 0.1f);
@@ -174,6 +187,9 @@ namespace
 		{ "Dash",  enPlayerAnimClip_Dash,  { "Assets/modelData/player/Animation/Dash.fbx",  false } },
 		{ "StopL", enPlayerAnimClip_StopL, { "Assets/modelData/player/Animation/StopL.fbx", false } },
 		{ "StopR", enPlayerAnimClip_StopR, { "Assets/modelData/player/Animation/StopR.fbx", false } },
+		{ "Attack1", enPlayerAnimClip_Attack1, { "Assets/modelData/player/Animation/Attack1.fbx", false } },
+		{ "Attack2", enPlayerAnimClip_Attack2, { "Assets/modelData/player/Animation/Attack2.fbx", false } },
+		{ "Attack3", enPlayerAnimClip_Attack3, { "Assets/modelData/player/Animation/Attack3.fbx", false } },
 	};
 	static_assert(sizeof(CLIP_TABLE) / sizeof(CLIP_TABLE[0]) == enPlayerAnimClip_Num,
 		"EnPlayerAnimClip を足したら、CLIP_TABLE と player.json の animation.clips にも足してください。");

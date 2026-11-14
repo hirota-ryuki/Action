@@ -126,9 +126,12 @@ void Character::UpdateMagic()
 	Vector3 origin;
 	Vector3 direction;
 	MakeCastPose(origin, direction);
+	// 派生クラスが入力の写しを書き換える（攻撃のモーションに合わせて撃つ、など）。
+	CharacterInput castInput = m_input;
+	FilterCastInput(castInput);
 	// ボタンの状態をそのまま渡す。押した・押している・離したの判断は MagicCaster がする。
-	m_magicCaster.Fire(0, m_input.fire, origin, direction);
-	m_magicCaster.Fire(1, m_input.subFire, origin, direction);
+	m_magicCaster.Fire(0, castInput.fire, origin, direction);
+	m_magicCaster.Fire(1, castInput.subFire, origin, direction);
 }
 
 void Character::MakeCastPose(Vector3& origin, Vector3& direction) const

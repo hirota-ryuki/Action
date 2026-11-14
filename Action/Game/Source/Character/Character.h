@@ -106,6 +106,11 @@ protected:
 	}
 	// ③ 動く。CharacterMover の Move 系を1回だけ呼ぶ（凍結中も重力のために呼ぶ）。
 	virtual void UpdateAction(float deltaTime) = 0;
+	// 魔法を撃つ部品（MagicCaster）に渡す入力を書き換える。攻撃のモーションに合わせて撃つ、などに使う。
+	// input には、このフレームに受け取った入力の写しが入っている（m_input は変えない）。
+	virtual void FilterCastInput(CharacterInput& input) const
+	{
+	}
 	// モデルを更新したあと（ボーンに付けたものを動かす、など）。
 	virtual void OnLateUpdate(float deltaTime)
 	{
@@ -124,6 +129,11 @@ protected:
 	{
 		m_bodyLink.SetJumpWeight(jumpWeight);
 		m_springBones.SetJumpWeight(jumpWeight);
+	}
+	// 攻撃中の度合い（0〜1）を、体の連動に渡す。モデルを更新する前（UpdateAction）に呼ぶ。
+	void SetAttackWeight(float attackWeight)
+	{
+		m_bodyLink.SetAttackWeight(attackWeight);
 	}
 
 	CharacterInput m_input;

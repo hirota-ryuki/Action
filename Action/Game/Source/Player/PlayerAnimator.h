@@ -12,6 +12,9 @@ enum EnPlayerAnimClip
 	enPlayerAnimClip_Dash,   // ダッシュ（しゃがむ → 左足で蹴って低く滑る → 右足で着地）を通しで1本。蹴る足はいつも左
 	enPlayerAnimClip_StopL,  // 走りから止まる（左足を前へ突っ張り、腰を落として滑る → 起き上がる）
 	enPlayerAnimClip_StopR,  // 走りから止まる（右足を前へ突っ張る）
+	enPlayerAnimClip_Attack1, // 右手で撃つ（3段攻撃の1段目）
+	enPlayerAnimClip_Attack2, // 左手で撃つ（2段目）
+	enPlayerAnimClip_Attack3, // 両手で撃つ（3段目）
 	enPlayerAnimClip_Num,
 };
 

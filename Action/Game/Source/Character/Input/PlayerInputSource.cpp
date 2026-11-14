@@ -20,6 +20,8 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	cameraRight.Normalize();
 	input.moveDirection = cameraForward * pad.GetLStickYF() + cameraRight * pad.GetLStickXF();
 	input.lookDirection = Vector3::Zero;
+	// 攻撃した瞬間に、カメラが向いている方向を向く。
+	input.attackDirection = cameraForward;
 
 	// ジャンプはスペース（パッドは A）。パッド未接続時は A ボタンが J キーに割り当てられているので、J でも跳べる。
 	input.jump.Update(IsKeyPressed(VK_SPACE) || pad.IsPress(enButtonA));

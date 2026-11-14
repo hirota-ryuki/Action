@@ -1,0 +1,224 @@
+{
+  "target": "../../Game/Assets/modelData/player/Model/SK_Player.FBX",
+  "out_dir": "../../Game/Assets/modelData/player/Animation",
+  "secondary": false,
+  "sword_fit": false,
+  "clips": [
+    {
+      "name": "Attack1",
+      "comment": "右手で撃つ（3段攻撃の1段目）。KinemIQ の Spell - start（手を上げて突き出す、1.5倍）→ Spell - cast の 0〜8コマ目（突き出したまま）→ Spell - end（下ろす、1.2倍）。左右を反転して元の左手の動きを右手にし、上腕を内へ回して正面へ突き出す（Spell - cast は腕が外へ流れるので、cast・end は 40°、start は 25°）",
+      "loop": false,
+      "segments": [
+        {
+          "source": "C:/Users/r-hir/Downloads/kinemiq/Spell_-_start.fbx",
+          "rig": "ue4",
+          "mirror": true,
+          "speed": 1.5,
+          "adjust": [
+            {
+              "bone": "J_Bip_R_UpperArm",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "deg": 25
+            }
+          ]
+        },
+        {
+          "source": "C:/Users/r-hir/Downloads/kinemiq/Spell_-_cast.fbx",
+          "rig": "ue4",
+          "mirror": true,
+          "frames": [
+            0,
+            8
+          ],
+          "speed": 1.0,
+          "adjust": [
+            {
+              "bone": "J_Bip_R_UpperArm",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "deg": 40
+            }
+          ]
+        },
+        {
+          "source": "C:/Users/r-hir/Downloads/kinemiq/Spell_-_end.fbx",
+          "rig": "ue4",
+          "mirror": true,
+          "speed": 1.2,
+          "adjust": [
+            {
+              "bone": "J_Bip_R_UpperArm",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "deg": 40
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Attack2",
+      "comment": "左手で撃つ（2段目）。Attack1 を反転しないもの",
+      "loop": false,
+      "segments": [
+        {
+          "source": "C:/Users/r-hir/Downloads/kinemiq/Spell_-_start.fbx",
+          "rig": "ue4",
+          "mirror": false,
+          "speed": 1.5,
+          "adjust": [
+            {
+              "bone": "J_Bip_L_UpperArm",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "deg": -25
+            }
+          ]
+        },
+        {
+          "source": "C:/Users/r-hir/Downloads/kinemiq/Spell_-_cast.fbx",
+          "rig": "ue4",
+          "mirror": false,
+          "frames": [
+            0,
+            8
+          ],
+          "speed": 1.0,
+          "adjust": [
+            {
+              "bone": "J_Bip_L_UpperArm",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "deg": -40
+            }
+          ]
+        },
+        {
+          "source": "C:/Users/r-hir/Downloads/kinemiq/Spell_-_end.fbx",
+          "rig": "ue4",
+          "mirror": false,
+          "speed": 1.2,
+          "adjust": [
+            {
+              "bone": "J_Bip_L_UpperArm",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "deg": -40
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Attack3",
+      "comment": "両手で撃つ（3段目）。Attack2 の左手の動きを右手にも写し、上腕を内へ回して（Attack1 と同じ角度）両手を顔の前に寄せる",
+      "loop": false,
+      "segments": [
+        {
+          "source": "C:/Users/r-hir/Downloads/kinemiq/Spell_-_start.fbx",
+          "rig": "ue4",
+          "mirror": false,
+          "speed": 1.5,
+          "arms": "both",
+          "adjust": [
+            {
+              "bone": "J_Bip_L_UpperArm",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "deg": -25
+            },
+            {
+              "bone": "J_Bip_R_UpperArm",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "deg": 25
+            }
+          ]
+        },
+        {
+          "source": "C:/Users/r-hir/Downloads/kinemiq/Spell_-_cast.fbx",
+          "rig": "ue4",
+          "mirror": false,
+          "frames": [
+            0,
+            8
+          ],
+          "speed": 1.0,
+          "arms": "both",
+          "adjust": [
+            {
+              "bone": "J_Bip_L_UpperArm",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "deg": -40
+            },
+            {
+              "bone": "J_Bip_R_UpperArm",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "deg": 40
+            }
+          ]
+        },
+        {
+          "source": "C:/Users/r-hir/Downloads/kinemiq/Spell_-_end.fbx",
+          "rig": "ue4",
+          "mirror": false,
+          "speed": 1.2,
+          "arms": "both",
+          "adjust": [
+            {
+              "bone": "J_Bip_L_UpperArm",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "deg": -40
+            },
+            {
+              "bone": "J_Bip_R_UpperArm",
+              "axis": [
+                0,
+                0,
+                1
+              ],
+              "deg": 40
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

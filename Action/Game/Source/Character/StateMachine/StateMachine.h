@@ -70,6 +70,11 @@ protected:
 		m_states[index] = std::move(state);
 	}
 
+	const Context& GetContext() const
+	{
+		return m_context;
+	}
+
 	// 遷移を決める前に毎フレーム呼ばれる。キャラクターだけの前処理を書く。
 	virtual void OnBeforeUpdate(Context& context, const CharacterInput& input)
 	{

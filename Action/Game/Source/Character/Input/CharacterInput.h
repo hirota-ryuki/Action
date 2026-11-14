@@ -24,6 +24,7 @@ struct CharacterInput
 {
 	Vector3 moveDirection = Vector3::Zero;  // 移動したい方向（ワールドのXZ）。長さ0〜1で速さの割合を表す。
 	Vector3 lookDirection = Vector3::Zero;  // 向きたい方向。ゼロなら移動方向を向く。
+	Vector3 attackDirection = Vector3::Zero; // 攻撃した瞬間に向く方向（水平。プレイヤーはカメラの向き）。ゼロなら向きを変えない。
 	bool isRun = false;
 	ButtonState jump;
 	ButtonState dash;

@@ -8,6 +8,9 @@ namespace
 {
 	// ジャンプ中の度合いが 0 から 1（1 から 0）まで変わるのにかかる時間（秒）。アニメーションの切り替えの補間と同じくらいにする。
 	constexpr float JUMP_WEIGHT_FADE_SECONDS = 0.2f;
+	// 攻撃中の度合いが 0 から 1（1 から 0）まで変わるのにかかる時間（秒）。攻撃に入るときの補間（attack.blendSeconds）と同じにする。
+	// これより長いと、入ってすぐの数コマで、前の動き（前の段の終わりなど）で横を向いていた顔が見えてしまう。
+	constexpr float ATTACK_WEIGHT_FADE_SECONDS = 0.1f;
 }
 
 Player::Player()
@@ -46,9 +49,23 @@ void Player::UpdateAction(float deltaTime)
 	// 移動とアニメーションはステートが行う。凍結中は Frozen ステートになり、重力で落ちるだけになる。
 	m_stateMachine.Update(m_input, deltaTime);
 	UpdateJumpWeight(deltaTime);
+	UpdateAttackWeight(deltaTime);
 	if (m_fallRespawn.IsFallen(m_mover.GetPosition())) {
 		Respawn();
 	}
+}
+
+void Player::FilterCastInput(CharacterInput& input) const
+{
+	// 攻撃の間は、クリックした瞬間には撃たず、手を突き出したコマ（Attack が立てる）でだけ発射ボタンを押したことにする。
+	// ButtonState::Update は通さない（押した瞬間の判定に使う m_input の前フレームの値を変えないため）。
+	if (m_stateMachine.GetCurrentId() != PlayerStateId::Attack) {
+		return;
+	}
+	const bool isFire = m_stateMachine.IsAttackFire();
+	input.fire.isTrigger = isFire;
+	input.fire.isPress = isFire;
+	input.fire.isRelease = false;
 }
 
 void Player::UpdateJumpWeight(float deltaTime)
@@ -58,6 +75,14 @@ void Player::UpdateJumpWeight(float deltaTime)
 	const float step = deltaTime / JUMP_WEIGHT_FADE_SECONDS;
 	m_jumpWeight = target > m_jumpWeight ? min(target, m_jumpWeight + step) : max(target, m_jumpWeight - step);
 	SetJumpWeight(m_jumpWeight);
+}
+
+void Player::UpdateAttackWeight(float deltaTime)
+{
+	const float target = m_stateMachine.GetCurrentId() == PlayerStateId::Attack ? 1.0f : 0.0f;
+	const float step = deltaTime / ATTACK_WEIGHT_FADE_SECONDS;
+	m_attackWeight = target > m_attackWeight ? min(target, m_attackWeight + step) : max(target, m_attackWeight - step);
+	SetAttackWeight(m_attackWeight);
 }
 
 void Player::Respawn()
