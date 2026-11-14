@@ -279,7 +279,7 @@ void BodyLink::Update(Skeleton& skeleton)
 	RotateAround(skeleton, enBone_Head, forward, -chestRoll * HEAD_SHARE);
 
 	// ── 攻撃中は、顔をずっと前（撃つ向き）へ向ける ──
-	// 片手で撃つモーション（Attack1・2）は、構えている間（0〜9コマ目）に顔が横へ約 28° 向くため。
+	// 片手で撃つモーション（Attack1・2）は、手を突き出したまま止めている間（10〜16コマ目）に顔が横へ約 28° 向くため。
 	if (m_attackWeight > 0.0f) {
 		LevelHeadYaw(skeleton, forward, m_attackWeight);
 	}
