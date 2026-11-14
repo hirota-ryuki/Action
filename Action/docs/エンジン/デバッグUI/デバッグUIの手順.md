@@ -1838,18 +1838,18 @@ namespace nsK2EngineLow {
 
 ### 7-3. マウスを使ってよいかの関数を書く
 
-[PlayerInputSource.cpp](../../../Game/Source/Character/Input/PlayerInputSource.cpp) の **58行目**（`}` の下の空の行）の下、`bool PlayerInputSource::IsKeyPressed(int virtualKey)` の上に、6行足します（59〜64行目になります）。
+[PlayerInputSource.cpp](../../../Game/Source/Character/Input/PlayerInputSource.cpp) の **48行目**（`}` の下の空の行）の下、`bool PlayerInputSource::IsKeyPressed(int virtualKey)` の上に、6行足します（49〜54行目になります）。
 
-<!-- add: Action/Game/Source/Character/Input/PlayerInputSource.cpp 59 -->
+<!-- add: Action/Game/Source/Character/Input/PlayerInputSource.cpp 49 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
-59
-60
-61
-62
-63
-64
+49
+50
+51
+52
+53
+54
 ```
 
 </td><td>
@@ -1867,7 +1867,7 @@ bool PlayerInputSource::CanUseMouse()
 
 | 行 | 何をしているか |
 |---|---|
-| 62 | ゲームのウィンドウが前にあり、窓を出していなければ使ってよい |
+| 52 | ゲームのウィンドウが前にあり、窓を出していなければ使ってよい |
 
 ### 7-4. 左クリックを見る行を書き換える
 

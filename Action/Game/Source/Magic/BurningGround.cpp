@@ -1,7 +1,7 @@
 ﻿#include "stdafx.h"
 #include "BurningGround.h"
 #include "EffectId.h"
-#include "FireBullet.h"
+#include "FireMagic.h"
 #include "HitTarget.h"
 #include "StatusEffects.h"
 
@@ -39,7 +39,7 @@ void BurningGround::Init(const Vector3& position, float radius, float seconds, c
 
 bool BurningGround::Start()
 {
-	m_isValid = FireBullet::RegisterEffects();
+	m_isValid = FireMagic::RegisterEffects();
 	if (!m_isValid) {
 		return true;
 	}

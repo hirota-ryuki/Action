@@ -35,7 +35,8 @@ bool Character::Start()
 	m_hitTarget.SetStatusEffects(&m_statusEffects);
 	m_hitTarget.SetPosition(m_transform.position);
 
-	m_magicCaster.Init(this, m_faction, config.caster);
+	m_castSettings = config.cast;
+	m_magicCaster.Init(this, m_faction);
 
 	GetStatus().Init(config.maxHp);
 
@@ -54,7 +55,7 @@ void Character::Update()
 	// ③ 動く（派生クラス）
 	UpdateAction(deltaTime);
 	// ④ 魔法（動いたあとの位置から撃つ）
-	m_magicCaster.Update(m_input, m_mover.GetPosition(), m_mover.GetForward(), deltaTime, m_statusEffects.CanAct());
+	UpdateMagic();
 	// ⑤ Transform に反映
 	SyncTransform();
 	// ⑥ 当たり判定・モデルを合わせる
@@ -112,6 +113,42 @@ void Character::UpdateInput(float deltaTime)
 
 	IInputSource& inputSource = m_inputSource != nullptr ? *m_inputSource : GetDefaultInputSource();
 	inputSource.Update(context, m_input);
+}
+
+void Character::UpdateMagic()
+{
+	// 凍っているなど動けないときは、溜めている魔法を捨てて何もしない。
+	if (!m_statusEffects.CanAct()) {
+		m_magicCaster.CancelAll();
+		return;
+	}
+
+	Vector3 origin;
+	Vector3 direction;
+	MakeCastPose(origin, direction);
+	// ボタンの状態をそのまま渡す。押した・押している・離したの判断は MagicCaster がする。
+	m_magicCaster.Fire(0, m_input.fire, origin, direction);
+	m_magicCaster.Fire(1, m_input.subFire, origin, direction);
+}
+
+void Character::MakeCastPose(Vector3& origin, Vector3& direction) const
+{
+	if (m_input.hasAim) {
+		origin = m_input.aimOrigin;
+		direction = m_input.aimDirection;
+	}
+	else {
+		origin = m_mover.GetPosition();
+		origin.y += m_castSettings.castHeight;
+		direction = m_mover.GetForward();
+		direction.y = 0.0f;
+	}
+	if (direction.LengthSq() <= FLT_EPSILON) {
+		direction = Vector3::AxisZ;
+	}
+	direction.Normalize();
+	// 自分のカプセルに当たらないよう、前に出してから撃つ。
+	origin += direction * m_castSettings.castForward;
 }
 
 void Character::SyncTransform()

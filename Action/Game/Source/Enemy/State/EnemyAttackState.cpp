@@ -4,7 +4,7 @@
 #include "CharacterInput.h"
 #include "CharacterMover.h"
 #include "CharacterModel.h"
-#include "SlashBullet.h"
+#include "SlashMagic.h"
 
 namespace
 {
@@ -166,7 +166,7 @@ void EnemyAttackState::FireSlash(const EnemyStateContext& context, const Charact
 		direction = input.aimDirection;
 	}
 
-	SlashBullet* slash = NewGO<SlashBullet>(1, BulletBase::OBJECT_NAME);
+	SlashMagic* slash = NewGO<SlashMagic>(1, MagicBase::OBJECT_NAME);
 	slash->SetRoll(rollDeg);
 	slash->Init(origin, direction, context.owner, context.faction);
 }
