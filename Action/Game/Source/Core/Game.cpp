@@ -13,9 +13,9 @@
 namespace
 {
 	constexpr float SKY_LUMINANCE = 1.6f;     // スカイキューブ自体の輝度。IBLより高めにして空の映り込みを強調。
-	constexpr float IBL_LUMINANCE = 0.16f;    // 環境マップ由来の環境光の強度。強すぎると影が潰れる。
+	constexpr float IBL_LUMINANCE = 0.4f;     // TEMP: 一時的に明るくしている（もとは 0.16）。環境マップ由来の環境光の強度。強すぎると影が潰れる。
 	const Vector3 MAIN_LIGHT_DIRECTION = { 1.0f, -1.0f, -1.0f };  // 正規化前の向き。Start()でNormalize()する。
-	const Vector3 MAIN_LIGHT_COLOR = { 2.0f, 2.0f, 2.0f };        // HDR値（1.0超）で太陽光の強さを表現。
+	const Vector3 MAIN_LIGHT_COLOR = { 4.0f, 4.0f, 4.0f };        // TEMP: 一時的に明るくしている（もとは 2.0）。HDR値（1.0超）で太陽光の強さを表現。
 	const Vector3 PLAYER_START_POSITION = { 0.0f, 100.0f, 0.0f };
 	const Vector3 ENEMY_START_POSITION = { 320.0f, 100.0f, 320.0f };
 	const Vector3 FIRE_POSITION = { -200.0f, 0.0f, 200.0f };
