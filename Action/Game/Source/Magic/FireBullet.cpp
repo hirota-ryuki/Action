@@ -32,14 +32,14 @@ namespace
 	constexpr float MAX_BULLET_EFFECT_SCALE = 26.0f;
 	constexpr float MIN_HIT_EFFECT_SCALE = 12.0f;       // 着弾エフェクトの拡大率。
 	constexpr float MAX_HIT_EFFECT_SCALE = 26.0f;
-	constexpr float MIN_GROUND_RADIUS = 130.0f;        // 燃える床の半径。
+	constexpr float MIN_GROUND_RADIUS = 130.0f;        // 炎魔法発射後の燃える床の半径。
 	constexpr float MAX_GROUND_RADIUS = 300.0f;
 
 	constexpr float SPEED = 1300.0f;
 	constexpr float RANGE = 2000.0f;
 	constexpr float GROUND_BURN_SECONDS = 4.0f;        // 床が燃えている時間。
 
-	// 燃える床を置く場所を探すレイ。着弾点の少し手前・少し上から真下へ飛ばす。
+	// 炎魔法発射後の燃える床を置く場所を探すレイ。着弾点の少し手前・少し上から真下へ飛ばす。
 	constexpr float FLOOR_RAY_BACK_OFF = 20.0f;         // 壁に当たったとき、壁にめり込まないよう手前に戻す距離。
 	constexpr float FLOOR_RAY_LIFT = 10.0f;
 	constexpr float FLOOR_SEARCH_DEPTH = 400.0f;       // これより下に床がなければ床は燃えない。
@@ -134,7 +134,7 @@ void FireBullet::OnMove()
 void FireBullet::OnHitTarget(HitTarget& target, const Vector3& hitPosition)
 {
 	(void)hitPosition;
-	// 直撃では何もしない。相手は足元の燃える床に入るので、そこで燃焼状態になる。
+	// 直撃では何もしない。相手は足元の炎魔法発射後の燃える床に入るので、そこで燃焼状態になる。
 	m_hasHitTarget = true;
 	m_hitFootPosition = target.GetFootPosition();
 }
@@ -155,7 +155,7 @@ void FireBullet::OnExplode(const Vector3& hitPosition)
 
 bool FireBullet::IsVanishFinished() const
 {
-	// 尾と着弾エフェクトが両方消え切ったら終わり。燃える床は別のオブジェクトなので待たない。
+	// 尾と着弾エフェクトが両方消え切ったら終わり。炎魔法発射後の燃える床は別のオブジェクトなので待たない。
 	return !m_bulletEffect.IsPlay() && !m_hitEffect.IsPlay();
 }
 
