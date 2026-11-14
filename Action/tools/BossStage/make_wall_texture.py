@@ -19,7 +19,8 @@ import bpy
 import numpy as np
 
 # ---- 調整値 ----
-SIZE = 2048                 # テクスチャの1辺（ピクセル）。4m に貼るので 1m が 512 ピクセル
+SIZE = 2048                 # 模様を作るときの1辺（ピクセル）。4m に貼るので 1m が 512 ピクセル
+OUT_SIZE = 1024             # 書き出すテクスチャの1辺。模様は SIZE で作り、保存するときに縮める（起動時の読み込みを軽くする）
 COLUMNS = 4                 # 1段に並ぶ石の数
 ROWS = 8                    # 段の数
 MORTAR_WIDTH = 10           # 目地の幅（ピクセル）
@@ -104,7 +105,8 @@ zeros = np.zeros_like(h)
 spec = np.stack([zeros, zeros, zeros, np.clip(smooth, 0, 1)], axis=-1)
 
 
-def save(name, rgb_or_rgba, colorspace, outdir):
+def save(name, rgb_or_rgba, colorspace, outdir, size=None):
+    """size を渡すと、その1辺に縮めて保存する。"""
     arr = rgb_or_rgba
     if arr.shape[-1] == 3:
         arr = np.concatenate([arr, np.ones(arr.shape[:2] + (1,))], axis=-1)
@@ -112,6 +114,8 @@ def save(name, rgb_or_rgba, colorspace, outdir):
     img = bpy.data.images.new(name, wid, hgt, alpha=True)
     img.colorspace_settings.name = colorspace
     img.pixels.foreach_set(arr[::-1].astype(np.float32).ravel())   # Blender は下の行から
+    if size and (wid, hgt) != (size, size):
+        img.scale(size, size)
     img.filepath_raw = os.path.join(outdir, name + ".png")
     img.file_format = "PNG"
     img.save()
@@ -120,9 +124,9 @@ def save(name, rgb_or_rgba, colorspace, outdir):
 
 outdir = sys.argv[sys.argv.index("--") + 1]
 os.makedirs(outdir, exist_ok=True)
-save("BossWall_albedo", albedo, "sRGB", outdir)
-save("BossWall_normal", normal, "Non-Color", outdir)
-save("BossWall_spec", spec, "Non-Color", outdir)
+save("BossWall_albedo", albedo, "sRGB", outdir, OUT_SIZE)
+save("BossWall_normal", normal, "Non-Color", outdir, OUT_SIZE)
+save("BossWall_spec", spec, "Non-Color", outdir, OUT_SIZE)
 
 # 確かめ用: 2×2 に並べ、半分に縮める（つなぎ目が見える位置に来る）
 preview_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "preview")   # ゲームのフォルダーには置かない
