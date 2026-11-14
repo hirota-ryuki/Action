@@ -75,7 +75,7 @@ public:
 		m_jumpWeight = jumpWeight;
 	}
 	// 攻撃中の度合い（0〜1）。持ち主が、攻撃に入る・出るときに少しずつ変えて渡す。
-	// 攻撃中は、胴のひねりを戻す（levelTorso）のと、腕の前後の振りを抑える（armFrontMaxDeg・armBackMaxDeg）のを外す。
+	// 攻撃中は、胴のひねりを戻す（levelTorso）のと、腕の前後の振りを抑える（armFrontMaxDeg・armBackMaxDeg）のを外し、顔を前へ向ける。
 	// 片手で撃つモーションは肩をひねって腕を前へ出すので、ひねりを戻すと腕が横へ開き、振りを抑えると腕が下がるため。
 	void SetAttackWeight(float attackWeight)
 	{
@@ -135,8 +135,8 @@ private:
 	void CloseLeg(Skeleton& skeleton, EnBone upperLeg, EnBone lowerLeg, EnBone foot, const Vector3& forward) const;
 	// joint（関節）から先を回し、joint から tip（その先の骨）への向きを direction にそろえる。
 	void RotateToward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& direction) const;
-	// 頭の左右の向きを、キャラクターの前の向きにそろえる。
-	void LevelHeadYaw(Skeleton& skeleton, const Vector3& forward) const;
+	// 頭の左右の向きを、キャラクターの前の向きにそろえる。weight（0〜1）はそろえる割合。
+	void LevelHeadYaw(Skeleton& skeleton, const Vector3& forward, float weight) const;
 	// 左右の足の、股関節からの横の位置を、両足の平均にそろえる。
 	void SymmetrizeLegs(Skeleton& skeleton, const Vector3& forward) const;
 	// 腕の形を、1歩前（脚の前後が今と逆だったとき）の反対の腕を左右に映した形と、半分ずつ混ぜる。

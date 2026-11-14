@@ -8,8 +8,9 @@ namespace
 {
 	// ジャンプ中の度合いが 0 から 1（1 から 0）まで変わるのにかかる時間（秒）。アニメーションの切り替えの補間と同じくらいにする。
 	constexpr float JUMP_WEIGHT_FADE_SECONDS = 0.2f;
-	// 攻撃中の度合いが 0 から 1（1 から 0）まで変わるのにかかる時間（秒）。攻撃のアニメーションの切り替えの補間と同じくらいにする。
-	constexpr float ATTACK_WEIGHT_FADE_SECONDS = 0.2f;
+	// 攻撃中の度合いが 0 から 1（1 から 0）まで変わるのにかかる時間（秒）。攻撃に入るときの補間（attack.blendSeconds）と同じにする。
+	// これより長いと、入ってすぐの数コマで、構えで横を向いた顔が見えてしまう。
+	constexpr float ATTACK_WEIGHT_FADE_SECONDS = 0.1f;
 }
 
 Player::Player()

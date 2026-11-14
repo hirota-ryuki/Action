@@ -239,7 +239,7 @@ void BodyLink::Update(Skeleton& skeleton)
 	}
 	// 走っているときは、頭を前に向け、足の横の位置を左右でそろえる。
 	if (m_settings.symmetrize && m_runWeight > 0.0f) {
-		LevelHeadYaw(skeleton, forward);
+		LevelHeadYaw(skeleton, forward, m_runWeight);
 		SymmetrizeLegs(skeleton, forward);
 	}
 
@@ -277,6 +277,12 @@ void BodyLink::Update(Skeleton& skeleton)
 	// 頭: 水平に戻す。
 	RotateAround(skeleton, enBone_Neck, forward, -chestRoll * NECK_SHARE);
 	RotateAround(skeleton, enBone_Head, forward, -chestRoll * HEAD_SHARE);
+
+	// ── 攻撃中は、顔をずっと前（撃つ向き）へ向ける ──
+	// 片手で撃つモーション（Attack1・2）は、構えている間（0〜9コマ目）に顔が横へ約 28° 向くため。
+	if (m_attackWeight > 0.0f) {
+		LevelHeadYaw(skeleton, forward, m_attackWeight);
+	}
 
 	// ── 走っているときだけ、腕を振る量を変える ──
 	// 腕の調整は走り・歩き用なので、ジャンプ中・攻撃中は外す。腕を横へ上げたジャンプの姿勢では、振りを抑える処理が
@@ -423,7 +429,7 @@ void BodyLink::RotateToward(Skeleton& skeleton, EnBone joint, EnBone tip, const 
 	RotateAround(skeleton, joint, axis, atan2f(sinAngle, current.Dot(target)));
 }
 
-void BodyLink::LevelHeadYaw(Skeleton& skeleton, const Vector3& forward) const
+void BodyLink::LevelHeadYaw(Skeleton& skeleton, const Vector3& forward, float weight) const
 {
 	// 頭の骨の Z 軸が顔の前の向き。
 	const Matrix& head = skeleton.GetBone(m_boneNos[enBone_Head])->GetWorldMatrix();
@@ -439,7 +445,7 @@ void BodyLink::LevelHeadYaw(Skeleton& skeleton, const Vector3& forward) const
 		return;
 	}
 	axis *= 1.0f / sinAngle;
-	RotateAround(skeleton, enBone_Head, axis, atan2f(sinAngle, face.Dot(forward)) * m_runWeight);
+	RotateAround(skeleton, enBone_Head, axis, atan2f(sinAngle, face.Dot(forward)) * weight);
 }
 
 void BodyLink::SymmetrizeLegs(Skeleton& skeleton, const Vector3& forward) const
