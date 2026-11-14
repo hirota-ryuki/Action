@@ -78,9 +78,6 @@
     <ClCompile Include="Source\Enemy\State\EnemyGroundState.cpp">
       <Filter>Source\Enemy\State</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Character\Components\WeaponAttachment.cpp">
-      <Filter>Source\Character\Components</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Character\Components\SpringBones.cpp">
       <Filter>Source\Character\Components</Filter>
     </ClCompile>
@@ -288,9 +285,6 @@
       <Filter>Source\Character\StateMachine</Filter>
     </ClInclude>
     <ClInclude Include="Source\Character\Components\FallRespawn.h">
-      <Filter>Source\Character\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Character\Components\WeaponAttachment.h">
       <Filter>Source\Character\Components</Filter>
     </ClInclude>
     <ClInclude Include="Source\Character\Components\SpringBones.h">

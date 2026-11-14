@@ -65,19 +65,6 @@ namespace
 		return Read(section, sectionName, key, defaultFrames) / ANIM_FPS;
 	}
 
-	// [x, y, z] の形の値を Vector3 で読む。
-	Vector3 ReadVector3(const Json& section, const char* sectionName, const char* key, const Vector3& defaultValue)
-	{
-		const std::vector<float> values = Read(section, sectionName, key, std::vector<float>{});
-		if (values.size() != 3) {
-			if (!values.empty()) {
-				Log(std::string(JSON_PATH) + " の " + sectionName + "." + key + " は [x, y, z] の3つで書いてください。既定値を使います。");
-			}
-			return defaultValue;
-		}
-		return Vector3(values[0], values[1], values[2]);
-	}
-
 	CharacterMoveSettings MakeMoveSettings()
 	{
 		const Json section = GetSection("move");
@@ -349,19 +336,4 @@ CharacterConfig PlayerConfig::MakeCharacterConfig()
 PlayerStateSettings PlayerConfig::MakeStateSettings()
 {
 	return BuildStateSettings();
-}
-
-WeaponAttachmentDesc PlayerConfig::MakeSwordDesc()
-{
-	const Json section = GetSection("sword");
-	WeaponAttachmentDesc desc;
-	desc.modelPath = Read(section, "sword", "path", std::string("Assets/modelData/weapon/sowrd/sowrd.tkm"));
-	// 右手ボーンの名前はモデルのセットアップによって異なるので、2つの名前で探す。
-	// ボーンの名前はモデルの作りで決まるので、JSON には出さない。
-	desc.boneNames = { L"Character1_RightHand", L"J_R_ForeArm_00_tw" };
-	desc.offset = ReadVector3(section, "sword", "offset", Vector3(5.0f, -3.0f, 10.0f));
-	desc.rotationOffsetDeg = ReadVector3(section, "sword", "rotationOffsetDeg", Vector3(0.0f, 0.0f, -90.0f));
-	desc.scale = ReadVector3(section, "sword", "scale", Vector3(1.35f, 1.35f, 1.35f));
-	desc.isShadowCaster = Read(section, "sword", "castShadow", true);
-	return desc;
 }
