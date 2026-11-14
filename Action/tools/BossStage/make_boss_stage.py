@@ -44,18 +44,19 @@ WALL_THICKNESS = 1.0
 FLOOR_TEXTURE_METERS = 8.0  # 床のテクスチャ1枚（タイル 4×4 枚）を何 m 四方に貼るか（タイル1枚 2m）
 
 # ---- 部品: (目標の大きさ m, 合わせる向き, テクスチャの1辺, 三角形を減らす割合) ----
+# テクスチャの1辺: 大きな部品は 1024、小物は 512（2048 では起動時の読み込みが重く、画面ではほとんど変わらない）
 # 合わせる向き: "height" は高さ、"width" は幅（Blender の X）をその大きさにする。
 PARTS = {
-    "Throne":      (5.0, "height", 2048, 1.0),
-    "Door":        (8.0, "height", 2048, 0.6),
-    "Pillar":      (13.0, "height", 2048, 0.35),
-    "Window":      (11.0, "height", 2048, 0.35),
-    "Arch":        (10.0, "width",  2048, 1.0),
-    "Candelabrum": (3.0, "height", 1024, 0.27),
-    "Statue":      (3.8, "height", 2048, 0.7),
-    "Banner":      (6.5, "height", 2048, 1.0),
-    "Rubble":      (2.5, "width",  1024, 1.0),
-    "Sconce":      (1.8, "height", 1024, 1.0),
+    "Throne":      (5.0, "height", 1024, 1.0),
+    "Door":        (8.0, "height", 1024, 0.6),
+    "Pillar":      (13.0, "height", 1024, 0.35),
+    "Window":      (11.0, "height", 1024, 0.35),
+    "Arch":        (10.0, "width",  1024, 1.0),
+    "Candelabrum": (3.0, "height",  512, 0.27),
+    "Statue":      (3.8, "height", 1024, 0.7),
+    "Banner":      (6.5, "height", 1024, 1.0),
+    "Rubble":      (2.5, "width",   512, 1.0),
+    "Sconce":      (1.8, "height",  512, 1.0),
 }
 # 正面（ランタンが出ている方）が -Y を向いていない部品を、読み込むときに Z まわりに回す（度）
 PART_ROTATION = {

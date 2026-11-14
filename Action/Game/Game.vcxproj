@@ -98,7 +98,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>$(ProjectDir)Source;$(ProjectDir)..\exlib;$(ProjectDir)Source\App;$(ProjectDir)Source\Core;$(ProjectDir)Source\Objects;$(ProjectDir)Source\System;$(ProjectDir)Source\Actor;$(ProjectDir)Source\Character;$(ProjectDir)Source\Character\Input;$(ProjectDir)Source\Character\Components;$(ProjectDir)Source\Character\StateMachine;$(ProjectDir)Source\Player;$(ProjectDir)Source\Player\State;$(ProjectDir)Source\Enemy;$(ProjectDir)Source\Enemy\State;$(ProjectDir)Source\Magic;$(ProjectDir)Source\UI;$(ProjectDir)Source\UI\Hud;$(ProjectDir)Source\UI\Elements;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)Source;$(ProjectDir)..\exlib;$(ProjectDir)Source\App;$(ProjectDir)Source\Core;$(ProjectDir)Source\Objects;$(ProjectDir)Source\System;$(ProjectDir)Source\Actor;$(ProjectDir)Source\Character;$(ProjectDir)Source\Character\Input;$(ProjectDir)Source\Character\Components;$(ProjectDir)Source\Character\StateMachine;$(ProjectDir)Source\Player;$(ProjectDir)Source\Player\State;$(ProjectDir)Source\Enemy;$(ProjectDir)Source\Enemy\State;$(ProjectDir)Source\Magic;$(ProjectDir)Source\Skill;$(ProjectDir)Source\UI;$(ProjectDir)Source\UI\Hud;$(ProjectDir)Source\UI\Elements;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
@@ -263,7 +263,8 @@
     <ClCompile Include="Source\Player\State\PlayerFrozenState.cpp" />
     <ClCompile Include="Source\Player\State\PlayerAttackState.cpp" />
     <ClCompile Include="Source\Character\Components\StatusEffects.cpp" />
-    <ClCompile Include="Source\Magic\MagicCaster.cpp" />
+    <ClCompile Include="Source\Skill\SkillBase.cpp" />
+    <ClCompile Include="Source\Skill\SkillController.cpp" />
     <ClCompile Include="Source\Magic\MagicBase.cpp" />
     <ClCompile Include="Source\Magic\IceMagic.cpp" />
     <ClCompile Include="Source\Magic\FireMagic.cpp" />
@@ -348,7 +349,8 @@
     <ClInclude Include="Source\Player\State\PlayerFrozenState.h" />
     <ClInclude Include="Source\Player\State\PlayerAttackState.h" />
     <ClInclude Include="Source\Character\Components\StatusEffects.h" />
-    <ClInclude Include="Source\Magic\MagicCaster.h" />
+    <ClInclude Include="Source\Skill\SkillBase.h" />
+    <ClInclude Include="Source\Skill\SkillController.h" />
     <ClInclude Include="Source\Magic\IceMagic.h" />
     <ClInclude Include="Source\Magic\FireMagic.h" />
     <ClInclude Include="Source\Magic\SlashMagic.h" />

@@ -180,6 +180,11 @@ namespace nsK2EngineLow {
 		}
 	private:
 		void UpdateCore(XINPUT_STATE xInputState);
+		/// <summary>
+		/// キーボードの入力を、パッドの入力に重ねる。
+		/// </summary>
+		/// <param name="prevPress">前のフレームに押されていたか。</param>
+		void UpdateKeyboard(const int prevPress[enButtonNum]);
 	public:
 		/// <summary>
 		/// 最大パッド数

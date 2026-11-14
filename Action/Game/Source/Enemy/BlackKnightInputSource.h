@@ -9,7 +9,7 @@
 //   中くらい・遠い  決め直す間隔ごとに、runChance の確率で走る（isRun）。残りは攻撃
 //                  （中くらいなら攻撃1: 突進して突き → 回転斬り、遠いなら攻撃3: 斬撃を5つ飛ばす）
 //   走っている     近くまで来たら歩きに戻し、すぐに攻撃2
-// 攻撃は fire を1フレーム押し、attackIndex で種類を伝える。
+// 攻撃は Action1 を1フレーム押し、attackIndex で種類を伝える。
 // AI は「どうしたいか」だけを決め、実際の移動や剣の動きはステート（EnemyStateMachine）が行う。
 class BlackKnightInputSource : public IInputSource
 {

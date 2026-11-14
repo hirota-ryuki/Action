@@ -107,8 +107,8 @@ void Enemy::OnStart()
 		m_damage.isHitRequested = true;
 	});
 	m_stateMachine.Init(stateContext);  // Idle から始める（Idle のアニメーションを流す）。
-	// 黒騎士は魔法を持たない（MagicCaster に何も登録しないので、fire を押しても魔法は撃たない）。
-	// fire は剣の攻撃（EnemyAttackState）になり、攻撃3の斬撃はステートが飛ばす。
+	// 黒騎士はスキルを登録しない（SkillController に何も登録しないので、Action1 を押してもスキルは使わない）。
+	// Action1 は剣の攻撃（EnemyAttackState）になり、攻撃3の斬撃はステートが飛ばす。
 }
 
 void Enemy::UpdateAction(float deltaTime)

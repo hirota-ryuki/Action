@@ -16,7 +16,8 @@ import bpy
 import numpy as np
 
 # ---- 調整値 ----
-SIZE = 2048                 # テクスチャの1辺（ピクセル）
+SIZE = 2048                 # 模様を作るときの1辺（ピクセル）
+OUT_SIZE = 1024             # 書き出すテクスチャの1辺。模様は SIZE で作り、保存するときに縮める（起動時の読み込みを軽くする）
 TILES = 4                   # 1辺に並ぶタイルの数（1枚 512 ピクセル）
 GOLD_WIDTH = 10             # 金の目地の幅（ピクセル）
 SEED = 7
@@ -130,6 +131,7 @@ spec = np.stack([gold, np.zeros_like(h), np.zeros_like(h), np.clip(smooth, 0, 1)
 
 
 def save(name, rgb_or_rgba, colorspace, outdir, size=None):
+    """size を渡すと、その1辺に縮めて保存する。"""
     arr = rgb_or_rgba
     if arr.shape[-1] == 3:
         arr = np.concatenate([arr, np.ones(arr.shape[:2] + (1,))], axis=-1)
@@ -137,6 +139,8 @@ def save(name, rgb_or_rgba, colorspace, outdir, size=None):
     img = bpy.data.images.new(name, wid, hgt, alpha=True)
     img.colorspace_settings.name = colorspace
     img.pixels.foreach_set(arr[::-1].astype(np.float32).ravel())   # Blender は下の行から
+    if size and (wid, hgt) != (size, size):
+        img.scale(size, size)
     img.filepath_raw = os.path.join(outdir, name + ".png")
     img.file_format = "PNG"
     img.save()
@@ -145,9 +149,9 @@ def save(name, rgb_or_rgba, colorspace, outdir, size=None):
 
 outdir = sys.argv[sys.argv.index("--") + 1]
 os.makedirs(outdir, exist_ok=True)
-save("BossFloor_albedo", albedo, "sRGB", outdir)
-save("BossFloor_normal", normal, "Non-Color", outdir)
-save("BossFloor_spec", spec, "Non-Color", outdir)
+save("BossFloor_albedo", albedo, "sRGB", outdir, OUT_SIZE)
+save("BossFloor_normal", normal, "Non-Color", outdir, OUT_SIZE)
+save("BossFloor_spec", spec, "Non-Color", outdir, OUT_SIZE)
 
 # 確かめ用: 2×2 に並べ、半分に縮める（つなぎ目が見える位置に来る）
 tiled = np.tile(albedo, (2, 2, 1))[::2, ::2]

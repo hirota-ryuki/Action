@@ -38,6 +38,8 @@ namespace
 	// 炎を溜めるとき（溜め始め・溜め・放つ。両腕）: 画面の下に沈めた火の玉（PlayerInputSource の FIRST_PERSON_CHARGE_OFFSET）を
 	// 左右から開いた手で挟むように、手を火の玉の左右の、画面の下 1/3 に置く（氷を撃つときより低く、少し外へ開く）。
 	const ArmPose CHARGE_POSE = { 2.0f, 18.0f, 0.0f, 0.0f, 10.0f };
+	// 炎を放つとき（両腕）: 両腕を前へ伸ばして、火の玉を押し出す。
+	const ArmPose RELEASE_POSE = { 16.0f, 34.0f, 0.0f, 0.0f, 75.0f };
 	// 握りこぶしにするときに、アニメーションの指の形から足して曲げる角度（度。付け根・第二関節・第一関節の順）。
 	const float FINGER_CURL_DEGS[3] = { 45.0f, 50.0f, 40.0f };
 	// 親指: 先の関節を曲げる角度（度）と、IK で合わせるときの決まり。
@@ -49,9 +51,11 @@ namespace
 	constexpr float GRIP_OPEN_SPEED = 40.0f;
 	constexpr float GRIP_CLOSE_SPEED = 8.0f;
 	// 炎を撃ったあと、両手を開いたまま見せる時間（秒）。そのあと最初の構えに戻る。
-	constexpr float RELEASE_OPEN_SECONDS = 0.2f;
+	constexpr float RELEASE_OPEN_SECONDS = 0.3f;
 	// 構えと撃つときの置き方を混ぜる速さ（大きいほど速く切り替わる）。
 	constexpr float POSE_BLEND_SPEED = 10.0f;
+	// 炎を放つときに、両腕を前へ伸ばす速さ。撃った瞬間に伸びきるよう、ほかの置き方より速くする。
+	constexpr float RELEASE_PUSH_SPEED = 30.0f;
 
 	// カメラから見て、腕のモデルの足元を置く位置（x: 右、y: 上、z: 前）。
 	// 腕のモデルの目の高さ（約 157）より下げ、手前に寄せて、手が大きく画面の下の方に映るようにする。
@@ -282,8 +286,10 @@ void FirstPersonArms::SpreadArms(Skeleton& skeleton)
 		if (m_upperArmBone[side] < 0) {
 			continue;
 		}
-		// 構え → 氷を撃つとき → 炎を溜めるとき、の順に、この腕の混ぜ具合で混ぜる。
-		const ArmPose pose = BlendPose(BlendPose(IDLE_POSE, CAST_POSE, m_castWeight[side]), CHARGE_POSE, m_chargeWeight[side]);
+		// 構え → 氷を撃つとき → 炎を溜めるとき → 炎を放つとき、の順に、この腕の混ぜ具合で混ぜる。
+		ArmPose pose = BlendPose(IDLE_POSE, CAST_POSE, m_castWeight[side]);
+		pose = BlendPose(pose, CHARGE_POSE, m_chargeWeight[side]);
+		pose = BlendPose(pose, RELEASE_POSE, m_releaseWeight[side]);
 		const float spreadDeg = pose.spreadDeg;
 		const float raiseDeg = pose.raiseDeg;
 		const float sideShift = pose.sideShift;
@@ -322,13 +328,14 @@ void FirstPersonArms::SpreadArms(Skeleton& skeleton)
 void FirstPersonArms::Reset(const Player& player)
 {
 	// 三人称の間に撃った分は数えない。
-	const MagicCaster& caster = player.GetMagicCaster();
-	m_lastMainFireCount = caster.GetFireCount(MAIN_SLOT);
-	m_lastSubFireCount = caster.GetFireCount(SUB_SLOT);
+	const SkillController& skills = player.GetSkillController();
+	m_lastMainFireCount = skills.GetUseCount(MAIN_BUTTON);
+	m_lastSubFireCount = skills.GetUseCount(SUB_BUTTON);
 	m_releaseTimer = 0.0f;
 	for (int side = 0; side < 2; side++) {
 		m_castWeight[side] = 0.0f;
 		m_chargeWeight[side] = 0.0f;
+		m_releaseWeight[side] = 0.0f;
 		m_grip[side] = 1.0f;
 	}
 	Play(enClip_Idle, 0.0f);
@@ -345,6 +352,8 @@ void FirstPersonArms::Update(const Player& player)
 	for (int side = 0; side < 2; side++) {
 		m_castWeight[side] += (GetCastWeightTarget(side) - m_castWeight[side]) * rate;
 		m_chargeWeight[side] += (GetChargeWeightTarget() - m_chargeWeight[side]) * rate;
+		const float releaseTarget = m_releaseTimer > 0.0f ? 1.0f : 0.0f;
+		m_releaseWeight[side] += (releaseTarget - m_releaseWeight[side]) * min(1.0f, deltaTime * RELEASE_PUSH_SPEED);
 		// 手は、開くときは速く（開いた瞬間に魔法が出る）、握り直すときはゆっくり。
 		const float gripTarget = GetGripTarget(side);
 		const float gripSpeed = gripTarget < m_grip[side] ? GRIP_OPEN_SPEED : GRIP_CLOSE_SPEED;
@@ -392,10 +401,10 @@ void FirstPersonArms::Draw(RenderContext& rc)
 
 void FirstPersonArms::UpdateClip(const Player& player, float deltaTime)
 {
-	const MagicCaster& caster = player.GetMagicCaster();
-	const bool isMainCast = IsFiredThisFrame(caster, MAIN_SLOT, m_lastMainFireCount);
-	const bool isSubCast = IsFiredThisFrame(caster, SUB_SLOT, m_lastSubFireCount);
-	const bool isCharging = caster.IsHolding(SUB_SLOT);
+	const SkillController& skills = player.GetSkillController();
+	const bool isMainCast = IsFiredThisFrame(skills, MAIN_BUTTON, m_lastMainFireCount);
+	const bool isSubCast = IsFiredThisFrame(skills, SUB_BUTTON, m_lastSubFireCount);
+	const bool isCharging = skills.IsHolding(SUB_BUTTON);
 	const bool isChargeClip = IsChargeClip();
 
 	// 両手の動き（炎）を、右手の動き（氷）より先に見る。溜めている間に氷を撃っても、両手は上げたまま。
@@ -459,9 +468,9 @@ void FirstPersonArms::UpdateTransform()
 	m_model.SetTransform(position, rotation);
 }
 
-bool FirstPersonArms::IsFiredThisFrame(const MagicCaster& caster, int slot, int& lastCount)
+bool FirstPersonArms::IsFiredThisFrame(const SkillController& skills, ActionButton button, int& lastCount)
 {
-	const int count = caster.GetFireCount(slot);
+	const int count = skills.GetUseCount(button);
 	const bool isFired = count > lastCount;
 	lastCount = count;
 	return isFired;

@@ -15,19 +15,18 @@ public:
 	FireMagic();
 	~FireMagic() override;
 
-	bool IsChargeType() const override
-	{
-		return true;
-	}
-
 	// 炎魔法のエフェクト（飛ぶ炎・溜め・着弾・燃える床）を登録する。読み込めなければ false。
 	// 登録済みなら何もしないので、何度呼んでもよい。
 	static bool RegisterEffects();
 
 protected:
+	bool IsChargeType() const override
+	{
+		return true;
+	}
 	bool OnStart() override;
 	void OnCharge(float chargeSeconds) override;
-	void OnLaunch() override;
+	void OnRelease() override;
 	void OnCancel() override;
 	void OnMove() override;
 	void OnHitTarget(HitTarget& target, const Vector3& hitPosition) override;

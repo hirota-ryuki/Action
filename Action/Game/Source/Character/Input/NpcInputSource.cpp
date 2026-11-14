@@ -22,7 +22,7 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 	if (target == nullptr) {
 		m_hasTarget = false;
 		m_isFiring = false;
-		input.fire.Update(false);
+		input.Action(ActionButton::Action1).Update(false);
 		return;
 	}
 	if (!m_hasTarget) {
@@ -60,7 +60,7 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 		m_fireHoldTimer = m_settings.fireHoldSeconds;
 		m_fireTimer = m_settings.fireInterval;
 	}
-	input.fire.Update(m_isFiring);
+	input.Action(ActionButton::Action1).Update(m_isFiring);
 
 	// 相手の胸のあたりを狙う。
 	input.hasAim = true;

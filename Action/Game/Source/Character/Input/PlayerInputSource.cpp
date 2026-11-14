@@ -4,10 +4,10 @@
 
 namespace
 {
-	// 一人称で、メインの魔法（氷）を右手から撃つ。撃つ位置を、カメラから見て右（x）と上（y）へこれだけずらす。
+	// 一人称で、Action1 のスキル（Player は氷魔法）を右手から撃つ。撃つ位置を、カメラから見て右（x）と上（y）へこれだけずらす。
 	// 右手を突き出しきったときの手のひらの前に合わせてある。
 	const Vector3 FIRST_PERSON_RIGHT_HAND_OFFSET = Vector3(16.0f, -15.0f, 0.0f);
-	// 一人称で、サブの魔法（炎）の火の玉を溜める位置を、カメラから見て右（x）と上（y）へこれだけずらす。
+	// 一人称で、Action2 のスキル（Player は炎魔法）の火の玉を溜める位置を、カメラから見て右（x）と上（y）へこれだけずらす。
 	// 目の前の真ん中で溜めると、火の玉で前が見えなくなるので、画面の下へ下げて、溜めきった火の玉の上 1/3 だけが見えるようにする。
 	const Vector3 FIRST_PERSON_CHARGE_OFFSET = Vector3(0.0f, -44.0f, 0.0f);
 }
@@ -33,30 +33,31 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	// 攻撃した瞬間に、カメラが向いている方向を向く。
 	input.attackDirection = cameraForward;
 
-	// ジャンプはスペース（パッドは A）。パッド未接続時は A ボタンが J キーに割り当てられているので、J でも跳べる。
+	// ジャンプはスペース（パッドは A）。パッドの A ボタンが J キーに割り当てられているので、J でも跳べる。
 	input.jump.Update(IsKeyPressed(VK_SPACE) || pad.IsPress(enButtonA));
 	// 左Shift（パッドは X）: 押した瞬間にダッシュ、押しっぱなしで走る。
 	// 走るのはダッシュが終わったあとなので、単押しを繰り返すとダッシュが続けて出る。
-	// パッド未接続時は X ボタンが L キーに割り当てられているので、L でも同じ動きになる。
+	// パッドの X ボタンが L キーに割り当てられているので、L でも同じ動きになる。
 	const bool isDashPress = IsKeyPressed(VK_LSHIFT) || pad.IsPress(enButtonX);
 	input.dash.Update(isDashPress);
 	input.isRun = isDashPress;
-	input.fire.Update((CanUseMouse() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
-	// パッド未接続時は右トリガー(RB2)が8キーに割り当てられている。
-	input.subFire.Update((CanUseMouse() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
+	input.Action(ActionButton::Action1).Update((CanUseMouse() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
+	// パッドの右トリガー(RB2)は8キーにも割り当てられている（パッドが繋がっていても使える）。
+	input.Action(ActionButton::Action2).Update((CanUseMouse() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
 
 	// 一人称では視線の方向へ目の位置から撃つ。三人称ではキャラクターの正面へ撃つ（hasAim = false）。
 	input.hasAim = context.isFirstPerson;
-	input.mainAimOffset = Vector3::Zero;
-	input.subAimOffset = Vector3::Zero;
+	for (Vector3& offset : input.aimOffsets) {
+		offset = Vector3::Zero;
+	}
 	if (input.hasAim) {
 		input.aimOrigin = g_camera3D->GetPosition();
 		input.aimDirection = g_camera3D->GetForward();
 		const Matrix& cameraRotation = g_camera3D->GetCameraRotation();
 		const Vector3 cameraUp(cameraRotation.m[1][0], cameraRotation.m[1][1], cameraRotation.m[1][2]);
-		input.mainAimOffset = g_camera3D->GetRight() * FIRST_PERSON_RIGHT_HAND_OFFSET.x
+		input.AimOffset(ActionButton::Action1) = g_camera3D->GetRight() * FIRST_PERSON_RIGHT_HAND_OFFSET.x
 			+ cameraUp * FIRST_PERSON_RIGHT_HAND_OFFSET.y;
-		input.subAimOffset = g_camera3D->GetRight() * FIRST_PERSON_CHARGE_OFFSET.x
+		input.AimOffset(ActionButton::Action2) = g_camera3D->GetRight() * FIRST_PERSON_CHARGE_OFFSET.x
 			+ cameraUp * FIRST_PERSON_CHARGE_OFFSET.y;
 	}
 }

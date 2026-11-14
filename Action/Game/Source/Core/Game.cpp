@@ -7,7 +7,7 @@
 #include "Stage.h"
 #include "BossStage.h"
 #include "FireEffect.h"
-#include "MagicBase.h"
+#include "SkillBase.h"
 #include "GameClock.h"
 #include "BurningGround.h"
 #include "UIManager.h"
@@ -51,9 +51,9 @@ Game::~Game()
 	DeleteGO(m_gameCamera);
 	DeleteGO(m_fireEffect);
 	DeleteGO(m_skyCube);
-	// キャラクターが撃った魔法は Game が持っていないので、名前で探して消す。
-	QueryGOs<MagicBase>(MagicBase::OBJECT_NAME, [](MagicBase* magic) {
-		DeleteGO(magic);
+	// キャラクターが使ったスキル（魔法など）は Game が持っていないので、名前で探して消す。
+	QueryGOs<SkillBase>(SkillBase::OBJECT_NAME, [](SkillBase* skill) {
+		DeleteGO(skill);
 		return true;
 	});
 	QueryGOs<BurningGround>(BurningGround::OBJECT_NAME, [](BurningGround* ground) {

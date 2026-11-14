@@ -44,7 +44,7 @@ protected:
 	void OnStart() override;
 	void FillInputContext(InputSourceContext& context) const override;
 	void UpdateAction(float deltaTime) override;
-	void FilterCastInput(CharacterInput& input) const override;
+	void FilterSkillInput(CharacterInput& input) const override;
 
 private:
 	void Respawn();
