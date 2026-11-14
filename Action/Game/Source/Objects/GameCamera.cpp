@@ -15,10 +15,14 @@ namespace
 	// カメラをプレイヤーに近づける代わりに画角を広げてプレイヤー全体が収まるようにしてある。
 	constexpr float TARGET_HEIGHT = 170.0f;          // 注視点をプレイヤーの足元でなく腰あたりに合わせる高さ。
 	constexpr float TARGET_FORWARD_OFFSET = 20.0f;    // 注視点をカメラ正面方向に少しずらして奥行き感を出す。
-	constexpr float FIRST_PERSON_EYE_HEIGHT = 90.0f;   // 一人称カメラの目線の高さ（プレイヤー足元からのオフセット）。
+	// 一人称カメラの目線の高さ（プレイヤー足元からのオフセット）。体のモデルの目の高さ（約 150 × 大きさ 1.128）に合わせる。
+	constexpr float FIRST_PERSON_EYE_HEIGHT = 168.0f;
 	constexpr float VIEW_ANGLE_DEG = 90.0f;           // カメラを近づけた分、画角を通常の60度から広げる。
 	constexpr float FIRST_PERSON_LOOK_DISTANCE = 1000.0f;
-	constexpr float FIRST_PERSON_NEAR = 5.0f;         // 一人称時はNearを小さくして、目の前の物が見切れないようにする。
+	constexpr float FIRST_PERSON_NEAR = 5.0f;         // 一人称時はNearを小さくして手元の腕と手が見切れないようにする。
+	// 一人称の画角（縦、度）。三人称の 90 度のままだと広角すぎて、手が小さく画面の真ん中に寄って見える。
+	constexpr float FIRST_PERSON_VIEW_ANGLE_DEG = 50.0f;
+	constexpr int TOGGLE_CAMERA_KEY = 'V';            // 三人称／一人称を切り替えるキー（パッドは B ボタン）。
 
 	// マウス1フレームあたりの回転量を上限値で制限する。
 	float ClampMouseRotateDeg(float rotateDeg)
@@ -57,6 +61,8 @@ bool GameCamera::Start()
 
 	g_camera3D->SetViewAngle(Math::DegToRad(VIEW_ANGLE_DEG));
 
+	m_firstPersonArms.Init();
+
 	return true;
 }
 
@@ -68,7 +74,7 @@ void GameCamera::Update()
 		return;
 	}
 
-	if (g_pad[0]->IsTrigger(enButtonB)) {
+	if (IsToggleTriggered()) {
 		ToggleCameraMode();
 	}
 
@@ -78,6 +84,23 @@ void GameCamera::Update()
 	else {
 		UpdateThirdPersonCamera();
 	}
+}
+
+void GameCamera::Render(RenderContext& rc)
+{
+	if (m_cameraMode != EnCameraMode::FirstPerson) {
+		return;
+	}
+
+	m_firstPersonArms.Draw(rc);
+}
+
+bool GameCamera::IsToggleTriggered()
+{
+	// ほかのウィンドウを使っている間のキーは拾わない。
+	const bool isWindowActive = g_hWnd != nullptr && GetForegroundWindow() == g_hWnd;
+	m_toggleKey.Update(isWindowActive && (GetAsyncKeyState(TOGGLE_CAMERA_KEY) & 0x8000) != 0);
+	return m_toggleKey.isTrigger || g_pad[0]->IsTrigger(enButtonB);
 }
 
 void GameCamera::ToggleCameraMode()
@@ -92,11 +115,14 @@ void GameCamera::ToggleCameraMode()
 		}
 		m_firstPersonForward.Normalize();
 		g_camera3D->SetNear(FIRST_PERSON_NEAR);
+		g_camera3D->SetViewAngle(Math::DegToRad(FIRST_PERSON_VIEW_ANGLE_DEG));
+		m_firstPersonArms.Reset(*m_player);
 	}
 	else {
 		m_cameraMode = EnCameraMode::ThirdPerson;
 		RestorePlayerRenderBody();
 		g_camera3D->SetNear(m_defaultNear);
+		g_camera3D->SetViewAngle(Math::DegToRad(VIEW_ANGLE_DEG));
 	}
 }
 
@@ -148,6 +174,9 @@ void GameCamera::UpdateFirstPersonCamera()
 	g_camera3D->SetPosition(eyePosition);
 	g_camera3D->SetTarget(target);
 	g_camera3D->Update();
+
+	// 腕はカメラに付いていくので、カメラを動かしたあとで動かす。
+	m_firstPersonArms.Update(*m_player);
 }
 
 void GameCamera::RotateFirstPersonForward()

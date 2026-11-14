@@ -31,6 +31,11 @@ public:
 	// 溜めている魔法を、飛ばさずに消す（凍ったときなど）。
 	void CancelAll();
 
+	// slot の枠で、これまでに撃った（飛ばした）回数。一人称の腕が、前のフレームと比べて撃った瞬間を知るのに使う。
+	int GetFireCount(int slot) const;
+	// slot の枠で、魔法を溜めている最中か。一人称の腕が、溜めている間は両手を上げるのに使う。
+	bool IsHolding(int slot) const;
+
 private:
 	struct Slot
 	{
@@ -38,6 +43,7 @@ private:
 		float cooldown = 0.0f;               // 撃ってから次に撃てるまでの秒数。
 		float lastFireTime = 0.0f;           // 前に撃った時刻（GameClock）。
 		bool hasFired = false;               // 一度でも撃ったか。
+		int fireCount = 0;                   // これまでに撃った回数。
 		MagicBase* holding = nullptr;        // 溜めている（撃つ位置で待たせている）魔法。
 	};
 

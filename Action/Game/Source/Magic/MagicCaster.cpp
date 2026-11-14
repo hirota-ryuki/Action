@@ -43,6 +43,7 @@ void MagicCaster::Fire(int slot, const ButtonState& button, const Vector3& origi
 		else {
 			target.lastFireTime = GameClock::Now();
 			target.hasFired = true;
+			++target.fireCount;
 		}
 	}
 
@@ -59,6 +60,7 @@ void MagicCaster::Fire(int slot, const ButtonState& button, const Vector3& origi
 		target.holding = nullptr;
 		target.lastFireTime = GameClock::Now();
 		target.hasFired = true;
+		++target.fireCount;
 	}
 }
 
@@ -70,4 +72,20 @@ void MagicCaster::CancelAll()
 			slot.holding = nullptr;
 		}
 	}
+}
+
+int MagicCaster::GetFireCount(int slot) const
+{
+	if (slot < 0 || slot >= static_cast<int>(m_slots.size())) {
+		return 0;
+	}
+	return m_slots[slot].fireCount;
+}
+
+bool MagicCaster::IsHolding(int slot) const
+{
+	if (slot < 0 || slot >= static_cast<int>(m_slots.size())) {
+		return false;
+	}
+	return m_slots[slot].holding != nullptr;
 }

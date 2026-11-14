@@ -96,6 +96,9 @@
     <ClCompile Include="Source\Player\PlayerAnimator.cpp">
       <Filter>Source\Player</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Player\FirstPersonArms.cpp">
+      <Filter>Source\Player</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Enemy\Enemy.cpp">
       <Filter>Source\Enemy</Filter>
     </ClCompile>
@@ -312,6 +315,9 @@
       <Filter>Source\Actor</Filter>
     </ClInclude>
     <ClInclude Include="Source\Player\PlayerAnimator.h">
+      <Filter>Source\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Player\FirstPersonArms.h">
       <Filter>Source\Player</Filter>
     </ClInclude>
     <ClInclude Include="Source\Enemy\Enemy.h">
