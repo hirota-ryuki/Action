@@ -7,14 +7,14 @@ namespace
 	constexpr float MODEL_SCALE = 1.4f;
 	// 当たり判定とカプセルは、前の大きさ（1.3）で体に合わせた値を、同じ割合で大きくする。
 	constexpr float SIZE_RATIO = MODEL_SCALE / 1.3f;
-	constexpr float HIT_RADIUS = 60.0f * SIZE_RATIO;         // 弾に当たる球の半径。黒騎士の胴（肩当てまで）を覆う。
+	constexpr float HIT_RADIUS = 60.0f * SIZE_RATIO;         // 魔法に当たる球の半径。黒騎士の胴（肩当てまで）を覆う。
 	constexpr float HIT_CENTER_HEIGHT = 110.0f * SIZE_RATIO; // 足元から当たり判定の中心までの高さ（黒騎士の胸の下あたり）。
 	constexpr float WALK_SPEED = 140.0f;        // 余裕たっぷりにゆっくり歩く速さ。
 	constexpr float WALK_ANIM_FOOT_SPEED = 229.0f;  // Walk を等速で再生したときに、足が地面を送る速さ（Blender で測った）。
 	// 黒騎士の動き全体の速さ。アニメーションが崩れていないかを確かめるときは下げる（例: 0.5）。
 	constexpr float PLAY_SPEED = 1.0f;
 	constexpr float MAX_HP = 100.0f;
-	// 1回当たったときに減る HP（仮）。4回で倒れる。弾ごとの威力ができたら、そちらを使う。
+	// 1回当たったときに減る HP（仮）。4回で倒れる。魔法ごとの威力ができたら、そちらを使う。
 	constexpr float HIT_DAMAGE = 25.0f;
 	// 倒れ終わってから消えるまでの秒数。
 	constexpr float VANISH_DELAY = 2.0f;
@@ -98,7 +98,7 @@ void Enemy::OnStart()
 	m_damage.status = &m_status;
 	stateContext.damage = &m_damage;
 	stateContext.tuning = &m_tuning;
-	// 弾などが当たったら HP を減らし、ステートに知らせる（ひるむか・倒れるかはステートが決める）。
+	// 魔法などが当たったら HP を減らし、ステートに知らせる（ひるむか・倒れるかはステートが決める）。
 	m_hitTarget.SetOnHit([this](const HitInfo&) {
 		if (m_status.IsHpEmpty()) {
 			return;
@@ -107,7 +107,7 @@ void Enemy::OnStart()
 		m_damage.isHitRequested = true;
 	});
 	m_stateMachine.Init(stateContext);  // Idle から始める（Idle のアニメーションを流す）。
-	// 黒騎士は魔法を持たない（MagicCaster に何も足さないので、fire を押しても魔法は撃たない）。
+	// 黒騎士は魔法を持たない（MagicCaster に何も登録しないので、fire を押しても魔法は撃たない）。
 	// fire は剣の攻撃（EnemyAttackState）になり、攻撃3の斬撃はステートが飛ばす。
 }
 

@@ -6,9 +6,9 @@
 enum class EffectId : int
 {
 	Fire,
-	IceBullet,  // 氷魔法の弾（飛翔中）
+	IceFly,     // 氷魔法の飛んでいる氷
 	IceHit,     // 氷魔法の着弾
-	FireBullet, // 炎魔法の弾（飛翔中）
+	FireFly,    // 炎魔法の飛んでいる炎
 	FireCharge, // 炎魔法の溜め中
 	FireCharged,// 炎魔法が最大まで溜まった瞬間
 	FireHit,    // 炎魔法の着弾

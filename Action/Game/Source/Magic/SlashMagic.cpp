@@ -1,5 +1,5 @@
 ﻿#include "stdafx.h"
-#include "SlashBullet.h"
+#include "SlashMagic.h"
 
 namespace
 {
@@ -7,9 +7,9 @@ namespace
 	constexpr const char* MODEL_PATH = "Assets/modelData/effect/SlashWave/SlashWave.fbx";
 	constexpr float MODEL_SCALE = 1.0f;
 
-	BulletSettings MakeSettings()
+	MagicSettings MakeSettings()
 	{
-		BulletSettings settings;
+		MagicSettings settings;
 		settings.speed = 1100.0f;   // プレイヤーがよけられるくらいの速さ。
 		settings.range = 1500.0f;
 		settings.radius = 45.0f;    // 三日月の幅（160）より小さめにして、端をかすっただけでは当たらないようにする。
@@ -17,19 +17,19 @@ namespace
 	}
 }
 
-SlashBullet::SlashBullet()
-	: BulletBase(MakeSettings())
+SlashMagic::SlashMagic()
+	: MagicBase(MakeSettings())
 {
 }
 
-bool SlashBullet::OnStart()
+bool SlashMagic::OnStart()
 {
 	m_model.Init(MODEL_PATH, nullptr, 0, enModelUpAxisZ, false);
 	m_isVisible = true;
 	return true;
 }
 
-void SlashBullet::OnMove()
+void SlashMagic::OnMove()
 {
 	// 進む向き（GetRotation）に向けてから、その前の軸まわりに回して斜めにする。
 	Quaternion roll;
@@ -40,13 +40,13 @@ void SlashBullet::OnMove()
 	m_model.Update();
 }
 
-void SlashBullet::OnExplode(const Vector3& hitPosition)
+void SlashMagic::OnExplode(const Vector3& hitPosition)
 {
 	(void)hitPosition;
 	m_isVisible = false;
 }
 
-void SlashBullet::Render(RenderContext& renderContext)
+void SlashMagic::Render(RenderContext& renderContext)
 {
 	if (m_isVisible) {
 		m_model.Draw(renderContext);

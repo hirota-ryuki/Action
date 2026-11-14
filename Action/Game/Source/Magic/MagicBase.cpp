@@ -1,43 +1,69 @@
 ﻿#include "stdafx.h"
-#include "BulletBase.h"
+#include "MagicBase.h"
 #include "HitTarget.h"
+#include "GameClock.h"
 
-BulletBase::BulletBase(const BulletSettings& settings)
+MagicBase::MagicBase(const MagicSettings& settings)
 	: m_settings(settings)
 {
 }
 
-void BulletBase::Init(const Vector3& position, const Vector3& direction, const IGameObject* owner, Faction faction)
+void MagicBase::Init(const Vector3& position, const Vector3& direction, const IGameObject* owner, Faction faction)
 {
-	m_position = position;
-	m_direction = direction;
-	if (m_direction.LengthSq() <= FLT_EPSILON) {
-		m_direction = Vector3::AxisZ;
-	}
-	m_direction.Normalize();
-	m_rotation.SetRotationYFromDirectionXZ(m_direction);
+	SetPose(position, direction);
 	m_owner = owner;
 	m_faction = faction;
+	m_state = IsChargeType() ? EnState::Charging : EnState::Flying;
+	m_chargeStartTime = GameClock::Now();
 }
 
-bool BulletBase::Start()
+void MagicBase::Hold(const Vector3& position, const Vector3& direction)
+{
+	if (m_state == EnState::Charging) {
+		SetPose(position, direction);
+	}
+}
+
+void MagicBase::Release()
+{
+	m_isReleased = true;
+}
+
+void MagicBase::Cancel()
+{
+	m_isCanceled = true;
+}
+
+bool MagicBase::Start()
 {
 	m_isValid = OnStart();
 	if (m_isValid) {
 		// 見た目を最初の位置に合わせておく。
-		OnMove();
+		if (m_state == EnState::Charging) {
+			OnCharge(0.0f);
+		}
+		else {
+			OnMove();
+		}
 	}
 	return true;
 }
 
-void BulletBase::Update()
+void MagicBase::Update()
 {
 	if (!m_isValid) {
+		// 待っている間は MagicCaster がこの魔法を指しているので、離されるか中断されるまで消えない。
+		if (m_state == EnState::Charging && !m_isReleased && !m_isCanceled) {
+			return;
+		}
 		DeleteGO(this);
 		return;
 	}
 
 	switch (m_state) {
+	case EnState::Charging:
+		UpdateCharging();
+		break;
 	case EnState::Flying:
 		UpdateFlying();
 		break;
@@ -49,7 +75,34 @@ void BulletBase::Update()
 	}
 }
 
-void BulletBase::UpdateFlying()
+void MagicBase::SetPose(const Vector3& position, const Vector3& direction)
+{
+	m_position = position;
+	m_direction = direction;
+	if (m_direction.LengthSq() <= FLT_EPSILON) {
+		m_direction = Vector3::AxisZ;
+	}
+	m_direction.Normalize();
+	m_rotation.SetRotationYFromDirectionXZ(m_direction);
+}
+
+void MagicBase::UpdateCharging()
+{
+	if (m_isCanceled) {
+		OnCancel();
+		m_state = EnState::Vanishing;
+		return;
+	}
+	if (m_isReleased) {
+		OnLaunch();
+		m_state = EnState::Flying;
+		OnMove();
+		return;
+	}
+	OnCharge(GameClock::Now() - m_chargeStartTime);
+}
+
+void MagicBase::UpdateFlying()
 {
 	const float moveDistance = m_settings.speed * g_gameTime->GetFrameDeltaTime();
 	const Vector3 nextPosition = m_position + m_direction * moveDistance;
@@ -88,7 +141,7 @@ void BulletBase::UpdateFlying()
 	OnMove();
 }
 
-void BulletBase::Explode(const Vector3& hitPosition)
+void MagicBase::Explode(const Vector3& hitPosition)
 {
 	m_position = hitPosition;
 	OnMove();
