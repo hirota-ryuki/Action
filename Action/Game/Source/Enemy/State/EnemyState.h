@@ -28,7 +28,7 @@ enum class EnemyStateId
 	Idle,    // 立ち止まっている
 	Move,    // 入力どおりに歩いている
 	Run,     // 入力どおりに走っている（AI が isRun を立てたとき。剣を肩に乗せて走る）
-	Attack,  // 剣で攻撃している（AI が fire を押したときに、attackIndex の攻撃をする）
+	Attack,  // 剣で攻撃している（AI が Action1 を押したときに、attackIndex の攻撃をする）
 	Hit,     // 攻撃を受けてひるんでいる（攻撃中は受けてもひるまない）
 	Dead,    // HP がなくなって倒れた。倒れ終わって少ししたら消える
 	Frozen,  // 凍結などで行動できない

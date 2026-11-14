@@ -36,7 +36,7 @@ bool Character::Start()
 	m_hitTarget.SetPosition(m_transform.position);
 
 	m_castSettings = config.cast;
-	m_magicCaster.Init(this, m_faction);
+	m_skillController.Init(this, m_faction);
 
 	GetStatus().Init(config.maxHp);
 
@@ -54,8 +54,8 @@ void Character::Update()
 	m_statusEffects.Update(deltaTime);
 	// ③ 動く（派生クラス）
 	UpdateAction(deltaTime);
-	// ④ 魔法（動いたあとの位置から撃つ）
-	UpdateMagic();
+	// ④ スキル（動いたあとの位置から撃つ）
+	UpdateSkill();
 	// ⑤ Transform に反映
 	SyncTransform();
 	// ⑥ 当たり判定・モデルを合わせる
@@ -98,7 +98,7 @@ void Character::SetFaction(Faction faction)
 {
 	m_faction = faction;
 	m_hitTarget.SetFaction(faction);
-	m_magicCaster.SetFaction(faction);
+	m_skillController.SetFaction(faction);
 }
 
 void Character::UpdateInput(float deltaTime)
@@ -115,11 +115,11 @@ void Character::UpdateInput(float deltaTime)
 	inputSource.Update(context, m_input);
 }
 
-void Character::UpdateMagic()
+void Character::UpdateSkill()
 {
-	// 凍っているなど動けないときは、溜めている魔法を捨てて何もしない。
+	// 凍っているなど動けないときは、溜めているスキルを捨てて何もしない。
 	if (!m_statusEffects.CanAct()) {
-		m_magicCaster.CancelAll();
+		m_skillController.CancelAll();
 		return;
 	}
 
@@ -128,10 +128,9 @@ void Character::UpdateMagic()
 	MakeCastPose(origin, direction);
 	// 派生クラスが入力の写しを書き換える（攻撃のモーションに合わせて撃つ、など）。
 	CharacterInput castInput = m_input;
-	FilterCastInput(castInput);
-	// ボタンの状態をそのまま渡す。押した・押している・離したの判断は MagicCaster がする。
-	m_magicCaster.Fire(0, castInput.fire, origin, direction);
-	m_magicCaster.Fire(1, castInput.subFire, origin, direction);
+	FilterSkillInput(castInput);
+	// 入力をそのまま渡す。どのボタンでどのスキルを使うか、押した・押している・離したの判断は SkillController がする。
+	m_skillController.Update(castInput, origin, direction);
 }
 
 void Character::MakeCastPose(Vector3& origin, Vector3& direction) const

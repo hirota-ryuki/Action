@@ -35,8 +35,8 @@ void Player::OnStart()
 	m_animator.Init(&m_model.GetModelRender(), stateContext.settings.animBlendSeconds);
 	m_stateMachine.Init(stateContext);  // Idle から始める。
 
-	m_magicCaster.Register<IceMagic>(0);   // 枠0: fire（左クリック）で撃つ。
-	m_magicCaster.Register<FireMagic>(1);  // 枠1: subFire（右クリック）で撃つ。
+	m_skillController.Register<IceMagic>(ActionButton::Action1);
+	m_skillController.Register<FireMagic>(ActionButton::Action2);
 }
 
 void Player::FillInputContext(InputSourceContext& context) const
@@ -55,17 +55,18 @@ void Player::UpdateAction(float deltaTime)
 	}
 }
 
-void Player::FilterCastInput(CharacterInput& input) const
+void Player::FilterSkillInput(CharacterInput& input) const
 {
-	// 攻撃の間は、クリックした瞬間には撃たず、手を突き出したコマ（Attack が立てる）でだけ発射ボタンを押したことにする。
+	// 攻撃の間は、クリックした瞬間には撃たず、手を突き出したコマ（Attack が立てる）でだけ Action1 を押したことにする。
 	// ButtonState::Update は通さない（押した瞬間の判定に使う m_input の前フレームの値を変えないため）。
 	if (m_stateMachine.GetCurrentId() != PlayerStateId::Attack) {
 		return;
 	}
 	const bool isFire = m_stateMachine.IsAttackFire();
-	input.fire.isTrigger = isFire;
-	input.fire.isPress = isFire;
-	input.fire.isRelease = false;
+	ButtonState& button = input.Action(ActionButton::Action1);
+	button.isTrigger = isFire;
+	button.isPress = isFire;
+	button.isRelease = false;
 }
 
 void Player::UpdateJumpWeight(float deltaTime)

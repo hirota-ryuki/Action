@@ -8,7 +8,7 @@
 #include "CharacterModel.h"
 #include "StatusEffects.h"
 #include "HitTarget.h"
-#include "MagicCaster.h"
+#include "SkillController.h"
 #include "BodyLean.h"
 #include "SpringBones.h"
 #include "BodyLink.h"
@@ -106,9 +106,9 @@ protected:
 	}
 	// ③ 動く。CharacterMover の Move 系を1回だけ呼ぶ（凍結中も重力のために呼ぶ）。
 	virtual void UpdateAction(float deltaTime) = 0;
-	// 魔法を撃つ部品（MagicCaster）に渡す入力を書き換える。攻撃のモーションに合わせて撃つ、などに使う。
+	// スキルを使う部品（SkillController）に渡す入力を書き換える。攻撃のモーションに合わせて撃つ、などに使う。
 	// input には、このフレームに受け取った入力の写しが入っている（m_input は変えない）。
-	virtual void FilterCastInput(CharacterInput& input) const
+	virtual void FilterSkillInput(CharacterInput& input) const
 	{
 	}
 	// モデルを更新したあと（ボーンに付けたものを動かす、など）。
@@ -141,13 +141,13 @@ protected:
 	CharacterModel m_model;
 	StatusEffects m_statusEffects;
 	HitTarget m_hitTarget;
-	MagicCaster m_magicCaster;
+	SkillController m_skillController;
 
 private:
 	void UpdateInput(float deltaTime);
-	// 動けるなら、入力の fire・subFire で枠0・枠1の魔法を撃つ。動けなければ溜めを捨てる。
-	void UpdateMagic();
-	// 魔法を撃つ位置と向き。照準があればそちら、なければ足元から castHeight の高さで正面（水平）へ。
+	// 動けるなら、入力を SkillController に渡してスキルを使う。動けなければ溜めを捨てる。
+	void UpdateSkill();
+	// スキル（魔法など）を撃つ位置と向き。照準があればそちら、なければ足元から castHeight の高さで正面（水平）へ。
 	void MakeCastPose(Vector3& origin, Vector3& direction) const;
 	// キャラコンの位置・回転を Transform に書く。
 	void SyncTransform();

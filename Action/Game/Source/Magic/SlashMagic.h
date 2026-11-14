@@ -5,7 +5,7 @@
 // 黒騎士が剣を振って飛ばす斬撃。暗めの赤の三日月形の板が、まっすぐ飛ぶ。
 // 斜めの斬撃にするため、進む向きのまわりに SetRoll() の角度だけ回して置く。
 // 当たったら（相手・地形・射程切れ）すぐに消える。当たった相手へのダメージはまだない。
-// MagicCaster には登録せず、黒騎士の攻撃のステート（EnemyAttackState）が直接作る。
+// SkillController には登録せず、黒騎士の攻撃のステート（EnemyAttackState）が直接作る。
 class SlashMagic : public MagicBase
 {
 public:

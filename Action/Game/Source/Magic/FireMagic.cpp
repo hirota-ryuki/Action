@@ -152,7 +152,7 @@ void FireMagic::OnCharge(float chargeSeconds)
 	}
 }
 
-void FireMagic::OnLaunch()
+void FireMagic::OnRelease()
 {
 	// 手元の火の玉は即座に消し（立ち上る炎と煙は寿命まで残す）、同じ大きさの炎を飛ばす。
 	m_chargeEffect.StopRoot();

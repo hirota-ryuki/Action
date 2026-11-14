@@ -34,6 +34,9 @@
     <Filter Include="Source\Magic">
       <UniqueIdentifier>{9e3a7c51-2f4d-4b8a-a6c1-7d0e5f9b3a28}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Skill">
+      <UniqueIdentifier>{4e5a4150-2104-4690-a7ad-b0695cfc0e9a}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\Objects">
       <UniqueIdentifier>{746964ec-ae1f-418c-a97c-a9ef78aaab8e}</UniqueIdentifier>
     </Filter>
@@ -168,8 +171,11 @@
     <ClCompile Include="Source\Character\Components\StatusEffects.cpp">
       <Filter>Source\Character\Components</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Magic\MagicCaster.cpp">
-      <Filter>Source\Magic</Filter>
+    <ClCompile Include="Source\Skill\SkillBase.cpp">
+      <Filter>Source\Skill</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Skill\SkillController.cpp">
+      <Filter>Source\Skill</Filter>
     </ClCompile>
     <ClCompile Include="Source\Magic\MagicBase.cpp">
       <Filter>Source\Magic</Filter>
@@ -404,8 +410,11 @@
     <ClInclude Include="Source\Character\Components\StatusEffects.h">
       <Filter>Source\Character\Components</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Magic\MagicCaster.h">
-      <Filter>Source\Magic</Filter>
+    <ClInclude Include="Source\Skill\SkillBase.h">
+      <Filter>Source\Skill</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Skill\SkillController.h">
+      <Filter>Source\Skill</Filter>
     </ClInclude>
     <ClInclude Include="Source\Magic\IceMagic.h">
       <Filter>Source\Magic</Filter>
