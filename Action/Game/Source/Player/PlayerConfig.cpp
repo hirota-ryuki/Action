@@ -158,9 +158,9 @@ namespace
 	void ReadAttackSettings(PlayerStateSettings& settings)
 	{
 		const Json section = GetSection("attack");
-		settings.attackFireTime = ReadFramesAsSeconds(section, "attack", "fireFrame", 9.0f);
-		settings.attackCancelTime = ReadFramesAsSeconds(section, "attack", "cancelFrame", 10.0f);
-		settings.attackEndTime = ReadFramesAsSeconds(section, "attack", "endFrame", 17.0f);
+		settings.attackFireTime = ReadFramesAsSeconds(section, "attack", "fireFrame", 10.0f);
+		settings.attackCancelTime = ReadFramesAsSeconds(section, "attack", "cancelFrame", 17.0f);
+		settings.attackEndTime = ReadFramesAsSeconds(section, "attack", "endFrame", 24.0f);
 		settings.attackAnimSpeed = Read(section, "attack", "animSpeed", 1.0f);
 		settings.attackBlendSeconds = Read(section, "attack", "blendSeconds", 0.1f);
 		settings.attackExitBlendSeconds = Read(section, "attack", "exitBlendSeconds", 0.2f);

@@ -92,13 +92,14 @@
 		"landCancelByMove": true  // 動きながら着地したら、しゃがまずにそのまま歩く・走る。
 	},
 
-	// 3段攻撃（左クリック、氷魔法）。Attack1（右手）→ Attack2（左手）→ Attack3（両手）。3本とも 18コマ（0.57秒）で区切りは同じ。
-	// KinemIQ の Spell - start（手を上げて突き出す）→ Spell - end（下ろす）を 1.5倍で流したもの（tools/BlenderScripts/player_attack_anims.json）。
-	//   0〜8コマ目 手を上げて前へ突き出す、9〜10コマ目 いちばん前、10〜17コマ目 下ろす。
+	// 3段攻撃（左クリック、氷魔法）。Attack1（右手）→ Attack2（左手）→ Attack3（両手）。3本とも 25コマ（0.80秒）で区切りは同じ。
+	// KinemIQ の Spell - start（手を上げて突き出す、1.5倍）→ Spell - cast（突き出したまま）→ Spell - end（下ろす、1.2倍）をつないだもの
+	// （tools/BlenderScripts/player_attack_anims.json）。
+	//   0〜9コマ目 手を上げて前へ突き出す、10〜16コマ目 正面へ突き出したまま、17〜24コマ目 下ろす。
 	"attack": {
-		"fireFrame": 9,         // 手がいちばん前に出たところで弾を撃つ。
-		"cancelFrame": 10,      // 撃ち終わり。ここから次の段（段の途中でクリックしていれば）・ダッシュ・ジャンプ・移動を受け付ける。
-		"endFrame": 17,         // 最後まで流したら Idle へ。
+		"fireFrame": 10,        // 腕が正面へ真っすぐ出きったところで弾を撃つ。
+		"cancelFrame": 17,      // 撃ち終わり（下ろし始め）。ここから次の段（段の途中でクリックしていれば）・ダッシュ・ジャンプ・移動を受け付ける。
+		"endFrame": 24,         // 最後まで流したら Idle へ。
 		"animSpeed": 1.0,
 		"blendSeconds": 0.1,
 		"exitBlendSeconds": 0.2
