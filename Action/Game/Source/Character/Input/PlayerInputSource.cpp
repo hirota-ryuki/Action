@@ -35,16 +35,6 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	// パッド未接続時は右トリガー(RB2)が8キーに割り当てられている。
 	input.subFire.Update((CanUseMouse() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
 
-	m_prevMagicKey.Update(IsKeyPressed('Q'));
-	m_nextMagicKey.Update(IsKeyPressed('E'));
-	input.magicSwitch = 0;
-	if (m_prevMagicKey.isTrigger || pad.IsTrigger(enButtonLB1)) {
-		input.magicSwitch -= 1;
-	}
-	if (m_nextMagicKey.isTrigger || pad.IsTrigger(enButtonRB1)) {
-		input.magicSwitch += 1;
-	}
-
 	// 一人称では視線の方向へ目の位置から撃つ。三人称ではキャラクターの正面へ撃つ（hasAim = false）。
 	input.hasAim = context.isFirstPerson;
 	if (input.hasAim) {

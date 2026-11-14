@@ -35,8 +35,8 @@ void Player::OnStart()
 	m_animator.Init(&m_model.GetModelRender(), stateContext.settings.animBlendSeconds);
 	m_stateMachine.Init(stateContext);  // Idle から始める。
 
-	m_magicCaster.AddMagic(std::make_unique<IceMagic>());
-	m_magicCaster.SetSubMagic(std::make_unique<FireMagic>());  // 右クリックで撃つ。
+	m_magicCaster.Register<IceMagic>(0);   // 枠0: fire（左クリック）で撃つ。
+	m_magicCaster.Register<FireMagic>(1);  // 枠1: subFire（右クリック）で撃つ。
 }
 
 void Player::FillInputContext(InputSourceContext& context) const

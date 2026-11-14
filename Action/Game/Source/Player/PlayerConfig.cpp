@@ -256,10 +256,10 @@ namespace
 		return desc;
 	}
 
-	MagicCaster::Settings MakeCasterSettings()
+	CharacterCastSettings MakeCastSettings()
 	{
 		const Json section = GetSection("caster");
-		MagicCaster::Settings settings;
+		CharacterCastSettings settings;
 		settings.castHeight = Read(section, "caster", "height", 140.0f);
 		settings.castForward = Read(section, "caster", "forward", 60.0f);
 		return settings;
@@ -336,7 +336,7 @@ CharacterConfig PlayerConfig::MakeCharacterConfig()
 	CharacterConfig config;
 	config.move = MakeMoveSettings();
 	config.model = MakeModelDesc();
-	config.caster = MakeCasterSettings();
+	config.cast = MakeCastSettings();
 	config.lean = MakeLeanSettings();
 	config.springBones = MakeSpringBonesSettings();
 	config.bodyLink = MakeBodyLinkSettings();

@@ -102,9 +102,6 @@
     <ClCompile Include="Source\Enemy\BlackKnightInputSource.cpp">
       <Filter>Source\Enemy</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Enemy\SlashBullet.cpp">
-      <Filter>Source\Enemy</Filter>
-    </ClCompile>
     <ClCompile Include="Source\UI\UIManager.cpp">
       <Filter>Source\UI</Filter>
     </ClCompile>
@@ -174,19 +171,16 @@
     <ClCompile Include="Source\Magic\MagicCaster.cpp">
       <Filter>Source\Magic</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Magic\MagicBase.cpp">
+      <Filter>Source\Magic</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Magic\IceMagic.cpp">
-      <Filter>Source\Magic</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Magic\BulletBase.cpp">
-      <Filter>Source\Magic</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Magic\IceBullet.cpp">
       <Filter>Source\Magic</Filter>
     </ClCompile>
     <ClCompile Include="Source\Magic\FireMagic.cpp">
       <Filter>Source\Magic</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Magic\FireBullet.cpp">
+    <ClCompile Include="Source\Magic\SlashMagic.cpp">
       <Filter>Source\Magic</Filter>
     </ClCompile>
     <ClCompile Include="Source\Magic\BurningGround.cpp">
@@ -196,6 +190,9 @@
       <Filter>Source\Objects</Filter>
     </ClCompile>
     <ClCompile Include="Source\Core\Game.cpp">
+      <Filter>Source\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\GameClock.cpp">
       <Filter>Source\Core</Filter>
     </ClCompile>
     <ClCompile Include="Source\App\main.cpp">
@@ -323,9 +320,6 @@
     <ClInclude Include="Source\Enemy\BlackKnightInputSource.h">
       <Filter>Source\Enemy</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Enemy\SlashBullet.h">
-      <Filter>Source\Enemy</Filter>
-    </ClInclude>
     <ClInclude Include="Source\UI\UIManager.h">
       <Filter>Source\UI</Filter>
     </ClInclude>
@@ -416,16 +410,10 @@
     <ClInclude Include="Source\Magic\IceMagic.h">
       <Filter>Source\Magic</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Magic\BulletBase.h">
-      <Filter>Source\Magic</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Magic\IceBullet.h">
-      <Filter>Source\Magic</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Magic\FireMagic.h">
       <Filter>Source\Magic</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Magic\FireBullet.h">
+    <ClInclude Include="Source\Magic\SlashMagic.h">
       <Filter>Source\Magic</Filter>
     </ClInclude>
     <ClInclude Include="Source\Magic\BurningGround.h">
@@ -447,6 +435,9 @@
       <Filter>Source\Core</Filter>
     </ClInclude>
     <ClInclude Include="Source\Core\Game.h">
+      <Filter>Source\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\GameClock.h">
       <Filter>Source\Core</Filter>
     </ClInclude>
     <ClInclude Include="Source\Player\Player.h">

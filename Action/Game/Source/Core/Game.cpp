@@ -7,7 +7,8 @@
 #include "Stage.h"
 #include "BossStage.h"
 #include "FireEffect.h"
-#include "BulletBase.h"
+#include "MagicBase.h"
+#include "GameClock.h"
 #include "BurningGround.h"
 #include "UIManager.h"
 
@@ -50,9 +51,9 @@ Game::~Game()
 	DeleteGO(m_gameCamera);
 	DeleteGO(m_fireEffect);
 	DeleteGO(m_skyCube);
-	// キャラクターが撃った弾は Game が持っていないので、名前で探して消す。
-	QueryGOs<BulletBase>(BulletBase::OBJECT_NAME, [](BulletBase* bullet) {
-		DeleteGO(bullet);
+	// キャラクターが撃った魔法は Game が持っていないので、名前で探して消す。
+	QueryGOs<MagicBase>(MagicBase::OBJECT_NAME, [](MagicBase* magic) {
+		DeleteGO(magic);
 		return true;
 	});
 	QueryGOs<BurningGround>(BurningGround::OBJECT_NAME, [](BurningGround* ground) {
@@ -109,7 +110,8 @@ bool Game::Start()
 
 void Game::Update()
 {
-
+	// Game はキャラクター（優先度1）より先に更新されるので、このフレームの時刻をここで進める。
+	GameClock::Advance(g_gameTime->GetFrameDeltaTime());
 }
 
 void Game::Render(RenderContext& rc)

@@ -6,7 +6,7 @@
 //   攻撃1  左腰に剣を構えてかがみ、そこで溜めてから（秒数は tuning）、一気に踏み込んで横に斬り抜ける。
 //          アニメーションの中で腰が進む分（約3.7m）だけ、黒騎士ごと前へ動かす
 //   攻撃2  片手剣の重い連続斬り（KinemIQ の Sword - heavy combo）。その場で振る
-//   攻撃3  連続斬り（KinemIQ の slash combo）。剣が前を通る5回の振りで、斬撃（SlashBullet）を相手へ飛ばす
+//   攻撃3  連続斬り（KinemIQ の slash combo）。剣が前を通る5回の振りで、斬撃（SlashMagic）を相手へ飛ばす
 // 入ったときに相手の方を向き、あとは向きを変えない。剣が当たったときのダメージはまだない。
 //   アニメーションが終わった → 入力に合わせて Idle / Move / Run
 class EnemyAttackState : public EnemyState

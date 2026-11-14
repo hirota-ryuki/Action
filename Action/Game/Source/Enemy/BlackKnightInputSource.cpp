@@ -26,7 +26,6 @@ void BlackKnightInputSource::Update(const InputSourceContext& context, Character
 	input.jump.Update(false);
 	input.dash.Update(false);
 	input.subFire.Update(false);
-	input.magicSwitch = 0;
 	input.hasAim = false;
 
 	const HitTarget* target = HitTargetRegistry::FindNearestHostile(

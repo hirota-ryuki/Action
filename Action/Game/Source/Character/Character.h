@@ -13,13 +13,20 @@
 #include "SpringBones.h"
 #include "BodyLink.h"
 
+// 魔法を撃つ位置の調整値。
+struct CharacterCastSettings
+{
+	float castHeight = 70.0f;   // 照準の指定がないとき、足元からこの高さで撃つ。
+	float castForward = 60.0f;  // 自分のカプセルに当たらないよう、撃つ位置を前に出す距離。
+};
+
 // キャラクターごとの調整値。派生クラスが MakeConfig() で返す。
 struct CharacterConfig
 {
 	CharacterMoveSettings move;
 	CharacterModelDesc model;
-	MagicCaster::Settings caster;
-	float hitRadius = 45.0f;        // 弾に当たる球の半径。
+	CharacterCastSettings cast;
+	float hitRadius = 45.0f;        // 魔法に当たる球の半径。
 	float hitCenterHeight = 60.0f;  // 足元から当たり判定の中心までの高さ。
 	float maxHp = 100.0f;
 	BodyLeanSettings lean;              // 体の傾き。既定は使わない。
@@ -138,12 +145,17 @@ protected:
 
 private:
 	void UpdateInput(float deltaTime);
+	// 動けるなら、入力の fire・subFire で枠0・枠1の魔法を撃つ。動けなければ溜めを捨てる。
+	void UpdateMagic();
+	// 魔法を撃つ位置と向き。照準があればそちら、なければ足元から castHeight の高さで正面（水平）へ。
+	void MakeCastPose(Vector3& origin, Vector3& direction) const;
 	// キャラコンの位置・回転を Transform に書く。
 	void SyncTransform();
 
 	BodyLean m_bodyLean;
 	SpringBones m_springBones;
 	BodyLink m_bodyLink;
+	CharacterCastSettings m_castSettings;
 	IInputSource* m_inputSource = nullptr;  // nullptr なら GetDefaultInputSource()。
 	Faction m_faction = Faction::Neutral;
 	bool m_isRenderBody = true;
