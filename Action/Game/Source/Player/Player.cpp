@@ -26,7 +26,6 @@ CharacterConfig Player::MakeConfig() const
 void Player::OnStart()
 {
 	m_fallRespawn.Init(GetPosition(), PlayerConfig::RESPAWN_HEIGHT);
-	m_sword.Init(m_model.GetModelRender(), PlayerConfig::MakeSwordDesc());
 
 	PlayerStateContext stateContext;
 	stateContext.mover = &m_mover;
@@ -69,11 +68,6 @@ void Player::FilterCastInput(CharacterInput& input) const
 	input.fire.isRelease = false;
 }
 
-void Player::OnLateUpdate(float deltaTime)
-{
-	m_sword.Update();
-}
-
 void Player::UpdateJumpWeight(float deltaTime)
 {
 	const PlayerStateId id = m_stateMachine.GetCurrentId();
@@ -89,11 +83,6 @@ void Player::UpdateAttackWeight(float deltaTime)
 	const float step = deltaTime / ATTACK_WEIGHT_FADE_SECONDS;
 	m_attackWeight = target > m_attackWeight ? min(target, m_attackWeight + step) : max(target, m_attackWeight - step);
 	SetAttackWeight(m_attackWeight);
-}
-
-void Player::OnRender(RenderContext& rc)
-{
-	m_sword.Draw(rc);
 }
 
 void Player::Respawn()

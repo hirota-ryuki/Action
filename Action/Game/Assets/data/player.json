@@ -203,14 +203,5 @@
 			"Attack2": { "path": "Assets/modelData/player/Animation/Attack2.fbx", "loop": false },
 			"Attack3": { "path": "Assets/modelData/player/Animation/Attack3.fbx", "loop": false }
 		}
-	},
-
-	// 右手に持つ剣。付けるボーンの名前はモデルの作りで決まるので、コード（PlayerConfig.cpp）に置いている。
-	"sword": {
-		"path": "Assets/modelData/weapon/sowrd/sowrd.tkm",
-		"offset": [5.0, -3.0, 10.0],         // 右手ボーンのローカル空間での剣の位置のずれ。
-		"rotationOffsetDeg": [0.0, 0.0, -90.0], // 剣のモデルの Z 軸が手の向きと 90度ずれているため直す。
-		"scale": [1.35, 1.35, 1.35],
-		"castShadow": true
 	}
 }

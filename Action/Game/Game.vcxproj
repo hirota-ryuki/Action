@@ -232,7 +232,6 @@
     <ClCompile Include="Source\Enemy\State\EnemyHitState.cpp" />
     <ClCompile Include="Source\Enemy\State\EnemyDeadState.cpp" />
     <ClCompile Include="Source\Enemy\State\EnemyGroundState.cpp" />
-    <ClCompile Include="Source\Character\Components\WeaponAttachment.cpp" />
     <ClCompile Include="Source\Character\Components\SpringBones.cpp" />
     <ClCompile Include="Source\Character\Components\BodyLean.cpp" />
     <ClCompile Include="Source\Character\Components\BodyLink.cpp" />
@@ -309,7 +308,6 @@
     <ClInclude Include="Source\Character\StateMachine\StateMachine.h" />
     <ClInclude Include="Source\Character\StateMachine\State.h" />
     <ClInclude Include="Source\Character\Components\FallRespawn.h" />
-    <ClInclude Include="Source\Character\Components\WeaponAttachment.h" />
     <ClInclude Include="Source\Character\Components\SpringBones.h" />
     <ClInclude Include="Source\Character\Components\BodyLean.h" />
     <ClInclude Include="Source\Character\Components\BodyLink.h" />
