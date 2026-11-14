@@ -8,6 +8,8 @@ namespace
 {
 	// ジャンプ中の度合いが 0 から 1（1 から 0）まで変わるのにかかる時間（秒）。アニメーションの切り替えの補間と同じくらいにする。
 	constexpr float JUMP_WEIGHT_FADE_SECONDS = 0.2f;
+	// 攻撃中の度合いが 0 から 1（1 から 0）まで変わるのにかかる時間（秒）。攻撃のアニメーションの切り替えの補間と同じくらいにする。
+	constexpr float ATTACK_WEIGHT_FADE_SECONDS = 0.2f;
 }
 
 Player::Player()
@@ -47,6 +49,7 @@ void Player::UpdateAction(float deltaTime)
 	// 移動とアニメーションはステートが行う。凍結中は Frozen ステートになり、重力で落ちるだけになる。
 	m_stateMachine.Update(m_input, deltaTime);
 	UpdateJumpWeight(deltaTime);
+	UpdateAttackWeight(deltaTime);
 	if (m_fallRespawn.IsFallen(m_mover.GetPosition())) {
 		Respawn();
 	}
@@ -77,6 +80,14 @@ void Player::UpdateJumpWeight(float deltaTime)
 	const float step = deltaTime / JUMP_WEIGHT_FADE_SECONDS;
 	m_jumpWeight = target > m_jumpWeight ? min(target, m_jumpWeight + step) : max(target, m_jumpWeight - step);
 	SetJumpWeight(m_jumpWeight);
+}
+
+void Player::UpdateAttackWeight(float deltaTime)
+{
+	const float target = m_stateMachine.GetCurrentId() == PlayerStateId::Attack ? 1.0f : 0.0f;
+	const float step = deltaTime / ATTACK_WEIGHT_FADE_SECONDS;
+	m_attackWeight = target > m_attackWeight ? min(target, m_attackWeight + step) : max(target, m_attackWeight - step);
+	SetAttackWeight(m_attackWeight);
 }
 
 void Player::OnRender(RenderContext& rc)

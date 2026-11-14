@@ -123,6 +123,11 @@ protected:
 		m_bodyLink.SetJumpWeight(jumpWeight);
 		m_springBones.SetJumpWeight(jumpWeight);
 	}
+	// 攻撃中の度合い（0〜1）を、体の連動に渡す。モデルを更新する前（UpdateAction）に呼ぶ。
+	void SetAttackWeight(float attackWeight)
+	{
+		m_bodyLink.SetAttackWeight(attackWeight);
+	}
 
 	CharacterInput m_input;
 	CharacterMover m_mover;

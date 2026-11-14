@@ -53,6 +53,8 @@ private:
 	void Respawn();
 	// ジャンプ中（Air・Land）の度合いを、体の連動と揺れ物に渡す。入る・出るときは少しずつ変える。
 	void UpdateJumpWeight(float deltaTime);
+	// 攻撃中（Attack）の度合いを、体の連動に渡す。入る・出るときは少しずつ変える。
+	void UpdateAttackWeight(float deltaTime);
 
 	PlayerInputSource m_playerInputSource;
 	PlayerStatus m_status;
@@ -61,4 +63,5 @@ private:
 	WeaponAttachment m_sword;
 	FallRespawn m_fallRespawn;
 	float m_jumpWeight = 0.0f;  // ジャンプ中（Air・Land）の度合い（0〜1）。
+	float m_attackWeight = 0.0f;  // 攻撃中（Attack）の度合い（0〜1）。
 };

@@ -74,6 +74,13 @@ public:
 	{
 		m_jumpWeight = jumpWeight;
 	}
+	// 攻撃中の度合い（0〜1）。持ち主が、攻撃に入る・出るときに少しずつ変えて渡す。
+	// 攻撃中は、胴のひねりを戻す（levelTorso）のと、腕の前後の振りを抑える（armFrontMaxDeg・armBackMaxDeg）のを外す。
+	// 片手で撃つモーションは肩をひねって腕を前へ出すので、ひねりを戻すと腕が横へ開き、振りを抑えると腕が下がるため。
+	void SetAttackWeight(float attackWeight)
+	{
+		m_attackWeight = attackWeight;
+	}
 	void Update(Skeleton& skeleton);
 
 private:
@@ -149,6 +156,7 @@ private:
 	Quaternion m_rotation = Quaternion::Identity;
 	float m_runWeight = 0.0f;
 	float m_jumpWeight = 0.0f;
+	float m_attackWeight = 0.0f;
 	// 腕をそろえるための記録。
 	std::deque<ArmSample> m_armHistory;
 	float m_time = 0.0f;
