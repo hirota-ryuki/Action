@@ -42,7 +42,7 @@ EnemyStateId EnemyGroundState::CheckTransition(const EnemyStateContext& context,
 	if (damaged != EnemyStateId::Num) {
 		return damaged;
 	}
-	if (input.fire.isTrigger) {
+	if (input.Action(ActionButton::Action1).isTrigger) {
 		return EnemyStateId::Attack;
 	}
 	return SelectByInput(context, input);

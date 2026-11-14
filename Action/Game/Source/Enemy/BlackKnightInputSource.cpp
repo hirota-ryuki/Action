@@ -25,7 +25,7 @@ void BlackKnightInputSource::Update(const InputSourceContext& context, Character
 	input.isRun = false;
 	input.jump.Update(false);
 	input.dash.Update(false);
-	input.subFire.Update(false);
+	input.Action(ActionButton::Action2).Update(false);
 	input.hasAim = false;
 
 	const HitTarget* target = HitTargetRegistry::FindNearestHostile(
@@ -33,7 +33,7 @@ void BlackKnightInputSource::Update(const InputSourceContext& context, Character
 	if (target == nullptr) {
 		m_hasTarget = false;
 		m_isRunning = false;
-		input.fire.Update(false);
+		input.Action(ActionButton::Action1).Update(false);
 		return;
 	}
 	if (!m_hasTarget) {
@@ -97,7 +97,7 @@ void BlackKnightInputSource::Update(const InputSourceContext& context, Character
 	}
 	input.isRun = m_isRunning;
 	// fire は1フレームだけ押す（EnemyGroundState が押した瞬間に Attack へ移る）。
-	input.fire.Update(isAttack);
+	input.Action(ActionButton::Action1).Update(isAttack);
 
 	// 斬撃は、胸の高さから相手の胸のあたりへ飛ばす。
 	input.hasAim = true;

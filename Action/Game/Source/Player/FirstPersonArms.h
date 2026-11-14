@@ -1,9 +1,10 @@
 ﻿#pragma once
 
 #include "CharacterModel.h"
+#include "CharacterInput.h"
 
 class Player;
-class MagicCaster;
+class SkillController;
 
 // 一人称カメラのときに画面に映す、プレイヤーの腕と手。
 // プレイヤーの体（袖の肘から先を消したもの）の腕だけを映してカメラの前に置き、魔法に合わせて腕のアニメーションを流す。
@@ -49,13 +50,13 @@ private:
 	float GetCastWeightTarget(int side) const;
 	// その手（side）の握り具合の目標（1 で握りこぶし、0 で開く）。
 	float GetGripTarget(int side) const;
-	// その枠（slot）の魔法を、前のフレームから撃ったか（撃った回数が増えたか）。
-	static bool IsFiredThisFrame(const MagicCaster& caster, int slot, int& lastCount);
+	// そのボタンのスキルを、前のフレームから撃ったか（撃った回数が増えたか）。
+	static bool IsFiredThisFrame(const SkillController& skills, ActionButton button, int& lastCount);
 
 	static constexpr int FINGER_COUNT = 5;  // 人差し指・中指・薬指・小指・親指。
 	static constexpr int THUMB = 4;         // m_fingerBones の親指の番号。
-	static constexpr int MAIN_SLOT = 0;     // 氷（左クリック）の魔法の枠。Player が登録する。
-	static constexpr int SUB_SLOT = 1;      // 炎（右クリック、溜め撃ち）の魔法の枠。
+	static constexpr ActionButton MAIN_BUTTON = ActionButton::Action1;  // 氷（左クリック）の魔法のボタン。Player が登録する。
+	static constexpr ActionButton SUB_BUTTON = ActionButton::Action2;   // 炎（右クリック、溜め撃ち）の魔法のボタン。
 
 	CharacterModel m_model;
 	std::vector<int> m_hiddenBones;    // 大きさ 0 にする骨（腕以外）の番号。

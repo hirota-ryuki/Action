@@ -12,7 +12,7 @@ namespace
 
 bool PlayerAttackState::CanStart(const PlayerStateContext& context, const CharacterInput& input)
 {
-	return input.fire.isTrigger && !input.hasAim && context.mover->IsOnGround();
+	return input.Action(ActionButton::Action1).isTrigger && !input.hasAim && context.mover->IsOnGround();
 }
 
 void PlayerAttackState::Enter(PlayerStateContext& context, const CharacterInput& input)
@@ -53,7 +53,7 @@ void PlayerAttackState::Update(PlayerStateContext& context, const CharacterInput
 		StartStage(context, input, m_stage + 1);
 	}
 	// この段を始めたクリックは数えない。それより後のクリックで、次の段を予約する。
-	if (!m_isFirstFrame && input.fire.isTrigger) {
+	if (!m_isFirstFrame && input.Action(ActionButton::Action1).isTrigger) {
 		m_isNextQueued = true;
 	}
 	m_isFirstFrame = false;

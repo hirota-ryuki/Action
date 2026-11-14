@@ -17,6 +17,16 @@ struct ButtonState
 	}
 };
 
+// 入力のボタン。何に使うか（どのスキルか）は知らない。どのキーを当てるかは入力元が決める。
+//   Action1  プレイヤーはマウス左ボタン / Yボタン
+//   Action2  プレイヤーはマウス右ボタン / 右トリガー
+enum class ActionButton
+{
+	Action1,
+	Action2,
+	Num,
+};
+
 // キャラクターが1フレームに受け取る入力。
 // キャラクターはこれを受け取って動くだけで、パッドやカメラ、AIのことは知らない。
 // 値だけの構造体なので、画面に表示したり記録・再生したりしやすい。
@@ -28,15 +38,31 @@ struct CharacterInput
 	bool isRun = false;
 	ButtonState jump;
 	ButtonState dash;
-	ButtonState fire;                       // 枠0の魔法を撃つ（黒騎士は剣で攻撃する）。
-	int attackIndex = 0;                    // fire で出す攻撃の番号。黒騎士の攻撃1〜3を 0〜2 で選ぶ。プレイヤーは使わない。
-	ButtonState subFire;                    // 枠1の魔法を撃つ。
+	ButtonState actions[static_cast<int>(ActionButton::Num)];  // Action1・Action2 のボタン。何に使うかは SkillController の登録で決まる。
+	int attackIndex = 0;                    // Action1 で出す攻撃の番号。黒騎士の攻撃1〜3を 0〜2 で選ぶ。プレイヤーは使わない。
 	bool hasAim = false;                    // true なら aimOrigin/aimDirection の方向へ撃つ。false ならキャラクターの正面へ撃つ。
 	Vector3 aimOrigin = Vector3::Zero;
 	Vector3 aimDirection = Vector3::AxisZ;
-	// hasAim のとき、メインの魔法だけ、撃つ位置をこれだけずらす（一人称で、氷魔法を右手から撃つ）。
+	// hasAim のとき、そのボタンのスキルだけ、撃つ位置をこれだけずらす（一人称で、Action1 の氷魔法を右手から撃つ）。
 	// 向きは、照準の先の点へ向け直す（画面の真ん中に飛んでいくように）。
-	Vector3 mainAimOffset = Vector3::Zero;
+	Vector3 aimOffsets[static_cast<int>(ActionButton::Num)];
+
+	ButtonState& Action(ActionButton button)
+	{
+		return actions[static_cast<int>(button)];
+	}
+	const ButtonState& Action(ActionButton button) const
+	{
+		return actions[static_cast<int>(button)];
+	}
+	Vector3& AimOffset(ActionButton button)
+	{
+		return aimOffsets[static_cast<int>(button)];
+	}
+	const Vector3& AimOffset(ActionButton button) const
+	{
+		return aimOffsets[static_cast<int>(button)];
+	}
 };
 
 // 入力元が操作対象について知ってよい情報。

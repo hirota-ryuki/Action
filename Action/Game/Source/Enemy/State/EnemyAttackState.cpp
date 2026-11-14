@@ -166,7 +166,7 @@ void EnemyAttackState::FireSlash(const EnemyStateContext& context, const Charact
 		direction = input.aimDirection;
 	}
 
-	SlashMagic* slash = NewGO<SlashMagic>(1, MagicBase::OBJECT_NAME);
+	SlashMagic* slash = NewGO<SlashMagic>(1, SkillBase::OBJECT_NAME);
 	slash->SetRoll(rollDeg);
 	slash->Init(origin, direction, context.owner, context.faction);
 }

@@ -3,7 +3,7 @@
 
 namespace
 {
-	// メインの魔法の撃つ位置をずらしたとき（mainAimOffset）、照準のこの距離先の点へ向けて撃つ。
+	// 撃つ位置をずらしたとき（aimOffsets）、照準のこの距離先の点へ向けて撃つ。
 	constexpr float AIM_POINT_DISTANCE = 3000.0f;
 }
 
@@ -42,7 +42,7 @@ bool Character::Start()
 	m_hitTarget.SetPosition(m_transform.position);
 
 	m_castSettings = config.cast;
-	m_magicCaster.Init(this, m_faction);
+	m_skillController.Init(this, m_faction);
 
 	GetStatus().Init(config.maxHp);
 
@@ -60,8 +60,8 @@ void Character::Update()
 	m_statusEffects.Update(deltaTime);
 	// ③ 動く（派生クラス）
 	UpdateAction(deltaTime);
-	// ④ 魔法（動いたあとの位置から撃つ）
-	UpdateMagic();
+	// ④ スキル（動いたあとの位置から撃つ）
+	UpdateSkill();
 	// ⑤ Transform に反映
 	SyncTransform();
 	// ⑥ 当たり判定・モデルを合わせる
@@ -104,7 +104,7 @@ void Character::SetFaction(Faction faction)
 {
 	m_faction = faction;
 	m_hitTarget.SetFaction(faction);
-	m_magicCaster.SetFaction(faction);
+	m_skillController.SetFaction(faction);
 }
 
 void Character::UpdateInput(float deltaTime)
@@ -121,11 +121,11 @@ void Character::UpdateInput(float deltaTime)
 	inputSource.Update(context, m_input);
 }
 
-void Character::UpdateMagic()
+void Character::UpdateSkill()
 {
-	// 凍っているなど動けないときは、溜めている魔法を捨てて何もしない。
+	// 凍っているなど動けないときは、溜めているスキルを捨てて何もしない。
 	if (!m_statusEffects.CanAct()) {
-		m_magicCaster.CancelAll();
+		m_skillController.CancelAll();
 		return;
 	}
 
@@ -134,23 +134,26 @@ void Character::UpdateMagic()
 	MakeCastPose(origin, direction);
 	// 派生クラスが入力の写しを書き換える（攻撃のモーションに合わせて撃つ、など）。
 	CharacterInput castInput = m_input;
-	FilterCastInput(castInput);
-	// ボタンの状態をそのまま渡す。押した・押している・離したの判断は MagicCaster がする。
-	Vector3 mainOrigin = origin;
-	Vector3 mainDirection = direction;
-	MakeMainCastPose(mainOrigin, mainDirection);
-	m_magicCaster.Fire(0, castInput.fire, mainOrigin, mainDirection);
-	m_magicCaster.Fire(1, castInput.subFire, origin, direction);
+	FilterSkillInput(castInput);
+	// ボタンごとの撃つ位置と向き。入力にずらす量（aimOffsets）があれば、そのボタンのスキルだけずらす。
+	SkillPose poses[static_cast<int>(ActionButton::Num)];
+	for (int button = 0; button < static_cast<int>(ActionButton::Num); button++) {
+		poses[button].origin = origin;
+		poses[button].direction = direction;
+		ApplyAimOffset(m_input.aimOffsets[button], poses[button].origin, poses[button].direction);
+	}
+	// 入力をそのまま渡す。どのボタンでどのスキルを使うか、押した・押している・離したの判断は SkillController がする。
+	m_skillController.Update(castInput, poses);
 }
 
-void Character::MakeMainCastPose(Vector3& origin, Vector3& direction) const
+void Character::ApplyAimOffset(const Vector3& offset, Vector3& origin, Vector3& direction) const
 {
-	if (!m_input.hasAim || m_input.mainAimOffset.LengthSq() <= FLT_EPSILON) {
+	if (!m_input.hasAim || offset.LengthSq() <= FLT_EPSILON) {
 		return;
 	}
 	// 撃つ位置だけずらし、向きは照準の先の点へ向け直す（画面の真ん中に飛んでいくように）。
 	const Vector3 aimPoint = origin + direction * AIM_POINT_DISTANCE;
-	origin += m_input.mainAimOffset;
+	origin += offset;
 	direction = aimPoint - origin;
 	direction.Normalize();
 }

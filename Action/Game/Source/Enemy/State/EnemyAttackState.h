@@ -2,7 +2,7 @@
 
 #include "EnemyState.h"
 
-// 剣で攻撃している。AI が fire を押したときに入り、input.attackIndex の攻撃のアニメーションを1回流す。
+// 剣で攻撃している。AI が Action1 を押したときに入り、input.attackIndex の攻撃のアニメーションを1回流す。
 //   攻撃1  左腰に剣を構えてかがみ、そこで溜めてから（秒数は tuning）、一気に踏み込んで横に斬り抜ける。
 //          アニメーションの中で腰が進む分（約3.7m）だけ、黒騎士ごと前へ動かす
 //   攻撃2  片手剣の重い連続斬り（KinemIQ の Sword - heavy combo）。その場で振る

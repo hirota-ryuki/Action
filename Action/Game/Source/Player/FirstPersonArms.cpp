@@ -311,9 +311,9 @@ void FirstPersonArms::SpreadArms(Skeleton& skeleton)
 void FirstPersonArms::Reset(const Player& player)
 {
 	// 三人称の間に撃った分は数えない。
-	const MagicCaster& caster = player.GetMagicCaster();
-	m_lastMainFireCount = caster.GetFireCount(MAIN_SLOT);
-	m_lastSubFireCount = caster.GetFireCount(SUB_SLOT);
+	const SkillController& skills = player.GetSkillController();
+	m_lastMainFireCount = skills.GetUseCount(MAIN_BUTTON);
+	m_lastSubFireCount = skills.GetUseCount(SUB_BUTTON);
 	m_releaseTimer = 0.0f;
 	for (int side = 0; side < 2; side++) {
 		m_castWeight[side] = 0.0f;
@@ -375,10 +375,10 @@ void FirstPersonArms::Draw(RenderContext& rc)
 
 void FirstPersonArms::UpdateClip(const Player& player, float deltaTime)
 {
-	const MagicCaster& caster = player.GetMagicCaster();
-	const bool isMainCast = IsFiredThisFrame(caster, MAIN_SLOT, m_lastMainFireCount);
-	const bool isSubCast = IsFiredThisFrame(caster, SUB_SLOT, m_lastSubFireCount);
-	const bool isCharging = caster.IsHolding(SUB_SLOT);
+	const SkillController& skills = player.GetSkillController();
+	const bool isMainCast = IsFiredThisFrame(skills, MAIN_BUTTON, m_lastMainFireCount);
+	const bool isSubCast = IsFiredThisFrame(skills, SUB_BUTTON, m_lastSubFireCount);
+	const bool isCharging = skills.IsHolding(SUB_BUTTON);
 	const bool isChargeClip = m_clip == enClip_ChargeStart || m_clip == enClip_Charge;
 
 	// 両手の動き（炎）を、右手の動き（氷）より先に見る。溜めている間に氷を撃っても、両手は上げたまま。
@@ -442,9 +442,9 @@ void FirstPersonArms::UpdateTransform()
 	m_model.SetTransform(position, rotation);
 }
 
-bool FirstPersonArms::IsFiredThisFrame(const MagicCaster& caster, int slot, int& lastCount)
+bool FirstPersonArms::IsFiredThisFrame(const SkillController& skills, ActionButton button, int& lastCount)
 {
-	const int count = caster.GetFireCount(slot);
+	const int count = skills.GetUseCount(button);
 	const bool isFired = count > lastCount;
 	lastCount = count;
 	return isFired;
