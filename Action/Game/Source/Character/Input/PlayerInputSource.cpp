@@ -6,7 +6,7 @@ namespace
 {
 	// 一人称で、メインの魔法（氷）を右手から撃つ。撃つ位置を、カメラから見て右（x）と上（y）へこれだけずらす。
 	// 右手を突き出しきったときの手のひらの前に合わせてある。
-	const Vector3 FIRST_PERSON_RIGHT_HAND_OFFSET = Vector3(18.0f, -14.0f, 0.0f);
+	const Vector3 FIRST_PERSON_RIGHT_HAND_OFFSET = Vector3(16.0f, -15.0f, 0.0f);
 }
 
 PlayerInputSource::PlayerInputSource(int padNo)
@@ -36,9 +36,15 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	const bool isDashPress = IsKeyPressed(VK_LSHIFT) || pad.IsPress(enButtonX);
 	input.dash.Update(isDashPress);
 	input.isRun = isDashPress;
+	if (getenv("FP_TEST_SCRIPT")) { // FP_TEST_TEMP: 決まった時間にボタンを押したことにする（炎を 10〜12 秒溜めて撃ち、14 秒に氷を撃つ）
+		static float s_time = 0.0f; s_time += context.deltaTime;
+		input.fire.Update(s_time >= 14.0f && s_time < 14.1f);
+		input.subFire.Update(s_time >= 10.0f && s_time < 12.0f);
+	} else {
 	input.fire.Update((CanUseMouse() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
 	// パッド未接続時は右トリガー(RB2)が8キーに割り当てられている。
 	input.subFire.Update((CanUseMouse() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
+	} // FP_TEST_TEMP
 
 	m_prevMagicKey.Update(IsKeyPressed('Q'));
 	m_nextMagicKey.Update(IsKeyPressed('E'));

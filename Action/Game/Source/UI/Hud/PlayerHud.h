@@ -27,4 +27,7 @@ private:
 	Text m_hpNumber;  // 「今のHP / 最大HP」。
 	Icon m_frozen;    // 凍結中だけ出す。
 	Icon m_burning;   // 燃焼中だけ出す。
+	// 一人称のときだけ出す、画面の中央の十字（上・下・左・右の4本の線と、その下に敷く黒い縁）。
+	Icon m_reticle[4];
+	Icon m_reticleShadow[4];
 };

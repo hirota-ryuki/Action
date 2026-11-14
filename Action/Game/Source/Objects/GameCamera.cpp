@@ -15,10 +15,13 @@ namespace
 	// カメラをプレイヤーに近づける代わりに画角を広げてプレイヤー全体が収まるようにしてある。
 	constexpr float TARGET_HEIGHT = 170.0f;          // 注視点をプレイヤーの足元でなく腰あたりに合わせる高さ。
 	constexpr float TARGET_FORWARD_OFFSET = 20.0f;    // 注視点をカメラ正面方向に少しずらして奥行き感を出す。
-	constexpr float FIRST_PERSON_EYE_HEIGHT = 90.0f;   // 一人称カメラの目線の高さ（プレイヤー足元からのオフセット）。
+	// 一人称カメラの目線の高さ（プレイヤー足元からのオフセット）。体のモデルの目の高さ（約 150 × 大きさ 1.128）に合わせる。
+	constexpr float FIRST_PERSON_EYE_HEIGHT = 168.0f;
 	constexpr float VIEW_ANGLE_DEG = 90.0f;           // カメラを近づけた分、画角を通常の60度から広げる。
 	constexpr float FIRST_PERSON_LOOK_DISTANCE = 1000.0f;
 	constexpr float FIRST_PERSON_NEAR = 5.0f;         // 一人称時はNearを小さくして手元の腕と手が見切れないようにする。
+	// 一人称の画角（縦、度）。三人称の 90 度のままだと広角すぎて、手が小さく画面の真ん中に寄って見える。
+	constexpr float FIRST_PERSON_VIEW_ANGLE_DEG = 50.0f;
 	constexpr int TOGGLE_CAMERA_KEY = 'V';            // 三人称／一人称を切り替えるキー（パッドは B ボタン）。
 
 	// マウス1フレームあたりの回転量を上限値で制限する。
@@ -113,12 +116,16 @@ void GameCamera::ToggleCameraMode()
 		}
 		m_firstPersonForward.Normalize();
 		g_camera3D->SetNear(FIRST_PERSON_NEAR);
+		float viewAngleDeg = FIRST_PERSON_VIEW_ANGLE_DEG; // FP_TEST_TEMP
+		if (const char* e = getenv("FP_TEST_FOV")) { viewAngleDeg = (float)atof(e); } // FP_TEST_TEMP
+		g_camera3D->SetViewAngle(Math::DegToRad(viewAngleDeg));
 		m_firstPersonArms.Reset(*m_player);
 	}
 	else {
 		m_cameraMode = EnCameraMode::ThirdPerson;
 		RestorePlayerRenderBody();
 		g_camera3D->SetNear(m_defaultNear);
+		g_camera3D->SetViewAngle(Math::DegToRad(VIEW_ANGLE_DEG));
 	}
 }
 
@@ -164,7 +171,7 @@ void GameCamera::UpdateFirstPersonCamera()
 	RotateFirstPersonForward();
 
 	Vector3 eyePosition = m_player->GetPosition();
-	eyePosition.y += FIRST_PERSON_EYE_HEIGHT;
+	eyePosition.y += getenv("FP_TEST_EYE") ? (float)atof(getenv("FP_TEST_EYE")) : FIRST_PERSON_EYE_HEIGHT; // FP_TEST_TEMP
 
 	const Vector3 target = eyePosition + m_firstPersonForward * FIRST_PERSON_LOOK_DISTANCE;
 	g_camera3D->SetPosition(eyePosition);
