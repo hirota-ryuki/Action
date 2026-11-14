@@ -18,12 +18,7 @@ namespace
 	constexpr float FIRST_PERSON_EYE_HEIGHT = 90.0f;   // 一人称カメラの目線の高さ（プレイヤー足元からのオフセット）。
 	constexpr float VIEW_ANGLE_DEG = 90.0f;           // カメラを近づけた分、画角を通常の60度から広げる。
 	constexpr float FIRST_PERSON_LOOK_DISTANCE = 1000.0f;
-	constexpr float FIRST_PERSON_NEAR = 5.0f;         // 一人称時はNearを小さくして手元の銃モデルが見切れないようにする。
-	const Vector3 FIRST_PERSON_GUN_OFFSET = Vector3(52.0f, -26.0f, 42.0f);  // カメラローカル空間での銃の位置。
-	const Vector3 FIRST_PERSON_GUN_SCALE = Vector3(2.35f, 2.35f, 2.35f);
-	constexpr float FIRST_PERSON_GUN_ROT_OFFSET_X = 0.0f;
-	constexpr float FIRST_PERSON_GUN_ROT_OFFSET_Y = -7.0f;  // 銃モデルの向きをカメラに対して微調整。
-	constexpr float FIRST_PERSON_GUN_ROT_OFFSET_Z = 0.0f;
+	constexpr float FIRST_PERSON_NEAR = 5.0f;         // 一人称時はNearを小さくして、目の前の物が見切れないようにする。
 
 	// マウス1フレームあたりの回転量を上限値で制限する。
 	float ClampMouseRotateDeg(float rotateDeg)
@@ -62,8 +57,6 @@ bool GameCamera::Start()
 
 	g_camera3D->SetViewAngle(Math::DegToRad(VIEW_ANGLE_DEG));
 
-	InitFirstPersonGun();
-
 	return true;
 }
 
@@ -85,15 +78,6 @@ void GameCamera::Update()
 	else {
 		UpdateThirdPersonCamera();
 	}
-}
-
-void GameCamera::Render(RenderContext& rc)
-{
-	if (m_cameraMode != EnCameraMode::FirstPerson) {
-		return;
-	}
-
-	m_firstPersonGunRender.Draw(rc);
 }
 
 void GameCamera::ToggleCameraMode()
@@ -164,44 +148,6 @@ void GameCamera::UpdateFirstPersonCamera()
 	g_camera3D->SetPosition(eyePosition);
 	g_camera3D->SetTarget(target);
 	g_camera3D->Update();
-
-	UpdateFirstPersonGun();
-}
-
-void GameCamera::InitFirstPersonGun()
-{
-	m_firstPersonGunRender.SetRaytracingWorld(false);
-	m_firstPersonGunRender.Init("Assets/modelData/weapon/gun/gun.tkm");
-	m_firstPersonGunRender.SetShadowCasterFlag(false);
-	UpdateFirstPersonGun();
-}
-
-void GameCamera::UpdateFirstPersonGun()
-{
-	const Vector3& cameraPosition = g_camera3D->GetPosition();
-	const Vector3& cameraForward = g_camera3D->GetForward();
-	const Vector3& cameraRight = g_camera3D->GetRight();
-	const Matrix& cameraRotationMatrix = g_camera3D->GetCameraRotation();
-	const Vector3 cameraUp(cameraRotationMatrix.m[1][0], cameraRotationMatrix.m[1][1], cameraRotationMatrix.m[1][2]);
-
-	Vector3 gunPosition = cameraPosition;
-	gunPosition += cameraRight * FIRST_PERSON_GUN_OFFSET.x;
-	gunPosition += cameraUp * FIRST_PERSON_GUN_OFFSET.y;  // カメラのローカル空間で揃えることで、ピッチ時も銃が画面上で固定されて見えるようにする。
-	gunPosition += cameraForward * FIRST_PERSON_GUN_OFFSET.z;
-
-	Quaternion gunRotation;
-	gunRotation.SetRotation(cameraRotationMatrix);
-
-	Quaternion offsetRotationX;
-	offsetRotationX.SetRotationDegX(FIRST_PERSON_GUN_ROT_OFFSET_X);
-	Quaternion offsetRotationY;
-	offsetRotationY.SetRotationDegY(FIRST_PERSON_GUN_ROT_OFFSET_Y);
-	Quaternion offsetRotationZ;
-	offsetRotationZ.SetRotationDegZ(FIRST_PERSON_GUN_ROT_OFFSET_Z);
-	gunRotation = offsetRotationX * offsetRotationY * offsetRotationZ * gunRotation;
-
-	m_firstPersonGunRender.SetTRS(gunPosition, gunRotation, FIRST_PERSON_GUN_SCALE);
-	m_firstPersonGunRender.Update();
 }
 
 void GameCamera::RotateFirstPersonForward()
