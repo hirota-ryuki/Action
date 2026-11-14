@@ -380,8 +380,8 @@ void FirstPersonArms::UpdateClip(const Player& player, float deltaTime)
 	const bool isSubCast = IsFiredThisFrame(caster, SUB_SLOT, m_lastSubFireCount);
 	const bool isCharging = caster.IsHolding(SUB_SLOT);
 	const bool isChargeClip = m_clip == enClip_ChargeStart || m_clip == enClip_Charge;
-	{ static FILE* fp = nullptr; static int n = 0; if (!fp) { fopen_s(&fp, "capture_log.txt", "w"); }  // CAPTURE_TEMP
-	  if (fp) { fprintf(fp, "%d hold=%d sub=%d clip=%d\n", n++, isCharging, isSubCast, (int)m_clip); fflush(fp); } }
+	{ static FILE* fp = nullptr; static int n = 0; static int k = 0; if (!fp) { fp = _fsopen("capture_log.txt", "w", _SH_DENYNO); }  // CAPTURE_TEMP
+	  if (isCharging) { k++; } if (fp) { fprintf(fp, "%d %u hold=%d k=%d clip=%d\n", n++, GetTickCount(), isCharging, k, (int)m_clip); fflush(fp); } }
 
 	// 両手の動き（炎）を、右手の動き（氷）より先に見る。溜めている間に氷を撃っても、両手は上げたまま。
 	if (isSubCast) {
