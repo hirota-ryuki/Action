@@ -33,6 +33,8 @@ private:
 
 	// 腕以外の骨を見えなくする設定。
 	void InitHiddenBones();
+	// 両腕を、肩を中心に外へ開いて下げる（手を画面の左下・右下に置く）。骨のワールド行列を計算したあとに呼ぶ。
+	void SpreadArms(Skeleton& skeleton);
 	void UpdateClip(const Player& player);
 	void Play(EnClip clip, float interpolateTime);
 	void UpdateTransform();
@@ -42,6 +44,8 @@ private:
 	CharacterModel m_model;
 	std::vector<int> m_hiddenBones;    // 大きさ 0 にする骨（腕以外）の番号。
 	std::vector<int> m_lowerArmBones;  // 袖口を細くする前腕の骨の番号。
+	std::vector<int> m_armBones[2];    // 左腕・右腕の骨（上腕から先）の番号。
+	int m_upperArmBone[2] = { -1, -1 };  // 左右の上腕の骨の番号（腕を開くときの中心）。
 	EnClip m_clip = enClip_Idle;
 	const MagicBase* m_lastMainMagic = nullptr;
 	const MagicBase* m_lastSubMagic = nullptr;

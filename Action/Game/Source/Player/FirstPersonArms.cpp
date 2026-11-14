@@ -14,6 +14,9 @@ namespace
 	// 袖口を細くする前腕の骨と、その太さの割合。
 	const wchar_t* const LOWER_ARM_BONES[] = { L"J_Bip_L_LowerArm", L"J_Bip_R_LowerArm" };
 	constexpr float SLEEVE_SCALE = 0.4f;
+	// 両腕を、肩を中心に外へ開く角度と、上げる角度（度）。手を画面の左右の端に置いて、自分の手で見ている感じを出す。
+	constexpr float ARM_SPREAD_DEG = 25.0f;
+	constexpr float ARM_RAISE_DEG = 20.0f;
 
 	// カメラから見て、腕のモデルの足元を置く位置（x: 右、y: 上、z: 前）。
 	// 腕のモデルの目の高さ（約 157）より下げて、両手を上げたときに手が画面の下の方に映るようにする。
@@ -55,11 +58,17 @@ void FirstPersonArms::InitHiddenBones()
 	const int numBones = skeleton.GetNumBones();
 	// 腕の骨か（自分か親をたどって、上腕の骨に行き着くか）。
 	std::vector<bool> isArm(numBones, false);
+	for (int side = 0; side < 2; side++) {
+		m_armBones[side].clear();
+		m_upperArmBone[side] = skeleton.FindBoneID(ARM_ROOT_BONES[side]);
+	}
 	for (int boneNo = 0; boneNo < numBones; boneNo++) {
 		for (int no = boneNo; no >= 0; no = skeleton.GetBone(no)->GetParentBoneNo()) {
 			const wchar_t* name = skeleton.GetBone(no)->GetName();
-			if (wcscmp(name, ARM_ROOT_BONES[0]) == 0 || wcscmp(name, ARM_ROOT_BONES[1]) == 0) {
+			const int side = wcscmp(name, ARM_ROOT_BONES[0]) == 0 ? 0 : (wcscmp(name, ARM_ROOT_BONES[1]) == 0 ? 1 : -1);
+			if (side >= 0) {
 				isArm[boneNo] = true;
+				m_armBones[side].push_back(boneNo);
 				break;
 			}
 		}
@@ -93,6 +102,7 @@ void FirstPersonArms::InitHiddenBones()
 			}
 			bone->SetWorldMatrix(collapsed);
 		}
+		SpreadArms(sk);
 		// 袖口を細くする。広がった袖口が手より大きく、後ろ（目の位置）から見ると手が隠れるため。
 		// 前腕の骨の、骨の向き（X）以外の2つの軸を縮める。袖口は前腕の骨で動いているので細くなり、手の骨はそのまま。
 		for (int boneNo : m_lowerArmBones) {
@@ -106,6 +116,42 @@ void FirstPersonArms::InitHiddenBones()
 			bone->SetWorldMatrix(narrowed);
 		}
 	});
+}
+
+void FirstPersonArms::SpreadArms(Skeleton& skeleton)
+{
+	float spreadDeg = ARM_SPREAD_DEG, raiseDeg = ARM_RAISE_DEG; // FP_TEST_TEMP
+	if (const char* e = getenv("FP_TEST_SPREAD")) { sscanf_s(e, "%f,%f", &spreadDeg, &raiseDeg); } // FP_TEST_TEMP
+	const Matrix& cameraRotationMatrix = g_camera3D->GetCameraRotation();
+	const Vector3 cameraUp(cameraRotationMatrix.m[1][0], cameraRotationMatrix.m[1][1], cameraRotationMatrix.m[1][2]);
+	for (int side = 0; side < 2; side++) {
+		if (m_upperArmBone[side] < 0) {
+			continue;
+		}
+		// 左腕（side 0）は画面の左へ、右腕は右へ回す（カメラの上の軸まわりに、左腕は +、右腕は -）。
+		// そのあと、カメラの右の軸まわりに - へ回して持ち上げる。
+		Quaternion spread;
+		spread.SetRotationDeg(cameraUp, side == 0 ? spreadDeg : -spreadDeg);
+		Quaternion raise;
+		raise.SetRotationDeg(g_camera3D->GetRight(), -raiseDeg);
+		Matrix rotation;
+		rotation.MakeRotationFromQuaternion(spread * raise);
+
+		// 肩（上腕の付け根）を中心に回す: 肩を原点へ動かす → 回す → 肩の位置へ戻す。
+		const Matrix& upperArm = skeleton.GetBone(m_upperArmBone[side])->GetWorldMatrix();
+		const Vector3 pivot(upperArm.m[3][0], upperArm.m[3][1], upperArm.m[3][2]);
+		Matrix toOrigin, toPivot, aroundPivot;
+		toOrigin.MakeTranslation(pivot * -1.0f);
+		toPivot.MakeTranslation(pivot);
+		aroundPivot.Multiply(toOrigin, rotation);
+		aroundPivot.Multiply(aroundPivot, toPivot);
+		for (int boneNo : m_armBones[side]) {
+			Bone* bone = skeleton.GetBone(boneNo);
+			Matrix world;
+			world.Multiply(bone->GetWorldMatrix(), aroundPivot);
+			bone->SetWorldMatrix(world);
+		}
+	}
 }
 
 void FirstPersonArms::Reset(const Player& player)

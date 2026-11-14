@@ -47,12 +47,12 @@
     },
     {
       "name": "FpCastRight",
-      "comment": "右手だけを前へ突き出して戻す（氷魔法）。Spell - start の構えから上げきるまでを、左右を反転して速く再生し、逆にして戻す",
+      "comment": "右手だけを前へ突き出して戻す（氷魔法）。Spell - start の構えから上げきるまでを速く再生し、逆にして戻す。ゲームではモデルの左の骨（J_Bip_L）が画面の右に映るので、元の左手の動きをそのまま使う",
       "segments": [
         {
           "source": "D:/04_dawnload/kinemiq/Spell_-_start.fbx",
           "rig": "ue4",
-          "mirror": true,
+          "mirror": false,
           "frames": [
             11,
             17
@@ -60,20 +60,20 @@
           "speed": 1.5,
           "adjust": [
             {
-              "bone": "J_Bip_R_UpperArm",
+              "bone": "J_Bip_L_UpperArm",
               "axis": [
                 0,
                 0,
                 1
               ],
-              "deg": 14
+              "deg": -14
             }
           ]
         },
         {
           "source": "D:/04_dawnload/kinemiq/Spell_-_start.fbx",
           "rig": "ue4",
-          "mirror": true,
+          "mirror": false,
           "frames": [
             11,
             17
@@ -83,13 +83,13 @@
           "blend": 2,
           "adjust": [
             {
-              "bone": "J_Bip_R_UpperArm",
+              "bone": "J_Bip_L_UpperArm",
               "axis": [
                 0,
                 0,
                 1
               ],
-              "deg": 14
+              "deg": -14
             }
           ]
         }
@@ -99,7 +99,7 @@
         "frame": 0,
         "parts": [
           "body",
-          "left_arm"
+          "right_arm"
         ]
       }
     },
