@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include <deque>
+
 // 体の連動の調整値。
 struct BodyLinkSettings
 {
@@ -28,6 +30,9 @@ struct BodyLinkSettings
 	float elbowJointOffsetDeg = 0.0f;
 	// 走っているときに、上腕を体の外へ開く角度。負なら内へ閉じる。
 	float upperArmSpreadDeg = 0.0f;
+	// 走っているときに、左右の腕・脚の形をそろえ、頭を前に向ける。
+	// 走りのクリップは左右がそろっておらず、後ろから見ると、左腕が右腕より約 11° 外へ開いて約 9° 後ろへ振れ、右足だけが内へ入り、頭が約 5° 横を向いている。
+	bool symmetrize = true;
 };
 
 // 走る・歩くときに、脚の動きに合わせて骨盤・背骨・肩・首を連動させる部品。
@@ -105,6 +110,22 @@ private:
 	void RotateJointForward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& forward, float angleDeg) const;
 	// joint（関節）から先を、キャラクターの前後の軸まわりに回し、tip（その先の骨）を体の外へ angleDeg 動かす。負なら内へ。
 	void RotateJointOutward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& forward, float angleDeg) const;
+	// joint（関節）から先を回し、joint から tip（その先の骨）への向きを direction にそろえる。
+	void RotateToward(Skeleton& skeleton, EnBone joint, EnBone tip, const Vector3& direction) const;
+	// 頭の左右の向きを、キャラクターの前の向きにそろえる。
+	void LevelHeadYaw(Skeleton& skeleton, const Vector3& forward) const;
+	// 左右の足の、股関節からの横の位置を、両足の平均にそろえる。
+	void SymmetrizeLegs(Skeleton& skeleton, const Vector3& forward) const;
+	// 腕の形を、1歩前（脚の前後が今と逆だったとき）の反対の腕を左右に映した形と、半分ずつ混ぜる。
+	// 走りは1歩ごとに左右が入れ替わるので、こうすると左右の腕が同じ形で振れる。
+	void SymmetrizeArms(Skeleton& skeleton, const Vector3& forward, float swing);
+
+	// 腕の向き（キャラクターの左右・上・前の座標）の記録。
+	struct ArmSample
+	{
+		float time = 0.0f;
+		Vector3 directions[4];  // 左の上腕・左の前腕・右の上腕・右の前腕。
+	};
 
 	BodyLinkSettings m_settings;
 	BodyLinkSettings m_initialSettings;  // Init で受け取った値。ResetSettings() で戻す。
@@ -112,4 +133,12 @@ private:
 	bool m_isActive = false;
 	Quaternion m_rotation = Quaternion::Identity;
 	float m_runWeight = 0.0f;
+	// 腕をそろえるための記録。
+	std::deque<ArmSample> m_armHistory;
+	float m_time = 0.0f;
+	float m_stepDuration = 0.0f;     // 1歩（脚の前後が入れ替わるまで）の時間。0 ならまだわからない。
+	float m_lastStepTime = -1.0f;    // 最後に脚の前後が入れ替わった時刻。
+	float m_lastSwingSign = 0.0f;    // 右の膝が前なら 1、左なら -1。
+	int m_longStepCount = 0;         // 1歩の時間より長すぎる入れ替わりが続いた回数。
+	float m_armSymmetryWeight = 0.0f;  // 腕をそろえる強さ（0〜1）。急に変わらないように少しずつ動かす。
 };

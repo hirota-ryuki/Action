@@ -18,7 +18,7 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	cameraRight.y = 0.0f;
 	cameraForward.Normalize();
 	cameraRight.Normalize();
-	input.moveDirection = cameraForward * pad.GetLStickYF() + cameraRight * pad.GetLStickXF();
+	input.moveDirection = cameraForward; // TEST
 	input.lookDirection = Vector3::Zero;
 
 	// ジャンプはスペース（パッドは A）。パッド未接続時は A ボタンが J キーに割り当てられているので、J でも跳べる。
@@ -27,8 +27,8 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	// 走るのはダッシュが終わったあとなので、単押しを繰り返すとダッシュが続けて出る。
 	// パッド未接続時は X ボタンが L キーに割り当てられているので、L でも同じ動きになる。
 	const bool isDashPress = IsKeyPressed(VK_LSHIFT) || pad.IsPress(enButtonX);
-	input.dash.Update(isDashPress);
-	input.isRun = isDashPress;
+	input.dash.Update(false);
+	input.isRun = true; // TEST
 	input.fire.Update((CanUseMouse() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
 	// パッド未接続時は右トリガー(RB2)が8キーに割り当てられている。
 	input.subFire.Update((CanUseMouse() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
