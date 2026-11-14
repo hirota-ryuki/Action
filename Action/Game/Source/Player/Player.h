@@ -5,13 +5,12 @@
 #include "PlayerStatus.h"
 #include "PlayerAnimator.h"
 #include "PlayerStateMachine.h"
-#include "WeaponAttachment.h"
 #include "FallRespawn.h"
 
 // プレイヤーキャラクター。
 // 共通の部品と1フレームの順番は Character にある。ここでは Player だけの部品を組み立て、「動く」部分を書く。
-//   動く: 立ち止まる・歩く・走る・空中・ダッシュ・凍結の切り替えは PlayerStateMachine（ステートパターン）
-//   アニメーション: PlayerAnimator、剣: WeaponAttachment、落下: FallRespawn
+//   動く: 立ち止まる・歩く・走る・空中・ダッシュ・攻撃・凍結の切り替えは PlayerStateMachine（ステートパターン）
+//   アニメーション: PlayerAnimator、落下: FallRespawn
 // 調整値は PlayerConfig にある。
 class Player : public Character
 {
@@ -45,21 +44,20 @@ protected:
 	void OnStart() override;
 	void FillInputContext(InputSourceContext& context) const override;
 	void UpdateAction(float deltaTime) override;
-	void OnLateUpdate(float deltaTime) override;
-	void OnRender(RenderContext& rc) override;
+	void FilterCastInput(CharacterInput& input) const override;
 
 private:
 	void Respawn();
-	// 開発用の画面（F1 の ImGui）に、調整値を出す。
-	void UpdateDebugUI();
 	// ジャンプ中（Air・Land）の度合いを、体の連動と揺れ物に渡す。入る・出るときは少しずつ変える。
 	void UpdateJumpWeight(float deltaTime);
+	// 攻撃中（Attack）の度合いを、体の連動に渡す。入る・出るときは少しずつ変える。
+	void UpdateAttackWeight(float deltaTime);
 
 	PlayerInputSource m_playerInputSource;
 	PlayerStatus m_status;
 	PlayerAnimator m_animator;
 	PlayerStateMachine m_stateMachine;
-	WeaponAttachment m_sword;
 	FallRespawn m_fallRespawn;
 	float m_jumpWeight = 0.0f;  // ジャンプ中（Air・Land）の度合い（0〜1）。
+	float m_attackWeight = 0.0f;  // 攻撃中（Attack）の度合い（0〜1）。
 };

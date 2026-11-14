@@ -24,13 +24,13 @@ struct CharacterInput
 {
 	Vector3 moveDirection = Vector3::Zero;  // 移動したい方向（ワールドのXZ）。長さ0〜1で速さの割合を表す。
 	Vector3 lookDirection = Vector3::Zero;  // 向きたい方向。ゼロなら移動方向を向く。
+	Vector3 attackDirection = Vector3::Zero; // 攻撃した瞬間に向く方向（水平。プレイヤーはカメラの向き）。ゼロなら向きを変えない。
 	bool isRun = false;
 	ButtonState jump;
 	ButtonState dash;
-	ButtonState fire;                       // 選んでいる魔法を撃つ（黒騎士は剣で攻撃する）。
+	ButtonState fire;                       // 枠0の魔法を撃つ（黒騎士は剣で攻撃する）。
 	int attackIndex = 0;                    // fire で出す攻撃の番号。黒騎士の攻撃1〜3を 0〜2 で選ぶ。プレイヤーは使わない。
-	ButtonState subFire;                    // サブの魔法（MagicCaster::SetSubMagic）を撃つ。
-	int magicSwitch = 0;                    // -1: 前の魔法へ、+1: 次の魔法へ、0: 切り替えない。
+	ButtonState subFire;                    // 枠1の魔法を撃つ。
 	bool hasAim = false;                    // true なら aimOrigin/aimDirection の方向へ撃つ。false ならキャラクターの正面へ撃つ。
 	Vector3 aimOrigin = Vector3::Zero;
 	Vector3 aimDirection = Vector3::AxisZ;

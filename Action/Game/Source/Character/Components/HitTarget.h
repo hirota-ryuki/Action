@@ -13,9 +13,9 @@ struct HitInfo
 	Vector3 direction = Vector3::AxisZ;     // 当たったものの進行方向。
 };
 
-// 弾などに当ててもらうための当たり判定。キャラクターがメンバーとして持つ。
+// 魔法などに当ててもらうための当たり判定。キャラクターがメンバーとして持つ。
 // Init() で HitTargetRegistry に登録され、デストラクタで登録が解除される。
-// 弾やAIは HitTargetRegistry を通して相手を探すので、相手のクラスを知らなくてよい。
+// 魔法やAIは HitTargetRegistry を通して相手を探すので、相手のクラスを知らなくてよい。
 class HitTarget : public Noncopyable
 {
 public:
@@ -46,7 +46,7 @@ public:
 		m_onHit = std::move(onHit);
 	}
 
-	// 弾などが当たったときに呼ぶ。
+	// 魔法などが当たったときに呼ぶ。
 	void NotifyHit(const HitInfo& hitInfo) const;
 
 	Vector3 GetCenter() const;
@@ -90,7 +90,7 @@ private:
 	bool m_isEnabled = true;
 };
 
-// 全キャラクターの当たり判定の一覧。弾の命中判定とAIの索敵に使う。
+// 全キャラクターの当たり判定の一覧。魔法の命中判定とAIの索敵に使う。
 class HitTargetRegistry
 {
 public:

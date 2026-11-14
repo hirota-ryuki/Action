@@ -312,10 +312,8 @@ void FirstPersonArms::Reset(const Player& player)
 {
 	// 三人称の間に撃った分は数えない。
 	const MagicCaster& caster = player.GetMagicCaster();
-	m_lastMainMagic = caster.GetCurrentMagic();
-	m_lastSubMagic = caster.GetSubMagic();
-	m_lastMainCastCount = m_lastMainMagic != nullptr ? m_lastMainMagic->GetCastCount() : 0;
-	m_lastSubCastCount = m_lastSubMagic != nullptr ? m_lastSubMagic->GetCastCount() : 0;
+	m_lastMainFireCount = caster.GetFireCount(MAIN_SLOT);
+	m_lastSubFireCount = caster.GetFireCount(SUB_SLOT);
 	m_releaseTimer = 0.0f;
 	for (int side = 0; side < 2; side++) {
 		m_castWeight[side] = 0.0f;
@@ -378,11 +376,9 @@ void FirstPersonArms::Draw(RenderContext& rc)
 void FirstPersonArms::UpdateClip(const Player& player, float deltaTime)
 {
 	const MagicCaster& caster = player.GetMagicCaster();
-	const MagicBase* mainMagic = caster.GetCurrentMagic();
-	const MagicBase* subMagic = caster.GetSubMagic();
-	const bool isMainCast = IsCastThisFrame(mainMagic, m_lastMainMagic, m_lastMainCastCount);
-	const bool isSubCast = IsCastThisFrame(subMagic, m_lastSubMagic, m_lastSubCastCount);
-	const bool isCharging = subMagic != nullptr && subMagic->IsCharging();
+	const bool isMainCast = IsFiredThisFrame(caster, MAIN_SLOT, m_lastMainFireCount);
+	const bool isSubCast = IsFiredThisFrame(caster, SUB_SLOT, m_lastSubFireCount);
+	const bool isCharging = caster.IsHolding(SUB_SLOT);
 	const bool isChargeClip = m_clip == enClip_ChargeStart || m_clip == enClip_Charge;
 
 	// 両手の動き（炎）を、右手の動き（氷）より先に見る。溜めている間に氷を撃っても、両手は上げたまま。
@@ -446,11 +442,10 @@ void FirstPersonArms::UpdateTransform()
 	m_model.SetTransform(position, rotation);
 }
 
-bool FirstPersonArms::IsCastThisFrame(const MagicBase* magic, const MagicBase*& lastMagic, int& lastCount)
+bool FirstPersonArms::IsFiredThisFrame(const MagicCaster& caster, int slot, int& lastCount)
 {
-	const int count = magic != nullptr ? magic->GetCastCount() : 0;
-	const bool isCast = magic == lastMagic && count > lastCount;
-	lastMagic = magic;
+	const int count = caster.GetFireCount(slot);
+	const bool isFired = count > lastCount;
 	lastCount = count;
-	return isCast;
+	return isFired;
 }

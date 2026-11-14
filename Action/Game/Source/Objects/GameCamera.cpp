@@ -115,7 +115,7 @@ void GameCamera::ToggleCameraMode()
 		}
 		m_firstPersonForward.Normalize();
 		g_camera3D->SetNear(FIRST_PERSON_NEAR);
-				g_camera3D->SetViewAngle(Math::DegToRad(FIRST_PERSON_VIEW_ANGLE_DEG));
+		g_camera3D->SetViewAngle(Math::DegToRad(FIRST_PERSON_VIEW_ANGLE_DEG));
 		m_firstPersonArms.Reset(*m_player);
 	}
 	else {

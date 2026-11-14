@@ -11,7 +11,7 @@
 //   ジャンプ    Aボタン / J
 //   ダッシュ    Xボタン / L
 //   発射        マウス左ボタン / Yボタン / I
-//   魔法切替    LB・RB / Q・E
+//   サブの発射  マウス右ボタン / 右トリガー / 8
 class PlayerInputSource : public IInputSource
 {
 public:
@@ -26,6 +26,4 @@ private:
 	static bool IsKeyPressed(int virtualKey);
 
 	int m_padNo = 0;
-	ButtonState m_prevMagicKey;  // Qキー。
-	ButtonState m_nextMagicKey;  // Eキー。
 };

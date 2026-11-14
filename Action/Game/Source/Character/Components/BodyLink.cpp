@@ -212,11 +212,14 @@ void BodyLink::Update(Skeleton& skeleton)
 	// ── アニメーションの胴の傾き・ひねりを、まっすぐに戻す ──
 	// 走り・ダッシュ・止まるは、もとのクリップの1コマの胴の姿勢を全コマに残しているため、骨盤が傾き・ひねれたままになっている。
 	// 骨盤の線（左右の太ももの付け根）と肩の線（左右の上腕の付け根）を、キャラクターの左右の向きにそろえる。
-	if (m_settings.levelTorso) {
+	// 攻撃中は外す（攻撃のモーションの胴のひねりは、腕を前へ出すためのものなので残す）。
+	const float levelWeight = 1.0f - m_attackWeight;
+	if (m_settings.levelTorso && levelWeight > 0.0f) {
 		// 骨盤の線をまっすぐにし、脚は戻して足の位置を保つ。
 		Vector3 pelvisAxis;
 		float pelvisAngle = 0.0f;
 		if (MakeLevelRotation(skeleton, enBone_UpperLegL, enBone_UpperLegR, forward, pelvisAxis, pelvisAngle)) {
+			pelvisAngle *= levelWeight;
 			RotateAround(skeleton, enBone_Hips, pelvisAxis, pelvisAngle);
 			RotateAround(skeleton, enBone_UpperLegL, pelvisAxis, -pelvisAngle);
 			RotateAround(skeleton, enBone_UpperLegR, pelvisAxis, -pelvisAngle);
@@ -225,6 +228,7 @@ void BodyLink::Update(Skeleton& skeleton)
 		Vector3 chestAxis;
 		float chestAngle = 0.0f;
 		if (MakeLevelRotation(skeleton, enBone_UpperArmL, enBone_UpperArmR, forward, chestAxis, chestAngle)) {
+			chestAngle *= levelWeight;
 			RotateAround(skeleton, enBone_Spine, chestAxis, chestAngle * SPINE_SHARE);
 			RotateAround(skeleton, enBone_Chest, chestAxis, chestAngle * CHEST_SHARE);
 			RotateAround(skeleton, enBone_UpperChest, chestAxis, chestAngle * UPPER_CHEST_SHARE);
@@ -235,7 +239,7 @@ void BodyLink::Update(Skeleton& skeleton)
 	}
 	// 走っているときは、頭を前に向け、足の横の位置を左右でそろえる。
 	if (m_settings.symmetrize && m_runWeight > 0.0f) {
-		LevelHeadYaw(skeleton, forward);
+		LevelHeadYaw(skeleton, forward, m_runWeight);
 		SymmetrizeLegs(skeleton, forward);
 	}
 
@@ -274,10 +278,16 @@ void BodyLink::Update(Skeleton& skeleton)
 	RotateAround(skeleton, enBone_Neck, forward, -chestRoll * NECK_SHARE);
 	RotateAround(skeleton, enBone_Head, forward, -chestRoll * HEAD_SHARE);
 
+	// ── 攻撃中は、顔をずっと前（撃つ向き）へ向ける ──
+	// 片手で撃つモーション（Attack1・2）は、手を突き出したまま止めている間（10〜16コマ目）に顔が横へ約 28° 向くため。
+	if (m_attackWeight > 0.0f) {
+		LevelHeadYaw(skeleton, forward, m_attackWeight);
+	}
+
 	// ── 走っているときだけ、腕を振る量を変える ──
-	// 腕の調整は走り・歩き用なので、ジャンプ中は外す。腕を横へ上げたジャンプの姿勢では、振りを抑える処理が
-	// 腕を「後ろへ振りすぎ」とみなして真下へ引き寄せ、脇が締まって見えたため。
-	const float armWeight = 1.0f - m_jumpWeight;
+	// 腕の調整は走り・歩き用なので、ジャンプ中・攻撃中は外す。腕を横へ上げたジャンプの姿勢では、振りを抑える処理が
+	// 腕を「後ろへ振りすぎ」とみなして真下へ引き寄せ、脇が締まって見えたため。攻撃では前へ突き出した腕が下がるため。
+	const float armWeight = (1.0f - m_jumpWeight) * (1.0f - m_attackWeight);
 	const float armRunWeight = m_runWeight * armWeight;
 	const float swingScale = 1.0f + (m_settings.armSwingScale - 1.0f) * armRunWeight;
 	ScaleArmSwing(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward, swingScale);
@@ -419,7 +429,7 @@ void BodyLink::RotateToward(Skeleton& skeleton, EnBone joint, EnBone tip, const 
 	RotateAround(skeleton, joint, axis, atan2f(sinAngle, current.Dot(target)));
 }
 
-void BodyLink::LevelHeadYaw(Skeleton& skeleton, const Vector3& forward) const
+void BodyLink::LevelHeadYaw(Skeleton& skeleton, const Vector3& forward, float weight) const
 {
 	// 頭の骨の Z 軸が顔の前の向き。
 	const Matrix& head = skeleton.GetBone(m_boneNos[enBone_Head])->GetWorldMatrix();
@@ -435,7 +445,7 @@ void BodyLink::LevelHeadYaw(Skeleton& skeleton, const Vector3& forward) const
 		return;
 	}
 	axis *= 1.0f / sinAngle;
-	RotateAround(skeleton, enBone_Head, axis, atan2f(sinAngle, face.Dot(forward)) * m_runWeight);
+	RotateAround(skeleton, enBone_Head, axis, atan2f(sinAngle, face.Dot(forward)) * weight);
 }
 
 void BodyLink::SymmetrizeLegs(Skeleton& skeleton, const Vector3& forward) const

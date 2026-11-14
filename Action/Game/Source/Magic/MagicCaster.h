@@ -1,57 +1,56 @@
 ﻿#pragma once
 
+#include <functional>
 #include "Faction.h"
 #include "MagicBase.h"
 
-struct CharacterInput;
 struct ButtonState;
 
-// キャラクターが持つ魔法の一覧と、今選んでいる魔法を管理する。
-// 入力の発射ボタン・切り替えに応じて、魔法の OnPress / OnHold / OnRelease を呼ぶ。
+// キャラクターが使う魔法を枠（スロット）ごとに登録し、ボタンに合わせて撃つ。
+// どのボタンで撃つか、どこから撃つかは知らない（キャラクターが Fire() に渡す）。
 class MagicCaster
 {
 public:
-	struct Settings
-	{
-		float castHeight = 70.0f;   // 照準の指定がないとき、足元からこの高さで撃つ。
-		float castForward = 60.0f;  // 自分のカプセルに当たらないよう、撃つ位置を前に出す距離。
-	};
-
-	void Init(IGameObject* owner, Faction faction, const Settings& settings);
+	void Init(IGameObject* owner, Faction faction);
 	void SetFaction(Faction faction)
 	{
 		m_faction = faction;
 	}
-	void AddMagic(std::unique_ptr<MagicBase> magic);
-	// サブの発射ボタン（subFire）で撃つ魔法。切り替えの対象にはならず、いつでも撃てる。
-	void SetSubMagic(std::unique_ptr<MagicBase> magic);
 
-	// canAct が false（凍結中など）の間は撃てない。押している途中なら中断する。
-	// 照準の指定がないときは、position の castHeight の高さから forward の向き（水平）へ撃つ。
-	void Update(const CharacterInput& input, const Vector3& position, const Vector3& forward, float deltaTime, bool canAct);
-
-	MagicBase* GetCurrentMagic() const;
-	const MagicBase* GetSubMagic() const
+	// slot の枠に、T の魔法を登録する。クールダウンは T::COOLDOWN（秒）。
+	template <class T>
+	void Register(int slot)
 	{
-		return m_subMagic.get();
+		Slot& target = GetOrAddSlot(slot);
+		target.create = [] { return NewGO<T>(1, MagicBase::OBJECT_NAME); };
+		target.cooldown = T::COOLDOWN;
 	}
-	void SelectMagic(int index);
+
+	// 毎フレーム、ボタンの状態を渡す。押した瞬間に魔法を作り、溜め撃ちなら離すまで撃つ位置に合わせる。
+	void Fire(int slot, const ButtonState& button, const Vector3& origin, const Vector3& direction);
+	// 溜めている魔法を、飛ばさずに消す（凍ったときなど）。
+	void CancelAll();
+
+	// slot の枠で、これまでに撃った（飛ばした）回数。一人称の腕が、前のフレームと比べて撃った瞬間を知るのに使う。
+	int GetFireCount(int slot) const;
+	// slot の枠で、魔法を溜めている最中か。一人称の腕が、溜めている間は両手を上げるのに使う。
+	bool IsHolding(int slot) const;
 
 private:
-	MagicCastContext MakeContext(const CharacterInput& input, const Vector3& position, const Vector3& forward, float deltaTime) const;
-	// メインの魔法に渡す情報。input.mainAimOffset があれば、撃つ位置をずらす。
-	static MagicCastContext MakeMainContext(const CharacterInput& input, const MagicCastContext& context);
-	// ボタンの状態に応じて魔法の OnPress / OnHold / OnRelease を呼ぶ。
-	static void UpdateButton(MagicBase& magic, const ButtonState& button, const MagicCastContext& context, bool& isHolding);
-	void CancelHolding();
-	void CancelSubHolding();
+	struct Slot
+	{
+		std::function<MagicBase*()> create;  // 魔法を1つ作る。
+		float cooldown = 0.0f;               // 撃ってから次に撃てるまでの秒数。
+		float lastFireTime = 0.0f;           // 前に撃った時刻（GameClock）。
+		bool hasFired = false;               // 一度でも撃ったか。
+		int fireCount = 0;                   // これまでに撃った回数。
+		MagicBase* holding = nullptr;        // 溜めている（撃つ位置で待たせている）魔法。
+	};
 
-	std::vector<std::unique_ptr<MagicBase>> m_magics;
-	std::unique_ptr<MagicBase> m_subMagic;
+	Slot& GetOrAddSlot(int slot);
+	bool IsReady(const Slot& slot) const;
+
+	std::vector<Slot> m_slots;
 	IGameObject* m_owner = nullptr;
-	Settings m_settings;
 	Faction m_faction = Faction::Neutral;
-	int m_currentIndex = 0;
-	bool m_isHolding = false;     // 発射ボタンを押して魔法を使っている最中か。
-	bool m_isSubHolding = false;  // サブの発射ボタンを押してサブの魔法を使っている最中か。
 };

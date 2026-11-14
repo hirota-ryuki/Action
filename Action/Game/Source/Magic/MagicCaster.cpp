@@ -1,157 +1,91 @@
 ﻿#include "stdafx.h"
 #include "MagicCaster.h"
 #include "CharacterInput.h"
+#include "GameClock.h"
 
-namespace
-{
-	// メインの魔法の撃つ位置をずらしたとき（mainAimOffset）、照準のこの距離先の点へ向けて撃つ。
-	constexpr float AIM_POINT_DISTANCE = 3000.0f;
-}
-
-void MagicCaster::Init(IGameObject* owner, Faction faction, const Settings& settings)
+void MagicCaster::Init(IGameObject* owner, Faction faction)
 {
 	m_owner = owner;
 	m_faction = faction;
-	m_settings = settings;
 }
 
-void MagicCaster::AddMagic(std::unique_ptr<MagicBase> magic)
+MagicCaster::Slot& MagicCaster::GetOrAddSlot(int slot)
 {
-	if (magic != nullptr) {
-		m_magics.push_back(std::move(magic));
+	if (slot >= static_cast<int>(m_slots.size())) {
+		m_slots.resize(slot + 1);
 	}
+	return m_slots[slot];
 }
 
-void MagicCaster::SetSubMagic(std::unique_ptr<MagicBase> magic)
+bool MagicCaster::IsReady(const Slot& slot) const
 {
-	CancelSubHolding();
-	m_subMagic = std::move(magic);
+	return !slot.hasFired || GameClock::Now() - slot.lastFireTime >= slot.cooldown;
 }
 
-MagicBase* MagicCaster::GetCurrentMagic() const
+void MagicCaster::Fire(int slot, const ButtonState& button, const Vector3& origin, const Vector3& direction)
 {
-	if (m_magics.empty()) {
-		return nullptr;
-	}
-	return m_magics[m_currentIndex].get();
-}
-
-void MagicCaster::SelectMagic(int index)
-{
-	if (m_magics.empty()) {
+	if (slot < 0 || slot >= static_cast<int>(m_slots.size())) {
 		return;
 	}
-	const int count = static_cast<int>(m_magics.size());
-	// 端まで行ったら反対側に回り込む。
-	const int newIndex = ((index % count) + count) % count;
-	if (newIndex == m_currentIndex) {
-		return;
-	}
-	CancelHolding();
-	m_currentIndex = newIndex;
-}
-
-void MagicCaster::Update(const CharacterInput& input, const Vector3& position, const Vector3& forward, float deltaTime, bool canAct)
-{
-	// 選んでいない魔法もクールダウンは進める。
-	for (auto& magic : m_magics) {
-		magic->Update(deltaTime);
-	}
-	if (m_subMagic != nullptr) {
-		m_subMagic->Update(deltaTime);
-	}
-
-	if (!canAct) {
-		CancelHolding();
-		CancelSubHolding();
+	Slot& target = m_slots[slot];
+	if (!target.create) {
 		return;
 	}
 
-	if (input.magicSwitch != 0) {
-		SelectMagic(m_currentIndex + input.magicSwitch);
+	// 押した瞬間: クールダウンが明けていれば、魔法を1つ作る。
+	if (button.isTrigger && target.holding == nullptr && IsReady(target)) {
+		MagicBase* magic = target.create();
+		magic->Init(origin, direction, m_owner, m_faction);
+		if (magic->IsChargeType()) {
+			// 溜め撃ちは、離して飛ばしたときからクールダウンを数える。
+			target.holding = magic;
+		}
+		else {
+			target.lastFireTime = GameClock::Now();
+			target.hasFired = true;
+			++target.fireCount;
+		}
 	}
 
-	const MagicCastContext context = MakeContext(input, position, forward, deltaTime);
-	if (MagicBase* magic = GetCurrentMagic()) {
-		UpdateButton(*magic, input.fire, MakeMainContext(input, context), m_isHolding);
+	if (target.holding == nullptr) {
+		return;
 	}
-	if (m_subMagic != nullptr) {
-		UpdateButton(*m_subMagic, input.subFire, context, m_isSubHolding);
-	}
-}
-
-void MagicCaster::UpdateButton(MagicBase& magic, const ButtonState& button, const MagicCastContext& context, bool& isHolding)
-{
-	if (button.isTrigger) {
-		isHolding = true;
-		magic.OnPress(context);
-	}
-	if (isHolding && button.isPress) {
-		magic.OnHold(context);
-	}
-	if (isHolding && !button.isPress) {
-		isHolding = false;
-		magic.OnRelease(context);
-	}
-}
-
-MagicCastContext MagicCaster::MakeContext(const CharacterInput& input, const Vector3& position, const Vector3& forward, float deltaTime) const
-{
-	MagicCastContext context;
-	context.caster = m_owner;
-	context.faction = m_faction;
-	context.deltaTime = deltaTime;
-
-	if (input.hasAim) {
-		context.origin = input.aimOrigin;
-		context.direction = input.aimDirection;
+	if (button.isPress) {
+		// 押している間: 待たせている魔法を手元に合わせる。
+		target.holding->Hold(origin, direction);
 	}
 	else {
-		context.origin = position;
-		context.origin.y += m_settings.castHeight;
-		context.direction = forward;
-		context.direction.y = 0.0f;
-	}
-	if (context.direction.LengthSq() <= FLT_EPSILON) {
-		context.direction = Vector3::AxisZ;
-	}
-	context.direction.Normalize();
-	context.origin += context.direction * m_settings.castForward;
-	return context;
-}
-
-MagicCastContext MagicCaster::MakeMainContext(const CharacterInput& input, const MagicCastContext& context)
-{
-	if (!input.hasAim || input.mainAimOffset.LengthSq() <= FLT_EPSILON) {
-		return context;
-	}
-	// 撃つ位置だけずらし、向きは照準の先の点へ向け直す。
-	MagicCastContext mainContext = context;
-	const Vector3 aimPoint = context.origin + context.direction * AIM_POINT_DISTANCE;
-	mainContext.origin = context.origin + input.mainAimOffset;
-	mainContext.direction = aimPoint - mainContext.origin;
-	mainContext.direction.Normalize();
-	return mainContext;
-}
-
-void MagicCaster::CancelHolding()
-{
-	if (!m_isHolding) {
-		return;
-	}
-	m_isHolding = false;
-	if (MagicBase* magic = GetCurrentMagic()) {
-		magic->OnCancel();
+		// 離した: 飛ばして、手を放す。
+		target.holding->Release();
+		target.holding = nullptr;
+		target.lastFireTime = GameClock::Now();
+		target.hasFired = true;
+		++target.fireCount;
 	}
 }
 
-void MagicCaster::CancelSubHolding()
+void MagicCaster::CancelAll()
 {
-	if (!m_isSubHolding) {
-		return;
+	for (Slot& slot : m_slots) {
+		if (slot.holding != nullptr) {
+			slot.holding->Cancel();
+			slot.holding = nullptr;
+		}
 	}
-	m_isSubHolding = false;
-	if (m_subMagic != nullptr) {
-		m_subMagic->OnCancel();
+}
+
+int MagicCaster::GetFireCount(int slot) const
+{
+	if (slot < 0 || slot >= static_cast<int>(m_slots.size())) {
+		return 0;
 	}
+	return m_slots[slot].fireCount;
+}
+
+bool MagicCaster::IsHolding(int slot) const
+{
+	if (slot < 0 || slot >= static_cast<int>(m_slots.size())) {
+		return false;
+	}
+	return m_slots[slot].holding != nullptr;
 }

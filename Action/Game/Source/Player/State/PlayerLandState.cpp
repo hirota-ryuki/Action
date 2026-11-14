@@ -1,6 +1,7 @@
 ﻿#include "stdafx.h"
 #include "PlayerLandState.h"
 #include "PlayerGroundState.h"
+#include "PlayerAttackState.h"
 #include "CharacterInput.h"
 #include "CharacterMover.h"
 
@@ -38,6 +39,9 @@ PlayerStateId PlayerLandState::CheckTransition(const PlayerStateContext& context
 	}
 	if (input.jump.isTrigger && context.mover->GetSettings().jumpSpeed > 0.0f && context.mover->IsOnGround()) {
 		return PlayerStateId::Air;
+	}
+	if (PlayerAttackState::CanStart(context, input)) {
+		return PlayerStateId::Attack;
 	}
 	const PlayerStateId next = PlayerGroundState::SelectByInput(context, input);
 	if (next == PlayerStateId::Air) {

@@ -1695,13 +1695,13 @@ private:
 
 ### 2-21. Game から Player を渡す
 
-[Game.cpp](../../../Game/Source/Core/Game.cpp) の **77行目** `m_uiManager = NewGO<UIManager>(3, "uiManager");` の下に、1行足します（78〜78行目になります）。
+[Game.cpp](../../../Game/Source/Core/Game.cpp) の **78行目** `m_uiManager = NewGO<UIManager>(3, "uiManager");` の下に、1行足します（79〜79行目になります）。
 
-<!-- add: Action/Game/Source/Core/Game.cpp 78 -->
+<!-- add: Action/Game/Source/Core/Game.cpp 79 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
-78
+79
 ```
 
 </td><td>

@@ -3,12 +3,14 @@
 #include "PlayerConfig.h"
 #include "IceMagic.h"
 #include "FireMagic.h"
-#include <imgui/imgui.h>
 
 namespace
 {
 	// ジャンプ中の度合いが 0 から 1（1 から 0）まで変わるのにかかる時間（秒）。アニメーションの切り替えの補間と同じくらいにする。
 	constexpr float JUMP_WEIGHT_FADE_SECONDS = 0.2f;
+	// 攻撃中の度合いが 0 から 1（1 から 0）まで変わるのにかかる時間（秒）。攻撃に入るときの補間（attack.blendSeconds）と同じにする。
+	// これより長いと、入ってすぐの数コマで、前の動き（前の段の終わりなど）で横を向いていた顔が見えてしまう。
+	constexpr float ATTACK_WEIGHT_FADE_SECONDS = 0.1f;
 }
 
 Player::Player()
@@ -24,7 +26,6 @@ CharacterConfig Player::MakeConfig() const
 void Player::OnStart()
 {
 	m_fallRespawn.Init(GetPosition(), PlayerConfig::RESPAWN_HEIGHT);
-	m_sword.Init(m_model.GetModelRender(), PlayerConfig::MakeSwordDesc());
 
 	PlayerStateContext stateContext;
 	stateContext.mover = &m_mover;
@@ -34,8 +35,8 @@ void Player::OnStart()
 	m_animator.Init(&m_model.GetModelRender(), stateContext.settings.animBlendSeconds);
 	m_stateMachine.Init(stateContext);  // Idle から始める。
 
-	m_magicCaster.AddMagic(std::make_unique<IceMagic>());
-	m_magicCaster.SetSubMagic(std::make_unique<FireMagic>());  // 右クリックで撃つ。
+	m_magicCaster.Register<IceMagic>(0);   // 枠0: fire（左クリック）で撃つ。
+	m_magicCaster.Register<FireMagic>(1);  // 枠1: subFire（右クリック）で撃つ。
 }
 
 void Player::FillInputContext(InputSourceContext& context) const
@@ -48,15 +49,23 @@ void Player::UpdateAction(float deltaTime)
 	// 移動とアニメーションはステートが行う。凍結中は Frozen ステートになり、重力で落ちるだけになる。
 	m_stateMachine.Update(m_input, deltaTime);
 	UpdateJumpWeight(deltaTime);
+	UpdateAttackWeight(deltaTime);
 	if (m_fallRespawn.IsFallen(m_mover.GetPosition())) {
 		Respawn();
 	}
 }
 
-void Player::OnLateUpdate(float deltaTime)
+void Player::FilterCastInput(CharacterInput& input) const
 {
-	m_sword.Update();
-	UpdateDebugUI();
+	// 攻撃の間は、クリックした瞬間には撃たず、手を突き出したコマ（Attack が立てる）でだけ発射ボタンを押したことにする。
+	// ButtonState::Update は通さない（押した瞬間の判定に使う m_input の前フレームの値を変えないため）。
+	if (m_stateMachine.GetCurrentId() != PlayerStateId::Attack) {
+		return;
+	}
+	const bool isFire = m_stateMachine.IsAttackFire();
+	input.fire.isTrigger = isFire;
+	input.fire.isPress = isFire;
+	input.fire.isRelease = false;
 }
 
 void Player::UpdateJumpWeight(float deltaTime)
@@ -68,23 +77,12 @@ void Player::UpdateJumpWeight(float deltaTime)
 	SetJumpWeight(m_jumpWeight);
 }
 
-void Player::UpdateDebugUI()
+void Player::UpdateAttackWeight(float deltaTime)
 {
-	// F1 で開発用の画面を出しているときだけ（Release では ImGui を起動しないので、見ないで呼ぶと落ちる）。
-	if (!DebugUI::IsVisible()) {
-		return;
-	}
-	// 変えた値は次のフレームから効く。保存はしないので、決まったら player.json に書き写す。
-	SpringBonesSettings& springBones = GetSpringBonesSettings();
-	ImGui::Begin(u8"プレイヤーの体");
-	ImGui::SliderFloat(u8"スカートを上げる上限（ジャンプ中）", &springBones.jumpMaxAngleFromDownDeg, 0.0f, 120.0f, u8"%.0f°");
-	ImGui::TextUnformatted(u8"真下が 0°、水平が 90°。0 なら抑えない。player.json の springBone.jumpMaxAngleFromDownDeg。");
-	ImGui::End();
-}
-
-void Player::OnRender(RenderContext& rc)
-{
-	m_sword.Draw(rc);
+	const float target = m_stateMachine.GetCurrentId() == PlayerStateId::Attack ? 1.0f : 0.0f;
+	const float step = deltaTime / ATTACK_WEIGHT_FADE_SECONDS;
+	m_attackWeight = target > m_attackWeight ? min(target, m_attackWeight + step) : max(target, m_attackWeight - step);
+	SetAttackWeight(m_attackWeight);
 }
 
 void Player::Respawn()

@@ -65,19 +65,6 @@ namespace
 		return Read(section, sectionName, key, defaultFrames) / ANIM_FPS;
 	}
 
-	// [x, y, z] の形の値を Vector3 で読む。
-	Vector3 ReadVector3(const Json& section, const char* sectionName, const char* key, const Vector3& defaultValue)
-	{
-		const std::vector<float> values = Read(section, sectionName, key, std::vector<float>{});
-		if (values.size() != 3) {
-			if (!values.empty()) {
-				Log(std::string(JSON_PATH) + " の " + sectionName + "." + key + " は [x, y, z] の3つで書いてください。既定値を使います。");
-			}
-			return defaultValue;
-		}
-		return Vector3(values[0], values[1], values[2]);
-	}
-
 	CharacterMoveSettings MakeMoveSettings()
 	{
 		const Json section = GetSection("move");
@@ -154,12 +141,25 @@ namespace
 		settings.landCancelByMove = Read(section, "jump", "landCancelByMove", true);
 	}
 
+	// 3段攻撃の数値を settings に入れる。
+	void ReadAttackSettings(PlayerStateSettings& settings)
+	{
+		const Json section = GetSection("attack");
+		settings.attackFireTime = ReadFramesAsSeconds(section, "attack", "fireFrame", 10.0f);
+		settings.attackCancelTime = ReadFramesAsSeconds(section, "attack", "cancelFrame", 17.0f);
+		settings.attackEndTime = ReadFramesAsSeconds(section, "attack", "endFrame", 24.0f);
+		settings.attackAnimSpeed = Read(section, "attack", "animSpeed", 1.0f);
+		settings.attackBlendSeconds = Read(section, "attack", "blendSeconds", 0.1f);
+		settings.attackExitBlendSeconds = Read(section, "attack", "exitBlendSeconds", 0.2f);
+	}
+
 	PlayerStateSettings BuildStateSettings()
 	{
 		PlayerStateSettings settings;
 		ReadDashSettings(settings);
 		ReadStopSettings(settings);
 		ReadJumpSettings(settings);
+		ReadAttackSettings(settings);
 
 		const Json move = GetSection("move");
 		settings.moveThreshold = Read(move, "move", "moveThreshold", 0.1f);
@@ -187,6 +187,9 @@ namespace
 		{ "Dash",  enPlayerAnimClip_Dash,  { "Assets/modelData/player/Animation/Dash.fbx",  false } },
 		{ "StopL", enPlayerAnimClip_StopL, { "Assets/modelData/player/Animation/StopL.fbx", false } },
 		{ "StopR", enPlayerAnimClip_StopR, { "Assets/modelData/player/Animation/StopR.fbx", false } },
+		{ "Attack1", enPlayerAnimClip_Attack1, { "Assets/modelData/player/Animation/Attack1.fbx", false } },
+		{ "Attack2", enPlayerAnimClip_Attack2, { "Assets/modelData/player/Animation/Attack2.fbx", false } },
+		{ "Attack3", enPlayerAnimClip_Attack3, { "Assets/modelData/player/Animation/Attack3.fbx", false } },
 	};
 	static_assert(sizeof(CLIP_TABLE) / sizeof(CLIP_TABLE[0]) == enPlayerAnimClip_Num,
 		"EnPlayerAnimClip を足したら、CLIP_TABLE と player.json の animation.clips にも足してください。");
@@ -253,10 +256,10 @@ namespace
 		return desc;
 	}
 
-	MagicCaster::Settings MakeCasterSettings()
+	CharacterCastSettings MakeCastSettings()
 	{
 		const Json section = GetSection("caster");
-		MagicCaster::Settings settings;
+		CharacterCastSettings settings;
 		settings.castHeight = Read(section, "caster", "height", 140.0f);
 		settings.castForward = Read(section, "caster", "forward", 60.0f);
 		return settings;
@@ -333,7 +336,7 @@ CharacterConfig PlayerConfig::MakeCharacterConfig()
 	CharacterConfig config;
 	config.move = MakeMoveSettings();
 	config.model = MakeModelDesc();
-	config.caster = MakeCasterSettings();
+	config.cast = MakeCastSettings();
 	config.lean = MakeLeanSettings();
 	config.springBones = MakeSpringBonesSettings();
 	config.bodyLink = MakeBodyLinkSettings();
@@ -349,19 +352,4 @@ CharacterConfig PlayerConfig::MakeCharacterConfig()
 PlayerStateSettings PlayerConfig::MakeStateSettings()
 {
 	return BuildStateSettings();
-}
-
-WeaponAttachmentDesc PlayerConfig::MakeSwordDesc()
-{
-	const Json section = GetSection("sword");
-	WeaponAttachmentDesc desc;
-	desc.modelPath = Read(section, "sword", "path", std::string("Assets/modelData/weapon/sowrd/sowrd.tkm"));
-	// 右手ボーンの名前はモデルのセットアップによって異なるので、2つの名前で探す。
-	// ボーンの名前はモデルの作りで決まるので、JSON には出さない。
-	desc.boneNames = { L"Character1_RightHand", L"J_R_ForeArm_00_tw" };
-	desc.offset = ReadVector3(section, "sword", "offset", Vector3(5.0f, -3.0f, 10.0f));
-	desc.rotationOffsetDeg = ReadVector3(section, "sword", "rotationOffsetDeg", Vector3(0.0f, 0.0f, -90.0f));
-	desc.scale = ReadVector3(section, "sword", "scale", Vector3(1.35f, 1.35f, 1.35f));
-	desc.isShadowCaster = Read(section, "sword", "castShadow", true);
-	return desc;
 }

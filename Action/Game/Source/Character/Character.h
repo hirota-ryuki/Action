@@ -13,13 +13,20 @@
 #include "SpringBones.h"
 #include "BodyLink.h"
 
+// 魔法を撃つ位置の調整値。
+struct CharacterCastSettings
+{
+	float castHeight = 70.0f;   // 照準の指定がないとき、足元からこの高さで撃つ。
+	float castForward = 60.0f;  // 自分のカプセルに当たらないよう、撃つ位置を前に出す距離。
+};
+
 // キャラクターごとの調整値。派生クラスが MakeConfig() で返す。
 struct CharacterConfig
 {
 	CharacterMoveSettings move;
 	CharacterModelDesc model;
-	MagicCaster::Settings caster;
-	float hitRadius = 45.0f;        // 弾に当たる球の半径。
+	CharacterCastSettings cast;
+	float hitRadius = 45.0f;        // 魔法に当たる球の半径。
 	float hitCenterHeight = 60.0f;  // 足元から当たり判定の中心までの高さ。
 	float maxHp = 100.0f;
 	BodyLeanSettings lean;              // 体の傾き。既定は使わない。
@@ -105,6 +112,11 @@ protected:
 	}
 	// ③ 動く。CharacterMover の Move 系を1回だけ呼ぶ（凍結中も重力のために呼ぶ）。
 	virtual void UpdateAction(float deltaTime) = 0;
+	// 魔法を撃つ部品（MagicCaster）に渡す入力を書き換える。攻撃のモーションに合わせて撃つ、などに使う。
+	// input には、このフレームに受け取った入力の写しが入っている（m_input は変えない）。
+	virtual void FilterCastInput(CharacterInput& input) const
+	{
+	}
 	// モデルを更新したあと（ボーンに付けたものを動かす、など）。
 	virtual void OnLateUpdate(float deltaTime)
 	{
@@ -124,6 +136,11 @@ protected:
 		m_bodyLink.SetJumpWeight(jumpWeight);
 		m_springBones.SetJumpWeight(jumpWeight);
 	}
+	// 攻撃中の度合い（0〜1）を、体の連動に渡す。モデルを更新する前（UpdateAction）に呼ぶ。
+	void SetAttackWeight(float attackWeight)
+	{
+		m_bodyLink.SetAttackWeight(attackWeight);
+	}
 
 	CharacterInput m_input;
 	CharacterMover m_mover;
@@ -134,12 +151,19 @@ protected:
 
 private:
 	void UpdateInput(float deltaTime);
+	// 動けるなら、入力の fire・subFire で枠0・枠1の魔法を撃つ。動けなければ溜めを捨てる。
+	void UpdateMagic();
+	// 魔法を撃つ位置と向き。照準があればそちら、なければ足元から castHeight の高さで正面（水平）へ。
+	void MakeCastPose(Vector3& origin, Vector3& direction) const;
+	// 枠0（メイン）の魔法の撃つ位置と向き。m_input.mainAimOffset があれば、撃つ位置をずらす（一人称で、右手から撃つ）。
+	void MakeMainCastPose(Vector3& origin, Vector3& direction) const;
 	// キャラコンの位置・回転を Transform に書く。
 	void SyncTransform();
 
 	BodyLean m_bodyLean;
 	SpringBones m_springBones;
 	BodyLink m_bodyLink;
+	CharacterCastSettings m_castSettings;
 	IInputSource* m_inputSource = nullptr;  // nullptr なら GetDefaultInputSource()。
 	Faction m_faction = Faction::Neutral;
 	bool m_isRenderBody = true;

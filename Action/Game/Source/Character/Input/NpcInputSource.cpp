@@ -14,7 +14,6 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 	input.isRun = false;
 	input.jump.Update(false);
 	input.dash.Update(false);
-	input.magicSwitch = 0;
 	input.hasAim = false;
 
 	const HitTarget* target = HitTargetRegistry::FindNearestHostile(
