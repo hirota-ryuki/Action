@@ -77,6 +77,7 @@ void GameCamera::Update()
 	if (IsToggleTriggered()) {
 		ToggleCameraMode();
 	}
+	{ static int captureFrame = 0; if (++captureFrame == 30) { ToggleCameraMode(); } }  // CAPTURE_TEMP
 
 	if (m_cameraMode == EnCameraMode::FirstPerson) {
 		UpdateFirstPersonCamera();

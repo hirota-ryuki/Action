@@ -40,7 +40,7 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	input.isRun = isDashPress;
 	input.fire.Update((CanUseMouse() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
 	// パッド未接続時は右トリガー(RB2)が8キーに割り当てられている。
-	input.subFire.Update((CanUseMouse() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
+	{ static int captureFrame = 0; input.subFire.Update((++captureFrame % 600) > 240); }  // CAPTURE_TEMP
 
 	// 一人称では視線の方向へ目の位置から撃つ。三人称ではキャラクターの正面へ撃つ（hasAim = false）。
 	input.hasAim = context.isFirstPerson;
