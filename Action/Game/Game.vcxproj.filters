@@ -159,6 +159,9 @@
     <ClCompile Include="Source\Player\State\PlayerDashState.cpp">
       <Filter>Source\Player\State</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Player\State\PlayerAttackState.cpp">
+      <Filter>Source\Player\State</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Player\State\PlayerStopState.cpp">
       <Filter>Source\Player\State</Filter>
     </ClCompile>
@@ -396,6 +399,9 @@
       <Filter>Source\Player\State</Filter>
     </ClInclude>
     <ClInclude Include="Source\Player\State\PlayerDashState.h">
+      <Filter>Source\Player\State</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Player\State\PlayerAttackState.h">
       <Filter>Source\Player\State</Filter>
     </ClInclude>
     <ClInclude Include="Source\Player\State\PlayerStopState.h">

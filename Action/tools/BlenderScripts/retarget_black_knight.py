@@ -27,6 +27,17 @@
 #              つなぎ目は blend コマ（既定 4）かけて混ぜ、腰の水平の位置は前の終わりに合わせる
 #     adjust   移したあとで骨を回す。[{"bone": "J_Bip_R_Hand", "axis": [x, y, z], "deg": 度}, ...]
 #              軸は体（腰の向き）から見た向き（+X が体の左、-Y が前、+Z が上）。その骨と、その下の骨がまとめて回る
+#     arms     "both" なら、元の左腕の動きを左右の反転で右腕にも写して、両手で同じ動きにする。
+#              体（腰〜頭）は、元と反転したものの平均（左右対称）にする
+#     speed    再生の速さ（2 なら半分のコマ数にする）。segments の1つずつにも書ける
+#     reverse  true なら逆から再生する（構える動きを逆にして下ろす、など）。segments の1つずつにも書ける
+#     hold     {"clip": 先に書いたクリップの名前, "frame": 何コマ目, "parts": ["body", "left_arm", "right_arm"]}
+#              parts の骨を、全部のコマで、そのクリップのそのコマの姿勢にする（一人称の腕で、体を止めておく用）。
+#              body は腕（肩から先）以外の全部、left_arm・right_arm は肩から先
+#
+# 設定全体に書くもの（省くと黒騎士の動き）
+#   secondary  false なら垂れ布とフードの揺れを付けない（垂れ布の骨が無いプレイヤーの骨格用）
+#   sword_fit  false なら剣の骨を手に合わせない
 #
 # 移し方
 #   - 元と黒騎士は、どちらも T ポーズで、前が -Y・上が +Z。骨の世界での向きを「T ポーズからどれだけ回ったか」でそろえる。
@@ -109,6 +120,11 @@ def descendants(n):
         out.append(c)
         out += descendants(c)
     return out
+
+
+# 肩から先の骨（arms・hold で使う）
+LEFT_ARM = set([S("L", "Shoulder")] + descendants(S("L", "Shoulder")))
+RIGHT_ARM = set([S("R", "Shoulder")] + descendants(S("R", "Shoulder")))
 
 
 def w2a_dir(v):
@@ -373,7 +389,22 @@ def retarget_clip(clip):
             if b in s:
                 n = s.replace(b, a)
                 return n if n in src_names else s
+        # UE のマネキン式（upperarm_l・hand_r）は、名前の最後で左右を見分ける
+        for a, b in (("_l", "_r"), ("_r", "_l")):
+            if s.endswith(a):
+                n = s[:-len(a)] + b
+                return n if n in src_names else s
         return s
+
+    def world_of(t, s, pw, mir):
+        """元の骨 s のポーズから、黒騎士の骨 t の世界での向きを出す（mir なら左右を反転したもの）。"""
+        sm = other_side(s) if mir else s
+        d = (G @ pw[sm].to_quaternion()) @ rest_q_src[sm].inverted()
+        if mir:
+            d = Quaternion((d.w, d.x, -d.y, -d.z))
+        return (d @ REF[t]).normalized()
+
+    both = clip.get("arms") == "both"
 
     f0, f1 = clip.get("frames", [int(act.frame_range[0]), int(act.frame_range[1])])
     # 元が 30fps でないとき（SnSAnimsetPro は 60fps）は、30fps になるよう間引いて読む。
@@ -392,14 +423,22 @@ def retarget_clip(clip):
         pw = posed_world(src, basis)
         W = {}
         for t, s in bmap.items():
-            sm = other_side(s) if mirror else s
-            d = (G @ pw[sm].to_quaternion()) @ rest_q_src[sm].inverted()
-            if mirror:
-                d = Quaternion((d.w, d.x, -d.y, -d.z))
-            W[t] = (d @ REF[t]).normalized()
+            if not both:
+                W[t] = world_of(t, s, pw, mirror)
+            elif t in RIGHT_ARM:
+                W[t] = world_of(t, s, pw, True)    # 右腕は、元の左腕を反転したもの
+            elif t in LEFT_ARM:
+                W[t] = world_of(t, s, pw, False)
+            else:
+                a, b = world_of(t, s, pw, False), world_of(t, s, pw, True)
+                if a.dot(b) < 0:
+                    b = -b
+                W[t] = a.slerp(b, 0.5).normalized()   # 体は元と反転したものの平均（左右対称）
         hp = G @ pw[hips_src].translation
         if mirror:
             hp.x = -hp.x
+        if both:
+            hp.x = 0.0
         hips_world.append(Vector((hp.x, hp.y, hp.z)) * h_ratio)
         frames_world.append(W)
     bpy.data.objects.remove(src, do_unlink=True)
@@ -656,6 +695,7 @@ def build_frames(clip):
     frames_world, hips_world = [], []
     for k, seg in enumerate(segments):
         W, H = retarget_clip(seg)
+        W, H = retime(W, H, seg.get("speed", clip.get("speed", 1.0)), seg.get("reverse", clip.get("reverse", False)))
         # 何コマ目から始まったか（つなぎ目で blend コマ重なる）。斬撃を出すコマなどを決める用
         start = 0 if not frames_world else len(frames_world) - min(seg.get("blend", clip.get("blend", 4)), len(W), len(frames_world))
         print(f"SEGMENT [{clip['name']}] {k}: 出来上がりの {start} コマ目から（元の {seg.get('frames', ['最初'])[0]} コマ目）")
@@ -677,7 +717,55 @@ def build_frames(clip):
             hips_world[k] = hips_world[k].lerp(H[i], t)
         frames_world += W[b:]
         hips_world += H[b:]
+    apply_hold(frames_world, hips_world, clip.get("hold"), clip["name"])
+    BUILT[clip["name"]] = ([dict(w) for w in frames_world], [h.copy() for h in hips_world])
     return frames_world, hips_world
+
+
+def retime(W, H, speed, reverse):
+    """コマの並びを、speed 倍の速さにする（間のコマはなめらかにつなぐ）。reverse なら逆から並べる。"""
+    if reverse:
+        W, H = W[::-1], H[::-1]
+    if speed == 1.0 or len(W) < 2:
+        return W, H
+    n = max(2, round((len(W) - 1) / speed) + 1)
+    outW, outH = [], []
+    for i in range(n):
+        x = i * (len(W) - 1) / (n - 1)
+        a = min(int(x), len(W) - 2)
+        t = x - a
+        outW.append(blend_world(W[a], W[a + 1], t))
+        outH.append(H[a].lerp(H[a + 1], t))
+    return outW, outH
+
+
+# 書き出したクリップの骨の世界での向き（hold で、あとのクリップから使う）
+BUILT = {}
+
+
+def apply_hold(frames_world, hips_world, hold, name):
+    """hold の parts の骨を、全部のコマで、先に作ったクリップの1コマの姿勢にする。
+    clip に自分の名前を書くと、自分のそのコマで止める（動かない姿勢のクリップにする）。"""
+    if not hold:
+        return
+    if hold["clip"] == name:
+        src_w, src_h = [dict(w) for w in frames_world], [h.copy() for h in hips_world]
+    else:
+        src_w, src_h = BUILT[hold["clip"]]
+    ref = src_w[hold.get("frame", 0)]
+    parts = hold["parts"]
+    for i, W in enumerate(frames_world):
+        for n in list(W.keys()) + [m for m in ref if m not in W]:
+            if n in LEFT_ARM:
+                part = "left_arm"
+            elif n in RIGHT_ARM:
+                part = "right_arm"
+            else:
+                part = "body"
+            if part in parts and n in ref:
+                W[n] = ref[n].copy()
+        if "body" in parts:
+            hips_world[i] = src_h[hold.get("frame", 0)].copy()
 
 
 def bake(clip):
@@ -688,7 +776,8 @@ def bake(clip):
         # 最後のコマを最初のコマと同じにして、つなぎ目で跳ねないようにする
         frames_basis[-1] = dict(frames_basis[0])
         hips_world[-1] = hips_world[0].copy()
-    secondary(frames_basis, hips_world[:-1] if loop else hips_world, loop)
+    if CONFIG.get("secondary", True):
+        secondary(frames_basis, hips_world[:-1] if loop else hips_world, loop)
     if loop:
         frames_basis[-1] = dict(frames_basis[0])
     if clip.get("in_place", False):
@@ -738,7 +827,24 @@ def bake(clip):
     SCENE.frame_start, SCENE.frame_end = 0, length
     print(f"[{clip['name']}] {length + 1} コマ（{(length) / FPS:.2f} 秒）")
     print_sword_path(clip["name"], length)
+    print_hands(clip["name"], length)
     return act, length
+
+
+def print_hands(name, length):
+    """両手の位置を、頭から見た（右, 前, 上）cm で出す（一人称の腕で、手が画面に入るかを確かめる用）。"""
+    if "--hands" not in argv:
+        return
+    out = []
+    for f in sorted({0, length // 2, length}):
+        SCENE.frame_set(f)
+        head = TGT.matrix_world @ TGT.pose.bones[C("Head")].head
+        vals = []
+        for side in "LR":
+            d = (TGT.matrix_world @ TGT.pose.bones[S(side, "Hand")].head - head) * 100
+            vals.append(f"{side}({-d.x:.0f},{-d.y:.0f},{d.z:.0f})")
+        out.append(f"{f}: " + " ".join(vals))
+    print(f"HANDS [{name}] " + " / ".join(out))
 
 
 SWORD_BONE = "J_Sec_Sword"

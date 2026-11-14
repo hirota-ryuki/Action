@@ -10,7 +10,7 @@
 
 // プレイヤーキャラクター。
 // 共通の部品と1フレームの順番は Character にある。ここでは Player だけの部品を組み立て、「動く」部分を書く。
-//   動く: 立ち止まる・歩く・走る・空中・ダッシュ・凍結の切り替えは PlayerStateMachine（ステートパターン）
+//   動く: 立ち止まる・歩く・走る・空中・ダッシュ・攻撃・凍結の切り替えは PlayerStateMachine（ステートパターン）
 //   アニメーション: PlayerAnimator、剣: WeaponAttachment、落下: FallRespawn
 // 調整値は PlayerConfig にある。
 class Player : public Character
@@ -45,6 +45,7 @@ protected:
 	void OnStart() override;
 	void FillInputContext(InputSourceContext& context) const override;
 	void UpdateAction(float deltaTime) override;
+	void FilterCastInput(CharacterInput& input) const override;
 	void OnLateUpdate(float deltaTime) override;
 	void OnRender(RenderContext& rc) override;
 

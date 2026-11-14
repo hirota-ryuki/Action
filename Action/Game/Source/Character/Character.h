@@ -99,6 +99,11 @@ protected:
 	}
 	// ③ 動く。CharacterMover の Move 系を1回だけ呼ぶ（凍結中も重力のために呼ぶ）。
 	virtual void UpdateAction(float deltaTime) = 0;
+	// 魔法を撃つ部品（MagicCaster）に渡す入力を書き換える。攻撃のモーションに合わせて撃つ、などに使う。
+	// input には、このフレームに受け取った入力の写しが入っている（m_input は変えない）。
+	virtual void FilterCastInput(CharacterInput& input) const
+	{
+	}
 	// モデルを更新したあと（ボーンに付けたものを動かす、など）。
 	virtual void OnLateUpdate(float deltaTime)
 	{

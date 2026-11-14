@@ -262,6 +262,7 @@
     <ClCompile Include="Source\Player\State\PlayerStopState.cpp" />
     <ClCompile Include="Source\Player\State\PlayerLandState.cpp" />
     <ClCompile Include="Source\Player\State\PlayerFrozenState.cpp" />
+    <ClCompile Include="Source\Player\State\PlayerAttackState.cpp" />
     <ClCompile Include="Source\Character\Components\StatusEffects.cpp" />
     <ClCompile Include="Source\Magic\MagicCaster.cpp" />
     <ClCompile Include="Source\Magic\IceMagic.cpp" />
@@ -347,6 +348,7 @@
     <ClInclude Include="Source\Player\State\PlayerStopState.h" />
     <ClInclude Include="Source\Player\State\PlayerLandState.h" />
     <ClInclude Include="Source\Player\State\PlayerFrozenState.h" />
+    <ClInclude Include="Source\Player\State\PlayerAttackState.h" />
     <ClInclude Include="Source\Character\Components\StatusEffects.h" />
     <ClInclude Include="Source\Magic\MagicCaster.h" />
     <ClInclude Include="Source\Magic\IceMagic.h" />

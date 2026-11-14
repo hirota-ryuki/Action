@@ -17,6 +17,7 @@ enum class PlayerStateId
 	Dash,    // ダッシュ中（決まった距離を一気に進む）
 	Stop,    // 走っていて入力を離した。勢いで滑りながら踏ん張って止まる
 	Land,    // 空中から着地した。しゃがんで衝撃を受け、立ち上がる
+	Attack,  // 立ち止まって氷魔法を撃つ3段攻撃
 	Frozen,  // 凍結などで行動できない
 	Num,
 };
@@ -71,6 +72,13 @@ struct PlayerStateSettings
 	float landBlendSeconds = 0.1f;      // 空中から JumpLand への補間時間。
 	float landExitBlendSeconds = 0.3f;  // JumpLand から次の動きへの補間時間。
 	bool landCancelByMove = true;       // 着地の間に移動の入力があれば、すぐ歩き・走りへ移る。false なら最後まで着地する。
+	// 3段攻撃（Attack1〜Attack3）。時間はどれもクリップの中の位置（秒）。3本とも同じ長さ・同じ区切りで作ってある。
+	float attackFireTime = 0.0f;        // 手を突き出したところ。ここで弾を撃つ。
+	float attackCancelTime = 0.0f;      // 撃ち終わり。ここから次の段・ダッシュ・ジャンプ・移動を受け付ける。
+	float attackEndTime = 0.0f;         // ここまで流したら Idle へ移る。
+	float attackAnimSpeed = 1.0f;       // 攻撃のアニメーションの再生速度（倍）。
+	float attackBlendSeconds = 0.1f;    // 攻撃の段に入るときの補間時間。
+	float attackExitBlendSeconds = 0.2f; // 攻撃から次の動きへの補間時間。
 	float moveThreshold = 0.1f;       // 移動入力の長さがこれより小さければ立ち止まっているとみなす。
 	float animBlendSeconds = 0.2f;    // アニメーションを切り替えるときの補間時間。
 	float walkAnimMoveSpeed = 0.0f;   // 歩くアニメーションを等速で再生したとき、足が地面を送る速さ。0なら等速で再生する。
@@ -88,6 +96,9 @@ struct PlayerStateContext
 	// ダッシュのあと、移動の入力を離すまで走り続ける（走るボタンを押していなくても Run）。
 	// Dash が立て（dashKeepRun のとき）、PlayerStateMachine が移動の入力がないフレームで下ろす。
 	bool keepRunAfterDash = false;
+	// このフレームに魔法の発射ボタンを押したことにする。Attack が手を突き出したコマで立て、
+	// Player が魔法を撃つ入力に使う。PlayerStateMachine が毎フレームの最初に下ろす。
+	bool attackFire = false;
 };
 
 // プレイヤーのステートの基底クラス。中身は共通の State（Character/StateMachine/State.h）にある。

@@ -52,6 +52,19 @@ void Player::UpdateAction(float deltaTime)
 	}
 }
 
+void Player::FilterCastInput(CharacterInput& input) const
+{
+	// 攻撃の間は、クリックした瞬間には撃たず、手を突き出したコマ（Attack が立てる）でだけ発射ボタンを押したことにする。
+	// ButtonState::Update は通さない（押した瞬間の判定に使う m_input の前フレームの値を変えないため）。
+	if (m_stateMachine.GetCurrentId() != PlayerStateId::Attack) {
+		return;
+	}
+	const bool isFire = m_stateMachine.IsAttackFire();
+	input.fire.isTrigger = isFire;
+	input.fire.isPress = isFire;
+	input.fire.isRelease = false;
+}
+
 void Player::OnLateUpdate(float deltaTime)
 {
 	m_sword.Update();

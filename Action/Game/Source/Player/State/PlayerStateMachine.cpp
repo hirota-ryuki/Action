@@ -8,6 +8,7 @@
 #include "PlayerStopState.h"
 #include "PlayerLandState.h"
 #include "PlayerFrozenState.h"
+#include "PlayerAttackState.h"
 
 PlayerStateMachine::PlayerStateMachine()
 {
@@ -19,10 +20,12 @@ PlayerStateMachine::PlayerStateMachine()
 	Register<PlayerStopState>();
 	Register<PlayerLandState>();
 	Register<PlayerFrozenState>();
+	Register<PlayerAttackState>();
 }
 
 void PlayerStateMachine::OnBeforeUpdate(PlayerStateContext& context, const CharacterInput& input)
 {
+	context.attackFire = false;
 	// 移動の入力を離したら、ダッシュのあとの「走り続ける」を終える。
 	if (input.moveDirection.Length() < context.settings.moveThreshold) {
 		context.keepRunAfterDash = false;
