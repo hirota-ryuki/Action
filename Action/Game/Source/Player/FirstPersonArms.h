@@ -47,6 +47,10 @@ private:
 	void UpdateTransform();
 	// 今流しているクリップで、その腕（side）を「撃つときの置き方」にする割合（0〜1）。
 	float GetCastWeightTarget(int side) const;
+	// 今流しているクリップで、両腕を「炎を溜めるときの置き方」にする割合（0〜1）。
+	float GetChargeWeightTarget() const;
+	// 炎の溜めのクリップ（溜め始め・溜め）を流しているか。
+	bool IsChargeClip() const;
 	// その手（side）の握り具合の目標（1 で握りこぶし、0 で開く）。
 	float GetGripTarget(int side) const;
 	// その枠（slot）の魔法を、前のフレームから撃ったか（撃った回数が増えたか）。
@@ -64,7 +68,8 @@ private:
 	std::vector<int> m_armBones[2];    // 左腕・右腕の骨（上腕から先）の番号。
 	int m_upperArmBone[2] = { -1, -1 };  // 左右の上腕の骨の番号（腕を開くときの中心）。
 	EnClip m_clip = enClip_Idle;
-	float m_castWeight[2] = { 0.0f, 0.0f };  // 左右の腕の、構え（0）と撃つとき（1）の置き方の混ぜ具合。
+	float m_castWeight[2] = { 0.0f, 0.0f };  // 左右の腕の、構え（0）と氷を撃つとき（1）の置き方の混ぜ具合。
+	float m_chargeWeight[2] = { 0.0f, 0.0f };  // 左右の腕の、炎を溜めるときの置き方の混ぜ具合（1 で溜めるときの置き方）。
 	float m_grip[2] = { 1.0f, 1.0f };        // 左右の手の握り具合（1 で握りこぶし、0 で開く）。
 	float m_releaseTimer = 0.0f;             // 炎を撃ったあと、両手を開いて見せている残りの秒数。
 	int m_lastMainFireCount = 0;  // 前のフレームまでに、氷を撃った回数。

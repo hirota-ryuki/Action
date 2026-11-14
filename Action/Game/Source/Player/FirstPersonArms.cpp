@@ -22,11 +22,22 @@ namespace
 		float drop;       // 腕ごと下げる量。
 		float push;       // 腕ごと前へ押し出す量。
 	};
+	// a と b の置き方を、rate（0 で a、1 で b）で混ぜる。
+	ArmPose BlendPose(const ArmPose& a, const ArmPose& b, float rate)
+	{
+		auto lerp = [rate](float x, float y) { return x + (y - x) * rate; };
+		return {
+			lerp(a.spreadDeg, b.spreadDeg), lerp(a.raiseDeg, b.raiseDeg),
+			lerp(a.sideShift, b.sideShift), lerp(a.drop, b.drop), lerp(a.push, b.push),
+		};
+	}
 	// 構え: 手を画面の下 1/3 の左右に置く。
 	const ArmPose IDLE_POSE = { -25.0f, 55.0f, 12.0f, 0.0f, 0.0f };
-	// 撃つとき（炎の溜め始め・溜め・放つは両腕、氷は右腕だけ）: 両手を上げる動きなので、角度を抑えて下げ、
-	// 手を画面の下 1/3 に収めて前が見えるようにする。
+	// 氷を撃つとき（右腕だけ）: 手を突き出す動きなので、角度を抑えて下げ、手を画面の下 1/3 に収めて前が見えるようにする。
 	const ArmPose CAST_POSE = { 0.0f, 24.0f, 0.0f, 0.0f, 10.0f };
+	// 炎を溜めるとき（溜め始め・溜め・放つ。両腕）: 画面の下に沈めた火の玉（PlayerInputSource の FIRST_PERSON_CHARGE_OFFSET）を
+	// 左右から開いた手で挟むように、手を火の玉の左右の、画面の下 1/3 に置く（氷を撃つときより低く、少し外へ開く）。
+	const ArmPose CHARGE_POSE = { 2.0f, 18.0f, 0.0f, 0.0f, 10.0f };
 	// 握りこぶしにするときに、アニメーションの指の形から足して曲げる角度（度。付け根・第二関節・第一関節の順）。
 	const float FINGER_CURL_DEGS[3] = { 45.0f, 50.0f, 40.0f };
 	// 親指: 先の関節を曲げる角度（度）と、IK で合わせるときの決まり。
@@ -271,13 +282,13 @@ void FirstPersonArms::SpreadArms(Skeleton& skeleton)
 		if (m_upperArmBone[side] < 0) {
 			continue;
 		}
-		// 構えと撃つときの置き方を、この腕の混ぜ具合で混ぜる。
-		const float w = m_castWeight[side];
-		const float spreadDeg = IDLE_POSE.spreadDeg + (CAST_POSE.spreadDeg - IDLE_POSE.spreadDeg) * w;
-		const float raiseDeg = IDLE_POSE.raiseDeg + (CAST_POSE.raiseDeg - IDLE_POSE.raiseDeg) * w;
-		const float sideShift = IDLE_POSE.sideShift + (CAST_POSE.sideShift - IDLE_POSE.sideShift) * w;
-		const float drop = IDLE_POSE.drop + (CAST_POSE.drop - IDLE_POSE.drop) * w;
-		const float push = IDLE_POSE.push + (CAST_POSE.push - IDLE_POSE.push) * w;
+		// 構え → 氷を撃つとき → 炎を溜めるとき、の順に、この腕の混ぜ具合で混ぜる。
+		const ArmPose pose = BlendPose(BlendPose(IDLE_POSE, CAST_POSE, m_castWeight[side]), CHARGE_POSE, m_chargeWeight[side]);
+		const float spreadDeg = pose.spreadDeg;
+		const float raiseDeg = pose.raiseDeg;
+		const float sideShift = pose.sideShift;
+		const float drop = pose.drop;
+		const float push = pose.push;
 		// 左腕（side 0）は画面の左へ、右腕は右へ回す（カメラの上の軸まわりに、左腕は +、右腕は -）。
 		// そのあと、カメラの右の軸まわりに - へ回して持ち上げる。
 		Quaternion spread;
@@ -317,6 +328,7 @@ void FirstPersonArms::Reset(const Player& player)
 	m_releaseTimer = 0.0f;
 	for (int side = 0; side < 2; side++) {
 		m_castWeight[side] = 0.0f;
+		m_chargeWeight[side] = 0.0f;
 		m_grip[side] = 1.0f;
 	}
 	Play(enClip_Idle, 0.0f);
@@ -332,6 +344,7 @@ void FirstPersonArms::Update(const Player& player)
 	const float rate = min(1.0f, deltaTime * POSE_BLEND_SPEED);
 	for (int side = 0; side < 2; side++) {
 		m_castWeight[side] += (GetCastWeightTarget(side) - m_castWeight[side]) * rate;
+		m_chargeWeight[side] += (GetChargeWeightTarget() - m_chargeWeight[side]) * rate;
 		// 手は、開くときは速く（開いた瞬間に魔法が出る）、握り直すときはゆっくり。
 		const float gripTarget = GetGripTarget(side);
 		const float gripSpeed = gripTarget < m_grip[side] ? GRIP_OPEN_SPEED : GRIP_CLOSE_SPEED;
@@ -343,22 +356,26 @@ void FirstPersonArms::Update(const Player& player)
 
 float FirstPersonArms::GetCastWeightTarget(int side) const
 {
-	switch (m_clip) {
-	case enClip_ChargeStart:
-	case enClip_Charge:
-		return 1.0f;  // 炎は両手（撃って手を開いている間も、上げたまま）。
-	case enClip_CastRight:
-		// 氷は右手だけ。このゲームでは左の骨（side 0）が画面の右に映る。
-		return side == 0 ? 1.0f : 0.0f;
-	default:
-		return 0.0f;
-	}
+	// 氷は右手だけ。このゲームでは左の骨（side 0）が画面の右に映る。
+	return m_clip == enClip_CastRight && side == 0 ? 1.0f : 0.0f;
+}
+
+float FirstPersonArms::GetChargeWeightTarget() const
+{
+	// 炎は両手（撃って手を開いている間も、溜めたときの置き方のまま）。
+	return IsChargeClip() ? 1.0f : 0.0f;
+}
+
+bool FirstPersonArms::IsChargeClip() const
+{
+	return m_clip == enClip_ChargeStart || m_clip == enClip_Charge;
 }
 
 float FirstPersonArms::GetGripTarget(int side) const
 {
-	// 炎を撃った直後は両手を開く。溜めている間は握りこぶしのまま。
-	if (m_releaseTimer > 0.0f) {
+	// 炎を溜めている間と撃った直後は、握らずに、クリップの手の形（火の玉を包む手）のままにする。
+	// 溜めのクリップの指はもとから曲がっているので、握りこぶしの曲げを足すと、指があちこちへ曲がってしまう。
+	if (IsChargeClip() || m_releaseTimer > 0.0f) {
 		return 0.0f;
 	}
 	// 氷を撃つ右手は開く。このゲームでは左の骨（side 0）が画面の右に映る。
@@ -379,9 +396,7 @@ void FirstPersonArms::UpdateClip(const Player& player, float deltaTime)
 	const bool isMainCast = IsFiredThisFrame(caster, MAIN_SLOT, m_lastMainFireCount);
 	const bool isSubCast = IsFiredThisFrame(caster, SUB_SLOT, m_lastSubFireCount);
 	const bool isCharging = caster.IsHolding(SUB_SLOT);
-	const bool isChargeClip = m_clip == enClip_ChargeStart || m_clip == enClip_Charge;
-	{ static FILE* fp = nullptr; static int n = 0; static int k = 0; if (!fp) { fp = _fsopen("capture_log.txt", "w", _SH_DENYNO); }  // CAPTURE_TEMP
-	  if (isCharging) { k++; } if (fp) { fprintf(fp, "%d %u hold=%d k=%d clip=%d\n", n++, GetTickCount(), isCharging, k, (int)m_clip); fflush(fp); } }
+	const bool isChargeClip = IsChargeClip();
 
 	// 両手の動き（炎）を、右手の動き（氷）より先に見る。溜めている間に氷を撃っても、両手は上げたまま。
 	if (isSubCast) {

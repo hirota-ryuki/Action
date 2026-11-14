@@ -155,8 +155,9 @@ private:
 	void UpdateMagic();
 	// 魔法を撃つ位置と向き。照準があればそちら、なければ足元から castHeight の高さで正面（水平）へ。
 	void MakeCastPose(Vector3& origin, Vector3& direction) const;
-	// 枠0（メイン）の魔法の撃つ位置と向き。m_input.mainAimOffset があれば、撃つ位置をずらす（一人称で、右手から撃つ）。
-	void MakeMainCastPose(Vector3& origin, Vector3& direction) const;
+	// 照準があるときに、撃つ位置を offset だけずらし、向きを照準の先の点へ向け直す
+	// （一人称で、氷は右手から、炎は画面の下から撃つ）。offset がゼロなら何もしない。
+	void OffsetCastPose(const Vector3& offset, Vector3& origin, Vector3& direction) const;
 	// キャラコンの位置・回転を Transform に書く。
 	void SyncTransform();
 

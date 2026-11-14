@@ -37,6 +37,8 @@ struct CharacterInput
 	// hasAim のとき、メインの魔法だけ、撃つ位置をこれだけずらす（一人称で、氷魔法を右手から撃つ）。
 	// 向きは、照準の先の点へ向け直す（画面の真ん中に飛んでいくように）。
 	Vector3 mainAimOffset = Vector3::Zero;
+	// hasAim のとき、サブの魔法の撃つ位置をこれだけずらす（一人称で、炎魔法の火の玉を画面の下で溜める）。向きは mainAimOffset と同じく向け直す。
+	Vector3 subAimOffset = Vector3::Zero;
 };
 
 // 入力元が操作対象について知ってよい情報。

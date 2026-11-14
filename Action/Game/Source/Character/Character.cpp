@@ -3,7 +3,7 @@
 
 namespace
 {
-	// メインの魔法の撃つ位置をずらしたとき（mainAimOffset）、照準のこの距離先の点へ向けて撃つ。
+	// 魔法の撃つ位置をずらしたとき（mainAimOffset・subAimOffset）、照準のこの距離先の点へ向けて撃つ。
 	constexpr float AIM_POINT_DISTANCE = 3000.0f;
 }
 
@@ -138,19 +138,22 @@ void Character::UpdateMagic()
 	// ボタンの状態をそのまま渡す。押した・押している・離したの判断は MagicCaster がする。
 	Vector3 mainOrigin = origin;
 	Vector3 mainDirection = direction;
-	MakeMainCastPose(mainOrigin, mainDirection);
+	OffsetCastPose(m_input.mainAimOffset, mainOrigin, mainDirection);
+	Vector3 subOrigin = origin;
+	Vector3 subDirection = direction;
+	OffsetCastPose(m_input.subAimOffset, subOrigin, subDirection);
 	m_magicCaster.Fire(0, castInput.fire, mainOrigin, mainDirection);
-	m_magicCaster.Fire(1, castInput.subFire, origin, direction);
+	m_magicCaster.Fire(1, castInput.subFire, subOrigin, subDirection);
 }
 
-void Character::MakeMainCastPose(Vector3& origin, Vector3& direction) const
+void Character::OffsetCastPose(const Vector3& offset, Vector3& origin, Vector3& direction) const
 {
-	if (!m_input.hasAim || m_input.mainAimOffset.LengthSq() <= FLT_EPSILON) {
+	if (!m_input.hasAim || offset.LengthSq() <= FLT_EPSILON) {
 		return;
 	}
 	// 撃つ位置だけずらし、向きは照準の先の点へ向け直す（画面の真ん中に飛んでいくように）。
 	const Vector3 aimPoint = origin + direction * AIM_POINT_DISTANCE;
-	origin += m_input.mainAimOffset;
+	origin += offset;
 	direction = aimPoint - origin;
 	direction.Normalize();
 }

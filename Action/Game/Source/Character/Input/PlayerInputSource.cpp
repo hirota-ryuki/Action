@@ -7,6 +7,9 @@ namespace
 	// 一人称で、メインの魔法（氷）を右手から撃つ。撃つ位置を、カメラから見て右（x）と上（y）へこれだけずらす。
 	// 右手を突き出しきったときの手のひらの前に合わせてある。
 	const Vector3 FIRST_PERSON_RIGHT_HAND_OFFSET = Vector3(16.0f, -15.0f, 0.0f);
+	// 一人称で、サブの魔法（炎）の火の玉を溜める位置を、カメラから見て右（x）と上（y）へこれだけずらす。
+	// 目の前の真ん中で溜めると、火の玉で前が見えなくなるので、画面の下へ下げて、溜めきった火の玉の上 1/3 だけが見えるようにする。
+	const Vector3 FIRST_PERSON_CHARGE_OFFSET = Vector3(0.0f, -44.0f, 0.0f);
 }
 
 PlayerInputSource::PlayerInputSource(int padNo)
@@ -40,11 +43,12 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	input.isRun = isDashPress;
 	input.fire.Update((CanUseMouse() && IsKeyPressed(VK_LBUTTON)) || pad.IsPress(enButtonY));
 	// パッド未接続時は右トリガー(RB2)が8キーに割り当てられている。
-	{ static int captureFrame = 0; input.subFire.Update(++captureFrame > 60); }  // CAPTURE_TEMP
+	input.subFire.Update((CanUseMouse() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
 
 	// 一人称では視線の方向へ目の位置から撃つ。三人称ではキャラクターの正面へ撃つ（hasAim = false）。
 	input.hasAim = context.isFirstPerson;
 	input.mainAimOffset = Vector3::Zero;
+	input.subAimOffset = Vector3::Zero;
 	if (input.hasAim) {
 		input.aimOrigin = g_camera3D->GetPosition();
 		input.aimDirection = g_camera3D->GetForward();
@@ -52,6 +56,8 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 		const Vector3 cameraUp(cameraRotation.m[1][0], cameraRotation.m[1][1], cameraRotation.m[1][2]);
 		input.mainAimOffset = g_camera3D->GetRight() * FIRST_PERSON_RIGHT_HAND_OFFSET.x
 			+ cameraUp * FIRST_PERSON_RIGHT_HAND_OFFSET.y;
+		input.subAimOffset = g_camera3D->GetRight() * FIRST_PERSON_CHARGE_OFFSET.x
+			+ cameraUp * FIRST_PERSON_CHARGE_OFFSET.y;
 	}
 }
 
