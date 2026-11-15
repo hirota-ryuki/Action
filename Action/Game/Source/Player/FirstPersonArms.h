@@ -38,6 +38,10 @@ private:
 	void SpreadArms(Skeleton& skeleton);
 	// 炎を放つとき（m_releaseWeight）に、手のひらを前へ向け、両手の間を RELEASE_HAND_GAP にそろえる。SpreadArms のあとに呼ぶ。
 	void AimReleaseHands(Skeleton& skeleton);
+	// 炎を放つときの指を、反らさず開きすぎない形にする（w で混ぜる）。palmNormal は手のひらの向き。AimReleaseHands から呼ぶ。
+	void ShapeReleaseFingers(Skeleton& skeleton, int side, Vector3 palmNormal, float w);
+	// 指の chain[j] の骨の向き（付け根側から指先へ）。
+	static Vector3 FingerSegmentDirection(Skeleton& skeleton, const int* chain, int j);
 	// 握り具合（m_grip）に合わせて指を握り込む。SpreadArms の前に呼ぶ。
 	void CurlFingers(Skeleton& skeleton);
 	// 親指を、握った人差し指と中指の外側に重ねる（親指の先を目標へ合わせる IK）。CurlFingers から呼ぶ。

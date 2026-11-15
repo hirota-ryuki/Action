@@ -50,7 +50,12 @@ namespace
 	// 指の骨の位置で測るので、指先の肉の分を足してある。
 	constexpr float RELEASE_HAND_GAP = 10.0f;
 	// 炎を放つときに、指先を真上から内側へ傾ける角度（度）。
-	constexpr float RELEASE_FINGER_TILT_DEG = 15.0f;
+	constexpr float RELEASE_FINGER_TILT_DEG = 25.0f;
+	// 炎を放つときの指の形（ShapeReleaseFingers）。
+	// 関節ごとに、手のひらの側へ曲げる角度（度。付け根・第二関節・第一関節の順。手前の関節の分に足していく）。
+	const float RELEASE_FINGER_CURL_DEGS[3] = { 8.0f, 12.0f, 8.0f };
+	constexpr float RELEASE_FINGER_CLOSE_RATE = 0.5f;  // 人差し指〜小指の開きを、中指の向きへ寄せる割合（1 で全部そろう）。
+	constexpr float RELEASE_THUMB_CLOSE_RATE = 0.3f;   // 親指を、人差し指の向きへ寄せる割合。
 	// 握りこぶしにするときに、アニメーションの指の形から足して曲げる角度（度。付け根・第二関節・第一関節の順）。
 	const float FINGER_CURL_DEGS[3] = { 45.0f, 50.0f, 40.0f };
 	// 親指: 先の関節を曲げる角度（度）と、IK で合わせるときの決まり。
@@ -250,6 +255,10 @@ void FirstPersonArms::AimReleaseHands(Skeleton& skeleton)
 			world.Multiply(bone->GetWorldMatrix(), aroundWrist);
 			bone->SetWorldMatrix(world);
 		}
+		// 指の形を、反らさず開きすぎない形に作り直す。
+		Vector3 palmNormal = palm;
+		q.Apply(palmNormal);
+		ShapeReleaseFingers(skeleton, side, palmNormal, w);
 	}
 
 	// ② 両手の内側の端（指の骨でいちばん内にあるもの）の間を RELEASE_HAND_GAP にするよう、腕ごと左右へずらす。
@@ -276,6 +285,84 @@ void FirstPersonArms::AimReleaseHands(Skeleton& skeleton)
 			world.Multiply(bone->GetWorldMatrix(), move);
 			bone->SetWorldMatrix(world);
 		}
+	}
+}
+
+Vector3 FirstPersonArms::FingerSegmentDirection(Skeleton& skeleton, const int* chain, int j)
+{
+	if (j < 2) {
+		Vector3 direction = BonePosition(skeleton, chain[j + 1]) - BonePosition(skeleton, chain[j]);
+		direction.Normalize();
+		return direction;
+	}
+	// 指先の骨は先に骨が無いので、ひとつ手前の骨で「骨の向き」になっている軸を探し、指先の骨の同じ軸を使う。
+	const Vector3 before = FingerSegmentDirection(skeleton, chain, 1);
+	const Matrix& m1 = skeleton.GetBone(chain[1])->GetWorldMatrix();
+	const Matrix& m2 = skeleton.GetBone(chain[2])->GetWorldMatrix();
+	int bestAxis = 0;
+	float bestDot = 0.0f;
+	for (int axis = 0; axis < 3; axis++) {
+		Vector3 v(m1.m[axis][0], m1.m[axis][1], m1.m[axis][2]);
+		v.Normalize();
+		const float dot = v.Dot(before);
+		if (fabsf(dot) > fabsf(bestDot)) {
+			bestDot = dot;
+			bestAxis = axis;
+		}
+	}
+	Vector3 direction(m2.m[bestAxis][0], m2.m[bestAxis][1], m2.m[bestAxis][2]);
+	direction.Normalize();
+	return bestDot < 0.0f ? direction * -1.0f : direction;
+}
+
+void FirstPersonArms::ShapeReleaseFingers(Skeleton& skeleton, int side, Vector3 palmNormal, float w)
+{
+	// 溜めのクリップの開いた手は、指が手の甲の側へ反り、大きく開いている。そのままでは人の手にならないので、
+	// 手のひらの面の上で、人差し指〜小指の向きを中指の向きへ寄せ（開きを小さくし）、
+	// 関節ごとに手のひらの側へ少し曲げた向き（RELEASE_FINGER_CURL_DEGS）へ、付け根の関節から順に向け直す。
+	const int* middle = m_fingerBones[side][1];
+	if (middle[0] < 0 || middle[1] < 0) {
+		return;
+	}
+	palmNormal.Normalize();
+	auto onPalmPlane = [&palmNormal](Vector3 v) {
+		v -= palmNormal * v.Dot(palmNormal);
+		v.Normalize();
+		return v;
+	};
+	const Vector3 middleDirection = onPalmPlane(FingerSegmentDirection(skeleton, middle, 0));
+	// 向き from を向き to へ、rate の割合だけ回して、chain[j] から指先までを回す。
+	auto turnChain = [&skeleton](const int* chain, int j, const Vector3& from, const Vector3& to, float rate) {
+		Vector3 axis;
+		axis.Cross(from, to);
+		if (axis.LengthSq() <= FLT_EPSILON) {
+			return;
+		}
+		const float deg = acosf(max(-1.0f, min(1.0f, from.Dot(to)))) * 57.2958f;
+		RotateChain(skeleton, chain, j, axis, deg * rate);
+	};
+	for (int f = 0; f < THUMB; f++) {
+		const int* chain = m_fingerBones[side][f];
+		if (chain[0] < 0 || chain[1] < 0 || chain[2] < 0) {
+			continue;
+		}
+		Vector3 base = onPalmPlane(FingerSegmentDirection(skeleton, chain, 0));
+		base = base * (1.0f - RELEASE_FINGER_CLOSE_RATE) + middleDirection * RELEASE_FINGER_CLOSE_RATE;
+		base.Normalize();
+		float curlDeg = 0.0f;
+		for (int j = 0; j < 3; j++) {
+			curlDeg += RELEASE_FINGER_CURL_DEGS[j];
+			const float rad = curlDeg / 57.2958f;
+			const Vector3 target = base * cosf(rad) + palmNormal * sinf(rad);
+			turnChain(chain, j, FingerSegmentDirection(skeleton, chain, j), target, w);
+		}
+	}
+	// 親指: 付け根から、人差し指の向きへ少し寄せる（横へ突き出しすぎないように）。
+	const int* thumb = m_fingerBones[side][THUMB];
+	const int* index = m_fingerBones[side][0];
+	if (thumb[0] >= 0 && thumb[1] >= 0 && thumb[2] >= 0 && index[0] >= 0 && index[1] >= 0) {
+		const Vector3 thumbDirection = FingerSegmentDirection(skeleton, thumb, 0);
+		turnChain(thumb, 0, thumbDirection, FingerSegmentDirection(skeleton, index, 0), RELEASE_THUMB_CLOSE_RATE * w);
 	}
 }
 
