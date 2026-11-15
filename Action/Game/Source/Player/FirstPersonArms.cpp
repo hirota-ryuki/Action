@@ -187,14 +187,15 @@ void FirstPersonArms::AimReleaseHands(Skeleton& skeleton)
 			continue;
 		}
 		const Vector3 wrist = BonePosition(skeleton, m_handBone[side]);
-		// 手のひらの向き: 人差し指と小指の付け根で張る面の法線。裏表は、指が曲がっている側（手のひら側）に合わせる。
+		// 手のひらの向き: 人差し指と小指の付け根で張る面の法線。
+		// 裏表は、中指の曲がっている側の反対にする（曲がっている側に合わせると、ゲームでは手のひらがカメラの方を向いた）。
 		Vector3 palm;
 		palm.Cross(BonePosition(skeleton, index[0]) - wrist, BonePosition(skeleton, little[0]) - wrist);
 		Vector3 fingerBase = BonePosition(skeleton, middle[0]) - wrist;
 		fingerBase.Normalize();
 		Vector3 curl = BonePosition(skeleton, middle[2]) - BonePosition(skeleton, middle[0]);
 		curl -= fingerBase * curl.Dot(fingerBase);
-		if (palm.Dot(curl) < 0.0f) {
+		if (palm.Dot(curl) > 0.0f) {
 			palm *= -1.0f;
 		}
 		if (palm.LengthSq() <= FLT_EPSILON) {
