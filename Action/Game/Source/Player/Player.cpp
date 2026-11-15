@@ -42,6 +42,7 @@ void Player::OnStart()
 void Player::FillInputContext(InputSourceContext& context) const
 {
 	context.isFirstPerson = !IsRenderBody();
+	context.action1UseCount = m_skillController.GetUseCount(ActionButton::Action1);
 }
 
 void Player::UpdateAction(float deltaTime)
