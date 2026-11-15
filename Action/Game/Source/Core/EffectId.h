@@ -5,7 +5,6 @@
 // 番号が重ならないようにここで一括管理する。
 enum class EffectId : int
 {
-	Fire,
 	IceFly,     // 氷魔法の飛んでいる氷
 	IceHit,     // 氷魔法の着弾
 	FireFly,    // 炎魔法の飛んでいる炎

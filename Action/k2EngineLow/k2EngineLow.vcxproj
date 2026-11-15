@@ -371,10 +371,6 @@
     <ClCompile Include="sound\WaveFileBank.cpp" />
     <ClCompile Include="tkFile\TkaFile.cpp" />
     <ClCompile Include="tkFile\FbxRuntimeImporter.cpp" />
-    <ClCompile Include="tkFile\ModelReducer\ModelReducer.cpp" />
-    <ClCompile Include="tkFile\ModelReducer\LodBuilder.cpp" />
-    <ClCompile Include="tkFile\ModelReducer\MeshSimplifier.cpp" />
-    <ClCompile Include="tkFile\ModelReducer\VertexOrderOptimizer.cpp" />
     <ClCompile Include="..\exlib\meshoptimizer\allocator.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
@@ -507,10 +503,6 @@
     <ClInclude Include="time\Stopwatch.h" />
     <ClInclude Include="tkFile\TkaFile.h" />
     <ClInclude Include="tkFile\FbxRuntimeImporter.h" />
-    <ClInclude Include="tkFile\ModelReducer\ModelReducer.h" />
-    <ClInclude Include="tkFile\ModelReducer\LodBuilder.h" />
-    <ClInclude Include="tkFile\ModelReducer\MeshSimplifier.h" />
-    <ClInclude Include="tkFile\ModelReducer\VertexOrderOptimizer.h" />
     <ClInclude Include="..\exlib\meshoptimizer\meshoptimizer.h" />
     <ClInclude Include="tkFile\TkmFile.h" />
     <ClInclude Include="tkFile\TknFile.h" />
