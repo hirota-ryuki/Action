@@ -38,7 +38,6 @@ bool CharacterMover::IsOnGround() const
 void CharacterMover::Stop()
 {
 	m_moveSpeed = Vector3::Zero;
-	m_isMoving = false;
 }
 
 void CharacterMover::Update(const CharacterInput& input, float deltaTime)
@@ -94,7 +93,6 @@ void CharacterMover::Move(const Vector3& horizontalVelocity, float deltaTime)
 	m_moveSpeed.x = horizontalVelocity.x;
 	m_moveSpeed.z = horizontalVelocity.z;
 	m_moveSpeed.y -= m_settings.gravity * deltaTime;
-	m_isMoving = m_moveSpeed.x * m_moveSpeed.x + m_moveSpeed.z * m_moveSpeed.z > MOVE_DEAD_ZONE_SQ;
 
 	m_position = m_charaCon.Execute(m_moveSpeed, deltaTime);
 

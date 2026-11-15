@@ -10,10 +10,6 @@ public:
 	{
 		return EnemyStateId::Move;
 	}
-	const char* GetName() const override
-	{
-		return "Move";
-	}
 
 protected:
 	int GetAnimClip() const override

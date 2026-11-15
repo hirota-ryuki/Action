@@ -22,11 +22,6 @@ public:
 	// 部品の種類ごとに1つ、区画の分け方を作る。
 	std::unique_ptr<ISpatialIndex> CreateSpatialIndex() const;
 
-	// LOD を使うか。使わないときは、もとのモデル1つで描く。
-	bool IsLodEnabled() const
-	{
-		return m_isLodEnabled;
-	}
 	// 部品の種類（tree など）の LOD ごとの減らし方。書いていない種類は空（LOD を使わない）。
 	std::vector<nsK2EngineLow::ModelReducer::Level> GetLodLevels(const std::string& kind) const;
 	// 部品の種類の LOD の振り分け係。

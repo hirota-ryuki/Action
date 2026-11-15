@@ -31,10 +31,6 @@ public:
 	void SetRate(float rate);
 	// 遅れて減るバーを今の割合にそろえる。表示し始めるときに呼ぶ（減っていく演出にならないように）。
 	void ResetTrail();
-	float GetRate() const
-	{
-		return m_rate;
-	}
 	const Settings& GetSettings() const
 	{
 		return m_settings;

@@ -13,10 +13,6 @@ public:
 	{
 		return PlayerStateId::Walk;
 	}
-	const char* GetName() const override
-	{
-		return "Walk";
-	}
 
 	void Enter(PlayerStateContext& context, const CharacterInput& input) override
 	{

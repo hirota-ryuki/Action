@@ -20,10 +20,6 @@ public:
 	{
 		return PlayerStateId::Dash;
 	}
-	const char* GetName() const override
-	{
-		return "Dash";
-	}
 
 	void Enter(PlayerStateContext& context, const CharacterInput& input) override;
 	PlayerStateId CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const override;

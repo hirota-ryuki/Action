@@ -18,8 +18,6 @@ public:
 	virtual ~State() = default;
 
 	virtual Id GetId() const = 0;
-	// デバッグ表示用の名前。
-	virtual const char* GetName() const = 0;
 
 	// このステートに入ったとき。アニメーションの切り替えなど。
 	virtual void Enter(Context& context, const CharacterInput& input)

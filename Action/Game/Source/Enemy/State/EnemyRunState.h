@@ -11,10 +11,6 @@ public:
 	{
 		return EnemyStateId::Run;
 	}
-	const char* GetName() const override
-	{
-		return "Run";
-	}
 
 protected:
 	int GetAnimClip() const override

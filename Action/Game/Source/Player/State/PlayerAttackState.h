@@ -17,10 +17,6 @@ public:
 	{
 		return PlayerStateId::Attack;
 	}
-	const char* GetName() const override
-	{
-		return "Attack";
-	}
 
 	// 地面にいるステート（Idle・Walk・Run・Stop・Land）から、攻撃を始めるか。
 	// 一人称（照準がある）ときは攻撃のモーションを出さず、今までどおりクリックした瞬間に撃つ。
