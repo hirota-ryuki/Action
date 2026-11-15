@@ -71,8 +71,9 @@ namespace
 	// このモデルは小指の付け根が薬指と同じ高さにあり、指先の高さがそろって見えるので、薬指と小指を多めに曲げて指先を下げる
 	// （力を抜いて開いた人の手も、小指の側ほど曲がっている）。
 	const float RELEASE_FINGER_BASE_EXTRA_CURL_DEGS[4] = { 0.0f, 0.0f, 5.0f, 15.0f };
-	// 握りこぶしにするときに、アニメーションの指の形から足して曲げる角度（度。付け根・第二関節・第一関節の順）。
-	const float FINGER_CURL_DEGS[3] = { 45.0f, 65.0f, 45.0f };
+	// 握りこぶしの、関節ごとの曲がりの角度（度。付け根・第二関節・第一関節の順。まっすぐで 0）。
+	// 人の握りこぶしは、付け根 85〜90°、第二関節 100° くらい、第一関節 60〜70° くらい。
+	const float FIST_JOINT_DEGS[3] = { 88.0f, 100.0f, 65.0f };
 	// 親指: 先の関節を曲げる角度（度）と、IK で合わせるときの決まり。
 	constexpr float THUMB_CURL_DEG = 45.0f;
 	constexpr float THUMB_OUTSIDE_OFFSET = 0.8f;  // 目標を指の中節から外へ出す量（指の太さくらい。骨格の単位）。
@@ -428,10 +429,13 @@ void FirstPersonArms::CurlFingers(Skeleton& skeleton)
 		if (m_handBone[side] < 0) {
 			continue;
 		}
-		// 人差し指〜小指: 付け根の関節から順に、その関節より先の骨をまとめて、その関節を中心に曲げる。
+		// 人差し指〜小指: 付け根の関節から順に、関節の曲がりが FIST_JOINT_DEGS になるよう、その関節より先の骨をまとめて回す。
+		// 付け根の関節の曲がりは、手首から指の付け根への向き（手の甲の骨の向き）と、指の根元の骨の向きの間の角度で測る。
+		// アニメーションの指の形に足して曲げると、付け根の関節が浅いまま（50〜70°）で、指だけが曲がった形になるため、
+		// 関節ごとの角度を決めて合わせる。
 		// 曲げる軸は、その関節で今曲がっている面の軸（手前の骨の向きと先の骨の向きの外積）。
 		// 骨の行列の軸をそのまま使うと、指の曲がる向きとずれて、曲げた分の多くがねじれになるため。
-		// 指先の関節（j = 2）は先の骨が無いので、ひとつ手前の関節と同じ面で曲げる。
+		// まっすぐで軸が決まらない関節は、ひとつ手前の関節と同じ面で曲げる。
 		for (int f = 0; f < THUMB; f++) {
 			const int* chain = m_fingerBones[side][f];
 			if (chain[0] < 0 || chain[1] < 0 || chain[2] < 0) {
@@ -439,19 +443,21 @@ void FirstPersonArms::CurlFingers(Skeleton& skeleton)
 			}
 			Vector3 axis = Vector3::Zero;
 			for (int j = 0; j < 3; j++) {
-				if (j < 2) {
-					const Vector3 before = BonePosition(skeleton, chain[j]) - BonePosition(skeleton, j == 0 ? m_handBone[side] : chain[j - 1]);
-					const Vector3 after = BonePosition(skeleton, chain[j + 1]) - BonePosition(skeleton, chain[j]);
-					Vector3 bendAxis;
-					bendAxis.Cross(before, after);
-					if (bendAxis.LengthSq() > FLT_EPSILON) {
-						axis = bendAxis;
-					}
+				Vector3 before = j == 0
+					? BonePosition(skeleton, chain[0]) - BonePosition(skeleton, m_handBone[side])
+					: FingerSegmentDirection(skeleton, chain, j - 1);
+				const Vector3 after = FingerSegmentDirection(skeleton, chain, j);
+				before.Normalize();
+				Vector3 bendAxis;
+				bendAxis.Cross(before, after);
+				if (bendAxis.LengthSq() > FLT_EPSILON) {
+					axis = bendAxis;
 				}
 				if (axis.LengthSq() <= FLT_EPSILON) {
 					continue;
 				}
-				RotateChain(skeleton, chain, j, axis, FINGER_CURL_DEGS[j] * w);
+				const float currentDeg = acosf(max(-1.0f, min(1.0f, before.Dot(after)))) * 57.2958f;
+				RotateChain(skeleton, chain, j, axis, (FIST_JOINT_DEGS[j] - currentDeg) * w);
 			}
 		}
 		PlaceThumb(skeleton, side, w);
