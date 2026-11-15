@@ -340,3 +340,6 @@ ASALocalRun/
 
 # ステージを作るスクリプトの確かめ用の画像と .blend（スクリプトを動かせば作り直せる）
 Action/tools/StageGenerator/preview/
+
+# tkm の法線・接ベクトル・従ベクトルの計算結果のキャッシュ（起動時に作られる。tkm が変わると作り直される）
+*.tkmcache

@@ -154,6 +154,19 @@ namespace nsK2EngineLow {
 		/// 3dsMaxScriptでやるべきなんだろうけど、デバッグしたいので今はこちらでやる。
 		/// </remarks>
 		void BuildTangentAndBiNormal();
+		/// <summary>
+		/// 全頂点の座標で BSP ツリーを作る（法線のスムージングで、同じ座標の頂点を探すのに使う）。
+		/// </summary>
+		void BuildBSPOnVertexPosition();
+		/// <summary>
+		/// 法線・接ベクトル・従ベクトルのキャッシュ（tkm の隣の .tkmcache）を読む。
+		/// </summary>
+		/// <returns>キャッシュがあり、tkm と合っていて、全部読めたら true。</returns>
+		bool LoadNormalCache(const char* tkmFilePath);
+		/// <summary>
+		/// 計算した法線・接ベクトル・従ベクトルを、キャッシュ（tkm の隣の .tkmcache）に書く。
+		/// </summary>
+		void SaveNormalCache(const char* tkmFilePath) const;
 	private:
 		/// <summary>
 		/// TKMファイルの最適化。

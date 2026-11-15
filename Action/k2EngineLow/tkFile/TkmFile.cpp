@@ -407,6 +407,120 @@ namespace nsK2EngineLow {
 			}
 		}
 	}
+	void TkmFile::BuildBSPOnVertexPosition()
+	{
+		for (auto& mesh : m_meshParts) {
+			for (auto& vertex : mesh.vertexBuffer) {
+				m_bpsOnVertexPosition.AddLeaf(vertex.pos, &vertex.normal);
+			}
+		}
+		m_bpsOnVertexPosition.Build();
+	}
+
+	namespace {
+		// 法線のキャッシュの形式。法線・接ベクトル・従ベクトルの計算の仕方を変えたら、版を上げる（古いキャッシュを使わないように）。
+		const uint32_t NORMAL_CACHE_VERSION = 1;
+		const int NORMAL_CACHE_FLOATS_PER_VERTEX = 9;	// 法線・接ベクトル・従ベクトルの xyz
+
+		struct SNormalCacheHeader {
+			char magic[4];			// "TKMC"
+			uint32_t version;
+			uint64_t tkmFileSize;	// キャッシュを作ったときの tkm の大きさ
+			uint64_t tkmWriteTime;	// キャッシュを作ったときの tkm の更新日時
+			uint64_t numVertex;		// 全メッシュの頂点の数
+		};
+
+		std::string GetNormalCacheFilePath(const char* tkmFilePath)
+		{
+			return std::string(tkmFilePath) + "cache";	// xxx.tkm → xxx.tkmcache
+		}
+
+		// tkm の大きさと更新日時。キャッシュがその tkm から作ったものかを見分けるのに使う。
+		bool GetTkmFileStamp(const char* tkmFilePath, uint64_t& fileSize, uint64_t& writeTime)
+		{
+			WIN32_FILE_ATTRIBUTE_DATA data;
+			if (!GetFileAttributesExA(tkmFilePath, GetFileExInfoStandard, &data)) {
+				return false;
+			}
+			fileSize = (uint64_t(data.nFileSizeHigh) << 32) | data.nFileSizeLow;
+			writeTime = (uint64_t(data.ftLastWriteTime.dwHighDateTime) << 32) | data.ftLastWriteTime.dwLowDateTime;
+			return true;
+		}
+	}
+
+	bool TkmFile::LoadNormalCache(const char* tkmFilePath)
+	{
+		uint64_t tkmFileSize, tkmWriteTime;
+		if (!GetTkmFileStamp(tkmFilePath, tkmFileSize, tkmWriteTime)) {
+			return false;
+		}
+		uint64_t numVertex = 0;
+		for (const auto& mesh : m_meshParts) {
+			numVertex += mesh.vertexBuffer.size();
+		}
+
+		FILE* fp = fopen(GetNormalCacheFilePath(tkmFilePath).c_str(), "rb");
+		if (fp == nullptr) {
+			return false;
+		}
+		SNormalCacheHeader header;
+		std::vector<float> data;
+		bool isValid = fread(&header, sizeof(header), 1, fp) == 1
+			&& memcmp(header.magic, "TKMC", 4) == 0
+			&& header.version == NORMAL_CACHE_VERSION
+			&& header.tkmFileSize == tkmFileSize
+			&& header.tkmWriteTime == tkmWriteTime
+			&& header.numVertex == numVertex;
+		if (isValid) {
+			data.resize(numVertex * NORMAL_CACHE_FLOATS_PER_VERTEX);
+			isValid = fread(data.data(), sizeof(float), data.size(), fp) == data.size();
+		}
+		fclose(fp);
+		if (!isValid) {
+			return false;
+		}
+
+		const float* p = data.data();
+		for (auto& mesh : m_meshParts) {
+			for (auto& vertex : mesh.vertexBuffer) {
+				vertex.normal.Set(p[0], p[1], p[2]);
+				vertex.tangent.Set(p[3], p[4], p[5]);
+				vertex.binormal.Set(p[6], p[7], p[8]);
+				p += NORMAL_CACHE_FLOATS_PER_VERTEX;
+			}
+		}
+		return true;
+	}
+
+	void TkmFile::SaveNormalCache(const char* tkmFilePath) const
+	{
+		SNormalCacheHeader header = {};
+		memcpy(header.magic, "TKMC", 4);
+		header.version = NORMAL_CACHE_VERSION;
+		if (!GetTkmFileStamp(tkmFilePath, header.tkmFileSize, header.tkmWriteTime)) {
+			return;
+		}
+		std::vector<float> data;
+		for (const auto& mesh : m_meshParts) {
+			header.numVertex += mesh.vertexBuffer.size();
+			for (const auto& vertex : mesh.vertexBuffer) {
+				data.insert(data.end(), {
+					vertex.normal.x, vertex.normal.y, vertex.normal.z,
+					vertex.tangent.x, vertex.tangent.y, vertex.tangent.z,
+					vertex.binormal.x, vertex.binormal.y, vertex.binormal.z,
+				});
+			}
+		}
+		// 書けなくても、次の起動でまた計算するだけなので、エラーにはしない。
+		FILE* fp = fopen(GetNormalCacheFilePath(tkmFilePath).c_str(), "wb");
+		if (fp == nullptr) {
+			return;
+		}
+		fwrite(&header, sizeof(header), 1, fp);
+		fwrite(data.data(), sizeof(float), data.size(), fp);
+		fclose(fp);
+	}
+
 	bool TkmFile::Load(const char* filePath, bool isOptimize, bool isLoadTexture, bool isOutputErrorCodeTTY)
 	{
 		FILE* fp = fopen(filePath, "rb");
@@ -471,8 +585,6 @@ namespace nsK2EngineLow {
 				vertex.indices[1] = vertexTmp.indices[1];
 				vertex.indices[2] = vertexTmp.indices[2];
 				vertex.indices[3] = vertexTmp.indices[3];
-
-				m_bpsOnVertexPosition.AddLeaf(vertex.pos, &vertex.normal);
 			}
 
 			//続いてインデックスバッファ。
@@ -511,11 +623,17 @@ namespace nsK2EngineLow {
 		// ファイルを閉じる。
 		fclose(fp);
 
-		// 頂点データのBSPツリーを構築する。
-		m_bpsOnVertexPosition.Build();
+		// 法線・接ベクトル・従ベクトルは、前に計算したキャッシュがあればそれを使う。
+		// BSP ツリー作りと法線のスムージングは、頂点が多いと Debug ビルドで数秒かかるため。
+		if (!LoadNormalCache(filePath)) {
+			// 頂点データのBSPツリーを構築する。
+			BuildBSPOnVertexPosition();
 
-		// 接ベクトルと従ベクトルを構築する。
-		BuildTangentAndBiNormal();
+			// 接ベクトルと従ベクトルを構築する。
+			BuildTangentAndBiNormal();
+
+			SaveNormalCache(filePath);
+		}
 		
 		if (isOptimize) {
 			// 最適化を行う。
