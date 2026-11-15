@@ -3,6 +3,18 @@
 #include "Faction.h"
 
 struct ButtonState;
+class CharacterModel;
+class CharacterMover;
+
+// 持ち主の体。体を動かすスキル（剣の攻撃など）が使う。SkillController が作った直後に渡す。
+struct SkillBody
+{
+	CharacterModel* model = nullptr;
+	CharacterMover* mover = nullptr;
+	float timeScale = 1.0f;        // 動き全体の速さ（アニメーションと移動の両方に掛ける）。
+	float rootMoveScale = 100.0f;  // アニメーションの中で進む距離（モデルの m）を、ゲームの距離にする倍率。
+	float blendSeconds = 0.2f;     // アニメーションを切り替えるときの補間時間。
+};
 
 // スキルの基底クラス。使うたびに1つ NewGO し、終わったら自分で消える。
 // 入力を受け取ったあとの判断（押している間・離した・中断）は、ここに書く。派生クラスは書かない。
@@ -15,10 +27,12 @@ struct ButtonState;
 // 派生クラスが書くもの:
 //   COOLDOWN           手を離してから、次に使えるまでの秒数（static constexpr。既定は 0）。
 //   IsChargeType()     溜めるなら true。
+//   PRIORITY           NewGO の優先度（static constexpr。既定は 1）。体を動かすスキルは 0 にして、キャラクターより先に動かす。
+//   UsesOwnerBody()    持ち主の体を動かすなら true。使っている間ずっと、持ち主は手を離せない（ほかのスキルを使えない）。
 //   OnStart()          エフェクトやモデルの読み込み。失敗したら false を返すと削除される。
 //   OnCharge()         溜めている間、毎フレーム。押している秒数が渡される。
 //   OnRelease()        使い始める瞬間（溜めるスキルは離した瞬間）。
-//   OnCancel()         溜めている途中で中断されたとき。
+//   OnCancel()         溜めている途中（体を動かすスキルは、使っている途中も）で中断されたとき。
 //   OnSkillUpdate()    使い始めてから、毎フレーム。
 //   IsVanishFinished() 終わったあと（中断のあと）の演出が終わったか。
 class SkillBase : public IGameObject
@@ -28,18 +42,27 @@ public:
 	static constexpr const char* OBJECT_NAME = "skill";
 	// 手を離してから、次に使えるまでの秒数。派生クラスで同じ名前の定数を書くと、SkillController がそちらを使う。
 	static constexpr float COOLDOWN = 0.0f;
+	// NewGO の優先度。派生クラスで同じ名前の定数を書くと、SkillController がそちらを使う。
+	static constexpr int PRIORITY = 1;
 
 	virtual ~SkillBase() = default;
 
 	// NewGO 直後、Start() より前に呼ぶ。direction は正規化していなくてよい。
 	// owner はスキルの当たり判定から外す。owner は削除済みになることがあるので比較にだけ使う。
 	void Init(const Vector3& position, const Vector3& direction, const IGameObject* owner, Faction faction);
+	// 持ち主の体。NewGO 直後、Init() と一緒に SkillController が渡す。
+	void SetBody(const SkillBody& body)
+	{
+		m_body = body;
+	}
 
 	// そのスキルを使ったボタンの状態を、毎フレーム渡す。押している間は撃つ位置に合わせ、離したら使う。
+	// 体を動かすスキルは、使っている間もボタンを見ずに撃つ位置と向きだけを合わせる（相手の方へ斬撃を飛ばす、など）。
 	void ReceiveInput(const ButtonState& button, const Vector3& position, const Vector3& direction);
-	// 中断する。溜めている途中なら、使わずに消える。
+	// 中断する。溜めている途中なら、使わずに消える。体を動かすスキルは、使っている途中でも止まる。
 	void Cancel();
-	// キャラクターがまだ手を離せないか（溜めている間は true）。true の間、SkillController はほかのスキルを使わない。
+	// キャラクターがまだ手を離せないか（溜めている間、体を動かすスキルは使い終わるまで true）。
+	// true の間、SkillController はほかのスキルを使わない。
 	bool IsOwnerBusy() const;
 
 	bool Start() final;
@@ -47,6 +70,7 @@ public:
 
 protected:
 	virtual bool IsChargeType() const { return false; }
+	virtual bool UsesOwnerBody() const { return false; }
 	virtual bool OnStart() { return true; }
 	virtual void OnCharge(float chargeSeconds) { (void)chargeSeconds; }
 	virtual void OnRelease() {}
@@ -83,6 +107,10 @@ protected:
 	{
 		return m_faction;
 	}
+	const SkillBody& GetBody() const
+	{
+		return m_body;
+	}
 
 private:
 	enum class EnState
@@ -97,6 +125,7 @@ private:
 	void Activate();
 
 	const IGameObject* m_owner = nullptr;
+	SkillBody m_body;
 	Vector3 m_position = Vector3::Zero;
 	Vector3 m_direction = Vector3::AxisZ;     // 向き（正規化済み）。
 	Quaternion m_rotation = Quaternion::Identity;
@@ -104,6 +133,7 @@ private:
 	Faction m_faction = Faction::Neutral;
 	EnState m_state = EnState::Charging;
 	bool m_isValid = false;                   // OnStart() に成功したか。
+	bool m_isFailed = false;                  // OnStart() に失敗した。
 	bool m_isReleased = false;                // 離した（溜めないスキルは作った時点で true）。次の Update で使い始める。
 	bool m_isCanceled = false;                // 中断した。次の Update で消え始める。
 };

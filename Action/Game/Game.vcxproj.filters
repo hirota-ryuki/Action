@@ -34,6 +34,9 @@
     <Filter Include="Source\Magic">
       <UniqueIdentifier>{9e3a7c51-2f4d-4b8a-a6c1-7d0e5f9b3a28}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Attack">
+      <UniqueIdentifier>{7d1f5a3c-2b8e-4f61-9a0d-3c5e8b9f1a24}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\Skill">
       <UniqueIdentifier>{4e5a4150-2104-4690-a7ad-b0695cfc0e9a}</UniqueIdentifier>
     </Filter>
@@ -167,6 +170,18 @@
     </ClCompile>
     <ClCompile Include="Source\Character\Components\StatusEffects.cpp">
       <Filter>Source\Character\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Attack\AttackBase.cpp">
+      <Filter>Source\Attack</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Attack\DashSlashAttack.cpp">
+      <Filter>Source\Attack</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Attack\HeavyComboAttack.cpp">
+      <Filter>Source\Attack</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Attack\SlashWaveAttack.cpp">
+      <Filter>Source\Attack</Filter>
     </ClCompile>
     <ClCompile Include="Source\Skill\SkillBase.cpp">
       <Filter>Source\Skill</Filter>
@@ -376,6 +391,18 @@
     </ClInclude>
     <ClInclude Include="Source\Character\Components\StatusEffects.h">
       <Filter>Source\Character\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Attack\AttackBase.h">
+      <Filter>Source\Attack</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Attack\DashSlashAttack.h">
+      <Filter>Source\Attack</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Attack\HeavyComboAttack.h">
+      <Filter>Source\Attack</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Attack\SlashWaveAttack.h">
+      <Filter>Source\Attack</Filter>
     </ClInclude>
     <ClInclude Include="Source\Skill\SkillBase.h">
       <Filter>Source\Skill</Filter>

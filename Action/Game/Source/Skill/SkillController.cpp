@@ -34,6 +34,7 @@ void SkillController::Update(const CharacterInput& input, const SkillPose (&pose
 		}
 		m_active = entry.create();
 		m_activeButton = button;
+		m_active->SetBody(m_body);
 		m_active->Init(poses[button].origin, poses[button].direction, m_owner, m_faction);
 		// 溜めないスキルは、ここで手を離す。
 		if (!m_active->IsOwnerBusy()) {

@@ -25,7 +25,6 @@ void BlackKnightInputSource::Update(const InputSourceContext& context, Character
 	input.isRun = false;
 	input.jump.Update(false);
 	input.dash.Update(false);
-	input.Action(ActionButton::Action2).Update(false);
 	input.hasAim = false;
 
 	const HitTarget* target = HitTargetRegistry::FindNearestHostile(
@@ -33,7 +32,9 @@ void BlackKnightInputSource::Update(const InputSourceContext& context, Character
 	if (target == nullptr) {
 		m_hasTarget = false;
 		m_isRunning = false;
-		input.Action(ActionButton::Action1).Update(false);
+		for (ButtonState& action : input.actions) {
+			action.Update(false);
+		}
 		return;
 	}
 	if (!m_hasTarget) {
@@ -62,7 +63,7 @@ void BlackKnightInputSource::Update(const InputSourceContext& context, Character
 	}
 
 	const Range range = ClassifyRange(distance);
-	bool isAttack = false;
+	ActionButton attackButton = ActionButton::Num;  // 押す攻撃のボタン。Num なら押さない。
 	if (range == Range::Near) {
 		if (m_isRunning) {
 			// 走って近くまで来たら、歩きに戻してすぐに攻撃する。
@@ -70,8 +71,7 @@ void BlackKnightInputSource::Update(const InputSourceContext& context, Character
 			m_attackTimer = 0.0f;
 		}
 		if (m_attackTimer <= 0.0f) {
-			isAttack = true;
-			input.attackIndex = ATTACK_COMBO;
+			attackButton = ATTACK_COMBO;
 		}
 		m_decideTimer = m_settings.decideInterval;
 	}
@@ -85,19 +85,20 @@ void BlackKnightInputSource::Update(const InputSourceContext& context, Character
 				m_isRunning = true;
 			}
 			else {
-				isAttack = true;
-				input.attackIndex = range == Range::Middle ? ATTACK_DASH_THRUST : ATTACK_SLASH_WAVE;
+				attackButton = range == Range::Middle ? ATTACK_DASH_SLASH : ATTACK_SLASH_WAVE;
 			}
 		}
 	}
 
-	if (isAttack) {
+	if (attackButton != ActionButton::Num) {
 		m_attackTimer = m_settings.attackInterval;
 		m_decideTimer = m_settings.decideInterval;
 	}
 	input.isRun = m_isRunning;
-	// fire は1フレームだけ押す（EnemyGroundState が押した瞬間に Attack へ移る）。
-	input.Action(ActionButton::Action1).Update(isAttack);
+	// 攻撃のボタンは1フレームだけ押す（EnemyGroundState が押した瞬間に Attack へ移り、SkillController が攻撃を作る）。
+	for (int button = 0; button < static_cast<int>(ActionButton::Num); button++) {
+		input.actions[button].Update(button == static_cast<int>(attackButton));
+	}
 
 	// 斬撃は、胸の高さから相手の胸のあたりへ飛ばす。
 	input.hasAim = true;

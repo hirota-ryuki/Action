@@ -7,7 +7,7 @@
 黒騎士の AI です。プレイヤーの操作と同じ `CharacterInput` を作る入力元で、Enemy の `GetDefaultInputSource()` がこれを返します。
 
 - **相手との距離を「近い・中くらい・遠い」に分けて、何をするかを決める。**
-- **AI は「どうしたいか」だけを決める。** 歩く・走る・剣を振るのはステート（[敵のステートの設計](敵のステートの設計.md)）。攻撃は `Action1` を1フレーム押し、`attackIndex` で何番の攻撃かを伝える。
+- **AI は「どうしたいか」だけを決める。** 歩く・走る・剣を振るのはステート（[敵のステートの設計](敵のステートの設計.md)）。攻撃は、その攻撃のボタン（攻撃1〜3 = `Action1`〜`Action3`）を1フレーム押す。どのボタンでどの攻撃をするかは、Enemy が `SkillController` に登録している（[剣の攻撃の設計](../スキル/剣の攻撃の設計.md)）。
 
 ---
 
@@ -51,8 +51,7 @@ if (m_decideTimer <= 0.0f && m_attackTimer <= 0.0f) {
     if (chance(m_random) < m_settings.runChance) {
         m_isRunning = true;
     } else {
-        isAttack = true;
-        input.attackIndex = range == Range::Middle ? ATTACK_DASH_THRUST : ATTACK_SLASH_WAVE;
+        attackButton = range == Range::Middle ? ATTACK_DASH_SLASH : ATTACK_SLASH_WAVE;   // Action1 か Action3
     }
 }
 ```
@@ -81,7 +80,7 @@ if (m_decideTimer <= 0.0f && m_attackTimer <= 0.0f) {
 | やりたいこと | 書き方 |
 |---|---|
 | 距離・間隔を変える | `Enemy.cpp` の `MakeAiSettings` |
-| 攻撃の種類を足す | `AttackIndex` に足し、`Update` で選ぶ条件を書く。ステート側は [敵のステートの設計](敵のステートの設計.md) の4章 |
+| 攻撃の種類を足す | 攻撃のボタンの定数（`ATTACK_DASH_SLASH` など）を足し、`Update` で選ぶ条件を書く。攻撃そのものは [剣の攻撃の設計](../スキル/剣の攻撃の設計.md) の「使い方」 |
 | 黒騎士を手で動かす | `Enemy::GetDefaultInputSource()` が `PlayerInputSource` を返すようにする（[入力の設計](../キャラクター/入力の設計.md)） |
 
 ---
