@@ -5,7 +5,6 @@
 // 番号が重ならないようにここで一括管理する。
 enum class EffectId : int
 {
-	Fire,
 	IceFly,     // 氷魔法の飛んでいる氷
 	IceHit,     // 氷魔法の着弾
 	FireFly,    // 炎魔法の飛んでいる炎
@@ -13,4 +12,6 @@ enum class EffectId : int
 	FireCharged,// 炎魔法が最大まで溜まった瞬間
 	FireHit,    // 炎魔法の着弾
 	FireGround, // 炎魔法の着弾後に燃え続ける床
+	FireChargeFirstPerson, // 炎魔法の溜め中（一人称で見ているとき。まわりの光を小さく薄くしたもの）
+	FireChargedFirstPerson,// 炎魔法が最大まで溜まった瞬間（一人称で見ているとき。閃光と飛び散る炎を小さくしたもの）
 };

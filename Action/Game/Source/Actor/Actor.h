@@ -14,10 +14,6 @@ struct Transform
 class Actor : public IGameObject
 {
 public:
-	const Transform& GetTransform() const
-	{
-		return m_transform;
-	}
 	const Vector3& GetPosition() const
 	{
 		return m_transform.position;

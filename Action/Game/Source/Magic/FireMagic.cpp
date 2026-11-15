@@ -1,6 +1,7 @@
 ﻿#include "stdafx.h"
 #include "FireMagic.h"
 #include "BurningGround.h"
+#include "Character.h"
 #include "EffectId.h"
 #include "HitTarget.h"
 
@@ -17,6 +18,11 @@ namespace
 	constexpr EffectEntry EFFECTS[] = {
 		{ EffectId::FireFly, u"Assets/effect/fire_fly.efk" },
 		{ EffectId::FireCharge, u"Assets/effect/fire_charge.efk" },
+		// 一人称用（一人称では火の玉が目の前にあり、まわりに広がるものが画面を覆って前が見えにくくなるため）。
+		// fire_charge_fp: まわりの光（Glow）・縮む輪（Pulse）を小さく薄くし、吸い込む炎（GatherFlame）を薄くしたもの。
+		// fire_charged_fp: 閃光（Flash・Star・Ring）と飛び散る炎（Puff）を小さくしたもの。
+		{ EffectId::FireChargeFirstPerson, u"Assets/effect/fire_charge_fp.efk" },
+		{ EffectId::FireChargedFirstPerson, u"Assets/effect/fire_charged_fp.efk" },
 		{ EffectId::FireCharged, u"Assets/effect/fire_charged.efk" },
 		{ EffectId::FireHit, u"Assets/effect/fire_hit.efk" },
 		{ EffectId::FireGround, u"Assets/effect/fire_ground.efk" },
@@ -111,8 +117,11 @@ bool FireMagic::OnStart()
 		return false;
 	}
 
-	m_chargeEffect.Init(static_cast<int>(EffectId::FireCharge));
-	m_chargedEffect.Init(static_cast<int>(EffectId::FireCharged));
+	// 撃つ人が一人称で見ている（体を描いていない）ときは、画面を覆うものを抑えた、一人称用の溜めのエフェクトにする。
+	const Character* owner = dynamic_cast<const Character*>(GetOwner());
+	const bool isFirstPerson = owner != nullptr && !owner->IsRenderBody();
+	m_chargeEffect.Init(static_cast<int>(isFirstPerson ? EffectId::FireChargeFirstPerson : EffectId::FireCharge));
+	m_chargedEffect.Init(static_cast<int>(isFirstPerson ? EffectId::FireChargedFirstPerson : EffectId::FireCharged));
 	m_flyEffect.Init(static_cast<int>(EffectId::FireFly));
 	m_hitEffect.Init(static_cast<int>(EffectId::FireHit));
 	m_isEffectReady = true;

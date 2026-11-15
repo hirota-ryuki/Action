@@ -30,7 +30,8 @@ PlayerHud ──読む──▶ Player の PlayerStatus・StatusEffects
  ├ Gauge m_hp        … 画面下の中央。緑
  ├ Text  m_hpNumber  … ゲージの下。「今のHP / 最大HP」
  ├ Icon  m_frozen    … ゲージの右。凍結中だけ出す（水色の四角）
- └ Icon  m_burning   … その右。燃焼中だけ出す（橙色の四角）
+ ├ Icon  m_burning   … その右。燃焼中だけ出す（橙色の四角）
+ └ Icon  m_reticle[4]・m_reticleShadow[4] … 画面の真ん中の十字。一人称のときだけ出す
 
 BossHud ──読む──▶ ボスにする Character の Status と、Show で渡された名前
  ├ Text  m_name      … ゲージの上
@@ -44,7 +45,7 @@ BossHud ──読む──▶ ボスにする Character の Status と、Show �
 | | PlayerHud | BossHud |
 |---|---|---|
 | 見るもの | `const Player*`（`SetTarget`） | `const Character*` と名前（`Show`）。Boss ができたら `const Boss*` |
-| 出すもの | HP のゲージと数字、凍結・燃焼のアイコン | 名前、HP のゲージ |
+| 出すもの | HP のゲージと数字、凍結・燃焼のアイコン、一人称のときの十字のレティクル | 名前、HP のゲージ |
 | 場所 | 画面下の中央 | 画面上の中央 |
 | 出るとき | ゲーム中ずっと（対象が nullptr なら出さない） | `Show()` から `Hide()` まで（0.3秒のフェード付き） |
 
@@ -55,6 +56,8 @@ BossHud ──読む──▶ ボスにする Character の Status と、Show �
 ### PlayerHud
 
 毎フレーム、`GetHpRate()` をゲージに、`GetHp()`・`GetMaxHp()` を切り上げた整数を「850 / 1000」の形で数字に入れる（0.3 残っているのに 0 と出さないため）。凍結・燃焼はアイコンの表示する／しないに入れる。`Text::SetText` は値が変わったときだけ書き換えるので、毎フレーム呼んでよい。
+
+レティクルは、白い線4本（上・下・左・右。中央から `RETICLE_GAP` あけて、長さ `RETICLE_LENGTH`）と、その下に線より `RETICLE_SHADOW` ずつ大きい黒い縁を敷いたもの。明るい背景でも見えるように縁を付けた。毎フレーム、プレイヤーが体を描いていない（一人称）かどうかで、表示する／しないを決める（[一人称の腕の設計](../プレイヤー/一人称の腕の設計.md)）。
 
 ### BossHud
 

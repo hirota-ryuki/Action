@@ -5,12 +5,15 @@
 #   -Mode push   : 個人用 OneDrive へ会話を送る（やりとりの区切りでフックが実行）
 #   -Mode restore: 別のPCで最近使っていた会話を、タブで開き直す（フォルダーを開いたときに .vscode/tasks.json が実行）
 #   -Mode remove : このPCから rclone の設定と rclone 本体を消す（手で実行）
+#   -Mode delete-archived : アーカイブした会話を、このPCと個人用 OneDrive から消し、消した記録を残す（手で実行）
+#                           -DryRun を付けると、消す会話を見せるだけで消さない。-Yes を付けると確認を飛ばす
 #   -Mode archive-apply : ほかのPCでのアーカイブを、このPCの VSCode に反映する（VSCode を閉じているときだけ）
 #                         -Wait を付けると、VSCode が閉じるまで待ってから反映する（SessionEnd で自動で起動する）
 #
 # 会話ファイルの場所: <Claude の設定フォルダ>\projects\<リポジトリのパスを変換した名前>\
 # 送り先          : 個人用 OneDrive の 01_ClaudeSessions\Action\（どのPCでも同じ）
 # 送受信は「新しい方で上書きするコピー」だけで、どちらかで消したファイルを相手側で消すことはしない。
+# 消すときは delete-archived で「消した記録」を残し、それを見て全PCで消す。
 #
 # タブの記録: Stop フック（やりとりの区切り）で、その会話の ID と時刻を
 #   %APPDATA%\claude-sessions\tabs-Action\<PC名>.json に書き、個人用 OneDrive の 01_ClaudeSessions\Action-tabs\ へ送る。
@@ -21,13 +24,21 @@
 #   %APPDATA%\claude-sessions\archive-Action\<PC名>.json に書き、個人用 OneDrive の 01_ClaudeSessions\Action-archive\ へ送る。
 #   archive-apply では、全PCの記録から会話ごとにいちばん新しい状態を選び、このPCの VSCode に書き込む。
 #   VSCode が開いている間は書き込めない（拡張が上書きする）ので、VSCode が閉じてから書き込む。
+#
+# 消した記録: -Mode delete-archived（delete-archived-sessions.cmd から手で実行）で、アーカイブした会話を全部消す。
+#   消した会話の ID と時刻を %APPDATA%\claude-sessions\deleted-Action\<PC名>.json に書き、
+#   個人用 OneDrive の 01_ClaudeSessions\Action-deleted\ へ送る。
+#   pull・push・restore では、全PCの「消した記録」にある会話をこのPCから消し、送受信もしない
+#   （消したのにまだ持っているPCが送り戻さないように）。pull では個人用 OneDrive からも消す。
 
 param(
-    [ValidateSet('setup', 'pull', 'push', 'restore', 'remove', 'archive-apply')]
+    [ValidateSet('setup', 'pull', 'push', 'restore', 'remove', 'archive-apply', 'delete-archived')]
     [string]$Mode = 'pull',
     [string]$RepoDir = $env:CLAUDE_PROJECT_DIR,
     [double]$TabWindowHours = 3,
-    [switch]$Wait
+    [switch]$Wait,
+    [switch]$DryRun,
+    [switch]$Yes
 )
 
 # フックから呼ばれたときは、標準入力にフックの情報（JSON）が来る。最初に読んでおく。
@@ -67,6 +78,11 @@ $RestoredFile = Join-Path $env:APPDATA 'claude-sessions\restored-Action.txt'
 $RemoteArchive = "${RemoteName}:01_ClaudeSessions/Action-archive"
 $LocalArchive  = Join-Path $env:APPDATA 'claude-sessions\archive-Action'
 $MyArchiveFile = Join-Path $LocalArchive "$PcName.json"
+
+# 消した記録。これもPCごとに別のファイル。
+$RemoteDeleted = "${RemoteName}:01_ClaudeSessions/Action-deleted"
+$LocalDeleted  = Join-Path $env:APPDATA 'claude-sessions\deleted-Action'
+$MyDeletedFile = Join-Path $LocalDeleted "$PcName.json"
 
 . (Join-Path $PSScriptRoot 'vscode-state.ps1')
 
@@ -125,8 +141,11 @@ function Get-RemoteDriveType([string]$rclone) {
     return ''
 }
 
-function Invoke-Copy([string]$rclone, [string]$from, [string]$to) {
-    & $rclone copy $from $to --update --retries 2 --low-level-retries 3 --log-level ERROR
+# $excludeFile: 送受信しない会話の一覧（Write-DeletedFilter で作る）。空なら全部送受信する
+function Invoke-Copy([string]$rclone, [string]$from, [string]$to, [string]$excludeFile = '') {
+    $filter = @()
+    if ($excludeFile) { $filter = @('--exclude-from', $excludeFile) }
+    & $rclone copy $from $to --update @filter --retries 2 --low-level-retries 3 --log-level ERROR
     if ($LASTEXITCODE -ne 0) { throw "rclone copy に失敗しました（$LASTEXITCODE）: $from -> $to" }
 }
 
@@ -134,6 +153,86 @@ function Invoke-Copy([string]$rclone, [string]$from, [string]$to) {
 function Enter-Lock {
     $lockPath = Join-Path $env:TEMP ('claude-sessions-' + ($RepoDir -replace '[^A-Za-z0-9]', '-') + '.lock')
     try { return [System.IO.File]::Open($lockPath, 'OpenOrCreate', 'ReadWrite', 'None') } catch { return $null }
+}
+
+# ---- 消した記録 ----
+
+# 1つのPCの消した記録を読む。返り値: @{ 会話ID = 消した時刻(Unix秒) }
+function Read-DeletedFile([string]$path) {
+    $map = @{}
+    if (-not (Test-Path $path)) { return $map }
+    try {
+        $obj = Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json
+        foreach ($p in $obj.sessions.PSObject.Properties) { $map[$p.Name] = [int64]$p.Value }
+    } catch { }
+    return $map
+}
+
+# ほかのPCの消した記録を取ってくる（自分の記録は自分のPCの方が正しいので取ってこない）。
+# フォルダーがまだない（どのPCもまだ消していない）ときの失敗は無視する。
+function Sync-DeletedRecords([string]$rclone) {
+    New-Item -ItemType Directory -Force -Path $LocalDeleted | Out-Null
+    & $rclone copy $RemoteDeleted $LocalDeleted --update --exclude "$PcName.json" --retries 2 --low-level-retries 3 --log-level ERROR 2>$null
+}
+
+# 全PCの消した記録にある会話の ID
+function Get-DeletedIds {
+    $set = New-Object 'System.Collections.Generic.HashSet[string]'
+    foreach ($f in Get-ChildItem $LocalDeleted -Filter *.json -ErrorAction SilentlyContinue) {
+        foreach ($id in (Read-DeletedFile $f.FullName).Keys) { [void]$set.Add($id) }
+    }
+    return ,$set
+}
+
+# 会話の ID から、rclone の絞り込みの一覧（その会話の .jsonl と、同じ名前のフォルダーの中身）を作る。
+# 返り値: 一覧のファイルのパス。ID がなければ空
+function Write-DeletedFilter($ids) {
+    $lines = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($id in $ids) {
+        if ($id -notmatch '^[0-9a-fA-F-]{36}$') { continue }
+        $lines.Add("/$id.jsonl"); $lines.Add("/$id/**")
+    }
+    if ($lines.Count -eq 0) { return '' }
+    $path = Join-Path $env:TEMP ('claude-sessions-deleted-' + ($RepoDir -replace '[^A-Za-z0-9]', '-') + '.txt')
+    [System.IO.File]::WriteAllLines($path, $lines, (New-Object System.Text.UTF8Encoding $false))
+    return $path
+}
+
+# このPCにある会話ファイル（.jsonl と同じ名前のフォルダー）を消す。返り値: 消した会話の数
+function Remove-LocalSessions($ids) {
+    $n = 0
+    foreach ($id in $ids) {
+        if ($id -notmatch '^[0-9a-fA-F-]{36}$') { continue }
+        $file = Join-Path $LocalDir "$id.jsonl"
+        $dir  = Join-Path $LocalDir $id
+        $hit = $false
+        if (Test-Path -LiteralPath $file) { Remove-Item -LiteralPath $file -Force; $hit = $true }
+        if (Test-Path -LiteralPath $dir)  { Remove-Item -LiteralPath $dir -Recurse -Force; $hit = $true }
+        if ($hit) { $n++ }
+    }
+    return $n
+}
+
+# 個人用 OneDrive から、一覧にある会話を消す（OneDrive のごみ箱に入る）
+function Remove-RemoteSessions([string]$rclone, [string]$filterFile) {
+    if (-not $filterFile) { return }
+    & $rclone delete $RemotePath --include-from $filterFile --rmdirs --retries 2 --low-level-retries 3 --log-level ERROR
+    if ($LASTEXITCODE -ne 0) { throw "個人用 OneDrive の会話を消せませんでした（$LASTEXITCODE）" }
+}
+
+# 消した記録にある会話を、このPCから消す。$remote なら個人用 OneDrive からも消す
+# （pull のときだけ。新しいスクリプトをまだ取ってきていないPCが送り戻した分を消すため）。
+# 返り値: 送受信で外す一覧のファイル（なければ空）
+function Invoke-DeletedCleanup([string]$rclone, [bool]$remote) {
+    $ids = Get-DeletedIds
+    if ($ids.Count -eq 0) { return '' }
+    $filter = Write-DeletedFilter $ids
+    $n = Remove-LocalSessions $ids
+    if ($n -gt 0) { Write-Host "$tag 消した記録にある会話を、このPCから $n 件消しました。" }
+    if ($remote) {
+        try { Remove-RemoteSessions $rclone $filter } catch { Write-Host "$tag $($_.Exception.Message)" }
+    }
+    return $filter
 }
 
 # ---- アーカイブの記録 ----
@@ -218,6 +317,20 @@ function Push-ArchiveRecord([string]$rclone) {
     }
 }
 
+# 会話ごとに、全PCの記録からいちばん新しいものを選ぶ（同じ時刻ならこのPCの記録 $mine を優先）
+function Get-ArchiveWinners($mine) {
+    $winner = @{}
+    foreach ($id in $mine.Keys) { $winner[$id] = $mine[$id] }
+    foreach ($f in Get-ChildItem $LocalArchive -Filter *.json -ErrorAction SilentlyContinue) {
+        if ($f.BaseName -eq $PcName) { continue }
+        $other = Read-ArchiveFile $f.FullName
+        foreach ($id in $other.Keys) {
+            if (-not $winner.ContainsKey($id) -or $other[$id].at -gt $winner[$id].at) { $winner[$id] = $other[$id] }
+        }
+    }
+    return $winner
+}
+
 # 全PCの記録を合わせて、このPCの VSCode に書き込む。VSCode が開いていたら何もしない。
 function Invoke-ArchiveApply([string]$rclone) {
     if (Test-VscodeRunning) { return }
@@ -229,16 +342,7 @@ function Invoke-ArchiveApply([string]$rclone) {
     if (-not $ext) { return }
     $mine = Update-ArchiveRecord $ext
 
-    # 会話ごとに、いちばん新しい記録を選ぶ（同じ時刻ならこのPCの記録を優先）
-    $winner = @{}
-    foreach ($id in $mine.Keys) { $winner[$id] = $mine[$id] }
-    foreach ($f in Get-ChildItem $LocalArchive -Filter *.json -ErrorAction SilentlyContinue) {
-        if ($f.BaseName -eq $PcName) { continue }
-        $other = Read-ArchiveFile $f.FullName
-        foreach ($id in $other.Keys) {
-            if (-not $winner.ContainsKey($id) -or $other[$id].at -gt $winner[$id].at) { $winner[$id] = $other[$id] }
-        }
-    }
+    $winner = Get-ArchiveWinners $mine
 
     $st = Get-ArchiveState $ext
     $local = Get-LocalSessionIds
@@ -356,8 +460,10 @@ switch ($Mode) {
 
         & $rclone mkdir $RemotePath
         if (-not (Test-Path $LocalDir)) { New-Item -ItemType Directory -Force -Path $LocalDir | Out-Null }
-        Invoke-Copy $rclone $RemotePath $LocalDir
-        Invoke-Copy $rclone $LocalDir $RemotePath
+        Sync-DeletedRecords $rclone
+        $exclude = Write-DeletedFilter (Get-DeletedIds)
+        Invoke-Copy $rclone $RemotePath $LocalDir $exclude
+        Invoke-Copy $rclone $LocalDir $RemotePath $exclude
         Write-Output ''
         Write-Output "$tag 完了しました。会話は個人用 OneDrive の 01_ClaudeSessions に保存されます。"
         Write-Output "$tag VSCode の Claude を開き直すと、過去の会話一覧に他のPCの会話も出ます。"
@@ -376,13 +482,18 @@ switch ($Mode) {
         try {
             if (-not (Test-Path $LocalDir)) { New-Item -ItemType Directory -Force -Path $LocalDir | Out-Null }
             if ($Mode -eq 'pull') {
-                Invoke-Copy $rclone $RemotePath $LocalDir
+                # 先に消した記録を取ってきて、記録にある会話を消してから取ってくる
+                Sync-DeletedRecords $rclone
+                $exclude = Invoke-DeletedCleanup $rclone $true
+                Invoke-Copy $rclone $RemotePath $LocalDir $exclude
                 # ターミナルの Claude など、VSCode を開いていないときはここで反映できる。
                 # 開いているときは、閉じたあとに反映する係を起こしておく（VSCode を閉じると SessionEnd が来ないことがあるため）
                 if (Test-VscodeRunning) { Start-ArchiveWaiter }
                 else { try { Invoke-ArchiveApply $rclone } catch { Write-Output "$tag アーカイブの反映: $($_.Exception.Message)" } }
             } else {
-                Invoke-Copy $rclone $LocalDir $RemotePath
+                # 消した記録にある会話は送らない（記録は pull で取ってきたものを使う）
+                $exclude = Invoke-DeletedCleanup $rclone $false
+                Invoke-Copy $rclone $LocalDir $RemotePath $exclude
                 # 会話ファイルを送ったあとにタブの記録を送る（記録だけ先に届いて会話がない、を避ける）
                 if ($hookInput -and $hookInput.hook_event_name -eq 'Stop' -and $hookInput.session_id) {
                     Write-TabRecord $hookInput.session_id
@@ -409,7 +520,9 @@ switch ($Mode) {
         try {
             if (-not (Test-Path $LocalDir)) { New-Item -ItemType Directory -Force -Path $LocalDir | Out-Null }
             New-Item -ItemType Directory -Force -Path $LocalTabs | Out-Null
-            Invoke-Copy $rclone $RemotePath $LocalDir
+            Sync-DeletedRecords $rclone
+            $exclude = Invoke-DeletedCleanup $rclone $false
+            Invoke-Copy $rclone $RemotePath $LocalDir $exclude
             # 記録のフォルダーがまだない（どのPCもまだ記録していない）ときは失敗するので、エラーは無視する
             & $rclone copy $RemoteTabs $LocalTabs --update --retries 2 --low-level-retries 3 --log-level ERROR 2>$null
         } catch {
@@ -481,6 +594,70 @@ switch ($Mode) {
         Write-Output "$tag 全部のPCをまとめて止めるには、次のページで rclone の許可を取り消してください:"
         Write-Output '  https://account.live.com/consent/Manage'
         Write-Output "$tag 会話ファイル（このPCと個人用 OneDrive の 01_ClaudeSessions）は消していません。"
+    }
+
+    'delete-archived' {
+        $rclone = Find-Rclone
+        if (-not $rclone -or (Get-RemoteDriveType $rclone) -ne 'personal') {
+            Write-Output "$tag このPCでは個人用 OneDrive へのバックアップがまだ設定されていません。先に .claude\scripts\setup-sessions.cmd を実行してください。"
+            exit 1
+        }
+        $lock = $null
+        for ($i = 0; $i -lt 30 -and -not $lock; $i++) { $lock = Enter-Lock; if (-not $lock) { Start-Sleep -Seconds 2 } }
+        if (-not $lock) { Write-Output "$tag ほかの送受信が終わらないので、やめました。あとでもう一度実行してください。"; exit 1 }
+        try {
+            # 全PCのアーカイブの記録を合わせて、いまアーカイブされている会話を選ぶ（VSCode の保存領域は読むだけ）
+            New-Item -ItemType Directory -Force -Path $LocalArchive | Out-Null
+            & $rclone copy $RemoteArchive $LocalArchive --update --exclude "$PcName.json" --retries 2 --low-level-retries 3 --log-level ERROR 2>$null
+            $ext = Get-ClaudeExtensionState
+            $mine = if ($ext) { Update-ArchiveRecord $ext } else { Read-ArchiveFile $MyArchiveFile }
+            $winner = Get-ArchiveWinners $mine
+            Sync-DeletedRecords $rclone
+            $already = Get-DeletedIds
+            $ids = @($winner.Keys | Where-Object { $winner[$_].archived -and -not $already.Contains($_) } | Sort-Object)
+            if ($ids.Count -eq 0) { Write-Output "$tag 消すアーカイブ済みの会話はありません。"; exit 0 }
+
+            # 消す会話を見せる（このPCにあるものは、最後に使った日と大きさも）
+            $bytes = [int64]0; $here = 0
+            foreach ($id in $ids) {
+                $file = Join-Path $LocalDir "$id.jsonl"
+                if (Test-Path -LiteralPath $file) {
+                    $it = Get-Item -LiteralPath $file; $bytes += $it.Length; $here++
+                    Write-Output ('  {0}  {1:yyyy-MM-dd}  {2,7:N1} MB' -f $id, $it.LastWriteTime, ($it.Length / 1MB))
+                } else {
+                    Write-Output "  $id  （このPCにはない）"
+                }
+            }
+            Write-Output ('{0} アーカイブ済みの会話 {1} 件（このPCにあるのは {2} 件、{3:N1} MB）を、このPCと個人用 OneDrive から消します。' -f $tag, $ids.Count, $here, ($bytes / 1MB))
+            Write-Output "$tag 個人用 OneDrive で消したものは、OneDrive のごみ箱に約30日残ります。ほかのPCでは、次の pull・push のときに消えます。"
+            if ($DryRun) { Write-Output "$tag -DryRun なので消していません。"; exit 0 }
+            if (-not $Yes) {
+                $ans = Read-Host "$tag 消すなら y を入力してください"
+                if ($ans -ne 'y') { Write-Output "$tag やめました。"; exit 0 }
+            }
+
+            # 先に記録を送る（途中で失敗しても、ほかのPCの pull で消えるように）
+            $map = Read-DeletedFile $MyDeletedFile
+            $now = Get-NowUnix
+            foreach ($id in $ids) { $map[$id] = $now }
+            $sessions = [ordered]@{}
+            foreach ($k in ($map.Keys | Sort-Object)) { $sessions[$k] = $map[$k] }
+            New-Item -ItemType Directory -Force -Path $LocalDeleted | Out-Null
+            $json = [ordered]@{ pc = $PcName; sessions = $sessions } | ConvertTo-Json -Depth 3
+            [System.IO.File]::WriteAllText($MyDeletedFile, $json, (New-Object System.Text.UTF8Encoding $false))
+            & $rclone copyto $MyDeletedFile "$RemoteDeleted/$PcName.json" --retries 2 --low-level-retries 3 --log-level ERROR
+            if ($LASTEXITCODE -ne 0) { throw "消した記録を個人用 OneDrive へ送れませんでした（$LASTEXITCODE）。会話はまだ消していません。" }
+
+            $filter = Write-DeletedFilter $ids
+            $n = Remove-LocalSessions $ids
+            Remove-RemoteSessions $rclone $filter
+            Write-Output "$tag このPCから $n 件、個人用 OneDrive からも消しました。"
+        } catch {
+            Write-Output "$tag $($_.Exception.Message)"
+            exit 1
+        } finally {
+            $lock.Dispose()
+        }
     }
 
     'archive-apply' {

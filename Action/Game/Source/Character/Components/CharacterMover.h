@@ -73,11 +73,6 @@ public:
 	}
 
 	bool IsOnGround() const;
-	// 水平方向に動いているか。アニメーションの切り替えに使う。
-	bool IsMoving() const
-	{
-		return m_isMoving;
-	}
 	// 水平方向の速さ。
 	float GetHorizontalSpeed() const
 	{
@@ -99,6 +94,5 @@ private:
 	Quaternion m_rotation = Quaternion::Identity;
 	Quaternion m_visualRotation = Quaternion::Identity;
 	float m_visualYawVelocity = 0.0f;  // 見た目の向きが回る速さ（ラジアン/秒）。
-	bool m_isMoving = false;
 	bool m_isInitialized = false;
 };

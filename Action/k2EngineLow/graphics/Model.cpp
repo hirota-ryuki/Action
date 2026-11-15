@@ -5,7 +5,7 @@
 namespace nsK2EngineLow {
 	void Model::Init(const ModelInitData& initData)
 	{
-		/* レイトレ向けの初期化の時にはm_fxFilePathは指定されていない場合があるのでスルーする。
+		/* m_fxFilePathは指定されていない場合があるのでスルーする。
 		MY_ASSERT(
 			initData.m_fxFilePath,
 			"error : initData.m_fxFilePathが指定されていません。"

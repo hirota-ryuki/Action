@@ -25,15 +25,6 @@ public:
 	{
 		return m_statusEffects.IsFrozen();
 	}
-	// 今のステート。デバッグ表示用。
-	EnemyStateId GetStateId() const
-	{
-		return m_stateMachine.GetCurrentId();
-	}
-	const char* GetStateName() const
-	{
-		return m_stateMachine.GetCurrentName();
-	}
 
 protected:
 	CharacterConfig MakeConfig() const override;

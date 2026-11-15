@@ -194,41 +194,6 @@ namespace nsK2EngineLow {
 		{
 			return m_numUAV != 0;
 		}
-		/// <summary>
-		/// UAVディスクリプタが始まる配列番号を取得する。
-		/// </summary>
-		/// <remarks>
-		/// UAVディスクリプタはSRVディスクリプタの次から登録されている。
-		/// なので、SRVディスクリプタが10個登録されていれば、
-		/// UAVディスクリプタは配列の10番目から登録されていることになる。
-		/// この関数は現在レイトレエンジンで使用されている。
-		/// </remarks>
-		/// <returns></returns>
-		int GetOffsetUAVDescriptorFromTableStart() const
-		{
-			return m_numSRV + m_numConstantBuffer;
-		}
-		/// <summary>
-		/// SRVディスクリプタが始まる配列番号を取得する。
-		/// </summary>
-		/// <returns></returns>
-		int GetOffsetSRVDescriptorFromTableStart() const
-		{
-			return m_numConstantBuffer;
-		}
-		/// <summary>
-		/// 定数バッファディスクリプタが始まる配列番号を取得する。
-		/// </summary>
-		/// /// <remarks>
-		/// 定数バッファディスクリプタはSRVディスクリプタとUAVディスクリプタの次から登録されている。
-		/// なので、SRVディスクリプタが10個、UVAディスクリプタが5個登録されていれば、
-		/// 定数バッファディスクリプタは配列の15番目から登録されていることになる。
-		/// この関数は現在レイトレエンジンで使用されている。
-		/// <returns></returns>
-		int GetOffsetConstantBufferDescriptorFromTableStart() const
-		{
-			return m_numSRV + m_numUAV;
-		}
 	private:
 		/// <summary>
 		/// 解放

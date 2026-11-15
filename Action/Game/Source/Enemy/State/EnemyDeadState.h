@@ -12,10 +12,6 @@ public:
 	{
 		return EnemyStateId::Dead;
 	}
-	const char* GetName() const override
-	{
-		return "Dead";
-	}
 
 	void Enter(EnemyStateContext& context, const CharacterInput& input) override;
 	EnemyStateId CheckTransition(const EnemyStateContext& context, const CharacterInput& input) const override

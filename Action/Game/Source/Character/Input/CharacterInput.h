@@ -75,6 +75,8 @@ struct InputSourceContext
 	Vector3 forward = Vector3::AxisZ;   // 正面の向き。
 	float deltaTime = 0.0f;
 	bool isFirstPerson = false;         // 一人称視点か。プレイヤーの照準をカメラに合わせるのに使う。
+	// Action1 のスキルを撃った回数。一人称のプレイヤーが、右手と左手で交互に撃つ（撃つ位置を右と左に分ける）のに使う。
+	int action1UseCount = 0;
 };
 
 // 入力元のインターフェース。プレイヤーの操作もNPCのAIもこれを実装する。

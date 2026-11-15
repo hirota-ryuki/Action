@@ -13,10 +13,6 @@ public:
 	{
 		return PlayerStateId::Run;
 	}
-	const char* GetName() const override
-	{
-		return "Run";
-	}
 
 	void Enter(PlayerStateContext& context, const CharacterInput& input) override
 	{

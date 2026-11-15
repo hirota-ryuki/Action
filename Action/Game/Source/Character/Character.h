@@ -55,16 +55,6 @@ public:
 		return m_faction;
 	}
 
-	// 入力元を差し替える（AIで動かす、手で操作する、などのデバッグ用）。nullptr で既定の入力元に戻る。
-	void SetInputSource(IInputSource* inputSource)
-	{
-		m_inputSource = inputSource;
-	}
-	// このフレームに受け取った入力。デバッグ表示用。
-	const CharacterInput& GetInput() const
-	{
-		return m_input;
-	}
 	StatusEffects& GetStatusEffects()
 	{
 		return m_statusEffects;
@@ -100,7 +90,7 @@ protected:
 
 	// 調整値。Start() で1回だけ呼ぶ。
 	virtual CharacterConfig MakeConfig() const = 0;
-	// SetInputSource(nullptr) のときに使う入力元。
+	// 入力元（プレイヤーの操作、敵の AI など）。
 	virtual IInputSource& GetDefaultInputSource() = 0;
 	// 共通の部品を Init したあとに呼ぶ。自分だけの部品の Init を書く。
 	virtual void OnStart()
@@ -124,11 +114,6 @@ protected:
 	// 体を描いたあと、自分だけのものを描く。
 	virtual void OnRender(RenderContext& rc)
 	{
-	}
-	// 揺れ物の調整値。開発用の画面（ImGui）で変えるときに使う。
-	SpringBonesSettings& GetSpringBonesSettings()
-	{
-		return m_springBones.GetSettings();
 	}
 	// ジャンプ中の度合い（0〜1）を、体の連動と揺れ物に渡す。モデルを更新する前（UpdateAction）に呼ぶ。
 	void SetJumpWeight(float jumpWeight)
@@ -164,7 +149,6 @@ private:
 	SpringBones m_springBones;
 	BodyLink m_bodyLink;
 	CharacterCastSettings m_castSettings;
-	IInputSource* m_inputSource = nullptr;  // nullptr なら GetDefaultInputSource()。
 	Faction m_faction = Faction::Neutral;
 	bool m_isRenderBody = true;
 };

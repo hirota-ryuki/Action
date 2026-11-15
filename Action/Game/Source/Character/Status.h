@@ -37,11 +37,6 @@ public:
 	{
 		m_hp = max(0.0f, m_hp - amount);
 	}
-	// HP を増やす。最大より上にはならない。
-	void Heal(float amount)
-	{
-		m_hp = min(m_maxHp, m_hp + amount);
-	}
 	bool IsHpEmpty() const
 	{
 		return m_hp <= 0.0f;

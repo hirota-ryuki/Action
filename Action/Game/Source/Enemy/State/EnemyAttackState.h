@@ -14,10 +14,6 @@ public:
 	{
 		return EnemyStateId::Attack;
 	}
-	const char* GetName() const override
-	{
-		return "Attack";
-	}
 
 	EnemyStateId CheckTransition(const EnemyStateContext& context, const CharacterInput& input) const override;
 	// 何もしない。体を動かす（重力をかける Move を呼ぶ）のは攻撃。

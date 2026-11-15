@@ -175,44 +175,6 @@
           "body"
         ]
       }
-    },
-    {
-      "name": "FpRelease",
-      "comment": "溜めた炎を放って、両手を構えの高さまで下ろす（KinemIQ の Spell - end の前半）",
-      "source": "D:/04_dawnload/kinemiq/Spell_-_end.fbx",
-      "rig": "ue4",
-      "arms": "both",
-      "frames": [
-        1,
-        7
-      ],
-      "adjust": [
-        {
-          "bone": "J_Bip_L_UpperArm",
-          "axis": [
-            0,
-            0,
-            1
-          ],
-          "deg": -30
-        },
-        {
-          "bone": "J_Bip_R_UpperArm",
-          "axis": [
-            0,
-            0,
-            1
-          ],
-          "deg": 30
-        }
-      ],
-      "hold": {
-        "clip": "FpIdle",
-        "frame": 0,
-        "parts": [
-          "body"
-        ]
-      }
     }
   ]
 }

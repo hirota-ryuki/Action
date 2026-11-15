@@ -359,13 +359,6 @@ namespace nsK2Engine {
 		/// </remark>
 		/// <param name="instanceNo">インスタンス番号</param>
 		void RemoveInstance(int instanceNo);
-		/// <summary>
-		/// レイトレワールドに登録するかのフラグを設定する
-		/// 頻繁に生成するモデル（弾など）をInitする前に引数falseで実行してください。
-		/// </summary>
-		void SetRaytracingWorld(bool flag) {
-			m_isRaytracingWorld = flag;
-		}
 	private:
 		/// <summary>
 		/// スケルトンの初期化。
@@ -524,7 +517,6 @@ namespace nsK2Engine {
 		EnModelUpAxis				m_enFbxUpAxis = enModelUpAxisZ;		// FBXの上方向。
 		Animation					m_animation;						// アニメーション。
 		ComputeAnimationVertexBuffer m_computeAnimationVertexBuffer;	// アニメーション済み頂点バッファの計算処理。
-		Model*						m_addRaytracingWorldModel = nullptr;// レイトレワールドに登録したモデル。				
 		Model						m_zprepassModel;					// ZPrepassで描画されるモデル
 		Model						m_forwardRenderModel;				// フォワードレンダリングの描画パスで描画されるモデル
 		Model						m_translucentModel;					// 半透明モデル。
@@ -542,7 +534,6 @@ namespace nsK2Engine {
 		// 事前計算は全インスタンス分の頂点バッファを作り毎フレーム計算するので、草のように数が多いと重いため。
 		bool						m_isGpuInstancing = false;
 		int							m_numDrawInstance = 0;				// Draw() で受け取った、このフレームに描くインスタンスの数。
-		bool						m_isRaytracingWorld = true;			//レイトレワールドに登録する？
 		std::unique_ptr<Matrix[]>	m_worldMatrixArray;					// ワールド行列の配列。
 		StructuredBuffer			m_worldMatrixArraySB;				// ワールド行列の配列のストラクチャードバッファ。
 		// GBuffer描画用シェーダー(RenderToGBufferFor3DModel.fx)のb1に送る拡張定数バッファ。

@@ -13,9 +13,6 @@ namespace nsK2EngineLow {
 	class GameTime;
 	class Texture;
 	class Font;
-	namespace raytracing {
-		struct InitData;
-	}
 	class K2EngineLow {
 	public:
 		/// <summary>
@@ -63,8 +60,7 @@ namespace nsK2EngineLow {
 		void Init(
 			HWND hwnd, 
 			UINT frameBufferWidth, 
-			UINT frameBufferHeight,
-			const raytracing::InitData& raytracingInitData
+			UINT frameBufferHeight
 		);
 		/// <summary>
 		/// tksファイルをバンクから取得。

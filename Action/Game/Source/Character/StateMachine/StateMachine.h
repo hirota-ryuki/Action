@@ -53,11 +53,6 @@ public:
 	{
 		return m_current != nullptr ? m_current->GetId() : m_firstId;
 	}
-	// デバッグ表示用。
-	const char* GetCurrentName() const
-	{
-		return m_current != nullptr ? m_current->GetName() : "None";
-	}
 
 protected:
 	// ステートを登録する。番号はステート自身の GetId() から取る（番号と中身を取り違えないように）。

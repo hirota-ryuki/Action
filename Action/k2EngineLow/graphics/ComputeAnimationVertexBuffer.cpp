@@ -20,13 +20,20 @@ namespace nsK2EngineLow {
 		StructuredBuffer* worldMatrixArraySB
 	){
 		m_numInstance = numInstance;
-		// tkmファイルをロード。
-		m_tkmFile.Load(tkmFilePath, false, false, false);
-		m_numMesh = m_tkmFile.GetNumMesh();
+		// tkmファイルは、Model と同じく tkm バンクから使う。
+		// ここで別に読み込むと、同じファイルの法線の計算などを2回することになり、起動が遅くなる。
+		m_tkmFile = g_engine->GetTkmFileFromBank(tkmFilePath);
+		if (m_tkmFile == nullptr) {
+			// 未登録。あとで Model が使うので、テクスチャも読み込んでおく（Model::Init と同じ読み込み方）。
+			m_tkmFile = new TkmFile;
+			m_tkmFile->Load(tkmFilePath, false);
+			g_engine->RegistTkmFileToBank(tkmFilePath, m_tkmFile);
+		}
+		m_numMesh = m_tkmFile->GetNumMesh();
 		m_meshArray = make_unique<SMeshLocal[]>(m_numMesh);
 		
 		int meshNo = 0;
-		m_tkmFile.QueryMeshParts([&](const TkmFile::SMesh& mesh) {
+		m_tkmFile->QueryMeshParts([&](const TkmFile::SMesh& mesh) {
 			SMeshLocal& meshLocal = m_meshArray[meshNo];
 			int numVertex = (int)mesh.vertexBuffer.size();
 			int vertexStride = sizeof(TkmFile::SVertex);

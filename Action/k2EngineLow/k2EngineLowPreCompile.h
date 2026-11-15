@@ -2,7 +2,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _CRT_NON_CONFORMING_SWPRINTFS
 #pragma comment( lib, "xinput.lib")
-#pragma comment(lib, "dxcompiler.lib")
 
 #include <winsock2.h>
 #include <stdio.h>
@@ -20,7 +19,6 @@
 #include <DirectXMath.h>
 #include <Xinput.h>
 #include <array>
-#include <dxcapi.h>
 #include <atlbase.h>
 #include <dxgi.h>
 #include <dxgitype.h>
@@ -42,7 +40,6 @@ using namespace Microsoft::WRL;
 
 //#define USE_FPS_LIMITTER		// 有効でFPSに上限を設ける。（無効にしてFPS無制限）
 static const int MAX_FPS = 60;	// 最大FPS。USE_FPS_LIMITTERが有効なときに使用される。
-#define ENABLE_DXR_ON_RTX_ONLY	// 有効でDXRはRTXシリーズのみ有効。
 
 #include "util/Noncopyable.h"
 #include "dbg/MyAssert.h"
@@ -66,9 +63,8 @@ static const int MAX_FPS = 60;	// 最大FPS。USE_FPS_LIMITTERが有効なとき
 #include "graphics/PipelineState.h"
 #include "graphics/ConstantBuffer.h"
 #include "graphics/RootSignature.h"
-#include "graphics/raytracing/Raytracing.h"
-#include "graphics/GraphicsEngine.h"
 #include "graphics/DescriptorHeap.h"
+#include "graphics/GraphicsEngine.h"
 #include "graphics/RenderTarget.h"
 #include "graphics/Animation.h"
 #include "graphics/font/Font.h"
@@ -96,8 +92,6 @@ static const int MAX_BONE = 512;	// ボーンの最大数。
 #include "physics/RigidBody.h"
 #include "physics/Physics.h"
 #include "physics/MeshCollider.h"
-#include "physics/SphereCollider.h"
-#include "physics/BoxCollider.h"
 #include "physics/CollisionAttr.h"
 #include "physics/CharacterController.h"
 #include "physics/PhysicsStaticObject.h"
@@ -113,4 +107,4 @@ static const int MAX_BONE = 512;	// ボーンの最大数。
 
 #include "graphics/effect/EffectEngine.h"
 #include "sound/SoundSource.h"
-#include "graphics/effect/EffectEmitter.h"
+#include "graphics/effect/Effect.h"

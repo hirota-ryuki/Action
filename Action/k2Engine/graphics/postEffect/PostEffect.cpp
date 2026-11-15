@@ -34,13 +34,6 @@ namespace nsK2Engine {
             metallicSmoothRenderTarget,
             albedoRenderTarget
         );
-        m_dof.Init(
-            mainRenderTarget,
-            zprepassRenderTarget,
-            normalRenderTarget,
-            metallicSmoothRenderTarget,
-            albedoRenderTarget
-        );
         m_fXaa.Init(
             mainRenderTarget,
             zprepassRenderTarget,
@@ -70,10 +63,8 @@ namespace nsK2Engine {
         BeginGPUEvent("PostEffect");
         //m_ssao.Render(rc, mainRenderTarget);
         
-        if (g_renderingEngine->IsEnableRaytracing() == false) {
-            // レイトレをしていないならSSRを行う。
-            m_ssr.Render(rc, mainRenderTarget);
-        }
+        // スクリーンスペースリフレクション。
+        m_ssr.Render(rc, mainRenderTarget);
         // シーンの輝度を計算する。
         m_calsSceneLuminance.Render(rc, mainRenderTarget);
 
@@ -92,8 +83,6 @@ namespace nsK2Engine {
         //メインレンダーターゲットをTARGETからPRESENTへ。
         rc.WaitUntilFinishDrawingToRenderTarget(mainRenderTarget);
 
-        // DOF
-        m_dof.Render(rc, mainRenderTarget);
         // FXAA
         m_fXaa.Render(rc, mainRenderTarget);
 
