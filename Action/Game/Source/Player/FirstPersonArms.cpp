@@ -10,6 +10,11 @@ namespace
 	const char* const MODEL_PATH = "Assets/modelData/player/Model/SK_PlayerFp.tkm";
 	const char* const CLIP_DIR = "Assets/modelData/player/Animation/FirstPerson/";
 	constexpr float MODEL_SCALE = 1.128f;  // プレイヤーの体と同じ大きさ。
+	// 腕の色に掛ける色。ボス戦のステージの月の光（Game.cpp の BOSS_MOON_COLOR）が強い青で、目の前に大きく映る腕が
+	// 青白く見えるので、腕だけ青と緑を減らして打ち消す。月の光が当たる前腕は青く、当たらない手の甲は
+	// 夜空からの明かりで青緑になるので、その間をとって、どちらも肌の色合いに近づくようにした。
+	// 青と緑を減らすだけ（明るくはしない）なので、少し暗くなる。
+	const Vector4 ARMS_MUL_COLOR = Vector4(1.0f, 0.62f, 0.48f, 1.0f);
 	// この骨とその下の骨だけを残す。
 	const wchar_t* const ARM_ROOT_BONES[] = { L"J_Bip_L_UpperArm", L"J_Bip_R_UpperArm" };
 	// 腕の置き方（ArmPose）。肩を中心に回す角度と、腕ごと動かす量。
@@ -88,6 +93,7 @@ void FirstPersonArms::Init()
 	desc.clips[enClip_ChargeStart] = { dir + "FpChargeStart.fbx", false };
 	desc.clips[enClip_Charge] = { dir + "FpCharge.fbx", true };
 	m_model.Init(desc);
+	m_model.GetModelRender().SetMulColor(ARMS_MUL_COLOR);
 	m_clip = enClip_Idle;
 	InitHiddenBones();
 }
