@@ -14,20 +14,22 @@ namespace
 	// 走りでいちばん低くなるところ（1歩の中の割合。0 で足が着いた瞬間）。歩きは 0（着いた瞬間）。
 	constexpr float RUN_LOWEST_STEP_RATE = 0.2f;
 	// 揺れの大きさ（片側の振れ幅。cm・度）。歩きと走りの間は、走りの混ぜ具合で混ぜる。
-	constexpr float WALK_VERTICAL = 1.5f;
-	constexpr float RUN_VERTICAL = 4.0f;
-	constexpr float WALK_HORIZONTAL = 1.0f;
-	constexpr float RUN_HORIZONTAL = 1.5f;
-	constexpr float WALK_ROLL_DEG = 0.4f;  // 傾き。ゲームで見て、要らなければ 0 にする。
-	constexpr float RUN_ROLL_DEG = 1.0f;
-	constexpr float RUN_PITCH_DEG = 0.6f;  // 走りで、足が着いた瞬間に下を向く角度。歩きでは向かない。
-	// 腕の揺れの大きさ（cm）。腕全体は8の字（左右は2歩で1往復、上下は1歩で1往復）、前後は左右の腕で逆向き。
+	// Apex Legends くらいに抑える: 歩きはほとんど揺れず、走りでも小さく揺れる（動きの大半は腕に任せる）。
+	constexpr float WALK_VERTICAL = 0.6f;
+	constexpr float RUN_VERTICAL = 1.5f;
+	constexpr float WALK_HORIZONTAL = 0.4f;
+	constexpr float RUN_HORIZONTAL = 0.8f;
+	constexpr float WALK_ROLL_DEG = 0.0f;  // 傾き。歩きでは傾けない。
+	constexpr float RUN_ROLL_DEG = 0.4f;
+	constexpr float RUN_PITCH_DEG = 0.3f;  // 走りで、足が着いた瞬間に下を向く角度。歩きでは向かない。
+	// 腕の揺れの大きさ（cm）。腕全体は8の字（左右は2歩で1往復、上下は1歩で1往復）。
 	constexpr float WALK_ARMS_HORIZONTAL = 0.8f;
 	constexpr float RUN_ARMS_HORIZONTAL = 2.0f;
 	constexpr float WALK_ARMS_VERTICAL = 0.5f;
 	constexpr float RUN_ARMS_VERTICAL = 1.5f;
+	// 腕を前後に振る量（1 で FirstPersonArms の振り切った形）。左右の腕で逆向き。歩きは軽く振る。
 	constexpr float WALK_ARMS_SWING = 0.5f;
-	constexpr float RUN_ARMS_SWING = 2.5f;
+	constexpr float RUN_ARMS_SWING = 1.0f;
 	// 腕が、カメラの揺れより遅れる量（1歩の中の割合）。
 	constexpr float ARMS_LAG_STEP_RATE = 0.1f;
 	// 揺れの強さ・走りの混ぜ具合を、目標へ近づける速さ（1秒あたり）。歩き出し・止まりで急に揺れないようにする。
@@ -173,8 +175,10 @@ void FirstPersonBob::UpdateOffsets()
 	const float armsY = Lerp(WALK_ARMS_VERTICAL, RUN_ARMS_VERTICAL, run) * w * -cosf(Math::PI2 * (armsStep - lowest));
 	// 前後: 右足が着く（m_phase = 0）とき、画面の左の腕（side 1）がいちばん前に出る。
 	const float swing = Lerp(WALK_ARMS_SWING, RUN_ARMS_SWING, run) * w * cosf(Math::PI * armsPhase);
-	m_armsOffset[0] = Vector3(armsX, armsY, -swing);
-	m_armsOffset[1] = Vector3(armsX, armsY, swing);
+	m_armsOffset[0] = Vector3(armsX, armsY, 0.0f);
+	m_armsOffset[1] = Vector3(armsX, armsY, 0.0f);
+	m_armSwing[0] = -swing;
+	m_armSwing[1] = swing;
 
 	// 着地の沈み: カメラを下げて少し下を向かせる。腕は、カメラより遅れて、さらに沈む。
 	m_cameraOffset.y -= m_landDip;

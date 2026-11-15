@@ -91,6 +91,8 @@ private:
 	float m_castTimer[2] = { 0.0f, 0.0f };   // 左右の手の、氷を撃ったあと、手を開いて突き出している残りの秒数。
 	// 左右の腕の、歩き・走りの揺れと着地の沈み（x: カメラの右、y: 上、z: 前。cm）。撃つ形の腕は弱めてある。
 	Vector3 m_bobOffset[2] = { Vector3::Zero, Vector3::Zero };
+	// 左右の腕を、歩き・走りで前後に振る量（+ で前、- で後ろ）。撃つ形の腕は弱めてある。
+	float m_bobSwing[2] = { 0.0f, 0.0f };
 	int m_lastMainFireCount = 0;  // 前のフレームまでに、氷を撃った回数。
 	int m_lastSubFireCount = 0;   // 前のフレームまでに、炎を撃った回数。
 };

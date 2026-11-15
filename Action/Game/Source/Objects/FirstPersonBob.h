@@ -36,6 +36,11 @@ public:
 	{
 		return m_armsOffset[side];
 	}
+	// 腕を前後に振る量（+ で前、- で後ろ。走りで -1〜1、歩きはその半分）。左右の腕で逆向き。
+	float GetArmSwing(int side) const
+	{
+		return m_armSwing[side];
+	}
 
 private:
 	// 着地の沈みを、ばねで進める。
@@ -57,4 +62,5 @@ private:
 	float m_pitchDeg = 0.0f;
 	float m_rollDeg = 0.0f;
 	Vector3 m_armsOffset[2] = { Vector3::Zero, Vector3::Zero };
+	float m_armSwing[2] = { 0.0f, 0.0f };
 };
