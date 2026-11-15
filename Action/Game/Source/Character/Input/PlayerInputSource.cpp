@@ -4,9 +4,9 @@
 
 namespace
 {
-	// 一人称で、Action1 のスキル（Player は氷魔法）を右手から撃つ。撃つ位置を、カメラから見て右（x）と上（y）へこれだけずらす。
-	// 右手を突き出しきったときの手のひらの前に合わせてある。
-	const Vector3 FIRST_PERSON_RIGHT_HAND_OFFSET = Vector3(16.0f, -15.0f, 0.0f);
+	// 一人称で、Action1 のスキル（Player は氷魔法）を、右手と左手で交互に撃つ。撃つ位置を、カメラから見て右（x）と上（y）へこれだけずらす。
+	// 右手で撃つときの値で、左手で撃つときは x の向きを逆にする。手を突き出しきったときの手のひらの前に合わせてある。
+	const Vector3 FIRST_PERSON_HAND_OFFSET = Vector3(16.0f, -15.0f, 0.0f);
 	// 一人称で、Action2 のスキル（Player は炎魔法）の火の玉を溜める位置を、カメラから見て右（x）と上（y）へこれだけずらす。
 	// 目の前の真ん中で溜めると、火の玉で前が見えなくなるので、画面の下へ下げて、溜めきった火の玉の上 1/3 だけが見えるようにする。
 	const Vector3 FIRST_PERSON_CHARGE_OFFSET = Vector3(0.0f, -44.0f, 0.0f);
@@ -55,8 +55,10 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 		input.aimDirection = g_camera3D->GetForward();
 		const Matrix& cameraRotation = g_camera3D->GetCameraRotation();
 		const Vector3 cameraUp(cameraRotation.m[1][0], cameraRotation.m[1][1], cameraRotation.m[1][2]);
-		input.AimOffset(ActionButton::Action1) = g_camera3D->GetRight() * FIRST_PERSON_RIGHT_HAND_OFFSET.x
-			+ cameraUp * FIRST_PERSON_RIGHT_HAND_OFFSET.y;
+		// 次が何回目（0 から数える）か: 偶数なら右手、奇数なら左手（FirstPersonArms も同じ決まりで手を突き出す）。
+		const float handSide = context.action1UseCount % 2 == 0 ? 1.0f : -1.0f;
+		input.AimOffset(ActionButton::Action1) = g_camera3D->GetRight() * (FIRST_PERSON_HAND_OFFSET.x * handSide)
+			+ cameraUp * FIRST_PERSON_HAND_OFFSET.y;
 		input.AimOffset(ActionButton::Action2) = g_camera3D->GetRight() * FIRST_PERSON_CHARGE_OFFSET.x
 			+ cameraUp * FIRST_PERSON_CHARGE_OFFSET.y;
 	}

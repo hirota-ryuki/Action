@@ -38,13 +38,21 @@ namespace
 	}
 	// 構え: 手を画面の下 1/3 の左右に置く。
 	const ArmPose IDLE_POSE = { -25.0f, 55.0f, 12.0f, 0.0f, 0.0f };
-	// 氷を撃つとき（右腕だけ）: 手を突き出す動きなので、角度を抑えて下げ、手を画面の下 1/3 に収めて前が見えるようにする。
-	const ArmPose CAST_POSE = { 0.0f, 24.0f, 0.0f, 0.0f, 10.0f };
+	// 氷を撃つとき（撃つ腕だけ。右と左で交互）: 炎を放つときと同じく腕を画面の端から内へ向けて前へ伸ばし、
+	// 開いた手を、撃つ位置（PlayerInputSource の FIRST_PERSON_HAND_OFFSET）のあたりに置く。
+	const ArmPose CAST_POSE = { -10.0f, 46.0f, 12.0f, 0.0f, 30.0f };
+	// 氷を撃ったあと、手を開いて突き出したまま見せる時間（秒）。そのあと構えに戻る。
+	constexpr float CAST_OPEN_SECONDS = 0.2f;
+	// 構えの拳を、カメラへ向けた向きから内側へ傾ける角度（度）。ファイティングポーズのように、拳を少し向かい合わせる。
+	constexpr float FIST_INWARD_DEG = 30.0f;
+	// 手のひらの向きの裏表。人差し指と小指の付け根で張る面の法線（手首から人差し指 × 手首から小指）に掛ける。
+	// 左右の手は鏡写しなので逆になる（ゲームで炎を放つ手を見て決めた。左の骨（side 0）が画面の右の手）。
+	const float PALM_SIGN[2] = { -1.0f, 1.0f };
 	// 炎を溜めるとき（溜め始め・溜め・放つ。両腕）: 画面の下に沈めた火の玉（PlayerInputSource の FIRST_PERSON_CHARGE_OFFSET）を
 	// 左右から開いた手で挟むように、手を火の玉の左右の、画面の下 1/3 に置く（氷を撃つときより低く、少し外へ開く）。
 	const ArmPose CHARGE_POSE = { 2.0f, 18.0f, 0.0f, 0.0f, 10.0f };
 	// 炎を放つとき（両腕）: 構えと同じく腕を画面の左右の外から内へ向け、前へ伸ばして、両手を照準のそばへ寄せて火の玉を押し出す。
-	// 手のひらは AimReleaseHands で前へ向け、両手の間は RELEASE_HAND_GAP にそろえる。
+	// 手のひらは AimHands で前へ向け、両手の間は RELEASE_HAND_GAP にそろえる。
 	const ArmPose RELEASE_POSE = { -30.0f, 32.0f, 12.0f, 0.0f, 32.0f };
 	// 炎を放つときの、両手の内側の端の間（握りこぶしの半分くらい。骨格の単位）。
 	// 指の骨の位置で測るので、指先の肉の分を足してある。
@@ -84,7 +92,6 @@ namespace
 
 	// アニメーションを切り替えるときの補間（秒）。
 	constexpr float TO_IDLE_SECONDS = 0.15f;
-	constexpr float TO_CAST_SECONDS = 0.05f;
 	constexpr float TO_CHARGE_START_SECONDS = 0.08f;
 	constexpr float TO_CHARGE_SECONDS = 0.1f;
 }
@@ -99,7 +106,6 @@ void FirstPersonArms::Init()
 	desc.clips.resize(enClip_Num);
 	const std::string dir = CLIP_DIR;
 	desc.clips[enClip_Idle] = { dir + "FpIdle.fbx", true };
-	desc.clips[enClip_CastRight] = { dir + "FpCastRight.fbx", false };
 	desc.clips[enClip_ChargeStart] = { dir + "FpChargeStart.fbx", false };
 	desc.clips[enClip_Charge] = { dir + "FpCharge.fbx", true };
 	m_model.Init(desc);
@@ -167,10 +173,10 @@ void FirstPersonArms::InitHiddenBones()
 		}
 		CurlFingers(sk);
 		SpreadArms(sk);
-		AimReleaseHands(sk);
+		AimHands(sk);
 	});
 
-	// 手首から先の骨（手と、その子の指の骨）。炎を放つときに、手のひらを前へ向けるのに使う。
+	// 手首から先の骨（手と、その子の指の骨）。手首を中心に手の向きを変えるのに使う。
 	for (int side = 0; side < 2; side++) {
 		m_handTreeBones[side].clear();
 		if (m_handBone[side] < 0) {
@@ -187,83 +193,91 @@ void FirstPersonArms::InitHiddenBones()
 	}
 }
 
-void FirstPersonArms::AimReleaseHands(Skeleton& skeleton)
+Vector3 FirstPersonArms::AimHand(Skeleton& skeleton, int side, const Vector3& palmTarget, const Vector3& fingersTarget, float w)
+{
+	const int* index = m_fingerBones[side][0];
+	const int* middle = m_fingerBones[side][1];
+	const int* little = m_fingerBones[side][LITTLE];
+	if (w <= 0.0f || m_handBone[side] < 0 || index[0] < 0 || middle[0] < 0 || little[0] < 0) {
+		return palmTarget;
+	}
+	const Vector3 wrist = BonePosition(skeleton, m_handBone[side]);
+	// 手のひらの向き: 人差し指と小指の付け根で張る面の法線（指の付け根は手の骨に付いているので、指の曲げ方では変わらない）。
+	Vector3 palm;
+	palm.Cross(BonePosition(skeleton, index[0]) - wrist, BonePosition(skeleton, little[0]) - wrist);
+	if (palm.LengthSq() <= FLT_EPSILON) {
+		return palmTarget;
+	}
+	palm.Normalize();
+	palm *= PALM_SIGN[side];
+	// ① 手のひらを palmTarget へ向ける。
+	Quaternion q = Quaternion::Identity;
+	Vector3 axis;
+	axis.Cross(palm, palmTarget);
+	if (axis.LengthSq() > FLT_EPSILON) {
+		axis.Normalize();
+		const float deg = acosf(max(-1.0f, min(1.0f, palm.Dot(palmTarget)))) * 57.2958f;
+		q.SetRotationDeg(axis, deg * w);
+	}
+	// ② 続けて、手のひらの向きを軸に回し、手首から中指の付け根への向きを fingersTarget へ向ける。
+	Vector3 fingers = BonePosition(skeleton, middle[0]) - wrist;
+	q.Apply(fingers);
+	fingers -= palmTarget * fingers.Dot(palmTarget);
+	Vector3 target = fingersTarget - palmTarget * fingersTarget.Dot(palmTarget);
+	if (fingers.LengthSq() > FLT_EPSILON && target.LengthSq() > FLT_EPSILON) {
+		fingers.Normalize();
+		target.Normalize();
+		Vector3 twistAxis;
+		twistAxis.Cross(fingers, target);
+		if (twistAxis.LengthSq() > FLT_EPSILON) {
+			twistAxis.Normalize();
+			const float twistDeg = acosf(max(-1.0f, min(1.0f, fingers.Dot(target)))) * 57.2958f;
+			Quaternion twist;
+			twist.SetRotationDeg(twistAxis, twistDeg * w);
+			q.Multiply(q, twist);
+		}
+	}
+	// 手首を中心に、手首から先の骨をまとめて回す。
+	Matrix rotation, toOrigin, toPivot, aroundWrist;
+	rotation.MakeRotationFromQuaternion(q);
+	toOrigin.MakeTranslation(wrist * -1.0f);
+	toPivot.MakeTranslation(wrist);
+	aroundWrist.Multiply(toOrigin, rotation);
+	aroundWrist.Multiply(aroundWrist, toPivot);
+	for (int boneNo : m_handTreeBones[side]) {
+		Bone* bone = skeleton.GetBone(boneNo);
+		Matrix world;
+		world.Multiply(bone->GetWorldMatrix(), aroundWrist);
+		bone->SetWorldMatrix(world);
+	}
+	q.Apply(palm);
+	return palm;
+}
+
+void FirstPersonArms::AimHands(Skeleton& skeleton)
 {
 	const Vector3 cameraRight = g_camera3D->GetRight();
 	const Vector3 cameraForward = g_camera3D->GetForward();
 	const Matrix& cameraRotationMatrix = g_camera3D->GetCameraRotation();
 	const Vector3 cameraUp(cameraRotationMatrix.m[1][0], cameraRotationMatrix.m[1][1], cameraRotationMatrix.m[1][2]);
-	// ① 手首を中心に手を回して、手のひらを前（照準の方）へ向ける。
 	for (int side = 0; side < 2; side++) {
-		const float w = m_releaseWeight[side];
-		const int* index = m_fingerBones[side][0];
-		const int* middle = m_fingerBones[side][1];
-		const int* little = m_fingerBones[side][3];
-		if (w <= 0.0f || m_handBone[side] < 0 || index[0] < 0 || middle[2] < 0 || little[0] < 0) {
-			continue;
+		// このゲームでは左の骨（side 0）が画面の右に映るので、内側はカメラの左。
+		const Vector3 inward = cameraRight * (side == 0 ? -1.0f : 1.0f);
+		const float openWeight = max(m_castWeight[side], m_releaseWeight[side]);
+		// ① 構えの拳: ファイティングポーズのように、握った指の側をカメラへ（少し内側へ傾けて）向け、指の付け根の関節を上へ向ける。
+		const float fistWeight = m_grip[side] * (1.0f - max(openWeight, m_chargeWeight[side]));
+		if (fistWeight > 0.0f) {
+			const float rad = FIST_INWARD_DEG / 57.2958f;
+			const Vector3 palmTarget = cameraForward * -cosf(rad) + inward * sinf(rad);
+			AimHand(skeleton, side, palmTarget, cameraUp, fistWeight);
 		}
-		const Vector3 wrist = BonePosition(skeleton, m_handBone[side]);
-		// 手のひらの向き: 人差し指と小指の付け根で張る面の法線。
-		// 裏表は、中指の曲がっている側の反対にする（曲がっている側に合わせると、ゲームでは手のひらがカメラの方を向いた）。
-		Vector3 palm;
-		palm.Cross(BonePosition(skeleton, index[0]) - wrist, BonePosition(skeleton, little[0]) - wrist);
-		Vector3 fingerBase = BonePosition(skeleton, middle[0]) - wrist;
-		fingerBase.Normalize();
-		Vector3 curl = BonePosition(skeleton, middle[2]) - BonePosition(skeleton, middle[0]);
-		curl -= fingerBase * curl.Dot(fingerBase);
-		if (palm.Dot(curl) > 0.0f) {
-			palm *= -1.0f;
-		}
-		if (palm.LengthSq() <= FLT_EPSILON) {
-			continue;
-		}
-		palm.Normalize();
-		Vector3 axis;
-		axis.Cross(palm, cameraForward);
-		if (axis.LengthSq() <= FLT_EPSILON) {
-			continue;
-		}
-		axis.Normalize();
-		const float deg = acosf(max(-1.0f, min(1.0f, palm.Dot(cameraForward)))) * 57.2958f;
-		Quaternion q;
-		q.SetRotationDeg(axis, deg * w);
-		// 続けて、手のひらの向き（前）を軸に回し、指先を上へ（少し内側へ傾けて）向ける。
-		{
-			Vector3 fingers = BonePosition(skeleton, middle[0]) - wrist;
-			q.Apply(fingers);
-			fingers -= cameraForward * fingers.Dot(cameraForward);
-			const Vector3 inward = cameraRight * (side == 0 ? -1.0f : 1.0f);
+		// ② 手を開いて撃つとき: 手のひらを前（照準の方）へ向け、指先を上へ（少し内側へ傾けて）向けて、指の形を作り直す。
+		if (openWeight > 0.0f) {
 			const float tilt = RELEASE_FINGER_TILT_DEG / 57.2958f;
 			const Vector3 fingersTarget = cameraUp * cosf(tilt) + inward * sinf(tilt);
-			if (fingers.LengthSq() > FLT_EPSILON) {
-				fingers.Normalize();
-				Vector3 twistAxis;
-				twistAxis.Cross(fingers, fingersTarget);
-				const float twistDeg = acosf(max(-1.0f, min(1.0f, fingers.Dot(fingersTarget)))) * 57.2958f;
-				if (twistAxis.LengthSq() > FLT_EPSILON) {
-					twistAxis.Normalize();
-					Quaternion twist;
-					twist.SetRotationDeg(twistAxis, twistDeg * w);
-					q.Multiply(q, twist);
-				}
-			}
+			const Vector3 palmNormal = AimHand(skeleton, side, cameraForward, fingersTarget, openWeight);
+			ShapeReleaseFingers(skeleton, side, palmNormal, openWeight);
 		}
-		Matrix rotation, toOrigin, toPivot, aroundWrist;
-		rotation.MakeRotationFromQuaternion(q);
-		toOrigin.MakeTranslation(wrist * -1.0f);
-		toPivot.MakeTranslation(wrist);
-		aroundWrist.Multiply(toOrigin, rotation);
-		aroundWrist.Multiply(aroundWrist, toPivot);
-		for (int boneNo : m_handTreeBones[side]) {
-			Bone* bone = skeleton.GetBone(boneNo);
-			Matrix world;
-			world.Multiply(bone->GetWorldMatrix(), aroundWrist);
-			bone->SetWorldMatrix(world);
-		}
-		// 指の形を、反らさず開きすぎない形に作り直す。
-		Vector3 palmNormal = palm;
-		q.Apply(palmNormal);
-		ShapeReleaseFingers(skeleton, side, palmNormal, w);
 	}
 
 	// ② 両手の内側の端（指の骨でいちばん内にあるもの）の間を RELEASE_HAND_GAP にするよう、腕ごと左右へずらす。
@@ -576,6 +590,7 @@ void FirstPersonArms::Reset(const Player& player)
 	m_lastSubFireCount = skills.GetUseCount(SUB_BUTTON);
 	m_releaseTimer = 0.0f;
 	for (int side = 0; side < 2; side++) {
+		m_castTimer[side] = 0.0f;
 		m_castWeight[side] = 0.0f;
 		m_chargeWeight[side] = 0.0f;
 		m_releaseWeight[side] = 0.0f;
@@ -593,7 +608,8 @@ void FirstPersonArms::Update(const Player& player)
 	// 構えと撃つときの置き方を、急に変わらないよう、少しずつ混ぜて切り替える。
 	const float rate = min(1.0f, deltaTime * POSE_BLEND_SPEED);
 	for (int side = 0; side < 2; side++) {
-		m_castWeight[side] += (GetCastWeightTarget(side) - m_castWeight[side]) * rate;
+		// 突き出すのは、撃った瞬間に伸びきるよう、炎を放つときと同じ速さにする。
+		m_castWeight[side] += (GetCastWeightTarget(side) - m_castWeight[side]) * min(1.0f, deltaTime * RELEASE_PUSH_SPEED);
 		m_chargeWeight[side] += (GetChargeWeightTarget() - m_chargeWeight[side]) * rate;
 		const float releaseTarget = m_releaseTimer > 0.0f ? 1.0f : 0.0f;
 		m_releaseWeight[side] += (releaseTarget - m_releaseWeight[side]) * min(1.0f, deltaTime * RELEASE_PUSH_SPEED);
@@ -608,8 +624,7 @@ void FirstPersonArms::Update(const Player& player)
 
 float FirstPersonArms::GetCastWeightTarget(int side) const
 {
-	// 氷は右手だけ。このゲームでは左の骨（side 0）が画面の右に映る。
-	return m_clip == enClip_CastRight && side == 0 ? 1.0f : 0.0f;
+	return m_castTimer[side] > 0.0f ? 1.0f : 0.0f;
 }
 
 float FirstPersonArms::GetChargeWeightTarget() const
@@ -630,8 +645,8 @@ float FirstPersonArms::GetGripTarget(int side) const
 	if (IsChargeClip() || m_releaseTimer > 0.0f) {
 		return 0.0f;
 	}
-	// 氷を撃つ右手は開く。このゲームでは左の骨（side 0）が画面の右に映る。
-	if (m_clip == enClip_CastRight && side == 0) {
+	// 氷を撃っている手は開く。
+	if (m_castTimer[side] > 0.0f) {
 		return 0.0f;
 	}
 	return 1.0f;
@@ -649,8 +664,11 @@ void FirstPersonArms::UpdateClip(const Player& player, float deltaTime)
 	const bool isSubCast = IsFiredThisFrame(skills, SUB_BUTTON, m_lastSubFireCount);
 	const bool isCharging = skills.IsHolding(SUB_BUTTON);
 	const bool isChargeClip = IsChargeClip();
+	for (float& timer : m_castTimer) {
+		timer = max(0.0f, timer - deltaTime);
+	}
 
-	// 両手の動き（炎）を、右手の動き（氷）より先に見る。溜めている間に氷を撃っても、両手は上げたまま。
+	// 両手の動き（炎）を、片手の動き（氷）より先に見る。溜めている間に氷を撃っても、両手は上げたまま。
 	if (isSubCast) {
 		// 炎を撃った: 上げた手をその場で開き（GetGripTarget）、少し見せてから最初の構えに戻る。
 		m_releaseTimer = RELEASE_OPEN_SECONDS;
@@ -679,12 +697,10 @@ void FirstPersonArms::UpdateClip(const Player& player, float deltaTime)
 		return;
 	}
 	if (isMainCast) {
-		Play(enClip_CastRight, TO_CAST_SECONDS);
-		return;
-	}
-	if (m_clip != enClip_Idle && !m_model.IsPlayingAnimation()) {
-		// 突き出すのが終わったら、構えに戻る。
-		Play(enClip_Idle, TO_IDLE_SECONDS);
+		// 氷は、右手と左手で交互に撃つ。n 回目（0 から数える）が偶数なら画面の右の手（左の骨、side 0）、奇数なら左の手。
+		// 撃つ位置も、PlayerInputSource が同じ決まりで右と左に分けている。
+		const int shotNo = m_lastMainFireCount - 1;
+		m_castTimer[shotNo % 2 == 0 ? 0 : 1] = CAST_OPEN_SECONDS;
 	}
 }
 

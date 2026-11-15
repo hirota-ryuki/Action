@@ -8,8 +8,8 @@ class SkillController;
 
 // 一人称カメラのときに画面に映す、プレイヤーの腕と手。
 // プレイヤーの体（袖の肘から先を消したもの）の腕だけを映してカメラの前に置き、魔法に合わせて腕のアニメーションを流す。
-// - 構えでは、両手を握りこぶしにして画面の下の左右に置く。
-// - メインの魔法（氷）を撃つと、右手を開いて前へ突き出し、構えに戻す。
+// - 構えでは、両手を握りこぶしにして画面の下の左右に置き、ファイティングポーズのように拳の握った指の側をカメラへ向ける。
+// - メインの魔法（氷）を撃つと、右手と左手で交互に、手を開いて前へ突き出し、構えに戻す。
 // - サブの魔法（炎）を溜めている間は、開いた両手を画面の下の火の玉の左右に添え、撃つと両腕を前へ伸ばして、最初の構えに戻す。
 // GameCamera が持ち、一人称のときだけ Update・Draw を呼ぶ。
 class FirstPersonArms
@@ -25,8 +25,7 @@ public:
 private:
 	enum EnClip
 	{
-		enClip_Idle,         // 両手を胸の下で構える。
-		enClip_CastRight,    // 右手を突き出して戻す（氷）。
+		enClip_Idle,         // 両手を胸の下で構える（氷を撃つときも、このクリップのまま、腕の置き方だけで突き出す）。
 		enClip_ChargeStart,  // 両手を前へ上げる（炎を溜め始める）。
 		enClip_Charge,       // 両手を上げたまま溜める。
 		enClip_Num,
@@ -36,9 +35,15 @@ private:
 	void InitHiddenBones();
 	// 両腕を、肩を中心に外へ開いて下げる（手を画面の左下・右下に置く）。骨のワールド行列を計算したあとに呼ぶ。
 	void SpreadArms(Skeleton& skeleton);
-	// 炎を放つとき（m_releaseWeight）に、手のひらを前へ向け、両手の間を RELEASE_HAND_GAP にそろえる。SpreadArms のあとに呼ぶ。
-	void AimReleaseHands(Skeleton& skeleton);
-	// 炎を放つときの指を、反らさず開きすぎない形にする（w で混ぜる）。palmNormal は手のひらの向き。AimReleaseHands から呼ぶ。
+	// 手首から先の向きを決める。SpreadArms のあとに呼ぶ。
+	// - 構えの拳（m_grip）は、握った指の側をカメラへ向ける。
+	// - 氷・炎を撃つとき（m_castWeight・m_releaseWeight）は、手のひらを前へ向け、指の形を作り直す。
+	//   炎を放つときは、両手の間を RELEASE_HAND_GAP にそろえる。
+	void AimHands(Skeleton& skeleton);
+	// 手首を中心に手を回して、手のひらを palmTarget へ、手首から中指の付け根への向きを fingersTarget へ、w の割合だけ向ける。
+	// 回したあとの手のひらの向きを返す。
+	Vector3 AimHand(Skeleton& skeleton, int side, const Vector3& palmTarget, const Vector3& fingersTarget, float w);
+	// 手を開いて撃つときの指を、反らさず開きすぎない形にする（w で混ぜる）。palmNormal は手のひらの向き。AimHands から呼ぶ。
 	void ShapeReleaseFingers(Skeleton& skeleton, int side, Vector3 palmNormal, float w);
 	// 指の chain[j] の骨の向き（付け根側から指先へ）。
 	static Vector3 FingerSegmentDirection(Skeleton& skeleton, const int* chain, int j);
@@ -52,7 +57,7 @@ private:
 	void UpdateClip(const Player& player, float deltaTime);
 	void Play(EnClip clip, float interpolateTime);
 	void UpdateTransform();
-	// 今流しているクリップで、その腕（side）を「撃つときの置き方」にする割合（0〜1）。
+	// その腕（side）を「氷を撃つときの置き方」にする割合（0〜1）。
 	float GetCastWeightTarget(int side) const;
 	// 今流しているクリップで、両腕を「炎を溜めるときの置き方」にする割合（0〜1）。
 	float GetChargeWeightTarget() const;
@@ -82,6 +87,7 @@ private:
 	float m_releaseWeight[2] = { 0.0f, 0.0f }; // 左右の腕の、炎を放つときの置き方（前へ伸ばす）の混ぜ具合。
 	float m_grip[2] = { 1.0f, 1.0f };        // 左右の手の握り具合（1 で握りこぶし、0 で開く）。
 	float m_releaseTimer = 0.0f;             // 炎を撃ったあと、両手を開いて見せている残りの秒数。
+	float m_castTimer[2] = { 0.0f, 0.0f };   // 左右の手の、氷を撃ったあと、手を開いて突き出している残りの秒数。
 	int m_lastMainFireCount = 0;  // 前のフレームまでに、氷を撃った回数。
 	int m_lastSubFireCount = 0;   // 前のフレームまでに、炎を撃った回数。
 };
