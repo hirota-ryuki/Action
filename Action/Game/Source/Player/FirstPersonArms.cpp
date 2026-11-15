@@ -56,6 +56,7 @@ namespace
 	const float RELEASE_FINGER_CURL_DEGS[3] = { 8.0f, 12.0f, 8.0f };
 	constexpr float RELEASE_FINGER_CLOSE_RATE = 0.5f;  // 人差し指〜小指の開きを、中指の向きへ寄せる割合（1 で全部そろう）。
 	constexpr float RELEASE_THUMB_SPREAD_DEG = 45.0f;  // 親指を、人差し指の向きから親指の側へ開く角度（度。手のひらの面の上で）。
+	constexpr float RELEASE_LITTLE_SPREAD_DEG = 10.0f;  // 小指を、中指から離れる側（外側）へさらに開く角度（度）。
 	// 握りこぶしにするときに、アニメーションの指の形から足して曲げる角度（度。付け根・第二関節・第一関節の順）。
 	const float FINGER_CURL_DEGS[3] = { 45.0f, 50.0f, 40.0f };
 	// 親指: 先の関節を曲げる角度（度）と、IK で合わせるときの決まり。
@@ -349,6 +350,14 @@ void FirstPersonArms::ShapeReleaseFingers(Skeleton& skeleton, int side, Vector3 
 		Vector3 base = onPalmPlane(FingerSegmentDirection(skeleton, chain, 0));
 		base = base * (1.0f - RELEASE_FINGER_CLOSE_RATE) + middleDirection * RELEASE_FINGER_CLOSE_RATE;
 		base.Normalize();
+		if (f == LITTLE) {
+			// 小指は、中指から離れる側（外側）へ、さらに RELEASE_LITTLE_SPREAD_DEG だけ開く。
+			Vector3 turn;
+			turn.Cross(middleDirection, base);
+			Quaternion spread;
+			spread.SetRotationDeg(palmNormal, turn.Dot(palmNormal) >= 0.0f ? RELEASE_LITTLE_SPREAD_DEG : -RELEASE_LITTLE_SPREAD_DEG);
+			spread.Apply(base);
+		}
 		float curlDeg = 0.0f;
 		for (int j = 0; j < 3; j++) {
 			curlDeg += RELEASE_FINGER_CURL_DEGS[j];

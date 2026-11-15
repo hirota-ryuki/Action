@@ -65,6 +65,7 @@ private:
 
 	static constexpr int FINGER_COUNT = 5;  // 人差し指・中指・薬指・小指・親指。
 	static constexpr int THUMB = 4;         // m_fingerBones の親指の番号。
+	static constexpr int LITTLE = 3;        // m_fingerBones の小指の番号。
 	static constexpr ActionButton MAIN_BUTTON = ActionButton::Action1;  // 氷（左クリック）の魔法のボタン。Player が登録する。
 	static constexpr ActionButton SUB_BUTTON = ActionButton::Action2;   // 炎（右クリック、溜め撃ち）の魔法のボタン。
 
