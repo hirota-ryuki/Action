@@ -73,11 +73,14 @@ namespace
 	const float RELEASE_FINGER_BASE_EXTRA_CURL_DEGS[4] = { 0.0f, 0.0f, 5.0f, 15.0f };
 	// 握りこぶしの、関節ごとの曲がりの角度（度。付け根・第二関節・第一関節の順。まっすぐで 0）。
 	// 人の握りこぶしは、付け根 85〜90°、第二関節 100° くらい、第一関節 60〜70° くらい。
-	const float FIST_JOINT_DEGS[3] = { 88.0f, 100.0f, 65.0f };
-	// 親指: 先の関節を曲げる角度（度）と、IK で合わせるときの決まり。
-	constexpr float THUMB_CURL_DEG = 45.0f;
-	constexpr float THUMB_OUTSIDE_OFFSET = 0.8f;  // 目標を指の中節から外へ出す量（指の太さくらい。骨格の単位）。
-	constexpr float THUMB_INDEX_RATE = 0.7f;      // 目標を、人差し指と中指の中節のどちら寄りにするか（1 で人差し指の上）。人差し指の側へ寄せて、拳の穴をふさぐ。
+	// 第一関節は浅め（45°）にする。このモデルは深く曲げると、人差し指の先が親指の上へはみ出して見えるため。
+	const float FIST_JOINT_DEGS[3] = { 88.0f, 100.0f, 45.0f };
+	// 親指: IK で合わせるときの決まり。親指の第一関節を人差し指の中節の上に、親指の先を中指の中節の上に置き、指を横切らせる。
+	constexpr float THUMB_OUTSIDE_OFFSET = 1.2f;  // 目標を指の中節から外へ出す量（指と親指の太さの半分ずつくらい。骨格の単位）。
+	// 目標を、指の中節のどこに置くか（0 で第二関節、1 で第一関節）。親指には太さがあるので、第二関節に置くと、
+	// 見た目では親指が中節の上に重なり、人差し指の先も親指の下に隠れる（第一関節の側へ寄せるほど、親指が拳の下へずれる）。
+	constexpr float THUMB_ON_PHALANX_RATE = 0.0f;
+	constexpr float THUMB_IP_RADIAL_RATE = 0.3f;  // 親指の第一関節の目標を、人差し指の中節から、中指と反対の側（外）へずらす量（人差し指と中指の間の何倍か）。
 	constexpr float THUMB_TIP_LENGTH_RATE = 0.9f; // 親指の先の骨の長さを、ひとつ手前の骨の長さの何倍とみなすか。
 	constexpr int THUMB_IK_ITERATIONS = 6;
 	// 手を開く速さと、握り直す速さ（大きいほど速い）。手を開いた瞬間に魔法が出るので、開くのは速くする。
@@ -466,63 +469,67 @@ void FirstPersonArms::CurlFingers(Skeleton& skeleton)
 
 void FirstPersonArms::PlaceThumb(Skeleton& skeleton, int side, float grip)
 {
-	// 握りこぶしの親指は、手のひらの中に入れず、曲げた人差し指と中指の中節（第二関節と第一関節の間）の外側に重ねる。
-	// 親指の先の目標をそこに置き、付け根側の関節から順に、親指の先が目標へ向くように回して合わせる（CCD の IK）。
+	// 握りこぶしの親指は、手のひらの中に入れず、曲げた人差し指と中指の中節（第二関節と第一関節の間）の外側に、指を横切るように重ねる。
+	// 付け根側の関節から順に回して親指の第一関節を人差し指の上へ合わせ、親指の第一関節で回して親指の先を中指の上へ向ける（CCD の IK）。
+	// 親指の先だけを目標に合わせると、親指が指に沿って手首の側から伸び、指を横切らないため、関節と先の2か所に目標を置く。
 	const int* thumb = m_fingerBones[side][THUMB];
 	const int* index = m_fingerBones[side][0];
 	const int* middle = m_fingerBones[side][1];
 	if (thumb[0] < 0 || thumb[1] < 0 || thumb[2] < 0 || index[2] < 0 || middle[2] < 0) {
 		return;
 	}
-	// 先に、親指の先の関節を、ひとつ手前の関節と同じ面で少し曲げておく（指先が自然に丸まるように）。
-	{
-		const Vector3 before = BonePosition(skeleton, thumb[1]) - BonePosition(skeleton, thumb[0]);
-		const Vector3 after = BonePosition(skeleton, thumb[2]) - BonePosition(skeleton, thumb[1]);
-		Vector3 axis;
-		axis.Cross(before, after);
-		if (axis.LengthSq() > FLT_EPSILON) {
-			RotateChain(skeleton, thumb, 2, axis, THUMB_CURL_DEG * grip);
-		}
-	}
-
-	// 目標: 人差し指と中指の中節の間（THUMB_INDEX_RATE で人差し指寄り）を、手のひらの中心から離れる向きへ、指の太さの分だけ外へ出した位置。
-	const Vector3 indexMid = (BonePosition(skeleton, index[1]) + BonePosition(skeleton, index[2])) * 0.5f;
-	const Vector3 middleMid = (BonePosition(skeleton, middle[1]) + BonePosition(skeleton, middle[2])) * 0.5f;
-	Vector3 target = indexMid * THUMB_INDEX_RATE + middleMid * (1.0f - THUMB_INDEX_RATE);
+	// 目標は、指の中節の上の点（THUMB_ON_PHALANX_RATE）を、中節に垂直に、手のひらの中心から離れる向きへ外へ出した位置。
+	// 親指の第一関節は人差し指の中節の外寄り、親指の先は中指の中節に置く（親指が人差し指と中指を横切る）。
 	const Vector3 palmCenter = (BonePosition(skeleton, m_handBone[side]) + BonePosition(skeleton, middle[0])) * 0.5f;
-	Vector3 outward = target - palmCenter;
-	if (outward.LengthSq() > FLT_EPSILON) {
+	// 指の中節の上の点を、中節に垂直に、手のひらの中心から離れる向きへ、指の太さの分だけ出した位置。
+	auto onMiddlePhalanx = [&](const int* chain) {
+		const Vector3 pip = BonePosition(skeleton, chain[1]);
+		Vector3 phalanx = BonePosition(skeleton, chain[2]) - pip;
+		const Vector3 position = pip + phalanx * THUMB_ON_PHALANX_RATE;
+		phalanx.Normalize();
+		Vector3 outward = position - palmCenter;
+		outward -= phalanx * outward.Dot(phalanx);
+		if (outward.LengthSq() <= FLT_EPSILON) {
+			return position;
+		}
 		outward.Normalize();
-		target += outward * THUMB_OUTSIDE_OFFSET;
-	}
+		return position + outward * THUMB_OUTSIDE_OFFSET;
+	};
+	const Vector3 indexPoint = onMiddlePhalanx(index);
+	const Vector3 target = onMiddlePhalanx(middle);
+	const Vector3 ipTarget = indexPoint - (target - indexPoint) * THUMB_IP_RADIAL_RATE;
 
 	// 親指の先: 先の骨の向きに、先の骨の長さのぶん伸ばした位置（先の骨の先端の骨が無いので、こうして決める）。
+	// 先の骨の向きは、先の骨の行列から取る（第一関節で回すと変わるように）。
 	const float tipLength = (BonePosition(skeleton, thumb[2]) - BonePosition(skeleton, thumb[1])).Length() * THUMB_TIP_LENGTH_RATE;
 	auto thumbTip = [&]() {
-		Vector3 direction = BonePosition(skeleton, thumb[2]) - BonePosition(skeleton, thumb[1]);
-		direction.Normalize();
-		return BonePosition(skeleton, thumb[2]) + direction * tipLength;
+		return BonePosition(skeleton, thumb[2]) + FingerSegmentDirection(skeleton, thumb, 2) * tipLength;
+	};
+	// pivot の関節（thumb[j]）を中心に回して、effector を goal へ、握り具合のぶんだけ近づける（手を開くときは、元の親指の形へ戻る）。
+	auto turnToward = [&](int j, const Vector3& effector, const Vector3& goal) {
+		const Vector3 pivot = BonePosition(skeleton, thumb[j]);
+		Vector3 toEffector = effector - pivot;
+		Vector3 toGoal = goal - pivot;
+		if (toEffector.LengthSq() <= FLT_EPSILON || toGoal.LengthSq() <= FLT_EPSILON) {
+			return;
+		}
+		toEffector.Normalize();
+		toGoal.Normalize();
+		Vector3 axis;
+		axis.Cross(toEffector, toGoal);
+		if (axis.LengthSq() <= FLT_EPSILON) {
+			return;
+		}
+		const float deg = acosf(max(-1.0f, min(1.0f, toEffector.Dot(toGoal)))) * 57.2958f;
+		RotateChain(skeleton, thumb, j, axis, deg * grip);
 	};
 	for (int iteration = 0; iteration < THUMB_IK_ITERATIONS; iteration++) {
-		// 第二関節（MP）、付け根（CM）の順に回す。
+		// 第二関節（MP）、付け根（CM）の順に回して、親指の第一関節（thumb[2]）を ipTarget へ合わせる。
 		for (int j = 1; j >= 0; j--) {
-			const Vector3 pivot = BonePosition(skeleton, thumb[j]);
-			Vector3 toTip = thumbTip() - pivot;
-			Vector3 toTarget = target - pivot;
-			if (toTip.LengthSq() <= FLT_EPSILON || toTarget.LengthSq() <= FLT_EPSILON) {
-				continue;
-			}
-			toTip.Normalize();
-			toTarget.Normalize();
-			Vector3 axis;
-			axis.Cross(toTip, toTarget);
-			if (axis.LengthSq() <= FLT_EPSILON) {
-				continue;
-			}
-			const float deg = acosf(max(-1.0f, min(1.0f, toTip.Dot(toTarget)))) * 57.2958f;
-			// 握り具合のぶんだけ近づける（手を開くときは、元の親指の形へ戻る）。
-			RotateChain(skeleton, thumb, j, axis, deg * grip);
+			turnToward(j, BonePosition(skeleton, thumb[2]), ipTarget);
 		}
+		// 親指の第一関節で回して、親指の先を target へ向ける。
+		turnToward(2, thumbTip(), target);
 	}
 }
 
