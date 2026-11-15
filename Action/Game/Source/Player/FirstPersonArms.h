@@ -36,6 +36,8 @@ private:
 	void InitHiddenBones();
 	// 両腕を、肩を中心に外へ開いて下げる（手を画面の左下・右下に置く）。骨のワールド行列を計算したあとに呼ぶ。
 	void SpreadArms(Skeleton& skeleton);
+	// 炎を放つとき（m_releaseWeight）に、手のひらを前へ向け、両手の間を RELEASE_HAND_GAP にそろえる。SpreadArms のあとに呼ぶ。
+	void AimReleaseHands(Skeleton& skeleton);
 	// 握り具合（m_grip）に合わせて指を握り込む。SpreadArms の前に呼ぶ。
 	void CurlFingers(Skeleton& skeleton);
 	// 親指を、握った人差し指と中指の外側に重ねる（親指の先を目標へ合わせる IK）。CurlFingers から呼ぶ。
@@ -67,6 +69,7 @@ private:
 	int m_fingerBones[2][FINGER_COUNT][3] = {};  // 左右・指ごとの、付け根から指先への3本の骨の番号（無ければ -1）。
 	int m_handBone[2] = { -1, -1 };              // 左右の手の骨の番号（指の付け根の関節の曲がりを測るのに使う）。
 	std::vector<int> m_armBones[2];    // 左腕・右腕の骨（上腕から先）の番号。
+	std::vector<int> m_handTreeBones[2];  // 左右の、手首から先の骨（手と指）の番号。
 	int m_upperArmBone[2] = { -1, -1 };  // 左右の上腕の骨の番号（腕を開くときの中心）。
 	EnClip m_clip = enClip_Idle;
 	float m_castWeight[2] = { 0.0f, 0.0f };  // 左右の腕の、構え（0）と氷を撃つとき（1）の置き方の混ぜ具合。

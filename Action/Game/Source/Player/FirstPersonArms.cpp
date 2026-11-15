@@ -39,7 +39,13 @@ namespace
 	// 左右から開いた手で挟むように、手を火の玉の左右の、画面の下 1/3 に置く（氷を撃つときより低く、少し外へ開く）。
 	const ArmPose CHARGE_POSE = { 2.0f, 18.0f, 0.0f, 0.0f, 10.0f };
 	// 炎を放つとき（両腕）: 構えと同じく腕を画面の左右の外から内へ向け、前へ伸ばして、両手を照準のそばへ寄せて火の玉を押し出す。
-	const ArmPose RELEASE_POSE = { -30.0f, 40.0f, 12.0f, 0.0f, 40.0f };
+	// 手のひらは AimReleaseHands で前へ向け、両手の間は RELEASE_HAND_GAP にそろえる。
+	const ArmPose RELEASE_POSE = { -30.0f, 40.0f, 12.0f, 0.0f, 32.0f };
+	// 炎を放つときの、両手の内側の端の間（握りこぶしの半分くらい。骨格の単位）。
+	// 指の骨の位置で測るので、指先の肉の分を足してある。
+	constexpr float RELEASE_HAND_GAP = 10.0f;
+	// 炎を放つときに、指先を真上から内側へ傾ける角度（度）。
+	constexpr float RELEASE_FINGER_TILT_DEG = 0.0f;
 	// 握りこぶしにするときに、アニメーションの指の形から足して曲げる角度（度。付け根・第二関節・第一関節の順）。
 	const float FINGER_CURL_DEGS[3] = { 45.0f, 50.0f, 40.0f };
 	// 親指: 先の関節を曲げる角度（度）と、IK で合わせるときの決まり。
@@ -145,7 +151,125 @@ void FirstPersonArms::InitHiddenBones()
 		}
 		CurlFingers(sk);
 		SpreadArms(sk);
+		AimReleaseHands(sk);
 	});
+
+	// 手首から先の骨（手と、その子の指の骨）。炎を放つときに、手のひらを前へ向けるのに使う。
+	for (int side = 0; side < 2; side++) {
+		m_handTreeBones[side].clear();
+		if (m_handBone[side] < 0) {
+			continue;
+		}
+		for (int boneNo : m_armBones[side]) {
+			for (int no = boneNo; no >= 0; no = skeleton.GetBone(no)->GetParentBoneNo()) {
+				if (no == m_handBone[side]) {
+					m_handTreeBones[side].push_back(boneNo);
+					break;
+				}
+			}
+		}
+	}
+}
+
+void FirstPersonArms::AimReleaseHands(Skeleton& skeleton)
+{
+	const Vector3 cameraRight = g_camera3D->GetRight();
+	const Vector3 cameraForward = g_camera3D->GetForward();
+	const Matrix& cameraRotationMatrix = g_camera3D->GetCameraRotation();
+	const Vector3 cameraUp(cameraRotationMatrix.m[1][0], cameraRotationMatrix.m[1][1], cameraRotationMatrix.m[1][2]);
+	// ① 手首を中心に手を回して、手のひらを前（照準の方）へ向ける。
+	for (int side = 0; side < 2; side++) {
+		const float w = m_releaseWeight[side];
+		const int* index = m_fingerBones[side][0];
+		const int* middle = m_fingerBones[side][1];
+		const int* little = m_fingerBones[side][3];
+		if (w <= 0.0f || m_handBone[side] < 0 || index[0] < 0 || middle[2] < 0 || little[0] < 0) {
+			continue;
+		}
+		const Vector3 wrist = BonePosition(skeleton, m_handBone[side]);
+		// 手のひらの向き: 人差し指と小指の付け根で張る面の法線。裏表は、指が曲がっている側（手のひら側）に合わせる。
+		Vector3 palm;
+		palm.Cross(BonePosition(skeleton, index[0]) - wrist, BonePosition(skeleton, little[0]) - wrist);
+		Vector3 fingerBase = BonePosition(skeleton, middle[0]) - wrist;
+		fingerBase.Normalize();
+		Vector3 curl = BonePosition(skeleton, middle[2]) - BonePosition(skeleton, middle[0]);
+		curl -= fingerBase * curl.Dot(fingerBase);
+		if (palm.Dot(curl) < 0.0f) {
+			palm *= -1.0f;
+		}
+		if (palm.LengthSq() <= FLT_EPSILON) {
+			continue;
+		}
+		palm.Normalize();
+		Vector3 axis;
+		axis.Cross(palm, cameraForward);
+		if (axis.LengthSq() <= FLT_EPSILON) {
+			continue;
+		}
+		axis.Normalize();
+		const float deg = acosf(max(-1.0f, min(1.0f, palm.Dot(cameraForward)))) * 57.2958f;
+		Quaternion q;
+		q.SetRotationDeg(axis, deg * w);
+		// 続けて、手のひらの向き（前）を軸に回し、指先を上へ（少し内側へ傾けて）向ける。
+		{
+			Vector3 fingers = BonePosition(skeleton, middle[0]) - wrist;
+			q.Apply(fingers);
+			fingers -= cameraForward * fingers.Dot(cameraForward);
+			const Vector3 inward = cameraRight * (side == 0 ? -1.0f : 1.0f);
+			const float tilt = RELEASE_FINGER_TILT_DEG / 57.2958f;
+			const Vector3 fingersTarget = cameraUp * cosf(tilt) + inward * sinf(tilt);
+			if (fingers.LengthSq() > FLT_EPSILON) {
+				fingers.Normalize();
+				Vector3 twistAxis;
+				twistAxis.Cross(fingers, fingersTarget);
+				const float twistDeg = acosf(max(-1.0f, min(1.0f, fingers.Dot(fingersTarget)))) * 57.2958f;
+				if (twistAxis.LengthSq() > FLT_EPSILON) {
+					twistAxis.Normalize();
+					Quaternion twist;
+					twist.SetRotationDeg(twistAxis, twistDeg * w);
+					q.Multiply(q, twist);
+				}
+			}
+		}
+		Matrix rotation, toOrigin, toPivot, aroundWrist;
+		rotation.MakeRotationFromQuaternion(q);
+		toOrigin.MakeTranslation(wrist * -1.0f);
+		toPivot.MakeTranslation(wrist);
+		aroundWrist.Multiply(toOrigin, rotation);
+		aroundWrist.Multiply(aroundWrist, toPivot);
+		for (int boneNo : m_handTreeBones[side]) {
+			Bone* bone = skeleton.GetBone(boneNo);
+			Matrix world;
+			world.Multiply(bone->GetWorldMatrix(), aroundWrist);
+			bone->SetWorldMatrix(world);
+		}
+	}
+
+	// ② 両手の内側の端（指の骨でいちばん内にあるもの）の間を RELEASE_HAND_GAP にするよう、腕ごと左右へずらす。
+	// このゲームでは左の骨（side 0）が画面の右に映る。
+	const float w = min(m_releaseWeight[0], m_releaseWeight[1]);
+	if (w <= 0.0f || m_handTreeBones[0].empty() || m_handTreeBones[1].empty()) {
+		return;
+	}
+	float innerOfRight = FLT_MAX;   // 画面の右の手（side 0）の、いちばん左の位置。
+	float innerOfLeft = -FLT_MAX;   // 画面の左の手（side 1）の、いちばん右の位置。
+	for (int boneNo : m_handTreeBones[0]) {
+		innerOfRight = min(innerOfRight, BonePosition(skeleton, boneNo).Dot(cameraRight));
+	}
+	for (int boneNo : m_handTreeBones[1]) {
+		innerOfLeft = max(innerOfLeft, BonePosition(skeleton, boneNo).Dot(cameraRight));
+	}
+	const float shift = (RELEASE_HAND_GAP - (innerOfRight - innerOfLeft)) * 0.5f * w;
+	for (int side = 0; side < 2; side++) {
+		Matrix move;
+		move.MakeTranslation(cameraRight * (side == 0 ? shift : -shift));
+		for (int boneNo : m_armBones[side]) {
+			Bone* bone = skeleton.GetBone(boneNo);
+			Matrix world;
+			world.Multiply(bone->GetWorldMatrix(), move);
+			bone->SetWorldMatrix(world);
+		}
+	}
 }
 
 void FirstPersonArms::CurlFingers(Skeleton& skeleton)
