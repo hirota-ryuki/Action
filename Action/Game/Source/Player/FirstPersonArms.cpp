@@ -45,6 +45,8 @@ namespace
 	constexpr float CAST_OPEN_SECONDS = 0.2f;
 	// 構えの拳の手のひらを、内側へ向けた向きから、カメラの方へ傾ける角度（度）。
 	constexpr float FIST_TOWARD_CAMERA_DEG = 15.0f;
+	// 構えの拳の上を、内側（画面の下の真ん中の HP バーの方）へ倒す角度（度）。
+	constexpr float FIST_ROLL_DEG = 45.0f;
 	// 手のひらの向きの裏表。人差し指と小指の付け根で張る面の法線（手首から人差し指 × 手首から小指）に掛ける。
 	// 左右の手は鏡写しなので逆になる（ゲームで炎を放つ手を見て決めた。左の骨（side 0）が画面の右の手）。
 	const float PALM_SIGN[2] = { -1.0f, 1.0f };
@@ -266,11 +268,19 @@ void FirstPersonArms::AimHands(Skeleton& skeleton)
 		const float openWeight = max(m_castWeight[side], m_releaseWeight[side]);
 		// ① 構えの拳: ファイティングポーズのように、手のひらを内側（もう片方の拳の方）へ向け、指の付け根の関節を上へ向ける。
 		// こうすると、親指の側（親指の第一関節）がカメラの方を向く。手のひらは、少しだけカメラの方へも傾ける。
+		// そのまま、カメラの前の向きを軸に、拳の上を内側（画面の下の真ん中の HP バーの方）へ FIST_ROLL_DEG だけ傾ける。
 		const float fistWeight = m_grip[side] * (1.0f - max(openWeight, m_chargeWeight[side]));
 		if (fistWeight > 0.0f) {
 			const float rad = FIST_TOWARD_CAMERA_DEG / 57.2958f;
-			const Vector3 palmTarget = inward * cosf(rad) - cameraForward * sinf(rad);
-			AimHand(skeleton, side, palmTarget, cameraUp, fistWeight);
+			Vector3 palmTarget = inward * cosf(rad) - cameraForward * sinf(rad);
+			Vector3 fingersTarget = cameraUp;
+			Vector3 rollAxis;
+			rollAxis.Cross(cameraUp, inward);  // この軸まわりに + へ回すと、上が内側へ倒れる。
+			Quaternion roll;
+			roll.SetRotationDeg(rollAxis, FIST_ROLL_DEG);
+			roll.Apply(palmTarget);
+			roll.Apply(fingersTarget);
+			AimHand(skeleton, side, palmTarget, fingersTarget, fistWeight);
 		}
 		// ② 手を開いて撃つとき: 手のひらを前（照準の方）へ向け、指先を上へ（少し内側へ傾けて）向けて、指の形を作り直す。
 		if (openWeight > 0.0f) {
