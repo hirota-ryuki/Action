@@ -20,6 +20,11 @@ void SkillBase::ReceiveInput(const ButtonState& button, const Vector3& position,
 		// 溜めていなければ、そのあとの入力は関係ない。
 		return;
 	}
+	if (m_state == EnState::Active) {
+		// 体を動かすスキルを使っている間: ボタンは見ずに、撃つ位置と向きだけを合わせる。
+		SetPose(position, direction);
+		return;
+	}
 	if (button.isPress) {
 		// 押している間: 撃つ位置と向きを手元に合わせる。
 		SetPose(position, direction);
@@ -39,13 +44,21 @@ void SkillBase::Cancel()
 
 bool SkillBase::IsOwnerBusy() const
 {
-	return m_state == EnState::Charging && !m_isReleased && !m_isCanceled;
+	if (m_isCanceled) {
+		return false;
+	}
+	if (UsesOwnerBody()) {
+		// 体を動かすスキルは、使い終わるまで手を離さない。読み込みに失敗したら、すぐ離す（体を動かさずに消える）。
+		return m_state != EnState::Ending && !m_isFailed;
+	}
+	return m_state == EnState::Charging && !m_isReleased;
 }
 
 bool SkillBase::Start()
 {
 	m_isValid = OnStart();
 	if (!m_isValid) {
+		m_isFailed = true;
 		return true;
 	}
 	if (m_isReleased && !m_isCanceled) {
@@ -75,6 +88,12 @@ void SkillBase::Update()
 		UpdateCharging();
 		break;
 	case EnState::Active:
+		if (m_isCanceled) {
+			// 体を動かすスキルは、使っている途中でも中断される。
+			OnCancel();
+			End();
+			break;
+		}
 		OnSkillUpdate();
 		break;
 	case EnState::Ending:

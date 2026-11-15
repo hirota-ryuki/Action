@@ -43,11 +43,12 @@ protected:
 	}
 	void OnStart() override;
 	void UpdateAction(float deltaTime) override;
+	// 攻撃のステートに入ったフレームのボタンだけを SkillController に渡す（倒れている間などに攻撃しないように）。
+	void FilterSkillInput(CharacterInput& input) const override;
 
 private:
 	BlackKnightInputSource m_aiInputSource;
 	Status m_status;
 	EnemyStateMachine m_stateMachine;
 	EnemyDamageState m_damage;  // 当たった・倒れて消えた（ステートと受け渡す）。
-	EnemyTuning m_tuning;       // 攻撃の調整値。
 };

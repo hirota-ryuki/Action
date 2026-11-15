@@ -20,10 +20,12 @@ struct ButtonState
 // 入力のボタン。何に使うか（どのスキルか）は知らない。どのキーを当てるかは入力元が決める。
 //   Action1  プレイヤーはマウス左ボタン / Yボタン
 //   Action2  プレイヤーはマウス右ボタン / 右トリガー
+//   Action3  プレイヤーは使わない（黒騎士の攻撃3）
 enum class ActionButton
 {
 	Action1,
 	Action2,
+	Action3,
 	Num,
 };
 
@@ -38,8 +40,7 @@ struct CharacterInput
 	bool isRun = false;
 	ButtonState jump;
 	ButtonState dash;
-	ButtonState actions[static_cast<int>(ActionButton::Num)];  // Action1・Action2 のボタン。何に使うかは SkillController の登録で決まる。
-	int attackIndex = 0;                    // Action1 で出す攻撃の番号。黒騎士の攻撃1〜3を 0〜2 で選ぶ。プレイヤーは使わない。
+	ButtonState actions[static_cast<int>(ActionButton::Num)];  // Action1〜Action3 のボタン。何に使うかは SkillController の登録で決まる。
 	bool hasAim = false;                    // true なら aimOrigin/aimDirection の方向へ撃つ。false ならキャラクターの正面へ撃つ。
 	Vector3 aimOrigin = Vector3::Zero;
 	Vector3 aimDirection = Vector3::AxisZ;

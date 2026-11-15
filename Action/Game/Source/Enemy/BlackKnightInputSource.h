@@ -5,11 +5,11 @@
 
 // 黒騎士の AI。敵対する相手を見つけたら、余裕たっぷりに歩いて近づく。
 // 相手との距離を「近い・中くらい・遠い」に分けて、何をするかを決める。
-//   近い          攻撃2（重い連続斬り）
+//   近い          攻撃2（重い連続斬り。Action2）
 //   中くらい・遠い  決め直す間隔ごとに、runChance の確率で走る（isRun）。残りは攻撃
-//                  （中くらいなら攻撃1: 突進して突き → 回転斬り、遠いなら攻撃3: 斬撃を5つ飛ばす）
+//                  （中くらいなら攻撃1: 溜めてから踏み込んで斬る。Action1、遠いなら攻撃3: 斬撃を5つ飛ばす。Action3）
 //   走っている     近くまで来たら歩きに戻し、すぐに攻撃2
-// 攻撃は Action1 を1フレーム押し、attackIndex で種類を伝える。
+// 攻撃は、その攻撃のボタンを1フレーム押す。どのボタンでどの攻撃をするかは、Enemy が SkillController に登録している。
 // AI は「どうしたいか」だけを決め、実際の移動や剣の動きはステート（EnemyStateMachine）が行う。
 class BlackKnightInputSource : public IInputSource
 {
@@ -35,13 +35,10 @@ public:
 		Far,
 	};
 
-	// 攻撃の番号（CharacterInput::attackIndex に入れる）。
-	enum AttackIndex
-	{
-		ATTACK_DASH_THRUST = 0,   // 攻撃1
-		ATTACK_COMBO = 1,         // 攻撃2
-		ATTACK_SLASH_WAVE = 2,    // 攻撃3
-	};
+	// 攻撃のボタン（Enemy が SkillController に登録している攻撃）。
+	static constexpr ActionButton ATTACK_DASH_SLASH = ActionButton::Action1;   // 攻撃1
+	static constexpr ActionButton ATTACK_COMBO = ActionButton::Action2;        // 攻撃2
+	static constexpr ActionButton ATTACK_SLASH_WAVE = ActionButton::Action3;   // 攻撃3
 
 	BlackKnightInputSource() = default;
 	explicit BlackKnightInputSource(const Settings& settings);
