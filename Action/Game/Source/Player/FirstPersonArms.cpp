@@ -55,7 +55,7 @@ namespace
 	// 関節ごとに、手のひらの側へ曲げる角度（度。付け根・第二関節・第一関節の順。手前の関節の分に足していく）。
 	const float RELEASE_FINGER_CURL_DEGS[3] = { 8.0f, 12.0f, 8.0f };
 	constexpr float RELEASE_FINGER_CLOSE_RATE = 0.5f;  // 人差し指〜小指の開きを、中指の向きへ寄せる割合（1 で全部そろう）。
-	constexpr float RELEASE_THUMB_CLOSE_RATE = 0.3f;   // 親指を、人差し指の向きへ寄せる割合。
+	constexpr float RELEASE_THUMB_SPREAD_DEG = 45.0f;  // 親指を、人差し指の向きから親指の側へ開く角度（度。手のひらの面の上で）。
 	// 握りこぶしにするときに、アニメーションの指の形から足して曲げる角度（度。付け根・第二関節・第一関節の順）。
 	const float FINGER_CURL_DEGS[3] = { 45.0f, 50.0f, 40.0f };
 	// 親指: 先の関節を曲げる角度（度）と、IK で合わせるときの決まり。
@@ -357,12 +357,24 @@ void FirstPersonArms::ShapeReleaseFingers(Skeleton& skeleton, int side, Vector3 
 			turnChain(chain, j, FingerSegmentDirection(skeleton, chain, j), target, w);
 		}
 	}
-	// 親指: 付け根から、人差し指の向きへ少し寄せる（横へ突き出しすぎないように）。
+	// 親指: 手のひらの面の上で、人差し指の向きから親指の側へ RELEASE_THUMB_SPREAD_DEG だけ開いた向きにする
+	// （クリップのままだと、親指だけ手のひらの前へ出る）。付け根と第二関節を、順にその向きへ向ける。
 	const int* thumb = m_fingerBones[side][THUMB];
 	const int* index = m_fingerBones[side][0];
 	if (thumb[0] >= 0 && thumb[1] >= 0 && thumb[2] >= 0 && index[0] >= 0 && index[1] >= 0) {
-		const Vector3 thumbDirection = FingerSegmentDirection(skeleton, thumb, 0);
-		turnChain(thumb, 0, thumbDirection, FingerSegmentDirection(skeleton, index, 0), RELEASE_THUMB_CLOSE_RATE * w);
+		const Vector3 indexDirection = onPalmPlane(FingerSegmentDirection(skeleton, index, 0));
+		const Vector3 thumbOnPlane = onPalmPlane(FingerSegmentDirection(skeleton, thumb, 0));
+		// 親指の側: 人差し指から親指へ回る向き（手のひらの向きを軸にした回転の正負）。
+		Vector3 turn;
+		turn.Cross(indexDirection, thumbOnPlane);
+		const float sign = turn.Dot(palmNormal) >= 0.0f ? 1.0f : -1.0f;
+		Quaternion spread;
+		spread.SetRotationDeg(palmNormal, RELEASE_THUMB_SPREAD_DEG * sign);
+		Vector3 target = indexDirection;
+		spread.Apply(target);
+		for (int j = 0; j < 2; j++) {
+			turnChain(thumb, j, FingerSegmentDirection(skeleton, thumb, j), target, w);
+		}
 	}
 }
 
