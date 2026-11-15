@@ -252,9 +252,6 @@
     <ClCompile Include="..\exlib\imgui\imgui_impl_win32.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="online\SyncOnlineTwoPlayerMatchEngine.cpp">
-      <Filter>online</Filter>
-    </ClCompile>
     <ClCompile Include="geometry\AABB.cpp">
       <Filter>geometry</Filter>
     </ClCompile>
@@ -574,9 +571,6 @@
     <ClInclude Include="dbg\MyLog.h">
       <Filter>dbg</Filter>
     </ClInclude>
-    <ClInclude Include="online\SyncOnlineTwoPlayerMatchEngine.h">
-      <Filter>online</Filter>
-    </ClInclude>
     <ClInclude Include="geometry\AABB.h">
       <Filter>geometry</Filter>
     </ClInclude>
@@ -668,9 +662,6 @@
     </Filter>
     <Filter Include="util">
       <UniqueIdentifier>{d22bcaef-43e4-45a4-bd3b-412ecb38dfd4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="online">
-      <UniqueIdentifier>{077f7c0d-1513-4644-b409-09887e0cfb01}</UniqueIdentifier>
     </Filter>
     <Filter Include="geometry">
       <UniqueIdentifier>{8c4c7591-c46f-4829-beb3-2a2988bd47ce}</UniqueIdentifier>
