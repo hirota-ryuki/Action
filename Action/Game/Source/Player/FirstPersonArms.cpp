@@ -72,10 +72,11 @@ namespace
 	// （力を抜いて開いた人の手も、小指の側ほど曲がっている）。
 	const float RELEASE_FINGER_BASE_EXTRA_CURL_DEGS[4] = { 0.0f, 0.0f, 5.0f, 15.0f };
 	// 握りこぶしにするときに、アニメーションの指の形から足して曲げる角度（度。付け根・第二関節・第一関節の順）。
-	const float FINGER_CURL_DEGS[3] = { 45.0f, 50.0f, 40.0f };
+	const float FINGER_CURL_DEGS[3] = { 45.0f, 65.0f, 45.0f };
 	// 親指: 先の関節を曲げる角度（度）と、IK で合わせるときの決まり。
-	constexpr float THUMB_CURL_DEG = 30.0f;
-	constexpr float THUMB_OUTSIDE_OFFSET = 1.5f;  // 目標を指の中節から外へ出す量（指の太さくらい。骨格の単位）。
+	constexpr float THUMB_CURL_DEG = 45.0f;
+	constexpr float THUMB_OUTSIDE_OFFSET = 0.8f;  // 目標を指の中節から外へ出す量（指の太さくらい。骨格の単位）。
+	constexpr float THUMB_INDEX_RATE = 0.7f;      // 目標を、人差し指と中指の中節のどちら寄りにするか（1 で人差し指の上）。人差し指の側へ寄せて、拳の穴をふさぐ。
 	constexpr float THUMB_TIP_LENGTH_RATE = 0.9f; // 親指の先の骨の長さを、ひとつ手前の骨の長さの何倍とみなすか。
 	constexpr int THUMB_IK_ITERATIONS = 6;
 	// 手を開く速さと、握り直す速さ（大きいほど速い）。手を開いた瞬間に魔法が出るので、開くのは速くする。
@@ -478,10 +479,10 @@ void FirstPersonArms::PlaceThumb(Skeleton& skeleton, int side, float grip)
 		}
 	}
 
-	// 目標: 人差し指と中指の中節の真ん中を、手のひらの中心から離れる向きへ、指の太さの分だけ外へ出した位置。
+	// 目標: 人差し指と中指の中節の間（THUMB_INDEX_RATE で人差し指寄り）を、手のひらの中心から離れる向きへ、指の太さの分だけ外へ出した位置。
 	const Vector3 indexMid = (BonePosition(skeleton, index[1]) + BonePosition(skeleton, index[2])) * 0.5f;
 	const Vector3 middleMid = (BonePosition(skeleton, middle[1]) + BonePosition(skeleton, middle[2])) * 0.5f;
-	Vector3 target = (indexMid + middleMid) * 0.5f;
+	Vector3 target = indexMid * THUMB_INDEX_RATE + middleMid * (1.0f - THUMB_INDEX_RATE);
 	const Vector3 palmCenter = (BonePosition(skeleton, m_handBone[side]) + BonePosition(skeleton, middle[0])) * 0.5f;
 	Vector3 outward = target - palmCenter;
 	if (outward.LengthSq() > FLT_EPSILON) {
