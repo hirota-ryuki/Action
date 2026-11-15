@@ -34,13 +34,6 @@ namespace nsK2Engine {
             metallicSmoothRenderTarget,
             albedoRenderTarget
         );
-        m_dof.Init(
-            mainRenderTarget,
-            zprepassRenderTarget,
-            normalRenderTarget,
-            metallicSmoothRenderTarget,
-            albedoRenderTarget
-        );
         m_fXaa.Init(
             mainRenderTarget,
             zprepassRenderTarget,
@@ -92,8 +85,6 @@ namespace nsK2Engine {
         //メインレンダーターゲットをTARGETからPRESENTへ。
         rc.WaitUntilFinishDrawingToRenderTarget(mainRenderTarget);
 
-        // DOF
-        m_dof.Render(rc, mainRenderTarget);
         // FXAA
         m_fXaa.Render(rc, mainRenderTarget);
 

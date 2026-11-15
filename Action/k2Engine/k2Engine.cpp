@@ -6,13 +6,11 @@ namespace nsK2Engine {
 	K2Engine* K2Engine::m_instance = nullptr;
 	SceneLight* g_sceneLight = nullptr;
 	RenderingEngine* g_renderingEngine = nullptr;
-	CollisionObjectManager* g_collisionObjectManager = nullptr;
 	K2Engine* g_k2Engine = nullptr;
 	void K2Engine::Init(const InitData& initData)
 	{
 		g_k2Engine = this;
 		g_engine = &m_k2EngineLow;
-		g_collisionObjectManager = &m_collisionObjectManager;
 		g_renderingEngine = &m_renderingEngine;
 
 		raytracing::InitData raytracintInitData;
@@ -43,7 +41,6 @@ namespace nsK2Engine {
 		DeleteGO(m_vectorRenderer);
 #endif
 		g_renderingEngine = nullptr;
-		g_collisionObjectManager = nullptr;
 		g_engine = nullptr;
 	}
 
