@@ -3,7 +3,7 @@
 
 #include <fstream>
 
-// JSON ファイルを読む係。設計は docs/ゲーム/システム/JSON読み込みの設計.md を参照。
+// JSON ファイルを読む係。設計は docs/ゲーム/システム/JSON読み込み/JSON読み込みの設計.md を参照。
 // 中身の解釈は nlohmann/json に任せ、ここではパスの決め方・ファイルを開く・失敗したときの扱いだけを受け持つ。
 namespace JsonFile
 {
