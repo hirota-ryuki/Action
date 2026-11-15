@@ -13,10 +13,6 @@ public:
 	{
 		return PlayerStateId::Frozen;
 	}
-	const char* GetName() const override
-	{
-		return "Frozen";
-	}
 
 	PlayerStateId CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const override;
 	void Update(PlayerStateContext& context, const CharacterInput& input, float deltaTime) override;

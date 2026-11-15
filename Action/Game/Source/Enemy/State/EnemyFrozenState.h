@@ -13,10 +13,6 @@ public:
 	{
 		return EnemyStateId::Frozen;
 	}
-	const char* GetName() const override
-	{
-		return "Frozen";
-	}
 
 	EnemyStateId CheckTransition(const EnemyStateContext& context, const CharacterInput& input) const override;
 	void Update(EnemyStateContext& context, const CharacterInput& input, float deltaTime) override;

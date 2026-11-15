@@ -30,10 +30,6 @@ public:
 	{
 		m_alpha = min(1.0f, max(0.0f, alpha));
 	}
-	float GetAlpha() const
-	{
-		return m_alpha;
-	}
 
 	// 毎フレーム、描く前に1回呼ぶ。位置・大きさ・色を描画用のものに反映する。
 	virtual void Update(float deltaTime) = 0;

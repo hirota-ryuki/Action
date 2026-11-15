@@ -17,10 +17,6 @@ public:
 	{
 		return PlayerStateId::Stop;
 	}
-	const char* GetName() const override
-	{
-		return "Stop";
-	}
 
 	void Enter(PlayerStateContext& context, const CharacterInput& input) override;
 	PlayerStateId CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const override;

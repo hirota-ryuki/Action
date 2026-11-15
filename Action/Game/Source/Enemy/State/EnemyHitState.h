@@ -13,10 +13,6 @@ public:
 	{
 		return EnemyStateId::Hit;
 	}
-	const char* GetName() const override
-	{
-		return "Hit";
-	}
 
 	void Enter(EnemyStateContext& context, const CharacterInput& input) override;
 	EnemyStateId CheckTransition(const EnemyStateContext& context, const CharacterInput& input) const override;

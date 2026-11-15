@@ -25,15 +25,6 @@ public:
 	{
 		return m_status;
 	}
-	// 今のステート。デバッグ表示用。
-	PlayerStateId GetStateId() const
-	{
-		return m_stateMachine.GetCurrentId();
-	}
-	const char* GetStateName() const
-	{
-		return m_stateMachine.GetCurrentName();
-	}
 
 protected:
 	CharacterConfig MakeConfig() const override;

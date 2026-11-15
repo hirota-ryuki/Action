@@ -117,8 +117,7 @@ void Character::UpdateInput(float deltaTime)
 	context.deltaTime = deltaTime;
 	FillInputContext(context);
 
-	IInputSource& inputSource = m_inputSource != nullptr ? *m_inputSource : GetDefaultInputSource();
-	inputSource.Update(context, m_input);
+	GetDefaultInputSource().Update(context, m_input);
 }
 
 void Character::UpdateSkill()
