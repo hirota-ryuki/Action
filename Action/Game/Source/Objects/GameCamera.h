@@ -2,6 +2,7 @@
 
 #include "CharacterInput.h"
 #include "FirstPersonArms.h"
+#include "FirstPersonBob.h"
 
 class Player;
 
@@ -37,6 +38,7 @@ private:
 
 	Player* m_player = nullptr;
 	FirstPersonArms m_firstPersonArms;  // 一人称のときに映す腕と手。
+	FirstPersonBob m_firstPersonBob;    // 一人称のカメラと腕の、歩き・走りの揺れと着地の沈み。
 	ButtonState m_toggleKey;             // V キー。押した瞬間を見る。
 	Vector3 m_toCameraPos = Vector3(0.0f, 250.0f, -250.0f);  // プレイヤーからカメラへのオフセット（三人称）。画角を広げた分、距離は半分に近づけてある。
 	Vector3 m_firstPersonForward = Vector3::AxisZ;            // 一人称カメラの向き（正規化済み）。

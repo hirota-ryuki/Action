@@ -75,6 +75,12 @@ public:
 		return m_skillController;
 	}
 
+	// 地面に着いているか。一人称カメラの揺れが、宙にいる間は止め、着地で沈むのに使う。
+	bool IsOnGround() const
+	{
+		return m_mover.IsOnGround();
+	}
+
 	// 体を描くか。一人称カメラのときは false にする。
 	void SetRenderBody(bool isRenderBody)
 	{

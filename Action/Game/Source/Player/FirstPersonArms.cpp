@@ -1,6 +1,7 @@
 ﻿#include "stdafx.h"
 #include "FirstPersonArms.h"
 
+#include "FirstPersonBob.h"
 #include "Player.h"
 
 namespace
@@ -594,7 +595,9 @@ void FirstPersonArms::SpreadArms(Skeleton& skeleton)
 		Matrix toOrigin, toPivot, toSide, aroundPivot;
 		toOrigin.MakeTranslation(pivot * -1.0f);
 		toPivot.MakeTranslation(pivot);
-		toSide.MakeTranslation(g_camera3D->GetRight() * (side == 0 ? sideShift : -sideShift) - cameraUp * drop + g_camera3D->GetForward() * push);
+		// 歩き・走りの揺れ（m_bobOffset）も、ここで足す。
+		const Vector3& bob = m_bobOffset[side];
+		toSide.MakeTranslation(g_camera3D->GetRight() * ((side == 0 ? sideShift : -sideShift) + bob.x) + cameraUp * (bob.y - drop) + g_camera3D->GetForward() * (push + bob.z));
 		aroundPivot.Multiply(toOrigin, rotation);
 		aroundPivot.Multiply(aroundPivot, toPivot);
 		aroundPivot.Multiply(aroundPivot, toSide);
@@ -620,13 +623,14 @@ void FirstPersonArms::Reset(const Player& player)
 		m_chargeWeight[side] = 0.0f;
 		m_releaseWeight[side] = 0.0f;
 		m_grip[side] = 1.0f;
+		m_bobOffset[side] = Vector3::Zero;
 	}
 	Play(enClip_Idle, 0.0f);
 	UpdateTransform();
 	m_model.Update();
 }
 
-void FirstPersonArms::Update(const Player& player)
+void FirstPersonArms::Update(const Player& player, const FirstPersonBob& bob)
 {
 	const float deltaTime = g_gameTime->GetFrameDeltaTime();
 	UpdateClip(player, deltaTime);
@@ -642,6 +646,9 @@ void FirstPersonArms::Update(const Player& player)
 		const float gripTarget = GetGripTarget(side);
 		const float gripSpeed = gripTarget < m_grip[side] ? GRIP_OPEN_SPEED : GRIP_CLOSE_SPEED;
 		m_grip[side] += (gripTarget - m_grip[side]) * min(1.0f, deltaTime * gripSpeed);
+		// 氷を突き出している腕と、炎を溜めている・放つ両腕は、揺らさない（手を撃つ位置・火の玉からずらさない）。
+		const float castWeight = max(m_castWeight[side], max(m_chargeWeight[side], m_releaseWeight[side]));
+		m_bobOffset[side] = bob.GetArmsOffset(side) * (1.0f - castWeight);
 	}
 	UpdateTransform();
 	m_model.Update();
