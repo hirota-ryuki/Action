@@ -947,7 +947,7 @@ namespace nsK2EngineLow {
 		std::string absSrcTexPath = GetAbsolutePath(srcTexPath);
 		std::string absOutputDir = GetAbsolutePath(outputDir);
 
-		// 既存の3dsMaxエクスポータ(tools/3dsMaxScripts/makefile)と同一オプション。
+		// 3dsMax のエクスポーター（今は消してある）と同じオプション。上下を反転し、BC7（sRGB）にする。
 		std::string cmdLine = "\"" + texconvPath + "\""
 			" -vflip -f BC7_UNORM -srgb -y"
 			" -o \"" + absOutputDir + "\""
