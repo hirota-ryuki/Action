@@ -102,7 +102,7 @@ namespace nsK2EngineLow {
 		void* m_boneMatrixArray = nullptr;					// ボーン行列の配列の先頭アドレス。
 		DescriptorHeap m_descriptorHeap;					// ディスクリプタヒープ。
 		Shader* m_shader;									// シェーダー。
-		TkmFile m_tkmFile;									// tkmファイル。
+		TkmFile* m_tkmFile = nullptr;						// tkmファイル（Model と同じく tkm バンクのものを使う）。
 		StructuredBuffer m_boneMatricesStructureBuffer;		// ボーン行列の構造化バッファ。
 		std::unique_ptr< SMeshLocal[] > m_meshArray;		// メッシュ。
 	};
