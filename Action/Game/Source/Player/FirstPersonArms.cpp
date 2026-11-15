@@ -57,6 +57,10 @@ namespace
 	constexpr float RELEASE_FINGER_CLOSE_RATE = 0.5f;  // 人差し指〜小指の開きを、中指の向きへ寄せる割合（1 で全部そろう）。
 	constexpr float RELEASE_THUMB_SPREAD_DEG = 45.0f;  // 親指を、人差し指の向きから親指の側へ開く角度（度。手のひらの面の上で）。
 	constexpr float RELEASE_LITTLE_SPREAD_DEG = 10.0f;  // 小指を、中指から離れる側（外側）へさらに開く角度（度）。
+	// 付け根の関節だけ、指ごとにさらに曲げる角度（度。人差し指・中指・薬指・小指の順）。
+	// このモデルは小指の付け根が薬指と同じ高さにあり、指先の高さがそろって見えるので、薬指と小指を多めに曲げて指先を下げる
+	// （力を抜いて開いた人の手も、小指の側ほど曲がっている）。
+	const float RELEASE_FINGER_BASE_EXTRA_CURL_DEGS[4] = { 0.0f, 0.0f, 5.0f, 15.0f };
 	// 握りこぶしにするときに、アニメーションの指の形から足して曲げる角度（度。付け根・第二関節・第一関節の順）。
 	const float FINGER_CURL_DEGS[3] = { 45.0f, 50.0f, 40.0f };
 	// 親指: 先の関節を曲げる角度（度）と、IK で合わせるときの決まり。
@@ -360,7 +364,7 @@ void FirstPersonArms::ShapeReleaseFingers(Skeleton& skeleton, int side, Vector3 
 		}
 		float curlDeg = 0.0f;
 		for (int j = 0; j < 3; j++) {
-			curlDeg += RELEASE_FINGER_CURL_DEGS[j];
+			curlDeg += RELEASE_FINGER_CURL_DEGS[j] + (j == 0 ? RELEASE_FINGER_BASE_EXTRA_CURL_DEGS[f] : 0.0f);
 			const float rad = curlDeg / 57.2958f;
 			const Vector3 target = base * cosf(rad) + palmNormal * sinf(rad);
 			turnChain(chain, j, FingerSegmentDirection(skeleton, chain, j), target, w);
