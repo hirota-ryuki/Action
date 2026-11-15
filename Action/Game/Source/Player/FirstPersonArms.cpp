@@ -45,12 +45,12 @@ namespace
 	const ArmPose CHARGE_POSE = { 2.0f, 18.0f, 0.0f, 0.0f, 10.0f };
 	// 炎を放つとき（両腕）: 構えと同じく腕を画面の左右の外から内へ向け、前へ伸ばして、両手を照準のそばへ寄せて火の玉を押し出す。
 	// 手のひらは AimReleaseHands で前へ向け、両手の間は RELEASE_HAND_GAP にそろえる。
-	const ArmPose RELEASE_POSE = { -30.0f, 40.0f, 12.0f, 0.0f, 32.0f };
+	const ArmPose RELEASE_POSE = { -30.0f, 32.0f, 12.0f, 0.0f, 32.0f };
 	// 炎を放つときの、両手の内側の端の間（握りこぶしの半分くらい。骨格の単位）。
 	// 指の骨の位置で測るので、指先の肉の分を足してある。
 	constexpr float RELEASE_HAND_GAP = 10.0f;
 	// 炎を放つときに、指先を真上から内側へ傾ける角度（度）。
-	constexpr float RELEASE_FINGER_TILT_DEG = 0.0f;
+	constexpr float RELEASE_FINGER_TILT_DEG = 15.0f;
 	// 握りこぶしにするときに、アニメーションの指の形から足して曲げる角度（度。付け根・第二関節・第一関節の順）。
 	const float FINGER_CURL_DEGS[3] = { 45.0f, 50.0f, 40.0f };
 	// 親指: 先の関節を曲げる角度（度）と、IK で合わせるときの決まり。
