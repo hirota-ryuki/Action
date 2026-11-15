@@ -23,20 +23,30 @@ public:
 	{
 		m_faction = faction;
 	}
+	// 持ち主の体。体を動かすスキル（剣の攻撃）を登録するキャラクターが渡す。
+	void SetBody(const SkillBody& body)
+	{
+		m_body = body;
+	}
 
-	// button を押したら、T のスキルを使う。クールダウンは T::COOLDOWN（秒）。
+	// button を押したら、T のスキルを使う。クールダウンは T::COOLDOWN（秒）、NewGO の優先度は T::PRIORITY。
 	template <class T>
 	void Register(ActionButton button)
 	{
 		Entry& entry = m_entries[static_cast<int>(button)];
-		entry.create = [] { return NewGO<T>(1, SkillBase::OBJECT_NAME); };
+		entry.create = [] { return NewGO<T>(T::PRIORITY, SkillBase::OBJECT_NAME); };
 		entry.cooldown = T::COOLDOWN;
 	}
 
 	// 毎フレーム、入力とボタンごとの撃つ位置・向きを渡す。登録したボタンが押された瞬間にスキルを作り、そのあとの入力を渡す。
 	void Update(const CharacterInput& input, const SkillPose (&poses)[static_cast<int>(ActionButton::Num)]);
-	// 溜めているスキルを、使わずに消す（凍ったときなど）。
+	// 溜めているスキル・振っている攻撃を止める（凍ったとき、死んだときなど）。
 	void CancelAll();
+	// スキルを使っている最中か（溜めている、攻撃を振っている）。
+	bool IsBusy() const
+	{
+		return m_active != nullptr;
+	}
 
 	// そのボタンのスキルを、これまでに使った（手を離した）回数。一人称の腕が、前のフレームと比べて撃った瞬間を知るのに使う。
 	int GetUseCount(ActionButton button) const
@@ -67,5 +77,6 @@ private:
 	SkillBase* m_active = nullptr;  // 使っている最中（溜めている）のスキル。
 	int m_activeButton = -1;        // m_active を使ったボタン。
 	IGameObject* m_owner = nullptr;
+	SkillBody m_body;
 	Faction m_faction = Faction::Neutral;
 };

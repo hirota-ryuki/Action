@@ -7,6 +7,7 @@
 class CharacterMover;
 class CharacterModel;
 class StatusEffects;
+class SkillController;
 
 // 敵のアニメーションクリップ。CharacterModelDesc::clips の添字になる。
 enum EnEnemyAnimClip
@@ -14,7 +15,7 @@ enum EnEnemyAnimClip
 	enEnemyAnimClip_Idle,
 	enEnemyAnimClip_Walk,
 	enEnemyAnimClip_Run,
-	enEnemyAnimClip_Attack1,  // 突進して突き → 回転斬り
+	enEnemyAnimClip_Attack1,  // 溜めてから踏み込んで横に斬り抜ける
 	enEnemyAnimClip_Attack2,  // 片手剣の重い連続斬り
 	enEnemyAnimClip_Attack3,  // 斜めの斬撃を5つ飛ばす
 	enEnemyAnimClip_Hit,      // やられ（攻撃中以外で当たったとき）
@@ -28,7 +29,7 @@ enum class EnemyStateId
 	Idle,    // 立ち止まっている
 	Move,    // 入力どおりに歩いている
 	Run,     // 入力どおりに走っている（AI が isRun を立てたとき。剣を肩に乗せて走る）
-	Attack,  // 剣で攻撃している（AI が Action1 を押したときに、attackIndex の攻撃をする）
+	Attack,  // 剣で攻撃している（AI が Action1〜Action3 を押したときに入り、SkillController の攻撃が終わるまで待つ）
 	Hit,     // 攻撃を受けてひるんでいる（攻撃中は受けてもひるまない）
 	Dead,    // HP がなくなって倒れた。倒れ終わって少ししたら消える
 	Frozen,  // 凍結などで行動できない
@@ -44,12 +45,6 @@ struct EnemyStateSettings
 	float playSpeed = 1.0f;         // 黒騎士の動き全体の速さ（アニメーションと移動の両方に掛ける）。動きを確かめるときに下げる。
 	float vanishDelay = 2.0f;       // 倒れ終わってから消えるまでの秒数。
 	float rootMoveScale = 100.0f;   // アニメーションの中で進む距離（モデルの m）を、ゲームの距離にする倍率（100 × モデルの大きさ）。
-};
-
-// 攻撃の調整値。持ち主が持ち、ステートはポインタで読む。
-struct EnemyTuning
-{
-	float attack1ChargeSeconds = 0.6f;  // 攻撃1で、構え（左腰に剣を構えてかがむ）のコマで止めて溜める秒数。
 };
 
 // 攻撃を受けたこと・死んだことを、持ち主（Enemy）とステートの間で受け渡す。持ち主が持ち、ステートはポインタで触る。
@@ -82,7 +77,7 @@ struct EnemyStateContext
 	Faction faction = Faction::Enemy;    // 飛ばした斬撃が当たる相手を決める。
 	EnemyStateSettings settings;
 	EnemyDamageState* damage = nullptr;  // 当たった・死んだ。持ち主が持つ。
-	const EnemyTuning* tuning = nullptr; // 攻撃の調整値。持ち主が持つ。
+	SkillController* skills = nullptr;   // 剣の攻撃（スキル）。攻撃中かを見て、途中で出るときに止める。持ち主が持つ。
 	// ひとつ前のステート。StateMachine が入れる。
 	EnemyStateId previousId = EnemyStateId::Idle;
 };

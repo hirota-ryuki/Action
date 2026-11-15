@@ -42,8 +42,11 @@ EnemyStateId EnemyGroundState::CheckTransition(const EnemyStateContext& context,
 	if (damaged != EnemyStateId::Num) {
 		return damaged;
 	}
-	if (input.Action(ActionButton::Action1).isTrigger) {
-		return EnemyStateId::Attack;
+	// どれかのボタンを押したら攻撃する（どの攻撃かは、SkillController がボタンで決める）。
+	for (const ButtonState& action : input.actions) {
+		if (action.isTrigger) {
+			return EnemyStateId::Attack;
+		}
 	}
 	return SelectByInput(context, input);
 }

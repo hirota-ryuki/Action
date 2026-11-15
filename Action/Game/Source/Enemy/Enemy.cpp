@@ -1,5 +1,8 @@
 ﻿#include "stdafx.h"
 #include "Enemy.h"
+#include "DashSlashAttack.h"
+#include "HeavyComboAttack.h"
+#include "SlashWaveAttack.h"
 
 namespace
 {
@@ -97,7 +100,7 @@ void Enemy::OnStart()
 	stateContext.settings.rootMoveScale = 100.0f * MODEL_SCALE;
 	m_damage.status = &m_status;
 	stateContext.damage = &m_damage;
-	stateContext.tuning = &m_tuning;
+	stateContext.skills = &m_skillController;
 	// 魔法などが当たったら HP を減らし、ステートに知らせる（ひるむか・倒れるかはステートが決める）。
 	m_hitTarget.SetOnHit([this](const HitInfo&) {
 		if (m_status.IsHpEmpty()) {
@@ -107,8 +110,30 @@ void Enemy::OnStart()
 		m_damage.isHitRequested = true;
 	});
 	m_stateMachine.Init(stateContext);  // Idle から始める（Idle のアニメーションを流す）。
-	// 黒騎士はスキルを登録しない（SkillController に何も登録しないので、Action1 を押してもスキルは使わない）。
-	// Action1 は剣の攻撃（EnemyAttackState）になり、攻撃3の斬撃はステートが飛ばす。
+
+	// 剣の攻撃は、体を動かすスキル（AttackBase）。体を渡してから、攻撃1〜3 を Action1〜Action3 に登録する。
+	SkillBody body;
+	body.model = &m_model;
+	body.mover = &m_mover;
+	body.timeScale = PLAY_SPEED;
+	body.rootMoveScale = stateContext.settings.rootMoveScale;
+	body.blendSeconds = stateContext.settings.animBlendSeconds;
+	m_skillController.SetBody(body);
+	m_skillController.Register<DashSlashAttack>(ActionButton::Action1);
+	m_skillController.Register<HeavyComboAttack>(ActionButton::Action2);
+	m_skillController.Register<SlashWaveAttack>(ActionButton::Action3);
+}
+
+void Enemy::FilterSkillInput(CharacterInput& input) const
+{
+	// ステートは SkillController より先に更新される。ボタンを押したフレームに攻撃のステートへ入っていなければ
+	// （当たってひるんだ、倒れている、など）、攻撃を作らない。
+	if (m_stateMachine.GetCurrentId() == EnemyStateId::Attack) {
+		return;
+	}
+	for (ButtonState& action : input.actions) {
+		action = ButtonState();
+	}
 }
 
 void Enemy::UpdateAction(float deltaTime)
