@@ -6,22 +6,6 @@ namespace nsK2EngineLow {
 	GraphicsEngine* g_graphicsEngine = nullptr;	//グラフィックスエンジン
 	Camera* g_camera2D = nullptr;				//2Dカメラ。
 	Camera* g_camera3D = nullptr;				//3Dカメラ。
-	/// <summary>
-	/// DXRがサポートされているかを調べる。
-	/// </summary>
-	/// <param name="pDevice"></param>
-	/// <returns></returns>
-	bool IsSupportDXR(ID3D12Device5* pDevice)
-	{
-		D3D12_FEATURE_DATA_D3D12_OPTIONS5 options = {};
-		auto hr = pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &options, sizeof(options));
-		if (FAILED(hr))
-		{
-			return false;
-		}
-
-		return options.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED;
-	}
 	GraphicsEngine::~GraphicsEngine()
 	{
 		WaitDraw();
@@ -82,8 +66,7 @@ namespace nsK2EngineLow {
 	bool GraphicsEngine::Init(
 		HWND hwnd, 
 		UINT frameBufferWidth, 
-		UINT frameBufferHeight,
-		const raytracing::InitData& raytracingInitData
+		UINT frameBufferHeight
 	)
 	{
 		//
@@ -100,11 +83,6 @@ namespace nsK2EngineLow {
 			//D3Dデバイスの作成に失敗した。
 			MessageBox(hwnd, TEXT("D3Dデバイスの作成に失敗しました。"), TEXT("エラー"), MB_OK);
 			return false;
-		}
-		// DXRのサポートを調べる。
-		if (IsSupportDXR(m_d3dDevice)) {
-			// DXRがサポートされていて、かつRTXシリーズならレイトレ可能にする。
-			m_isPossibleRaytracing = m_isPossibleRaytracing && true;
 		}
 		//コマンドキューの作成。
 		if (!CreateCommandQueue()) {
@@ -175,8 +153,6 @@ namespace nsK2EngineLow {
 		m_directXTKGfxMemroy = std::make_unique<DirectX::GraphicsMemory>(m_d3dDevice);
 		//フォント描画エンジンを初期化。
 		m_fontEngine.Init();
-		//レイトレエンジンを初期化。
-		m_raytracingEngine.Init(raytracingInitData);
 		return true;
 	}
 
@@ -234,16 +210,6 @@ namespace nsK2EngineLow {
 			};
 			if (wcsstr(desc.Description, L"NVIDIA") != nullptr) {
 				//NVIDIA製
-#ifdef ENABLE_DXR_ON_RTX_ONLY
-				std::wstring adapterName =desc.Description;
-				if (adapterName.find(L"RTX") != std::string::npos) {
-					// RTXシリーズのGPU。
-					m_isPossibleRaytracing = true;
-
-				}
-#else // #ifdef ENABLE_DXR_ON_RTX_ONLY
-				m_isPossibleRaytracing = true;
-#endif // #ifdef ENABLE_DXR_ON_RTX_ONLY
 				if (isBetter(GPU_VenderNvidia)) {
 					if (adapterVender[GPU_VenderNvidia]) {
 						adapterVender[GPU_VenderNvidia]->Release();

@@ -123,8 +123,4 @@ namespace nsK2EngineLow {
 			ClearRenderTargetView(renderTargets[i]->GetRTVCpuDescriptorHandle(), renderTargets[i]->GetRTVClearColor());
 		}
 	}
-	inline void RenderContext::SetPipelineState(raytracing::PSO& pso)
-	{
-		m_commandList->SetPipelineState1(pso.Get());
-	}
 }

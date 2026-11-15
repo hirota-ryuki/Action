@@ -6,9 +6,6 @@ namespace nsK2EngineLow {
 	class DescriptorHeap;
 	class RenderTarget;
 
-	namespace raytracing {
-		class PSO;
-	}
 	/// <summary>
 	/// レンダリングコンテキスト。
 	/// </summary>
@@ -122,12 +119,6 @@ namespace nsK2EngineLow {
 		{
 			m_commandList->SetPipelineState(pipelineState.Get());
 		}
-		/// <summary>
-		/// レイトレ用のパイプラインステートオブジェクトを設定。
-		/// </summary>
-		/// <param name="pso"></param>
-		void SetPipelineState(raytracing::PSO& pso);
-
 		/// <summary>
 		/// ディスクリプタヒープを設定。
 		/// </summary>
@@ -374,21 +365,6 @@ namespace nsK2EngineLow {
 			UINT ThreadGroupCountZ)
 		{
 			m_commandList->Dispatch(ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ);
-		}
-		/// <summary>
-		/// GPUでレイトレーシングアクセラレーション構造のビルドを行います。
-		/// </summary>
-		void BuildRaytracingAccelerationStructure(D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC desc)
-		{
-			m_commandList->BuildRaytracingAccelerationStructure(&desc, 0, nullptr);
-		}
-		/// <summary>
-		/// レイをディスパッチ
-		/// </summary>
-		/// <param name="rayDesc"></param>
-		void DispatchRays(D3D12_DISPATCH_RAYS_DESC& rayDesc)
-		{
-			m_commandList->DispatchRays(&rayDesc);
 		}
 		/// <summary>
 		/// リソースをコピー。

@@ -21,9 +21,7 @@ namespace nsK2Engine {
     /// 　　このパスでインスタンシング描画を行うモデルの頂点バッファは１つの大きなバッファにまとめられる。
     ///     例えば、あるモデルをインスタンシング描画で100頂点のモデルを100体描画する設定になっている場合、
     ///     100頂点 × 100の1万頂点を記憶できる頂点バッファが作られる。
-    ///     頂点バッファをまとめる理由はDXRの高速化のため。
-    ///     DXRではレイトレワールドに登録するオブジェクトの数が多くなると、効率的なBVHが構築できなくなり、
-    ///     大きく速度が低下する。このオブジェクトを１つの頂点バッファに纏めることで大幅な高速化が可能となる。
+    ///     頂点バッファをまとめるのは、もとはDXR（レイトレーシング）を速くするためだった。
     /// 
     /// 2. シャドウマップの作成
     ///     カスケードシャドウ方を利用して４つのライトからのシャドウマップを作成する。
@@ -41,12 +39,7 @@ namespace nsK2Engine {
     /// 5. G-Bufferへのレンダリング
     ///     G-Bufferはアルベド&深度値、法線、メタリック&シャドウ&Smoothの３枚。
     /// 
-    /// 6. レイトレーシングで映り込み画像を作成する。
-    ///     NVIDIAのRTXシリーズのGPUが乗っている場合、レイトレを用いて各オブジェクトへの映り込み画像を生成する。
-    ///     このパスはNVIDIAのRTXシリーズでしか通常は使えない。
-    ///     ただし、k2EngineLow\k2EngineLowPreCompile.hのENABLE_DXR_ON_RTX_ONLYのマクロを無効にすることで
-    ///     DXRが利用できる一部のRTX以外のGPU（NVIDIA GTX1060など）でもレイトレを行える。
-    ///     ただし、GTXシリーズではパフォーマンスが大きく損なわれるため、あくまでも開発用。
+    /// 6. （欠番。もとはレイトレーシングで映り込み画像を作るパス）
     /// 
     /// 7. ディファードライティング
     ///     ディズニーベースのPBRライティングが行われる。
@@ -56,7 +49,7 @@ namespace nsK2Engine {
     /// 
     /// 9. ポストエフェクト
     ///     下記のポストエフェクトが実行される。
-    ///     9.1 スクリーンスペースリフレクション(レイトレを行っている場合は処理されない。)
+    ///     9.1 スクリーンスペースリフレクション
     ///     9.2 シーンの輝度計算(後述のHDRレンダリングのブルームやトーンマップで使用される。)
     ///     9.3 ブルーム
     ///     9.4 トーンマップ
@@ -79,17 +72,6 @@ namespace nsK2Engine {
             Matrix mlvp[MAX_DIRECTIONAL_LIGHT][NUM_SHADOW_MAP]; // ライトビュープロジェクション行列。
             float m_iblLuminance;       // IBLの明るさ。
             int m_isIBL;                // IBLを行う。
-            int m_isEnableRaytracing;   // レイトレが行われている。
-        };
-        /// <summary>
-        /// レイトレ用のライトデータ。
-        /// </summary>
-        struct RaytracingLightData {
-            DirectionalLight m_directionalLight;  // ディレクショナルライト。
-            Vector3 m_ambientLight;               // 環境光。IBLテクスチャが指定されていない場合に利用される。
-            float m_iblIntencity;                 // IBL強度。
-            int m_enableIBLTexture;               // IBLテクスチャが指定されている。
-
         };
         //メインレンダリングターゲットのスナップショット
         enum class EnMainRTSnapshot
@@ -135,30 +117,6 @@ namespace nsK2Engine {
         void AddRenderObject(IRenderer* renderObject)
         {
             m_renderObjects.push_back(renderObject);
-        }
-        /// <summary>
-        /// レイトレワールドにモデルを追加。
-        /// </summary>
-        /// <param name="model">追加するモデル。</param>
-        void AddModelToRaytracingWorld(Model& model) 
-        {
-            g_graphicsEngine->RegistModelToRaytracingWorld(model);
-        }
-        /// <summary>
-        /// レイトレワールドの再構築リクエストを送る。
-        /// </summary>
-        void RequestRebuildRaytracingWorld()
-        {
-            g_graphicsEngine->RequestRebuildRaytracingWorld();
-        }
-        /// <summary>
-        /// レイトレワールドからモデルを削除。
-        /// </summary>
-        /// <param name="model">削除するモデル。</param>
-        void RemoveModelFromRaytracingWorld(Model& model) 
-        {
-            g_graphicsEngine->RemoveModelFromRaytracingWorld(model);
-            
         }
         /// <summary>
         /// ZPrepassで作成された深度テクスチャを取得
@@ -474,38 +432,6 @@ namespace nsK2Engine {
         {
             m_sceneLight.SetAmbinet(ambient);
         }
-        /// <summary>
-        /// レイトレーシングが有効かどうかを判定する。
-        /// </summary>
-        /// <returns></returns>
-        bool IsEnableRaytracing() const
-        {
-            return m_isEnableRaytracing && g_graphicsEngine->IsPossibleRaytracing();
-        }
-        /// <summary>
-        /// レイトレーシングを有効にします。
-        /// この設定はハードウェアレイトレーシングが無効な場合は無視されます。
-        /// </summary>
-        void EnableRaytracing()
-        {
-            m_isEnableRaytracing = true && IsEnableRaytracing();
-        }
-        /// <summary>
-        /// レイトレーシングを無効にします。
-        /// この設定はハードウェアレイトレーシングが無効な場合は無視されます。
-        /// </summary>
-        void DisableRaytracing()
-        {
-            m_isEnableRaytracing = false && IsEnableRaytracing();
-        }
-        /// <summary>
-        /// レイトレ用のライトデータを取得。
-        /// </summary>
-        /// <returns></returns>
-        RaytracingLightData& GetRaytracingLightData()
-        {
-            return m_raytracingLightData;
-        }
     private:
         /// <summary>
         /// イメージベースドライティング(IBL)のためのデータを初期化する。
@@ -619,17 +545,6 @@ namespace nsK2Engine {
             float m_intencity = 1.0f;   // 強度。
         };
         
-        /// <summary>
-        /// GIテクスチャを作るためのブラー処理。
-        /// </summary>
-        enum EGITextureBlur {
-            eGITextureBlur_1024x1024,   // 1024×1024
-            eGITextureBlur_512x512,     // 512×512
-            eGITextureBlur_256x256,     // 256×256
-            eGITextureBlur_128x128,     // 128×128
-            eGITextureBlur_Num,     
-        };
-        RaytracingLightData m_raytracingLightData;                      // レイトレ用のライトデータ。
         LightCulling m_lightCulling;                                    // ライトカリング。 
         ShadowMapRender m_shadowMapRenders[MAX_DIRECTIONAL_LIGHT];      // シャドウマップへの描画処理
         VolumeLightRender m_volumeLightRender;                          // ボリュームライトレンダラー。
@@ -653,8 +568,6 @@ namespace nsK2Engine {
         Sprite m_2DSprite;                                              // 2D合成用のスプライト。
         Sprite m_mainSprite;
         SIBLData m_iblData;                                             // IBLデータ。
-        bool m_isEnableRaytracing = true;                               // レイトレーシングが有効？
-        GaussianBlur m_giTextureBlur[eGITextureBlur_Num];                                // GIテクスチャにブラーをかける処理。
         /// <summary>
         /// イベントリスナーのデータ。
         /// </summary>

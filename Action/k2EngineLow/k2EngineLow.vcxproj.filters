@@ -86,30 +86,6 @@
     <ClCompile Include="graphics\effect\EffectEngine.cpp">
       <Filter>graphics\effect</Filter>
     </ClCompile>
-    <ClCompile Include="graphics\raytracing\RaytracingPSO.cpp">
-      <Filter>graphics\raytracing</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\raytracing\RaytracingShaderTable.cpp">
-      <Filter>graphics\raytracing</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\raytracing\RaytracingWorld.cpp">
-      <Filter>graphics\raytracing</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\raytracing\TLASBuffer.cpp">
-      <Filter>graphics\raytracing</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\raytracing\BLASBuffer.cpp">
-      <Filter>graphics\raytracing</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\raytracing\RaytracingDescriptorHeaps.cpp">
-      <Filter>graphics\raytracing</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\raytracing\RaytracingEngine.cpp">
-      <Filter>graphics\raytracing</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\raytracing\RaytracingInstance.cpp">
-      <Filter>graphics\raytracing</Filter>
-    </ClCompile>
     <ClCompile Include="gameObject\Gameobjectmanager.cpp">
       <Filter>gameObject</Filter>
     </ClCompile>
@@ -330,33 +306,6 @@
     <ClInclude Include="graphics\effect\Effect.h">
       <Filter>graphics\effect</Filter>
     </ClInclude>
-    <ClInclude Include="graphics\raytracing\RaytracingPSO.h">
-      <Filter>graphics\raytracing</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\raytracing\RaytracingShaderTable.h">
-      <Filter>graphics\raytracing</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\raytracing\RaytracingWorld.h">
-      <Filter>graphics\raytracing</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\raytracing\TLASBuffer.h">
-      <Filter>graphics\raytracing</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\raytracing\BLASBuffer.h">
-      <Filter>graphics\raytracing</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\raytracing\Raytracing.h">
-      <Filter>graphics\raytracing</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\raytracing\RaytracingDescriptorHeaps.h">
-      <Filter>graphics\raytracing</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\raytracing\RaytracingEngine.h">
-      <Filter>graphics\raytracing</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\raytracing\RaytracingInstance.h">
-      <Filter>graphics\raytracing</Filter>
-    </ClInclude>
     <ClInclude Include="dbg\MyAssert.h">
       <Filter>dbg</Filter>
     </ClInclude>
@@ -487,9 +436,6 @@
     <ClInclude Include="graphics\ComputeAnimationVertexBuffer.h">
       <Filter>graphics</Filter>
     </ClInclude>
-    <ClInclude Include="graphics\raytracing\RaytracingWorld_Inline.h">
-      <Filter>graphics\raytracing</Filter>
-    </ClInclude>
     <ClInclude Include="HID\GamePadVibration.h">
       <Filter>HID</Filter>
     </ClInclude>
@@ -503,9 +449,6 @@
     </Filter>
     <Filter Include="graphics\effect">
       <UniqueIdentifier>{9e0f35ab-35a2-4ba5-bc8e-a1dc3c1aa7eb}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="graphics\raytracing">
-      <UniqueIdentifier>{0a40c3fb-299b-4626-b558-3a049fb72c77}</UniqueIdentifier>
     </Filter>
     <Filter Include="imgui">
       <UniqueIdentifier>{3f6c2a8e-5d41-4b7a-9e0c-1a2b3c4d5e6f}</UniqueIdentifier>

@@ -22,20 +22,12 @@ namespace nsK2EngineLow {
 		/// <param name="entryFuncName"></param>
 		void LoadCS(const char* filePath, const char* entryFuncName);
 		/// <summary>
-		/// レイトレーシング用のシェーダーをロード。
-		/// </summary>
-		void LoadRaytracing(const wchar_t* filePath);
-		/// <summary>
 		/// コンパイル済みシェーダーデータを取得。
 		/// </summary>
 		/// <returns></returns>
 		ID3DBlob* GetCompiledBlob() const
 		{
 			return m_blob;
-		}
-		IDxcBlob* GetCompiledDxcBlob() const
-		{
-			return m_dxcBlob;
 		}
 		/// <summary>
 		/// 初期化済み？
@@ -62,7 +54,6 @@ namespace nsK2EngineLow {
 		void Release();
 	private:
 		ID3DBlob* m_blob = nullptr;	//コンパイル済みのシェーダーデータ。
-		IDxcBlob* m_dxcBlob = nullptr;	//DXCコンパイラを使用したときのシェーダーデータ。
 		bool m_isInited = false;		//初期化済み？
 	};
 }

@@ -15,7 +15,6 @@ Texture2D<float4> g_shadowMap[NUM_DIRECTIONAL_LIGHT][NUM_SHADOW_MAP] : register(
 TextureCube<float4> g_skyCubeMap : register(t15);                                       // スカイキューブ
 StructuredBuffer<uint> pointLightListInTile : register(t20);                            // タイルごとのポイントライトのインデックスのリスト
 StructuredBuffer<uint> spotLightListInTile : register(t21);                             // タイルごとのスポットライトのインデックスのリスト。
-Texture2D<float4> g_reflectionTextureArray[NUM_REFLECTION_TEXTURE] : register(t22);     // リフレクションテクスチャ。
 
 
 #endif // _DEFERREDLIGHTING_SRV_UAV_REGISTER_H_
