@@ -7,7 +7,6 @@
 // 定数
 ///////////////////////////////////////
 
-static const int NUM_REFLECTION_TEXTURE = 5;    // 反射テクスチャ。
 ///////////////////////////////////////
 // 構造体。
 ///////////////////////////////////////
@@ -67,33 +66,6 @@ PSInput VSMain(VSInput In)
     psIn.pos = mul(mvp, In.pos);
     psIn.uv = In.uv;
     return psIn;
-}
-
-/*!
- *@brief	GIライトをサンプリング
- *@param[in]	uv				uv座標
- *@param[in]	level           反射レベル
- */
-float4 SampleReflectionColor( float2 uv, float level )
-{
-    int iLevel = (int)level;
-    float4 col_0;
-    float4 col_1;
-    if( iLevel == 0){
-        col_0 = g_reflectionTextureArray[0].Sample( Sampler, uv);
-        col_1 = g_reflectionTextureArray[1].Sample( Sampler, uv);
-    }else if( iLevel == 1){
-        col_0 = g_reflectionTextureArray[1].Sample( Sampler, uv);
-        col_1 = g_reflectionTextureArray[2].Sample( Sampler, uv);
-    }else if( iLevel == 2){
-        col_0 = g_reflectionTextureArray[2].Sample( Sampler, uv);
-        col_1 = g_reflectionTextureArray[3].Sample( Sampler, uv);
-    }else if( iLevel == 3){
-        col_0 = g_reflectionTextureArray[3].Sample( Sampler, uv);
-        col_1 = g_reflectionTextureArray[4].Sample( Sampler, uv);
-    }
-
-    return lerp( col_0, col_1, frac(level));
 }
 
 /*!
@@ -364,27 +336,7 @@ float4 PSMainCore(PSInput In, uniform int isSoftShadow)
         viewportPos
     );
     
-    if(light.isEnableRaytracing){
-        // レイトレを行う場合はレイトレで作った反射テクスチャとIBLテクスチャを合成する。
-        // GLテクスチャ
-        float reflectionRate = 1.0f - ( ( smooth - 0.5f ) * 2.0f );
-        float level = lerp(0.0f, (float)(NUM_REFLECTION_TEXTURE - 1 ), pow( reflectionRate, 3.0f ));
-        if( level < NUM_REFLECTION_TEXTURE-1){
-            lig += albedoColor * SampleReflectionColor(In.uv, level);
-        }else if (light.isIBL == 1) {
-            // IBLがあるなら。
-            lig += albedoColor * SampleIBLColorFromSkyCube(
-                g_skyCubeMap, 
-                toEye, 
-                normal, 
-                smooth,
-                light.iblIntencity
-            );
-        }else{
-            // 環境光による底上げ
-            lig += light.ambientLight * albedoColor;    
-        }
-    }else if (light.isIBL == 1) {
+    if (light.isIBL == 1) {
         // 視線からの反射ベクトルを求める。
         lig += albedoColor * SampleIBLColorFromSkyCube(
             g_skyCubeMap, 

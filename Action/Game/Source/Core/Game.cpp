@@ -48,8 +48,6 @@ Game::~Game()
 
 bool Game::Start()
 {
-	// レイトレーシングは現状未使用のため無効化。
-	g_renderingEngine->DisableRaytracing();
 	// カスケードシャドウの各分割領域の近距離比率を設定。近くを細かく、遠くを粗くする。
 	g_renderingEngine->SetCascadeNearAreaRates(0.01f, 0.1f, 0.5f);
 

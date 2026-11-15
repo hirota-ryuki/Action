@@ -55,6 +55,5 @@ struct LightCB{
     float4x4 mlvp[NUM_DIRECTIONAL_LIGHT][NUM_SHADOW_MAP];
     float iblIntencity;     // IBLの強度。
     int isIBL;              // IBLを行う。
-    int isEnableRaytracing; // レイトレが有効。
 };
 #endif // _PBRLIGHTING_STRUCT_H_

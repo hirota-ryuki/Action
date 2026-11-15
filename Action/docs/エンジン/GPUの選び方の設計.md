@@ -29,7 +29,7 @@ flowchart LR
 | `DXGI_ADAPTER_DESC::Description` | 名前に `NVIDIA`・`AMD`・`Intel` が入っているかで、メーカーを分ける |
 | `DXGI_ADAPTER_DESC::DedicatedVideoMemory` | 同じメーカーの中で比べる。CPU 内蔵の GPU はここがほぼ 0 |
 
-NVIDIA の GPU が見つかったら、レイトレーシングが使えるものとする（`m_isPossibleRaytracing`）。ゲームでは `Game.cpp` でレイトレーシングを切っている。
+レイトレーシングはエンジンから外したので、GPU の種類でできることは変わらない（[レイトレーシングの削除の経緯](レイトレーシングの削除の経緯.md)）。
 
 ---
 
@@ -64,6 +64,6 @@ auto isBetter = [&](int vender) {
 
 | 決めたこと | 理由 |
 |---|---|
-| メーカーの順（NVIDIA → AMD）は変えない | もとのエンジンの決まり。NVIDIA のときだけレイトレーシングを使えるようにしているため |
+| メーカーの順（NVIDIA → AMD）は変えない | もとのエンジンの決まり（もとは NVIDIA のときだけレイトレーシングを使えるようにしていたため。レイトレーシングは外した） |
 | 同じメーカーの中ではビデオメモリで比べる | 名前に「AMD」が入るものを見つけるたびに置き換えていたので、後から見つかった CPU 内蔵の GPU が選ばれていた |
 | `IDXGIFactory6::EnumAdapterByGpuPreference`（高性能を優先）は使わない | 今の `IDXGIFactory4` のままで直せる。メーカーの順の決まりとも合わせやすい |

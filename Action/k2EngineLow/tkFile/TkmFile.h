@@ -40,9 +40,6 @@ namespace nsK2EngineLow {
 		/// <summary>
 		/// 頂点。
 		/// </summary>
-		/// <remarks>
-		/// ここを編集したら、レイトレのシェーダーで定義されている頂点構造体も変更する必要がある。
-		/// </remarks>
 		struct SVertex {
 			Vector3 pos;			//座標。
 			Vector3 normal;		//法線。

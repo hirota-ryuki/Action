@@ -26,8 +26,7 @@ namespace nsK2EngineLow {
 	void K2EngineLow::Init(
 		HWND hwnd,
 		UINT frameBufferWidth,
-		UINT frameBufferHeight,
-		const raytracing::InitData& raytracingInitData
+		UINT frameBufferHeight
 	)
 	{
 		if (hwnd) {
@@ -36,8 +35,7 @@ namespace nsK2EngineLow {
 			m_graphicsEngine->Init(
 				hwnd, 
 				frameBufferWidth, 
-				frameBufferHeight,
-				raytracingInitData
+				frameBufferHeight
 			);
 			// 開発用の画面（ImGui）を起動する。
 			DebugUI::Init(hwnd);
