@@ -325,6 +325,7 @@ docs/
 
 ## 注意事項
 
+- **エンジンの使っていない部品を消しました**（2026-11-15）。消したのは、レベルの読み込み（`level2D`・`level3D`・`level2DRender`・`level3DRender`）、経路探索（`AI/PathFinding`・`TknFile`）、`SpringCamera`・`CameraCollisionSolver`、`CollisionObject`（と `PhysicsGhostObject`・`BoxCollider`・`SphereCollider`）、`EffectEmitter`、`VolumePointLight`、被写界深度（`Dof`・`dof.fx`）です。エンジンのまとめのヘッダー（`k2EngineLowPreCompile.h`）は、`EffectEmitter.h` の代わりに `Effect.h` を読みます。
 - **スキルの基底クラス（`SkillBase`）と `SkillController` を足し、入力の `fire`・`subFire` を `ActionButton`（`Action1`・`Action2`）にしました**（2026-11-14、[スキルの経緯](ゲーム/スキル/スキルの経緯.md)）。[魔法の手順](ゲーム/魔法/魔法の手順.md)・[氷魔法の手順](ゲーム/魔法/氷魔法の手順.md)・[炎魔法の手順](ゲーム/魔法/炎魔法の手順.md)・[入力の手順](ゲーム/キャラクター/入力の手順.md)・[3段攻撃の手順](ゲーム/プレイヤー/3段攻撃の手順.md) などは、まだ `MagicCaster`・`fire`・`subFire` の形のままです。
 - **魔法と弾を1つにまとめ、魔法を撃つたびに1つ作る形にしました**（2026-11-14）。`魔法と弾の設計.md`・`弾の設計.md`・`魔法と弾の手順.md`・`弾の手順.md` は消し、[魔法の設計](ゲーム/魔法/魔法の設計.md)・[魔法の手順](ゲーム/魔法/魔法の手順.md) にまとめました。`魔法と弾の経緯.md` は [魔法の経緯](ゲーム/魔法/魔法の経緯.md) に名前を変えました。経緯などに出てくる `BulletBase`・`IceBullet`・`FireBullet`・`SlashBullet`・魔法の切り替え（Q・E）は、その時点の記録です。[入力の手順](ゲーム/キャラクター/入力の手順.md)・[NPCのAIの手順](ゲーム/キャラクター/NPCのAIの手順.md) は魔法の切り替え（`magicSwitch`）を足す形のままで、[魔法の手順](ゲーム/魔法/魔法の手順.md) の手順7で消します。ゲームを作る順番の番号は、15 以降が1つずつ前にずれました。
 - **「燃える床」を「炎魔法発射後の燃える床」に呼び名を変えました**（2026-11-14）。ページ名も `燃える床の設計.md`・`燃える床の手順.md` から変えています。コードのクラス名は `BurningGround` のままです。

@@ -83,9 +83,6 @@
     <ClCompile Include="graphics\effect\Effect.cpp">
       <Filter>graphics\effect</Filter>
     </ClCompile>
-    <ClCompile Include="graphics\effect\EffectEmitter.cpp">
-      <Filter>graphics\effect</Filter>
-    </ClCompile>
     <ClCompile Include="graphics\effect\EffectEngine.cpp">
       <Filter>graphics\effect</Filter>
     </ClCompile>
@@ -122,35 +119,11 @@
     <ClCompile Include="HID\GamePad.cpp">
       <Filter>HID</Filter>
     </ClCompile>
-    <ClCompile Include="level2D\CaslFile.cpp">
-      <Filter>level2D</Filter>
-    </ClCompile>
-    <ClCompile Include="level2D\Level2D.cpp">
-      <Filter>level2D</Filter>
-    </ClCompile>
-    <ClCompile Include="level2D\MapChip2D.cpp">
-      <Filter>level2D</Filter>
-    </ClCompile>
-    <ClCompile Include="level3D\TklFile.cpp">
-      <Filter>level3D</Filter>
-    </ClCompile>
-    <ClCompile Include="level3D\Level.cpp">
-      <Filter>level3D</Filter>
-    </ClCompile>
-    <ClCompile Include="level3D\MapChip.cpp">
-      <Filter>level3D</Filter>
-    </ClCompile>
     <ClCompile Include="math\Matrix.cpp">
       <Filter>math</Filter>
     </ClCompile>
     <ClCompile Include="math\Vector.cpp">
       <Filter>math</Filter>
-    </ClCompile>
-    <ClCompile Include="physics\SphereCollider.cpp">
-      <Filter>physics</Filter>
-    </ClCompile>
-    <ClCompile Include="physics\BoxCollider.cpp">
-      <Filter>physics</Filter>
     </ClCompile>
     <ClCompile Include="physics\CapsuleCollider.cpp">
       <Filter>physics</Filter>
@@ -224,9 +197,6 @@
     <ClCompile Include="sound\WaveFile.cpp">
       <Filter>sound</Filter>
     </ClCompile>
-    <ClCompile Include="physics\PhysicsGhostObject.cpp">
-      <Filter>physics</Filter>
-    </ClCompile>
     <ClCompile Include="k2EngineLow.cpp" />
     <ClCompile Include="dbg\DebugUI.cpp">
       <Filter>dbg</Filter>
@@ -260,21 +230,6 @@
     </ClCompile>
     <ClCompile Include="geometry\BSP.cpp">
       <Filter>geometry</Filter>
-    </ClCompile>
-    <ClCompile Include="AI\PathFinding\PathFinding.cpp">
-      <Filter>AI\PathFinding</Filter>
-    </ClCompile>
-    <ClCompile Include="AI\PathFinding\Path.cpp">
-      <Filter>AI\PathFinding</Filter>
-    </ClCompile>
-    <ClCompile Include="AI\PathFinding\NaviMesh.cpp">
-      <Filter>AI\PathFinding</Filter>
-    </ClCompile>
-    <ClCompile Include="tkFile\TknFile.cpp">
-      <Filter>tkFile</Filter>
-    </ClCompile>
-    <ClCompile Include="AI\PathFinding\Cell.cpp">
-      <Filter>AI\PathFinding</Filter>
     </ClCompile>
     <ClCompile Include="graphics\FrameBuffer.cpp">
       <Filter>graphics</Filter>
@@ -390,9 +345,6 @@
     <ClInclude Include="graphics\effect\Effect.h">
       <Filter>graphics\effect</Filter>
     </ClInclude>
-    <ClInclude Include="graphics\effect\EffectEmitter.h">
-      <Filter>graphics\effect</Filter>
-    </ClInclude>
     <ClInclude Include="graphics\raytracing\RaytracingPSO.h">
       <Filter>graphics\raytracing</Filter>
     </ClInclude>
@@ -432,24 +384,6 @@
     <ClInclude Include="HID\GamePad.h">
       <Filter>HID</Filter>
     </ClInclude>
-    <ClInclude Include="level2D\MapChip2D.h">
-      <Filter>level2D</Filter>
-    </ClInclude>
-    <ClInclude Include="level2D\CaslFile.h">
-      <Filter>level2D</Filter>
-    </ClInclude>
-    <ClInclude Include="level2D\Level2D.h">
-      <Filter>level2D</Filter>
-    </ClInclude>
-    <ClInclude Include="level3D\TklFile.h">
-      <Filter>level3D</Filter>
-    </ClInclude>
-    <ClInclude Include="level3D\Level.h">
-      <Filter>level3D</Filter>
-    </ClInclude>
-    <ClInclude Include="level3D\MapChip.h">
-      <Filter>level3D</Filter>
-    </ClInclude>
     <ClInclude Include="math\Vector.h">
       <Filter>math</Filter>
     </ClInclude>
@@ -460,12 +394,6 @@
       <Filter>math</Filter>
     </ClInclude>
     <ClInclude Include="physics\RigidBody.h">
-      <Filter>physics</Filter>
-    </ClInclude>
-    <ClInclude Include="physics\SphereCollider.h">
-      <Filter>physics</Filter>
-    </ClInclude>
-    <ClInclude Include="physics\BoxCollider.h">
       <Filter>physics</Filter>
     </ClInclude>
     <ClInclude Include="physics\CapsuleCollider.h">
@@ -540,9 +468,6 @@
     <ClInclude Include="util\TResourceBank.h">
       <Filter>util</Filter>
     </ClInclude>
-    <ClInclude Include="physics\PhysicsGhostObject.h">
-      <Filter>physics</Filter>
-    </ClInclude>
     <ClInclude Include="k2EngineLow.h" />
     <ClInclude Include="dbg\DebugUI.h">
       <Filter>dbg</Filter>
@@ -586,21 +511,6 @@
     <ClInclude Include="time\FPSLimitter.h">
       <Filter>time</Filter>
     </ClInclude>
-    <ClInclude Include="AI\PathFinding\PathFinding.h">
-      <Filter>AI\PathFinding</Filter>
-    </ClInclude>
-    <ClInclude Include="AI\PathFinding\Path.h">
-      <Filter>AI\PathFinding</Filter>
-    </ClInclude>
-    <ClInclude Include="AI\PathFinding\NaviMesh.h">
-      <Filter>AI\PathFinding</Filter>
-    </ClInclude>
-    <ClInclude Include="tkFile\TknFile.h">
-      <Filter>tkFile</Filter>
-    </ClInclude>
-    <ClInclude Include="AI\PathFinding\Cell.h">
-      <Filter>AI\PathFinding</Filter>
-    </ClInclude>
     <ClInclude Include="graphics\FrameBuffer.h">
       <Filter>graphics</Filter>
     </ClInclude>
@@ -639,12 +549,6 @@
     <Filter Include="HID">
       <UniqueIdentifier>{40fbc6f1-281e-445e-840a-214900cbae58}</UniqueIdentifier>
     </Filter>
-    <Filter Include="level2D">
-      <UniqueIdentifier>{7f0084f2-a2b2-4404-99e9-723b67f2d09f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="level3D">
-      <UniqueIdentifier>{8468c3ec-e994-49b3-9b6a-a58ff7b275bf}</UniqueIdentifier>
-    </Filter>
     <Filter Include="math">
       <UniqueIdentifier>{57cde7f7-bbdb-44ec-b390-214df5ff4ef3}</UniqueIdentifier>
     </Filter>
@@ -674,9 +578,6 @@
     </Filter>
     <Filter Include="geometry">
       <UniqueIdentifier>{8c4c7591-c46f-4829-beb3-2a2988bd47ce}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="AI">
-      <UniqueIdentifier>{2ab8c656-d044-458a-aa81-8981af12ef41}</UniqueIdentifier>
     </Filter>
     <Filter Include="AI\PathFinding">
       <UniqueIdentifier>{72d94fe6-e599-4523-8e54-81df808c96fd}</UniqueIdentifier>

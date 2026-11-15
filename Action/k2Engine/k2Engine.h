@@ -109,7 +109,6 @@ namespace nsK2Engine {
 	private:
 
 		K2EngineLow m_k2EngineLow;							// 
-		CollisionObjectManager m_collisionObjectManager;	// 
 		RenderingEngine m_renderingEngine;					// レンダリングエンジン。
 #ifdef K2_DEBUG
 		nsDbg::VectorRenderer* m_vectorRenderer = nullptr;	// デバッグベクトル描画処理
@@ -121,6 +120,5 @@ namespace nsK2Engine {
 	extern K2Engine* g_k2Engine;
 	extern RenderingEngine* g_renderingEngine;
 	extern SceneLight* g_sceneLight;
-	extern CollisionObjectManager* g_collisionObjectManager;
 
 }

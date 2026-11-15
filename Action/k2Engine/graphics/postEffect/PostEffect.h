@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "graphics/postEffect/Bloom.h"
-#include "graphics/postEffect/Dof.h"
 #include "graphics/postEffect/Fxaa.h"
 #include "graphics/postEffect/ToneMap.h"
 #include "graphics/postEffect/Ssao.h"
@@ -111,7 +110,6 @@ namespace nsK2Engine {
     private:
         CalcSceneLuminance m_calsSceneLuminance;    // シーンの平均輝度計算処理。
         Bloom m_bloom;	    //ブルーム
-        Dof m_dof;		    //被写界深度
         Fxaa m_fXaa;        //FXAA。
         ToneMap m_tonemap;  //トーンマップ。
         Ssao m_ssao;        //SSAO(スクリーンスペースアンビエントオクルージョン)。
