@@ -17,6 +17,13 @@
 | 1 | nlohmann/json（`json.hpp` 1ファイル）と、読み込み係の `JsonFile.h` / `.cpp` を入れる | **これにした** |
 | 2 | 自前のパーサーを `Json.h` / `Json.cpp` の2ファイルで書く | 外のライブラリは入らないが、細かい仕様を自分で保守することになるのでやめた |
 
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| nlohmann/json | C++ で JSON を扱う外部ライブラリ。`json.hpp` 1ファイルだけで使える |
+| パーサー | 文字で書かれたもの（ここでは JSON）を読んで、プログラムで使える値にするもの |
+
 まずは読み込みの仕組みだけを入れ、`PlayerConfig` などの調整値を JSON に出すのは後でやることにした。JSON の置き場所は `Assets/data/` にした。
 
 ### どう確かめたか
@@ -27,6 +34,12 @@
   - ないキーは `value()` の既定値になった。
   - `Assets/data/` から数えたパスと、`Assets/` から書いたパスの両方で読めた。
   - ファイルがないとき・書き方が壊れているときは `TryLoad` が false を返し、`Load` の結果から `value()` で既定値が取れた（落ちない）。
+
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| `/W4` | Visual Studio のコンパイラへ渡す、警告をたくさん出す設定（警告レベル 4） |
 - 確かめに使ったプログラムと JSON は、リポジトリには入れていない。
 
 ---
@@ -50,7 +63,26 @@
 | ファイルの分け方 | `player.json` 1つにし、中を `move`・`dash`・`stop`・`model`・`animation`・`sword` などの段に分ける |
 | 敵・魔法 | 同じ形にしたいが、まず Player だけで作る |
 
+**名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 型 | `PlayerConfig` | プレイヤーの数値とパスを、置いておくため | 調整値を作って返す関数（`MakeCharacterConfig()` など）を持つ `namespace`。数値とパスだけを置き、処理は書かない | ゲームの [PlayerConfig.cpp](../../../../Game/Source/Player/PlayerConfig.cpp) |
+| 型 | `PlayerConfigLoader` | JSON を読む係を、別のクラスにする案の名前 | 作らなかった案。作ると、数値を用意する場所が2つになる | 作らなかったので、ソースにはない |
+| 関数 | `from_json()` | JSON の値を、自作の構造体へ詰めるため | `Json` を構造体に変える関数。nlohmann/json の決まりで、名前をこうすると、`get<構造体>()` が使える | 外部ライブラリ（nlohmann/json。[json.hpp](../../../../exlib/nlohmann/json.hpp)） |
+| 関数 | `value()` | キーがなくても、既定値で読むため | `value(キー, 既定値)`。キーがなければ既定値を返す | 外部ライブラリ（nlohmann/json。[json.hpp](../../../../exlib/nlohmann/json.hpp)） |
+
 パスを JSON から読むと `const char*` では指す先が消えるので、`AnimClipDesc::path`・`CharacterModelDesc::modelPath`・`WeaponAttachmentDesc::modelPath` を `std::string` にした。
+
+**名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| C++ の書き方 | `const char*` | 文字列の先頭を指す、ふつうのポインター | 文字列そのものは持たず、先頭だけを指す。指している先が消えると、使えなくなる | C++ の書き方 |
+| メンバー変数 | `AnimClipDesc::path` | アニメーションのファイルのパスを持つため | `.tka` か `.fbx` のパス | ゲームの [CharacterModel.h](../../../../Game/Source/Character/Components/CharacterModel.h) |
+| メンバー変数 | `CharacterModelDesc::modelPath` | モデルのファイルのパスを持つため | `.tkm` か `.fbx` のパス | ゲームの [CharacterModel.h](../../../../Game/Source/Character/Components/CharacterModel.h) |
+| メンバー変数 | `WeaponAttachmentDesc::modelPath` | 剣のモデルのパスを持つため | 剣のモデルのパス | ゲームの WeaponAttachment.h（今はない。2026-11-14 に、小さい剣ごと消した） |
+| 型 | `std::string` | パスを持つ文字列として、ふつうに使うため | 文字列を、自分で持つ型。JSON から読んだ文字を入れても、消えない | C++ の標準ライブラリ（`<string>`） |
 
 ### どう確かめたか
 
@@ -58,6 +90,12 @@
 - ゲームは起動せず、`player.json` を `JsonFile` で読む小さなプログラムを作り、次を確かめた。
   - ファイルの頭のコメントも含めて、`player.json` が読めた。
   - `PlayerConfig.cpp` が読むキーが、全部 `player.json` にあった（クリップの名前は `CLIP_TABLE` と同じ）。
+
+**名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 変数 | `CLIP_TABLE` | クリップの番号と、JSON のキーの名前を結ぶため | JSON のクリップの名前（`animation.clips` のキー）と、クリップの番号・既定値の対応表（番号の順） | ゲームの [PlayerConfig.cpp](../../../../Game/Source/Player/PlayerConfig.cpp) |
 - `player.json` の値は、書き換える前の `PlayerConfig.cpp` の値をそのまま写した。コマ数で書いたものは、前の `4.0f / 30.0f` などと同じ計算になる。
 - ゲームの中での動き（見た目が前と変わらないこと、出力ウィンドウに `[PlayerConfig]` が出ないこと）は、ユーザーに確かめてもらう。
 

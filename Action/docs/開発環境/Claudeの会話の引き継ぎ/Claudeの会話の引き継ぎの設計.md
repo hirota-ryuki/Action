@@ -22,6 +22,24 @@ Claude の会話（タブ）を、どのPCでも続けられるようにする�
 | やりとりの区切り・セッション終了時 | 個人用 OneDrive へ送る（push） |
 | やりとりの区切り | その会話の ID と時刻を「タブの記録」（`%APPDATA%\claude-sessions\tabs-Action\<PC名>.json`）に書き、`01_ClaudeSessions/Action-tabs/` へ送る |
 
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| 個人用 OneDrive | 個人の Microsoft アカウントのクラウドの保存場所。会社用（学校法人河原学園）のものとは別 |
+| フック | Claude が決まったとき（セッションの開始・やりとりの区切り・終了）に、設定したコマンドを自動で動かす仕組み。`.claude/settings.json` に書く |
+| セッション・会話ファイル | Claude との1つの会話がセッション。その中身は、1行が1つの JSON の `.jsonl` ファイル（`<会話のID>.jsonl`）に入る |
+| pull・push | ここでは、個人用 OneDrive から取ってくること（pull）と、送ること（push）。Git の pull・push とは別 |
+| `%APPDATA%` | Windows の、ユーザーごとのアプリの設定を置くフォルダー（`C:\Users\<ユーザー名>\AppData\Roaming`）を指す環境変数 |
+
+**名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `rclone` | 会話ファイルを個人用 OneDrive へコピーするため | クラウドの保存場所とフォルダーの間で、ファイルをコピーするコマンド。ブラウザーで1回許可すると、アプリにサインインせずに送れる | 外部ツール（rclone。`-Mode setup` で `winget` から入れる） |
+| 引数 | `-Mode` | 1つのスクリプトで、いくつもの動きを切り替えるため | `setup`・`pull`・`push`・`restore`・`remove`・`archive-apply`・`delete-archived` のどれかを選ぶ。省略すると `pull` | 開発環境の [claude-sessions.ps1](../../../../.claude/scripts/claude-sessions.ps1) の `param` |
+| 値 | `~/.claude/projects/<このリポジトリのパス>/` | 各PCの会話ファイルの置き場所 | リポジトリのパスの、英数字以外を `-` にした名前のフォルダー | Claude の設定フォルダー（`~/.claude`） |
+
 ## 2. タブの開き直し
 
 `.vscode/tasks.json` から `claude-sessions.ps1 -Mode restore` を呼びます。
@@ -30,6 +48,20 @@ Claude の会話（タブ）を、どのPCでも続けられるようにする�
 - 最後に使ったのがこのPCなら何もしない（VSCode が自分でタブを戻すため）。同じ記録では2回開かない。
 - 別のPCで30分以内に使っていたときは、開く前に確認を出す。
 - 初回は VSCode が「自動タスクを許可するか」を聞くので「許可」を選ぶ（`Tasks: Manage Automatic Tasks` で変えられる）。
+
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| タスク | VSCode の `.vscode/tasks.json` に書く、コマンドを動かす設定。フォルダーを開いたときに自動で動かすこともできる |
+
+**名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 値 | `restore` | 別のPCのタブを、このPCで開き直すため | `-Mode` の値の1つ。会話をタブで開く | [claude-sessions.ps1](../../../../.claude/scripts/claude-sessions.ps1) の `-Mode` |
+| 値 | `runOn`（`folderOpen`） | フォルダーを開いたときにタスクを動かすため | `"runOn": "folderOpen"` と書くと、フォルダーを開いたときに自動で動く | VSCode の `tasks.json`（[tasks.json](../../../../.vscode/tasks.json) の `runOptions`） |
+| 値 | `Tasks: Manage Automatic Tasks` | 自動で動くタスクを許可・禁止するため | VSCode のコマンド（`Ctrl+Shift+P` で出す）。自動タスクを許可するかを変える | VSCode |
 
 ## 3. アーカイブの引き継ぎ
 
@@ -42,6 +74,22 @@ Claude の会話（タブ）を、どのPCでも続けられるようにする�
 - そのため、別のPCでしたアーカイブは、そのあとこのPCで VSCode を閉じたときに書き込まれ、次に開いたときに一覧に出る。
 - 書き込む前の保存領域の控えを `%APPDATA%\claude-sessions\state.vscdb.before-archive-apply` に残す。
 
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| 拡張（拡張機能） | VSCode に機能を足すもの。ここでは Claude Code の拡張 |
+| SQLite | 1つのファイルに表の形でデータを入れておくデータベース。`state.vscdb` がこの形式 |
+| globalState | VSCode の拡張が、PC全体で覚えておく値の入れ物。拡張ごとの JSON で、`state.vscdb` に入っている |
+
+**名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 値 | `state.vscdb` | アーカイブしたかを読み書きするため | VSCode が拡張のために使う保存領域のファイル（`%APPDATA%\Code\User\globalStorage\`） | VSCode |
+| 値 | `hiddenSessionIds` | アーカイブした会話を見分けるため | Claude の拡張の globalState の中の、アーカイブした会話の ID の配列（JSON のキー） | Claude Code の VSCode 拡張 |
+| 値 | `archive-apply` | ほかのPCのアーカイブを、このPCへ書き込むため | `-Mode` の値の1つ | [claude-sessions.ps1](../../../../.claude/scripts/claude-sessions.ps1) の `-Mode` |
+
 ## 4. 会話の削除
 
 アーカイブした会話は、`.claude\scripts\delete-archived-sessions.cmd`（`claude-sessions.ps1 -Mode delete-archived`）を手で実行したときだけ消します。自動では消しません。
@@ -51,6 +99,15 @@ Claude の会話（タブ）を、どのPCでも続けられるようにする�
 - **消す**: このPCの `<ID>.jsonl` と同じ名前のフォルダー、個人用 OneDrive の同じもの。OneDrive で消したものはごみ箱に約30日残る（rclone は標準ではごみ箱へ送る）。
 - **ほかのPC**: pull・push・restore のたびに全PCの「消した記録」を見て、このPCに残っている会話を消し、送受信の対象からも外す（`rclone copy --exclude-from`）。pull では個人用 OneDrive からも消す（新しいスクリプトをまだ取ってきていないPCが送り戻した分を消すため）。
 - 消した記録は消さずに残す。OneDrive のごみ箱から戻しても、記録があるかぎり次の pull でまた消える。
+
+**名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 値 | `delete-archived` | アーカイブした会話を消すため | `-Mode` の値の1つ。`delete-archived-sessions.cmd` から手で動かす | [claude-sessions.ps1](../../../../.claude/scripts/claude-sessions.ps1) の `-Mode` |
+| 引数 | `-DryRun` | 消す前に、何が消えるかを確かめるため | 付けると、消す会話を見せるだけで消さない | [claude-sessions.ps1](../../../../.claude/scripts/claude-sessions.ps1) の `param`（`[switch]`） |
+| 引数 | `-Yes` | 確認の入力を省くため | 付けると、`y` の確認を飛ばして消す | [claude-sessions.ps1](../../../../.claude/scripts/claude-sessions.ps1) の `param`（`[switch]`） |
+| 引数 | `--exclude-from` | 消した会話を、送受信の対象から外すため | 外すファイルの名前の一覧を、ファイルで渡す（`/<ID>.jsonl`・`/<ID>/**`）。`rclone copy` に付ける | 外部ツール（rclone）のオプション |
 
 ## 5. 使い方
 

@@ -8,9 +8,21 @@
 画面に出す UI（HPゲージ・アイコン・文字）を、どのクラスがどう受け持つかのページです。
 HUD の中身（Player 用・Boss 用に何を出すか）は [HUDの設計](../HUD/HUDの設計.md) を見てください。
 
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| HUD | Head-Up Display。遊んでいる間ずっと画面に出ている、HPゲージなどの UI |
+
 - **UI はゲームを読むだけ。** 矢印は UI → ゲームの一方向で、Player や Enemy は UI のことを知らない。UI はキャラクターを `const` で受け取り、値を書き換えない。
 - **UI に話しかけるのは Game だけ。** UIManager をどこからでも呼べる形（シングルトン・グローバル変数）にはしない。
 - **3段に分ける。** UIManager（まとめ役）→ 〇〇Hud（どの値をどの部品に入れるか）→ 部品（描くだけ）。
+
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| シングルトン | クラスのインスタンスを1つだけ作り、どこからでも呼べるようにする作り方 |
 
 ---
 
@@ -62,6 +74,22 @@ UIElement（基底）… 位置・表示する／しない・透明度。Update(
 - エンジンの文字（`Font`）は、pivot を割合ではなく「文字の左上からのピクセル数」として扱う。そのため `Text` は pivot で寄せず、`Font::MeasureString()` で測った幅だけ位置をずらして寄せる。
 - `Button`（押されたら登録した処理を呼ぶ）は、メニュー画面を作るときに作る。
 
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| アルファ | 色の透明さを表す値（0 で見えない、1 で不透明）。`Vector4` の4つ目（`w`）に入っている |
+| フェード | 透明度を少しずつ変えて、表示を出したり消したりすること |
+| DDS | 画像のファイル形式（`.dds`）。DirectX が直接読める |
+| pivot | 画像や文字の「どこを基準に位置を決めるか」。エンジンの画像は割合（0〜1）で、文字は左上からのピクセル数で指定する |
+
+**名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `SetMulColor` | 白い画像に色を付けて、ゲージや仮のアイコンにするため | 画像の色に、渡した色を掛ける | k2Engine（エンジン）の [SpriteRender.h](../../../../k2Engine/graphics/SpriteRender.h)（`SpriteRender` のメンバー） |
+| 型 | `Font` | 文字の幅を測るため | 文字を描くエンジンのクラス。`MeasureString()` で、文字の幅と高さ（大きさ 1 のとき）を返す | k2EngineLow（エンジン）の [Font.h](../../../../k2EngineLow/graphics/font/Font.h) |
+
 ---
 
 ## 3. 実装方法
@@ -85,6 +113,14 @@ private:
 };
 ```
 
+**名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 型 | `Player` | HPなどを読む相手のプレイヤーを指すため | プレイヤーのクラス。UI は `const` のポインターで受け取り、書き換えない | ゲームの [Player.h](../../../../Game/Source/Player/Player.h) |
+| 型 | `Character` | ボスにするキャラクターを指すため | プレイヤー・敵の共通のクラス。`Boss` ができるまでは、これで受け取る | ゲームの [Character.h](../../../../Game/Source/Character/Character.h) |
+| C++ の書き方 | `const wchar_t*` | ボスの名前（日本語）を渡すため | 1文字が2バイトの文字（`wchar_t`）の文字列を指すポインター。`L"黒騎士"` のように、引用符の前に `L` を付けて書く | C++ の書き方 |
+
 | 書き方 | 理由 |
 |---|---|
 | HUD は一覧（`vector`）でなくメンバーで持つ | ヘッダーを見れば画面に何があるか全部分かる。HUD が消えて指し先がなくなることがない |
@@ -99,6 +135,14 @@ private:
 | `Status` | `float GetHpRate() const`（0〜1。最大HPが 0 以下なら 0） |
 | `Character` | `const StatusEffects& GetStatusEffects() const`、`virtual const Status& GetStatus() const = 0` |
 | `Player` / `Enemy` | `const PlayerStatus& GetStatus() const` / `const Status& GetStatus() const` |
+
+**名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 型 | `Status` | HPなど、遊んでいる間に変わる値をまとめて持つため | HP と最大HP を持つ（`GetHp()`・`GetMaxHp()`・`GetHpRate()`） | ゲームの [Status.h](../../../../Game/Source/Character/Status.h) |
+| 型 | `StatusEffects` | 凍結・燃焼のような一時的な状態を持つため | 凍結・燃焼がかかっているかを覚える。UI はこれを読んでアイコンを出す | ゲームの [StatusEffects.h](../../../../Game/Source/Character/Components/StatusEffects.h) |
+| 型 | `PlayerStatus` | Player だけの値を足せるようにするため | `Status` を継承したクラス。今は `Status` と同じ | ゲームの [PlayerStatus.h](../../../../Game/Source/Player/PlayerStatus.h) |
 
 ---
 

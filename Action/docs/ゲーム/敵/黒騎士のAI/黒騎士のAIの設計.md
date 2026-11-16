@@ -9,6 +9,13 @@
 - **相手との距離を「近い・中くらい・遠い」に分けて、何をするかを決める。**
 - **AI は「どうしたいか」だけを決める。** 歩く・走る・剣を振るのはステート（[敵のステートの設計](../敵のステート/敵のステートの設計.md)）。攻撃は、その攻撃のボタン（攻撃1〜3 = `Action1`〜`Action3`）を1フレーム押す。どのボタンでどの攻撃をするかは、Enemy が `SkillController` に登録している（[剣の攻撃の設計](../../スキル/剣の攻撃/剣の攻撃の設計.md)）。
 
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| 入力元 | キャラクターに渡す入力（`CharacterInput`）を作るクラス。プレイヤーはキー・マウス、黒騎士は AI が作る |
+| 陣営 | キャラクターが味方か敵かを表す分け方（[陣営と当たり判定の設計](../../キャラクター/陣営と当たり判定/陣営と当たり判定の設計.md)） |
+
 ---
 
 ## 1. 流れ
@@ -55,6 +62,19 @@ if (m_decideTimer <= 0.0f && m_attackTimer <= 0.0f) {
     }
 }
 ```
+
+**名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 変数 | `chance` | 走るかどうかを、確率で決めるため | 0〜1 の小数を、どの値も同じ確率で作る。`chance(m_random)` で1つ引く | `Update()` の中のローカル変数（型は `std::uniform_real_distribution<float>`） |
+| 型 | `std::uniform_real_distribution` | 決めた範囲の乱数を作るため | `(0.0f, 1.0f)` を渡すと、その範囲の `float` の乱数を返す。`rand()` の代わり | C++ の標準ライブラリ（`<random>`。[BlackKnightInputSource.h](../../../../Game/Source/Enemy/BlackKnightInputSource.h) で読み込み） |
+| メンバー変数 | `m_random` | 乱数のもとにするため | 乱数を作る `std::mt19937`。起動のたびに、`std::random_device` で違う値から始める | ゲームの [BlackKnightInputSource.h](../../../../Game/Source/Enemy/BlackKnightInputSource.h) |
+| メンバー変数 | `m_isRunning` | 走って近づいている最中かを覚えるため | `true` の間は決め直さず、近いところまで来たら `false` に戻す | ゲームの [BlackKnightInputSource.h](../../../../Game/Source/Enemy/BlackKnightInputSource.h) |
+| 変数 | `attackButton` | 押す攻撃のボタンを決めるため | 押すボタン。`ActionButton::Num` なら何も押さない | `Update()` の中のローカル変数（`BlackKnightInputSource.cpp`） |
+| 型 | `ActionButton` | 攻撃などのボタンを番号で区別するため | `Action1`・`Action2`・`Action3` と、数を表す `Num` を持つ `enum class` | ゲームの [CharacterInput.h](../../../../Game/Source/Character/Input/CharacterInput.h) |
+| 型 | `Range` | 相手との距離の分け方を表すため | `Near`（近い）・`Middle`（中くらい）・`Far`（遠い）を持つ `enum class` | ゲームの [BlackKnightInputSource.h](../../../../Game/Source/Enemy/BlackKnightInputSource.h) の `BlackKnightInputSource` クラス |
+| 値 | `ATTACK_DASH_SLASH`・`ATTACK_SLASH_WAVE` | どのボタンがどの攻撃かを、名前で書くため | 攻撃1のボタン（`Action1`）・攻撃3のボタン（`Action3`）。ほかに攻撃2の `ATTACK_COMBO` がある | ゲームの [BlackKnightInputSource.h](../../../../Game/Source/Enemy/BlackKnightInputSource.h) の `BlackKnightInputSource` クラス |
 
 **狙いはいつも出す。** `hasAim = true` にして、足元から `aimHeight`（110）の高さから相手の当たり判定の中心へ向ける。攻撃3の斬撃がこの向きへ飛ぶ。
 
