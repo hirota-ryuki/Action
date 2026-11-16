@@ -45,7 +45,9 @@
                   "B-thumb01.R", "B-thumb02.R", "B-thumb03.R"]
       },
       "adjust": [
-        {"bone": "J_Bip_R_Hand", "axis": [1, 0, 0], "deg": -55}
+        {"bone": "J_Bip_R_LowerArm", "bend": 80},
+        {"bone": "J_Bip_R_Hand", "axis": [1, 0, 0], "deg": -55},
+        {"bone": "J_Bip_R_Hand", "axis": [0, 1, 0], "deg": -40}
       ]
     },
     {

@@ -27,6 +27,8 @@
 #              つなぎ目は blend コマ（既定 4）かけて混ぜ、腰の水平の位置は前の終わりに合わせる
 #     adjust   移したあとで骨を回す。[{"bone": "J_Bip_R_Hand", "axis": [x, y, z], "deg": 度}, ...]
 #              軸は体（腰の向き）から見た向き（+X が体の左、-Y が前、+Z が上）。その骨と、その下の骨がまとめて回る
+#              {"bone": "J_Bip_R_LowerArm", "bend": 度} と書くと、親の骨との角度をその度にする（肘の曲がりを浅くする、など）。
+#              曲がる軸はコマごとに、親の骨とその骨の向きから出す
 #     arms     "both" なら、元の左腕の動きを左右の反転で右腕にも写して、両手で同じ動きにする。
 #              体（腰〜頭）は、元と反転したものの平均（左右対称）にする
 #     speed    再生の速さ（2 なら半分のコマ数にする）。segments の1つずつにも書ける
@@ -486,7 +488,20 @@ def apply_adjust(W, adjust):
         return
     yaw = body_yaw_q(W)
     for a in adjust:
-        q = yaw @ Quaternion(Vector(a["axis"]).normalized(), math.radians(a["deg"])) @ yaw.inverted()
+        if "bend" in a:
+            # 親の骨との角度（肘なら、上腕と前腕の間の曲がり）を bend 度にする。
+            # 曲がる軸は、親の骨とその骨の向きからコマごとに出す（胸がねじれても、肘の曲がる向きのまま開く・閉じる）
+            n = a["bone"]
+            if n not in W or PARENT[n] not in W:
+                continue
+            up = W[PARENT[n]] @ Vector((0, 1, 0))
+            dn = W[n] @ Vector((0, 1, 0))
+            axis = up.cross(dn)
+            if axis.length < 1e-6:
+                continue
+            q = Quaternion(axis.normalized(), math.radians(a["bend"]) - up.angle(dn))
+        else:
+            q = yaw @ Quaternion(Vector(a["axis"]).normalized(), math.radians(a["deg"])) @ yaw.inverted()
         for n in [a["bone"]] + descendants(a["bone"]):
             if n in W:
                 W[n] = (q @ W[n]).normalized()
