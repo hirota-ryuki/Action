@@ -16,6 +16,16 @@
 - 既存のパイプラインは、3ds Max上でFBXを独自バイナリ `.tkm`(メッシュ+マテリアル)/`.tks`(スケルトン)/`.tka`(アニメーション)にオフライン変換してから使う方式で、テクスチャは `.tkm` と同じフォルダにある `<拡張子なしファイル名>.dds` を探して読み込む仕組みだった(`Action\k2EngineLow\tkFile\TkmFile.cpp` の `BuildMaterial`)。
 - 今回、これとは別に **`ModelRender::Init()` に直接 `.fbx` パスを渡すと、実行時にFBXを解析して `.tkm` を自動生成し、FBXと同じフォルダ(または `Textures` サブフォルダ)にあるテクスチャを自動で割り当てる**、新しいランタイムインポート機能を追加した。
 
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| FBX | 3D モデルのデータを入れるファイルの形式（`.fbx`）。Autodesk 社のもの |
+| tkm・tks・tka | k2Engine の独自のファイル。tkm はメッシュ（形）とマテリアル、tks はスケルトン（骨の構造）、tka はアニメーション |
+| DDS（`.dds`） | テクスチャの画像のファイル形式。GPU がそのまま読める形で、k2Engine はこれを読む |
+| ランタイムインポート | ゲームの実行中に、FBX を読み込んで tkm に変換すること。事前に別のツールで変換しておく必要がない |
+| メッシュ・マテリアル | メッシュは頂点とインデックスをまとめた、モデルの形のひとかたまり。マテリアルは面の見え方の設定（シェーダーとテクスチャ） |
+
 ### 技術選定(ユーザーとの合意事項)
 
 1. FBXパーサーは Autodesk FBX SDK ではなく、MITライセンスの単一ヘッダ+実装ファイルC/C++ライブラリ **[ufbx](https://github.com/ufbx/ufbx)** を採用し、`Action\k2EngineLow\ExEngine\ufbx\` にベンダリング(ImGuiと同じ方式)。
@@ -23,6 +33,19 @@
 2. テクスチャの紐付けは命名サフィックス規約に頼らない。FBXマテリアルが参照しているファイル名をFBXと同じフォルダ内で探すことを優先し、見つからなければフォルダ内の画像ファイルをフォールバックとして使う。
 3. テクスチャは `<fbxのフォルダ>\Textures\` サブフォルダを優先的に探し、無ければfbx自体のフォルダを探す(ユーザーからの追加要望)。
 4. 変換は「実行時にTKM変換して」既存の `.tkm` ロードパイプラインに乗せる方式(3dsMax等の外部ツールを都度起動する方式ではない)。
+
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| ufbx | FBX を読むための、C 言語の外部ライブラリ。`ufbx.h` と `ufbx.c` の2ファイルで使える |
+| パーサー | ファイルの中身を読んで、プログラムで使える形に直すもの |
+| ベンダリング | 外部ライブラリのソースを、そのままプロジェクトの中にコピーして入れること |
+| MIT ライセンス | ソフトウェアの利用許諾のひとつ。著作権表示とライセンス文を付ければ、自由に使える |
+| Autodesk FBX SDK | Autodesk 社が配っている、FBX を読むための公式のライブラリ |
+| EULA | 使用許諾契約書。ダウンロードの前に同意が要る |
+| 命名サフィックス規約 | ファイル名の終わりの部分（`_albedo` など）で、テクスチャの種類を決める約束 |
+| フォールバック | 第一候補が使えないときに使う、次の選択肢 |
 
 ### スコープ(フェーズ1)
 
@@ -33,6 +56,17 @@
 - `MeshParts.cpp` は `skinWeights.x > 0.0f` で頂点単位にスキン有無を自動判定するため、スキンウェイトを全て0で書き込めば非スキンモデルとして正しく扱われる。
 - スキン/アニメーションの完全変換(ボーン階層・バインドポーズ・アニメーションカーブの内部表現への精密変換)は独立した大きな作業であり、今回のスコープ外とした。
 - 既存の `.tks`/`.tka`(3dsMax由来)は、fbxと同名で手動配置すれば今まで通り読み込まれ、共存可能。
+
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| 静的メッシュ | ボーンで動かない、形が変わらないメッシュ |
+| スキン（ボーン変形） | ボーン（骨）の動きに合わせて、頂点を動かすこと |
+| スケルトン・ボーン階層 | スケルトンは、ボーンの親子のつながり全体。ボーン階層は、その親子の関係 |
+| バインドポーズ | スキンの基準になる、モデルを作ったときのボーンの姿勢 |
+| アニメーションカーブ | 時間に対して、ボーンの位置・回転がどう変わるかを表す曲線 |
+| スキンウェイト | 頂点が、どのボーンに、どれだけの割合で引っ張られるか |
 
 ---
 
@@ -55,6 +89,14 @@
 | `Action\k2Engine\graphics\ModelRender.cpp` | `Init()` と `IniTranslucent()` の先頭に2行追加: `filePath` が `.fbx` の場合、`FbxRuntimeImporter::ResolveToTkmFilePath()` で変換後の `.tkm` パスに差し替えてから、以降の処理(既存のまま)に流す。`.tkm` が渡された場合は即座に同じ文字列を返すだけで副作用・性能劣化なし。`InitForwardRendering()` はこの自動変換の対象外(コメントで明記)。 |
 | `Action\k2EngineLow\k2EngineLow.vcxproj` / `.vcxproj.filters` | 上記新規ファイルを登録。`ufbx.c` はサードパーティコード扱いで、Debug/Release/Preview x64の3構成で `PrecompiledHeader` を `NotUsing` にオーバーライド(ImGuiと同じパターン)。 |
 
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| セッター | メンバー変数に値を入れるためだけの関数 |
+| プリコンパイル済みヘッダー（PCH） | よく使うヘッダーを、先にコンパイルしておいたもの。ビルドが速くなる。外部のC言語のコードは使えないので、使わない設定にする |
+| サードパーティコード | 自分たちではなく、外部の人が書いたコード |
+
 `Action\k2EngineLow\graphics\MeshParts.cpp` は検証中に一時的なデバッグログを追加したが、**最終的に完全に元の内容へ戻した**(空白・改行コードの差異のみ残り、機能的な変更は無い)。
 
 ---
@@ -74,6 +116,18 @@ namespace nsK2EngineLow {
     };
 }
 ```
+
+**名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| C++ の書き方 | `nsK2EngineLow` | エンジンの名前を、ほかの名前と区別するため | エンジンの型・関数を入れた `namespace` | k2EngineLow（エンジン）の [FbxRuntimeImporter.h](../../../k2EngineLow/tkFile/FbxRuntimeImporter.h) |
+| 型 | `MaterialTextureTable` | マテリアルの名前から、テクスチャのファイル名を引くため | マテリアル名 → （プロパティ名 → テクスチャのファイル名）の `std::map`。`MaterialTextureTable.txt` を読んだ結果 | k2EngineLow（エンジン）の [FbxRuntimeImporter.h](../../../k2EngineLow/tkFile/FbxRuntimeImporter.h) |
+| 型 | `FbxRuntimeImporter` | FBX を tkm に変換する処理をまとめるため | 変換の各段階を、`static` な関数で持つクラス | k2EngineLow（エンジン）の [FbxRuntimeImporter.h](../../../k2EngineLow/tkFile/FbxRuntimeImporter.h) |
+| 型 | `Noncopyable` | コピーできないクラスにするため | コピーを `= delete` した構造体。継承したクラスは、コピーできなくなる | k2EngineLow（エンジン）の [Noncopyable.h](../../../k2EngineLow/util/Noncopyable.h) |
+| 関数 | `ResolveToTkmFilePath()` | `ModelRender` が、FBX を tkm のパスに差し替えるため | `.fbx` なら、必要なときに変換して `.tkm` のパスを返す。`.fbx` でなければ、そのまま返す | k2EngineLow（エンジン）の [FbxRuntimeImporter.h](../../../k2EngineLow/tkFile/FbxRuntimeImporter.h) |
+| 引数 | `filePath` | 呼び出し元が指定したファイルを受け取るため | `.tkm` か `.fbx` のパス | k2EngineLow（エンジン）の [FbxRuntimeImporter.h](../../../k2EngineLow/tkFile/FbxRuntimeImporter.h) の `ResolveToTkmFilePath()` |
+| 引数 | `isOutputErrorCodeTTY` | エラーの出し先を選ぶため | `true` ならコンソールに、`false` ならメッセージボックスに出す | k2EngineLow（エンジン）の [FbxRuntimeImporter.h](../../../k2EngineLow/tkFile/FbxRuntimeImporter.h) の `ResolveToTkmFilePath()` |
 
 ### 処理フロー
 
@@ -98,11 +152,30 @@ namespace nsK2EngineLow {
 5. テクスチャ実ファイルの検索先は `GetTextureSearchDirs()` が返す `{ <fbxDir>/Textures, <fbxDir> }` の順(`Textures` サブフォルダ優先)。
 6. 見つかった画像が `.dds` でなければ `texconv.exe` を `CreateProcessA` で起動してDDSに変換(オプションは `Action\tools\3dsMaxScripts\makefile` の `-vflip -f BC7_UNORM -srgb -y` と同一)。変換先は生成される `.tkm` と同じフォルダ(`TkmFile::BuildMaterial` の仕様上、tkmと同じフォルダに `<拡張子なし>.dds` が必要なため)。
 
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| ノード・インスタンス | FBX の中の、モデルを置く場所の単位がノード。同じメッシュを複数のノードに置くと、その数だけインスタンスができる |
+| 面グループ | マテリアルごとにまとめた、面の集まり |
+| 三角形化 | 4角形以上の面を、三角形に分けること |
+| ベイク | 行列などの計算を、あらかじめ頂点の座標などに掛けて、結果を書き込んでしまうこと |
+| クランプ | 値を、決めた範囲の中に収めること |
+| texconv.exe | テクスチャを DDS に変換するコマンドラインのツール |
+| BC7・sRGB・vflip | `texconv.exe` のオプション。BC7 は画像の圧縮の形式、sRGB は色の持ち方、vflip は上下を反転させる |
+
 ### `MaterialTextureTable.txt` フォールバックについて
 
 検証に使った実アセット `SK_Player.FBX` は、mtoon/glTF系のシェーダー固有プロパティ(`gltf_tex_diffuse`, `mtoon_tex_Normal` 等)でテクスチャを保持しており、これらは **ufbxの標準的なテクスチャ接続の走査(`material->textures`)では検出できなかった**(検証ログで全マテリアルが `numTextures=0` と判明。詳細は5章)。
 このアセットには元々3ds Max作業用に生成された `MaterialTextureTable.txt`(マテリアル名→プロパティ名→テクスチャファイル名の対応表、プレーンテキスト)が同じフォルダに置かれていたため、これをフォールバックとしてパースし活用する仕組みを追加した(`LoadMaterialTextureTable()` / `FindTextureNameInTable()`)。
 このファイルが無いFBXでは単に空のテーブルとして扱われ、他のフォールバック(2階層目・4階層目)にそのまま進む。
+
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| mtoon・glTF | どちらも 3D モデルの世界の規格。mtoon はトゥーン調の見た目にするシェーダー、glTF は 3D モデルのファイル形式 |
+| シェーダー固有プロパティ | マテリアルの設定のうち、特定のシェーダー（mtoon など）だけが持つ項目 |
 
 ---
 
@@ -155,11 +228,26 @@ m_modelRender.Init("Assets/modelData/player/Model/SK_Player.FBX", nullptr, 0, en
    - `SK_Player.FBX` は全18マテリアルで `srcMat->textures.count == 0`(ufbxの汎用テクスチャ接続走査で1件もヒットしない)ことが判明。3ds Max用に別途用意されていた `MaterialTextureTable.txt` の存在から、この種のプロパティは通常のFBXテクスチャ接続(Texture→Materialプロパティの接続)ではなく、別形式で保持されていると推測される。
    - **修正**: 4章で述べた `MaterialTextureTable.txt` パーサーとフォールバックロジックを追加。
 
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| パス区切り文字 | ファイルのパスで、フォルダを区切る文字（`/` か `\`） |
+| 範囲外アクセス | 配列の、ない番号の要素に触ること。クラッシュの原因になる |
+| マテリアルスロット | メッシュにつけられるマテリアルの枠。1枚もポリゴンが割り当たっていない枠もある |
+
 ### 上記とは別に判明した問題(FBXインポート機能自体のバグではない)
 
 - `SK_Player.FBX` にはスケルトンが無い(フェーズ1の仕様通り)。この状態で、旧「Sapphiart」モデル用に作られたアニメーションクリップ(`.tka`、ボーンインデックス参照)を `ModelRender::Init()` の `animationClips` 引数に渡すと、`Skeleton::GetBone(int)`(`Action\k2EngineLow\graphics\Skeleton.h`、**境界チェック無し**: `return m_bones[boneNo].get();`)がアニメーション更新処理(`Action\k2EngineLow\graphics\Animation.cpp` / `AnimationPlayController.cpp` の `m_skeleton->GetBone(boneNo)` 呼び出し)から範囲外アクセスされ、`vector subscript out of range` でクラッシュすることを確認した。
   - これは **Player.cpp側の呼び出しミス**(スケルトンの無いモデルにアニメーションクリップを渡した)であり、FBXインポート機能自体のバグではない。`Skeleton::GetBone()` に境界チェックが無いこと自体は既存コードの潜在的な脆さだが、今回は修正せず(スコープ外と判断)。
   - 対応: `Player::Start()` の呼び出しを `m_modelRender.Init(..., nullptr, 0, ...)` に変更し、アニメーションクリップを渡さないようにした。
+
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| 境界チェック | 配列の番号が、範囲の中かを調べること |
+| ボーンインデックス | ボーンを見分ける番号。アニメーションクリップは、ボーンを名前でなくこの番号で指す |
 
 ### 検証結果
 
@@ -185,6 +273,13 @@ m_modelRender.SetScale(Vector3(0.03f, 0.03f, 0.03f)); // SK_Player.FBXは単位�
 m_modelRender.Update();
 ```
 
+**名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 値 | `enModelUpAxisZ` | モデルの上方向の軸を伝えるため | 上方向が Z 軸であることを表す。FBX は Z 軸が上のものを渡す | k2EngineLow（エンジン）の [GraphicsEngine.h](../../../k2EngineLow/graphics/GraphicsEngine.h) |
+| 関数 | `SetScale()` | モデルの大きさを変えるため | `Vector3` で、x・y・z それぞれの拡大率を渡す | k2Engine（エンジン）の [ModelRender.h](../../../k2Engine/graphics/ModelRender.h) |
+
 - アニメーションクリップ(`m_animClips`、idle/walk/run/jump)は渡していない(渡すとクラッシュするため。5章参照)。
 - スケールは暫定値(0.03倍)。正式な数値は未調整。
 - 剣の右手ボーンへの追従(`InitSword()`)はスケルトンが無いため機能しない(`FindBoneID` が常に-1を返し、`UpdateSword()` は安全に何もしないだけで、クラッシュはしない)。
@@ -205,6 +300,17 @@ m_modelRender.Update();
 - `k2EngineLow.vcxproj` → `k2Engine.vcxproj` → `Game.sln` の順にクリーンビルドし、`Game.exe` のリンクまで成功することを確認済み。
 - 新規追加した `.cpp`/`.h` ファイルは **UTF-8 with BOM**(CRLF)で保存する必要がある(このプロジェクトはBOM無しUTF-8だとMSVCがコードページ932[Shift-JIS]と誤認し、日本語コメント内のマルチバイト文字が原因で文字列リテラルの解析が崩れ、大量のコンパイルエラーを引き起こす)。Write/Editツールで新規作成したファイルはBOM無しになるため、`printf '\xEF\xBB\xBF' > file.bom && cat file >> file.bom && mv file.bom file` のような手順でBOMを付与する必要があった。
 - ビルド構成: `k2Engine.vcxproj` の Librarian(Lib)設定が `AdditionalDependencies: k2EngineLow.lib` を指定しており、`k2EngineLow.lib` の内容を `k2Engine.lib` にマージする構成になっている。このため、`k2EngineLow` 側のプリコンパイル済みヘッダ(PCH)が変化するような変更(今回のように新規ファイル追加+PCH再生成を伴う変更)を行った後は、**`k2EngineLow` → `k2Engine`(両方ともフル)の順にリビルドしてからでないと**、リンク時に `LNK2011: プリコンパイル済みオブジェクトはリンクされていません` という不可解なエラーが再現することがある(インクリメンタルビルドの残骸によるもので、コード自体のバグではない)。
+
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| UTF-8 with BOM | 文字コード UTF-8 のファイルの先頭に、BOM（目印の3バイト）を付けた形。MSVC はこの目印で UTF-8 だとわかる |
+| CRLF | 改行の表し方のひとつ（Windows 式）。`\r\n` の2文字 |
+| コードページ 932（Shift-JIS） | Windows が日本語の文字コードとして使う形 |
+| Librarian（Lib） | `.lib`（ライブラリのファイル）を作る、ビルドの道具 |
+| LNK2011 | 「プリコンパイル済みオブジェクトがリンクされていない」というリンクのエラーの番号 |
+| インクリメンタルビルド・クリーンビルド | 変わった所だけをビルドし直すのがインクリメンタルビルド。全部を最初から作り直すのがクリーンビルド |
 
 ---
 

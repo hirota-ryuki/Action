@@ -11,6 +11,13 @@
 - **開発用の表示は HUD と分ける。** `DebugHud` は PlayerHud・BossHud と並べて UIManager が持ち、いちばん上に描く。
 - **Debug・Preview・Release のどのビルドでも出す。** Release で実際の速さを確かめるため。出すかどうかは `DebugHud.cpp` の `SHOW_FPS` 1か所で切り替える。
 
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| FPS | Frames Per Second。1秒に画面を何回描き直すか |
+| Debug・Preview・Release | Visual Studio のビルドの設定の名前。Debug はデバッグ用（遅い）、Release は速くしたもの。Preview はこのプロジェクトの設定で、Debug と同じく `K2_DEBUG` が定義される |
+
 ---
 
 ## 1. 全体像
@@ -51,6 +58,23 @@ void DebugHud::Update(float deltaTime)
 }
 ```
 
+**名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 型 | `Clock` | 長い時計の型名を短く書くため | `std::chrono::steady_clock` の別名（`using Clock = ...`） | ゲームの [DebugHud.h](../../../../Game/Source/UI/Hud/DebugHud.h) の `DebugHud` クラス |
+| 型 | `std::chrono::steady_clock` | 実際の時間を測るため | 巻き戻らない時計。`now()` で今の時刻を返す | C++ の標準ライブラリ（`<chrono>`。[DebugHud.h](../../../../Game/Source/UI/Hud/DebugHud.h) で読み込み） |
+| 型 | `Clock::time_point` | 時刻を覚えておくため | `now()` が返す、時計の上の1点 | C++ の標準ライブラリ（`std::chrono::steady_clock` のメンバー） |
+| 関数 | `Clock::now()` | 今の時刻を知るため | その時点の時刻（`time_point`）を返す | C++ の標準ライブラリ（`std::chrono::steady_clock` のメンバー） |
+| メンバー変数 | `m_isStarted` | 最初の1回だけ、平均を取り始めた時刻を決めるため | 最初の `Update()` で `true` にする | ゲームの [DebugHud.h](../../../../Game/Source/UI/Hud/DebugHud.h) |
+| メンバー変数 | `m_averageStart` | 何秒たったかを求めるため | 平均を取り始めた時刻 | ゲームの [DebugHud.h](../../../../Game/Source/UI/Hud/DebugHud.h) |
+| メンバー変数 | `m_frameCount` | 平均を求めるため | 平均を取り始めてからの、`Update()` を呼んだ回数 | ゲームの [DebugHud.h](../../../../Game/Source/UI/Hud/DebugHud.h) |
+| テンプレートの引数 | `std::chrono::duration<float>` | 時刻の差を、秒の `float` で受け取るため | 時間の長さを表す型。`float` を渡すと、秒を `float` で持つ。`.count()` でその数を取り出す | C++ の標準ライブラリ（`<chrono>`） |
+| 関数 | `count()` | 時間の長さを、ただの数にするため | `duration` の中身の数（ここでは秒）を返す | C++ の標準ライブラリ（`std::chrono::duration` のメンバー） |
+| 関数 | `swprintf_s` | 数字から表示する文字を作るため | 書式（`%.1f` は小数1桁）に合わせて、文字を配列に書き込む。`wchar_t` の文字用 | C の標準ライブラリ（Microsoft の `_s` 付きの安全な版。`<wchar.h>`） |
+| 変数 | `text` | 作った文字を一時的に入れておくため | 64文字ぶんの `wchar_t` の配列。`m_fps.SetText()` に渡す | `Update()` の中のローカル変数 |
+| 値 | `FPS_AVERAGE_SECONDS` | 平均を取る間隔を1か所で決めるため | 0.5。この秒数がたったら、平均の FPS に書き換える | ゲームの [DebugHud.cpp](../../../../Game/Source/UI/Hud/DebugHud.cpp) の名前のない `namespace` |
+
 | 書き方 | 理由 |
 |---|---|
 | 時間は `GetFrameDeltaTime()` でなく `steady_clock` で測る | ゲームの経過時間は、ロード直後などに物が大きく飛ばないよう 1/30 秒で頭打ちにしている（[フレームレートの設計](../../../最適化/描画/フレームレート/フレームレートの設計.md)）。それを足すと、30 FPS を下回っても 30 と出てしまう |
@@ -58,9 +82,24 @@ void DebugHud::Update(float deltaTime)
 | 出すかどうかを `constexpr bool SHOW_FPS` にする | 今はどのビルドでも true。ビルドで分けたくなったら、ここだけを `#ifdef K2_DEBUG` などで切り替えればよい。false なら `Init()` で `SetVisible(false)` にし、`Update()` もすぐ戻る |
 | 文字は 0.5秒に1回だけ書き換える | `Text::SetText` は値が変わったときだけ書き換えるので、毎フレームの文字の作り直しも減る |
 
+**名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| マクロ | `K2_DEBUG` | Debug・Preview のときだけ処理を入れるため | `#ifdef` で見分けるための印。Debug と Preview のときだけ定義される | プロジェクトの設定（[Game.vcxproj](../../../../Game/Game.vcxproj) の `PreprocessorDefinitions`） |
+| 関数 | `SetVisible()` | FPS を出さない設定のとき、描かないようにするため | `false` を渡すと、`Draw()` で何も描かなくなる | ゲームの [UIElement.h](../../../../Game/Source/UI/Elements/UIElement.h) |
+
 ### エンジン側で止めたところ
 
 [k2EngineLow.cpp](../../../../k2EngineLow/k2EngineLow.cpp) の `K2EngineLow::EndFrame()` で FPS を描いていた部分を、コメントアウトしている。エンジンだけで動かすとき（ゲームの UI がないとき）は、コメントを外せば右上に出る。文字の幅を測る `Font::MeasureString()` は、ゲームの `Text` が使うので残している。
+
+**名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `K2EngineLow::EndFrame()` | 毎フレームの最後に、エンジンが決まった処理をするため | 1フレームの最後に呼ばれる。以前はここで FPS を描いていた | k2EngineLow（エンジン）の [k2EngineLow.cpp](../../../../k2EngineLow/k2EngineLow.cpp) |
+| 関数 | `Font::MeasureString()` | 文字の幅を測って、位置をずらすため | 文字の幅と高さ（大きさ 1 のとき）を返す | k2EngineLow（エンジン）の [Font.h](../../../../k2EngineLow/graphics/font/Font.h) |
+| メンバー変数 | `m_fpsFont`・`m_fpsFontShadow` | エンジンが FPS の文字と影を描くため | `Font` を持つ `std::unique_ptr`。今は使っていない | k2EngineLow（エンジン）の [k2EngineLow.h](../../../../k2EngineLow/k2EngineLow.h) |
 
 ---
 
