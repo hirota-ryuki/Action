@@ -73,7 +73,6 @@ Settings: symmetric, T-pose, about 35,000 polygons, PBR textures, 2048 texture r
 |---|---|
 | セルシェーディング（cel-shaded） | 陰影を、なめらかにせず、段のある塗りで見せる、アニメ調の描き方 |
 | ポリゴン | モデルの表面をつくる、小さな面（ここでは三角形）。数が多いほど細かいが、重くなる |
-| テクスチャ | モデルの表面に貼る画像。`2048` は、画像の1辺の大きさ（ピクセル） |
 | PBR | 光の当たり方を、物の材質（色・メタリック・ラフネス）で決める作り方。材質ごとのテクスチャを別々に作る |
 | Rigging・animation | Rigging は、モデルに骨（ボーン）を付けること。animation は、モーションを付けること。ここでは、どちらも Meshy にさせない |
 
@@ -179,7 +178,6 @@ Please remesh this model to about 35,000 polygons (triangles), keeping the textu
 |---|---|
 | FBX・GLB | 3D モデルを入れるファイルの形式。FBX は Blender などで広く使われ、GLB は1つのファイルにまとめて入れる |
 | Rig・Animate | Meshy の機能。Rig は骨付け、Animate はモーション付け |
-| 骨・骨格 | 骨はボーンのこと。キャラクターのモデルは、骨の動きに合わせて動く。骨格は、骨の名前と親子のつながりの全体 |
 | `SK_Player` | 主人公のモデル（スケルタルメッシュ）の名前。黒騎士の骨は、この骨格に合わせる |
 
 ---
