@@ -97,7 +97,6 @@ public:
 ```
 
 </td></tr></table>
-
 - **なぜ:** Gauge・Icon・Text は、位置や見えるかなど同じ決まりを持つ。土台のクラスを先に作れば、決まりを1か所に書ける。
 - **効果:** 部品をどれも `UIElement` として、同じ呼び方で扱えるようになる。
 
@@ -106,6 +105,7 @@ public:
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
 | 型 | `UIElement` | UI の部品に共通の決まりを持たせるため | 部品の基底クラス。Gauge・Icon・Text はこれを継承する | この手順で作る |
+
 
 ### 1-2. 位置を決める・読む関数を足す
 
@@ -191,7 +191,6 @@ public:
 | 行 | 何をしているか |
 |---|---|
 | 17〜20 | `false` の間は、描くときに何もしない |
-
 - **なぜ:** 部品を一時的に隠したいことがある（ボスがいない間のゲージなど）。部品を消さずに、描かないだけにできる。
 - **効果:** `SetVisible(false)` だけで隠せ、`true` に戻せばまた出る。
 
@@ -204,9 +203,10 @@ public:
 | メンバー変数 | `m_isVisible` | 見えるかを覚えておくため | `true` なら見える。宣言は 1-8 で書く | この手順で作る |
 | 関数 | `IsVisible` | 今見えるかを読むため | `m_isVisible` を返す | この手順で作る |
 
-### 1-4. 透明度を決める・読む関数を足す
 
-[UIElement.h](../../../../Game/Source/UI/Elements/UIElement.h) の **24行目** `}` の下、`};` の上に、9行足します（25〜33行目になります）。
+### 1-4. 透明度を決める関数を足す
+
+[UIElement.h](../../../../Game/Source/UI/Elements/UIElement.h) の **24行目** `}` の下、`};` の上に、5行足します（25〜29行目になります）。
 
 <!-- add: Action/Game/Source/UI/Elements/UIElement.h 25 -->
 <table class="code-lines"><tr><td>
@@ -217,10 +217,6 @@ public:
 27
 28
 29
-30
-31
-32
-33
 ```
 
 </td><td>
@@ -231,10 +227,6 @@ public:
 	{
 		m_alpha = min(1.0f, max(0.0f, alpha));
 	}
-	float GetAlpha() const
-	{
-		return m_alpha;
-	}
 ```
 
 </td></tr></table>
@@ -243,27 +235,27 @@ public:
 |---|---|
 | 28 | 0（見えない）〜1（不透明）の外に出ないようにする。フェードに使う |
 
-- **なぜ:** フェード（だんだん見えなくする）を、部品ごとに作りたくない。透明度を基底クラスで持てば、全部の部品が同じ方法でフェードできる。
-- **効果:** `SetAlpha` に 0〜1 を渡すだけで、どの部品もフェードできる。範囲の外の値を渡しても、0〜1 に収まる。
+- **なぜ:** 透明度は、値をそのまま入れさせず、0〜1 の外に出ないようにして入れる。部品の色に掛けるのは、部品ごとの描く処理がする（`ApplyAlpha`）。
+- **効果:** フェードで値を行き過ぎても、色がおかしくならない。
 
 **初めて出てくる名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| 関数 | `SetAlpha` | 部品の透明度を決めるため | 0〜1 の範囲に収めて覚える | この手順で作る |
-| 引数 | `alpha` | 透明度を渡すため | 0 で見えない、1 で不透明 | この手順で作る |
-| マクロ | `min`・`max` | 値を範囲に収めるため | `min` は小さい方、`max` は大きい方を返す。`std::` が付いていない。`NOMINMAX` を決めていないので、Windows.h のマクロ | Windows の API（Windows.h） |
-| メンバー変数 | `m_alpha` | 決めた透明度を覚えておくため | 透明度。宣言は 1-8 で書く | この手順で作る |
-| 関数 | `GetAlpha` | 今の透明度を読むため | `m_alpha` を返す | この手順で作る |
+| 関数 | `SetAlpha` | 部品の透明度を決めるため | 0〜1 に収めてから `m_alpha` に入れる | この手順で作る |
 
 ### 1-5. 更新と、描く関数を足す
 
-[UIElement.h](../../../../Game/Source/UI/Elements/UIElement.h) の **33行目** `}` の下、`};` の上に、11行足します（34〜44行目になります）。
+[UIElement.h](../../../../Game/Source/UI/Elements/UIElement.h) の **29行目** `}` の下、`};` の上に、11行足します（30〜40行目になります）。
 
-<!-- add: Action/Game/Source/UI/Elements/UIElement.h 34 -->
+<!-- add: Action/Game/Source/UI/Elements/UIElement.h 30 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
+30
+31
+32
+33
 34
 35
 36
@@ -271,10 +263,6 @@ public:
 38
 39
 40
-41
-42
-43
-44
 ```
 
 </td><td>
@@ -297,9 +285,8 @@ public:
 
 | 行 | 何をしているか |
 |---|---|
-| 36 | 毎フレーム、描く前に1回呼ぶ。派生クラスが必ず書く |
-| 38〜44 | 見えないとき（見えない設定か、透明度 0）は何もしない。見えるときだけ派生クラスの `OnDraw()` を呼ぶ。この関数は派生クラスで変えない |
-
+| 32 | 毎フレーム、描く前に1回呼ぶ。派生クラスが必ず書く |
+| 34〜40 | 見えないとき（見えない設定か、透明度 0）は何もしない。見えるときだけ派生クラスの `OnDraw()` を呼ぶ。この関数は派生クラスで変えない |
 - **なぜ:** 描く前に、位置や色を描画用のものへ移す時間が要る。また、見えないときに描かない判断は全部の部品で同じなので、`Draw` に1回だけ書く。
 - **効果:** 派生クラスは、`Update` と `OnDraw` だけ書けばよい。見えない部品を描いてしまう間違いも防げる。
 
@@ -313,18 +300,19 @@ public:
 | 引数 | `rc` | 描く先を渡すため | `RenderContext`。`&` なので本物を渡す | k2EngineLow（エンジン）。`Render` が受け取ったものをそのまま渡す |
 | 関数 | `OnDraw` | 派生クラスごとに描き方を変えるため | 本当に描く処理。宣言は 1-6 で書く | この手順で作る |
 
+
 ### 1-6. 派生クラスが書く、描く中身の関数を足す
 
-[UIElement.h](../../../../Game/Source/UI/Elements/UIElement.h) の **44行目** `}` の下、`};` の上に、4行足します（45〜48行目になります）。
+[UIElement.h](../../../../Game/Source/UI/Elements/UIElement.h) の **40行目** `}` の下、`};` の上に、4行足します（41〜44行目になります）。
 
-<!-- add: Action/Game/Source/UI/Elements/UIElement.h 45 -->
+<!-- add: Action/Game/Source/UI/Elements/UIElement.h 41 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
-45
-46
-47
-48
+41
+42
+43
+44
 ```
 
 </td><td>
@@ -343,17 +331,17 @@ protected:
 
 ### 1-7. 色に透明度を掛ける関数を足す
 
-[UIElement.h](../../../../Game/Source/UI/Elements/UIElement.h) の **48行目**（`virtual void OnDraw(RenderContext& rc) = 0;` の下の空の行）の下、`};` の上に、5行足します（49〜53行目になります）。
+[UIElement.h](../../../../Game/Source/UI/Elements/UIElement.h) の **44行目**（`virtual void OnDraw(RenderContext& rc) = 0;` の下の空の行）の下、`};` の上に、5行足します（45〜49行目になります）。
 
-<!-- add: Action/Game/Source/UI/Elements/UIElement.h 49 -->
+<!-- add: Action/Game/Source/UI/Elements/UIElement.h 45 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
+45
+46
+47
+48
 49
-50
-51
-52
-53
 ```
 
 </td><td>
@@ -370,7 +358,7 @@ protected:
 
 | 行 | 何をしているか |
 |---|---|
-| 52 | 色のアルファに透明度を掛ける。部品ごとにフェードの処理を書かずに済む |
+| 48 | 色のアルファに透明度を掛ける。部品ごとにフェードの処理を書かずに済む |
 
 - **なぜ:** 色のアルファに透明度を掛ける処理は、どの部品でも同じ。基底クラスに1回書けば、部品ごとに書かずに済む。
 - **効果:** 部品は `ApplyAlpha` を通した色を渡すだけで、フェードに対応できる。
@@ -383,18 +371,18 @@ protected:
 
 ### 1-8. 持つ値を足す
 
-[UIElement.h](../../../../Game/Source/UI/Elements/UIElement.h) の **53行目** `}` の下、`};` の上に、6行足します（54〜59行目になります）。
+[UIElement.h](../../../../Game/Source/UI/Elements/UIElement.h) の **49行目** `}` の下、`};` の上に、6行足します（50〜55行目になります）。
 
-<!-- add: Action/Game/Source/UI/Elements/UIElement.h 54 -->
+<!-- add: Action/Game/Source/UI/Elements/UIElement.h 50 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
+50
+51
+52
+53
 54
 55
-56
-57
-58
-59
 ```
 
 </td><td>
@@ -412,8 +400,7 @@ private:
 
 | 行 | 何をしているか |
 |---|---|
-| 55 | 位置。`protected` なので、派生クラスが描くときに使える |
-
+| 51 | 位置。`protected` なので、派生クラスが描くときに使える |
 - **なぜ:** 位置は派生クラスが描くときに読むので `protected`、見えるかと透明度は `Set`・`Get` 関数だけで触らせたいので `private` にする。
 - **効果:** 値が決まった入口（`SetAlpha` など）を通るので、範囲の外の値が入らない。
 
@@ -422,6 +409,7 @@ private:
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
 | 値 | `Vector2::Zero` | 位置の最初の値を決めるため | x も y も 0 の `Vector2`（画面の中心） | k2EngineLow（エンジン）の [Vector.h](../../../../k2EngineLow/math/Vector.h) |
+
 
 ### 1-9. コメントを書く
 
@@ -514,10 +502,6 @@ private:
 57
 58
 59
-60
-61
-62
-63
 ```
 
 </td><td>
@@ -554,10 +538,6 @@ public:
 	void SetAlpha(float alpha)
 	{
 		m_alpha = min(1.0f, max(0.0f, alpha));
-	}
-	float GetAlpha() const
-	{
-		return m_alpha;
 	}
 
 	// 毎フレーム、描く前に1回呼ぶ。位置・大きさ・色を描画用のものに反映する。
@@ -638,7 +618,6 @@ public:
 ```
 
 </td></tr></table>
-
 - **なぜ:** 文字を出す部品を、`UIElement` から継承して作る。最初は空の形だけ書いて、少しずつ足す。
 - **効果:** 位置・見えるか・透明度を、書かずにそのまま使える。
 
@@ -647,6 +626,7 @@ public:
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
 | 型 | `Text` | 画面に文字を出すため | 文字の部品。`UIElement` を継承する | この手順で作る |
+
 
 ### 2-2. 寄せ方の種類を書く
 
@@ -678,7 +658,6 @@ public:
 ```
 
 </td></tr></table>
-
 - **なぜ:** 文字を置く位置の基準が、左端・中央・右端のどれかを選べるようにする。数値より名前の方が間違えにくいので `enum class` にする。
 - **効果:** 右寄せ（HP の数字など）や中央寄せ（見出し）を、名前で指定できる。
 
@@ -688,6 +667,7 @@ public:
 |---|---|---|---|---|
 | 型 | `Align` | 寄せ方を名前で選ぶため | 左・中央・右のどれか。`enum class` | この手順で作る |
 | 値 | `Left`・`Center`・`Right` | どこを位置の基準にするか決めるため | `Align` の3つの値。文字の左端・中央・右端が位置に来る | この手順で作る |
+
 
 ### 2-3. 文字を決める関数を宣言する
 
@@ -814,7 +794,6 @@ public:
 | 行 | 何をしているか |
 |---|---|
 | 31〜35 | 文字の周りに影（縁取り）を付ける。`offset` はずらすピクセル数 |
-
 - **なぜ:** 寄せ方と影も、文字ごとに変えたい。影（縁取り）を付けると、明るい背景でも文字が読みやすくなる。
 - **効果:** 文字ごとに、寄せ方と影の有無を決められる。
 
@@ -828,6 +807,7 @@ public:
 | 関数 | `SetShadow` | 文字に影を付けるため | ずらす量と色を覚える | この手順で作る |
 | 引数 | `offset` | 影をどれだけずらすか渡すため | ずらすピクセル数 | この手順で作る |
 | メンバー変数 | `m_shadowOffset`・`m_shadowColor` | 影の値を覚えておくため | 影のずらす量と色。宣言は 2-7 で書く | この手順で作る |
+
 
 ### 2-6. 更新と、描く関数を宣言する
 
@@ -901,7 +881,6 @@ private:
 | 43 | エンジンの文字を描くもの |
 | 45 | 大きさ 1 のときの文字の幅と高さ。文字を決めたときに測る |
 | 49 | 影をずらすピクセル数。0 なら影なし |
-
 - **なぜ:** 文字を描くものと、文字・大きさ・色などの値をまとめて持つ。測った幅と高さを覚えておけば、毎フレーム測り直さずに済む。
 - **効果:** 寄せ方に合わせた位置を、毎フレーム安く求められる。
 
@@ -914,6 +893,7 @@ private:
 | メンバー変数 | `m_text` | 今の文字を覚えておくため | 表示している文字。同じ文字が来たかを比べるのにも使う | この手順で作る |
 | メンバー変数 | `m_textSize` | 寄せるために、文字の幅と高さを覚えるため | 大きさ 1 のときの幅と高さ。`SetText` のときに測る | この手順で作る |
 | 値 | `g_vec4White` | 色の最初の値を白にするため | 白（1, 1, 1, 1）の `Vector4` | k2EngineLow（エンジン）の [Vector.h](../../../../k2EngineLow/math/Vector.h) |
+
 
 ### 2-8. コメントを書く
 
@@ -977,7 +957,6 @@ private:
 | 行 | 何をしているか |
 |---|---|
 | 56〜61 | 文字列を大きさ 1 で描いたときの幅と高さ（ピクセル）を、DirectXTK の `SpriteFont` で測る |
-
 - **なぜ:** 右寄せ・中央寄せには、文字の幅が要る。エンジンのフォントの機能（DirectXTK の `SpriteFont`）が幅を測れるので、それを呼ぶ関数を足す。
 - **効果:** 文字の幅と高さが、描く前にピクセルでわかるようになる。
 
@@ -989,6 +968,7 @@ private:
 | 型 | `DirectX::XMFLOAT2` | 幅と高さの2つの値を受け取るため | float を2つ持つ型 | 外部ライブラリ（DirectXMath。エンジンが読み込み済み） |
 | 関数 | `DirectX::XMStoreFloat2` | 計算用の値を `XMFLOAT2` に取り出すため | `SpriteFont` が返した値を `XMFLOAT2` に入れる | 外部ライブラリ（DirectXMath。エンジンが読み込み済み） |
 | メンバー変数 | `m_spriteFont` | 文字の幅を測るため | 文字を描くための `DirectX::SpriteFont`。`MeasureString` で測れる | k2EngineLow（エンジン）の [FontEngine.h](../../../../k2EngineLow/graphics/font/FontEngine.h)（型は外部ライブラリ DirectXTK） |
+
 
 ### 2-10. Text.cpp を作り、使うものを読み込む
 
@@ -1096,7 +1076,6 @@ void Text::SetText(const wchar_t* text)
 |---|---|
 | 13〜14 | 文字を覚え、描くものに渡す |
 | 15 | 大きさ 1 のときの幅と高さを測る（2-9） |
-
 - **なぜ:** 文字を決めたときに、描くものへ渡し、幅と高さも測っておく。測るのは文字が変わったときだけで済む。
 - **効果:** `SetText` を呼ぶだけで、寄せ方に使う幅と高さが用意される。
 
@@ -1106,6 +1085,7 @@ void Text::SetText(const wchar_t* text)
 |---|---|---|---|---|
 | 変数 | `g_graphicsEngine` | エンジンの描く機能を使うため | 描く機能の本体（`GraphicsEngine`）を指すポインター | k2EngineLow（エンジン）の [GraphicsEngine.h](../../../../k2EngineLow/graphics/GraphicsEngine.h) |
 | 関数 | `GetFontEngine` | 文字を測る機能を取り出すため | `FontEngine` を返す | k2EngineLow（エンジン）の [GraphicsEngine.h](../../../../k2EngineLow/graphics/GraphicsEngine.h) |
+
 
 ### 2-13. 文字が変わっていなければ何もしない
 
@@ -1218,9 +1198,9 @@ void Text::Update(float deltaTime)
 |---|---|
 | 29〜35 | 位置の x は、寄せ方の端。中央なら幅の半分、右なら幅だけ左へずらして、左端にする |
 | 37 | 位置の y は文字の中央なので、上端は高さの半分だけ上 |
-
 - **なぜ:** 位置は「寄せ方の端」で、エンジンに渡すのは「左端と上端」。そのため、寄せ方に合わせて幅の分だけずらす。
 - **効果:** 右寄せ・中央寄せの文字が、指定した位置に収まる。
+
 
 ### 2-16. 描くものに渡す
 
@@ -1589,7 +1569,6 @@ namespace UISprite
 |---|---|
 | 7 | 4×4 の白い画像。色を掛けて、ゲージや仮のアイコンに使う |
 | 9 | 上が白く下へ少し暗くなる画像。ゲージの中身に使う |
-
 - **なぜ:** 画像のパスを文字で何か所にも書くと、直すときに探し回る。名前を付けて、1か所にまとめる。
 - **効果:** 画像の場所を変えるときに、ここだけ直せばよい。
 
@@ -1599,6 +1578,7 @@ namespace UISprite
 |---|---|---|---|---|
 | 値 | `UISprite::WHITE_PATH` | 白い画像の場所を名前で呼ぶため | 白い画像の `.dds` のパス。色を掛けて使う | この手順で作る |
 | 値 | `UISprite::GAUGE_PATH` | ゲージ用の画像の場所を名前で呼ぶため | 上が白く下が少し暗い画像の `.dds` のパス | この手順で作る |
+
 
 ### 3-2. Icon クラスの形を書く
 
@@ -1634,7 +1614,6 @@ public:
 ```
 
 </td></tr></table>
-
 - **なぜ:** 画像を1枚出す部品を、`UIElement` から継承して作る。最初は形と準備の関数だけ書く。
 - **効果:** 位置・見えるか・透明度を、書かずにそのまま使える。
 
@@ -1645,6 +1624,7 @@ public:
 | 型 | `Icon` | 画像を画面に出すため | 画像の部品。`UIElement` を継承する | この手順で作る |
 | 関数 | `Init` | 画像と大きさを決めるため | 画像のパスと幅・高さで準備する。中身は 3-6 で書く | この手順で作る |
 | 引数 | `filePath`・`width`・`height` | どの画像を、どの大きさで出すか渡すため | 画像のパスと、幅・高さ（ピクセル） | この手順で作る |
+
 
 ### 3-3. 色を決める関数と、更新の関数を足す
 
@@ -1676,9 +1656,9 @@ public:
 ```
 
 </td></tr></table>
-
 - **なぜ:** 色を掛けて、白い画像を好きな色の四角にできるようにする。毎フレームの更新は、`UIElement` で決めた約束どおりに書く。
 - **効果:** 画像がなくても、白い画像に色を付けて仮のアイコンを出せる。
+
 
 ### 3-4. 描く関数と、持つ値を足す
 
@@ -1708,7 +1688,6 @@ private:
 ```
 
 </td></tr></table>
-
 - **なぜ:** 描く中身は `OnDraw` に書く。画像を描くもの（`SpriteRender`）と、色を持つ。
 - **効果:** 派生クラスとして、描く準備が整う。
 
@@ -1717,6 +1696,7 @@ private:
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
 | メンバー変数 | `m_sprite` | 画像を画面に描くため | エンジンの画像を描くもの（`SpriteRender`） | この手順で作る |
+
 
 ### 3-5. コメントを書く
 
@@ -2034,7 +2014,6 @@ public:
 ```
 
 </td></tr></table>
-
 - **なぜ:** UI 全体をまとめて持つものを、`IGameObject` として作る。`Game` が作るので、ゲームの流れに乗って更新・描画される。
 - **効果:** `Update` と `Render` が毎フレーム呼ばれるようになる。
 
@@ -2043,6 +2022,7 @@ public:
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
 | 型 | `UIManager` | 画面の UI をまとめて持つため | UI の係。毎フレーム更新して描く | この手順で作る |
+
 
 ### 4-2. コメントを書く
 
@@ -2152,7 +2132,6 @@ void UIManager::Render(RenderContext& rc)
 |---|---|
 | 11 | 経過時間。部品の `Update()` に渡す（[HUDの手順](../HUD/HUDの手順.md) で使う） |
 | 16 | あとに描いたものが上に重なる |
-
 - **なぜ:** 毎フレームの更新に使う経過時間をここで取り、あとで部品の `Update` へ渡す。描く順番も、ここで決める。
 - **効果:** 次の手順書で、部品を足すだけで動くようになる。
 
@@ -2163,15 +2142,16 @@ void UIManager::Render(RenderContext& rc)
 | 変数 | `g_gameTime` | ゲームの時間を調べるため | 時間をまとめて持つもの（`GameTime`）を指すポインター | k2EngineLow（エンジン）の [k2EngineLow.h](../../../../k2EngineLow/k2EngineLow.h) |
 | 関数 | `GetFrameDeltaTime` | 部品の動きを時間で決めるため | 前のフレームからの経過時間（秒）を返す | k2EngineLow（エンジン）の [GameTime.h](../../../../k2EngineLow/time/GameTime.h) |
 
+
 ### 4-5. Game.h に UIManager があることを知らせる
 
-[Game.h](../../../../Game/Source/Core/Game.h) の **7行目** `class FireEffect;` の下に、1行足します（8〜8行目になります）。
+[Game.h](../../../../Game/Source/Core/Game.h) の **6行目** `class BossStage;` の下に、1行足します（7行目になります）。
 
-<!-- add: Action/Game/Source/Core/Game.h 8 -->
+<!-- add: Action/Game/Source/Core/Game.h 7 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
-8
+7
 ```
 
 </td><td>
@@ -2187,13 +2167,13 @@ class UIManager;
 
 ### 4-6. UIManager を持つメンバーを足す
 
-[Game.h](../../../../Game/Source/Core/Game.h) の **30行目** `FireEffect* m_fireEffect = nullptr;` の下に、1行足します（31〜31行目になります）。
+[Game.h](../../../../Game/Source/Core/Game.h) の **28行目** `GameCamera* m_gameCamera = nullptr;` の下、`nsK2Engine::SkyCube* m_skyCube = nullptr;  // IBLの環境マップ生成も兼ねる。` の上に、1行足します（29行目になります）。
 
-<!-- add: Action/Game/Source/Core/Game.h 31 -->
+<!-- add: Action/Game/Source/Core/Game.h 29 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
-31
+29
 ```
 
 </td><td>
@@ -2203,7 +2183,6 @@ class UIManager;
 ```
 
 </td></tr></table>
-
 - **なぜ:** `Game` が作った `UIManager` を覚えておき、消すときに使う。
 - **効果:** ゲームを終えるときに、`UIManager` を消せる。
 
@@ -2213,15 +2192,16 @@ class UIManager;
 |---|---|---|---|---|
 | メンバー変数 | `m_uiManager` | 作った `UIManager` を覚えておくため | `UIManager` を指すポインター。最初は `nullptr` | この手順で作る（`Game.h`） |
 
+
 ### 4-7. UIManager.h を読み込む
 
-[Game.cpp](../../../../Game/Source/Core/Game.cpp) の **11行目** `#include "BurningGround.h"` の下に、1行足します（12〜12行目になります）。
+[Game.cpp](../../../../Game/Source/Core/Game.cpp) の **10行目** `#include "BurningGround.h"` の下に、1行足します（11行目になります）。
 
-<!-- add: Action/Game/Source/Core/Game.cpp 12 -->
+<!-- add: Action/Game/Source/Core/Game.cpp 11 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
-12
+11
 ```
 
 </td><td>
@@ -2237,14 +2217,14 @@ class UIManager;
 
 ### 4-8. 終わるときに、UI を先に消す
 
-[Game.cpp](../../../../Game/Source/Core/Game.cpp) の **32行目** `{` の下、`DeleteGO(m_stage);` の上に、2行足します（33〜34行目になります）。
+[Game.cpp](../../../../Game/Source/Core/Game.cpp) の **30行目** `{` の下、`DeleteGO(m_bossStage);` の上に、2行足します（31〜32行目になります）。
 
-<!-- add: Action/Game/Source/Core/Game.cpp 33 -->
+<!-- add: Action/Game/Source/Core/Game.cpp 31 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
-33
-34
+31
+32
 ```
 
 </td><td>
@@ -2258,22 +2238,22 @@ class UIManager;
 
 | 行 | 何をしているか |
 |---|---|
-| 33〜34 | UI はキャラクターを読んでいるので、キャラクターより先に消す |
+| 31〜32 | UI はキャラクターを読んでいるので、キャラクターより先に消す |
 
 - **なぜ:** UI はキャラクターの値を読む。キャラクターを先に消すと、UI が消えたものを読んでしまう。
 - **効果:** 終わるときに、消えたキャラクターを読んで落ちるのを防げる。
 
 ### 4-9. 優先度のコメントを書き換える
 
-[Game.cpp](../../../../Game/Source/Core/Game.cpp) の **68行目**を、次のように書き換えます。
+[Game.cpp](../../../../Game/Source/Core/Game.cpp) の **64行目**を、次のように書き換えます。
 
 **前**
 
-<!-- rewrite-before: Action/Game/Source/Core/Game.cpp 68 -->
+<!-- rewrite-before: Action/Game/Source/Core/Game.cpp 64 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
-68
+64
 ```
 
 </td><td>
@@ -2286,11 +2266,11 @@ class UIManager;
 
 **後**
 
-<!-- rewrite-after: Action/Game/Source/Core/Game.cpp 68 -->
+<!-- rewrite-after: Action/Game/Source/Core/Game.cpp 64 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
-68
+64
 ```
 
 </td><td>
@@ -2300,19 +2280,19 @@ class UIManager;
 ```
 
 </td></tr></table>
-
 - **なぜ:** UI を優先度 3 で作ることにしたので、優先度の説明に足しておく。
 - **効果:** 優先度の決まりが、コメントを見ればわかる。
 
+
 ### 4-10. Start() で UIManager を作る
 
-[Game.cpp](../../../../Game/Source/Core/Game.cpp) の **77行目** `m_fireEffect->SetScale(FIRE_SCALE);` の下に、1行足します（78〜78行目になります）。
+[Game.cpp](../../../../Game/Source/Core/Game.cpp) の **70行目** `m_gameCamera = NewGO<GameCamera>(2, "gameCamera");` の下に、1行足します（71行目になります）。
 
-<!-- add: Action/Game/Source/Core/Game.cpp 78 -->
+<!-- add: Action/Game/Source/Core/Game.cpp 71 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
-78
+71
 ```
 
 </td><td>
@@ -2325,7 +2305,7 @@ class UIManager;
 
 | 行 | 何をしているか |
 |---|---|
-| 78 | 優先度 3 で作る。キャラクターとカメラが動いたあとに更新する |
+| 71 | 優先度 3 で作る。キャラクターとカメラが動いたあとに更新する |
 
 - **なぜ:** 優先度 3 にすると、キャラクター（1）とカメラ（2）の更新が済んでから、UI が更新される。
 - **効果:** キャラクターが動いた後の値を、同じフレームで出せる。
@@ -2421,3 +2401,25 @@ void UIManager::Render(RenderContext& rc)
 </td></tr></table>
 
 **確かめ方（これで出来上がり）:** ソリューションのビルドが通り、起動して落ちない（まだ何も描かないので、画面は変わらない）。
+
+---
+
+## もとからあるソースの変更前と変更後
+
+この手順書で書き換える、もとからあるソース（エンジンなど）を、変更前（左）と変更後（右）で並べます。「行」は変更前の行番号です。片側が空いている行は、消した行か足した行です。両側が同じ行は、場所を示すための変えない行です。
+
+[FontEngine.h](../../../../k2EngineLow/graphics/font/FontEngine.h)
+
+| 行 | 変更前 | 変更後 |
+|---|---|---|
+| 52 | `void EndDraw(RenderContext& rc);` | `void EndDraw(RenderContext& rc);` |
+|  |  | `/// <summary>` |
+|  |  | `/// 文字列を大きさ 1 で描いたときの幅と高さ（ピクセル）を測る。右寄せ・中央寄せに使う。` |
+|  |  | `/// </summary>` |
+|  |  | `Vector2 MeasureString(const wchar_t* text) const` |
+|  |  | `{` |
+|  |  | `DirectX::XMFLOAT2 size;` |
+|  |  | `DirectX::XMStoreFloat2(&size, m_spriteFont->MeasureString(text));` |
+|  |  | `return Vector2(size.x, size.y);` |
+|  |  | `}` |
+| 53 | `private:` | `private:` |
