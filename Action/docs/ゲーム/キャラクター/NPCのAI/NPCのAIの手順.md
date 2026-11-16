@@ -101,7 +101,6 @@ public:
 | 5 | `IInputSource` を継承する |
 | 8 | 設定を渡さずに作るときのコンストラクター |
 | 9 | 設定（1-2・1-3）を渡して作るコンストラクター |
-
 - **なぜ:** AI も入力元（`IInputSource`）にしておくと、プレイヤーの操作と同じ形でキャラクターに入力を渡せる。キャラクター側を、AI 用に作り変えなくてよい。
 - **効果:** Enemy が持つ入力元を差し替えるだけで、プレイヤーの操作と AI を入れ替えられるようになる。
 
@@ -116,6 +115,7 @@ public:
 | 関数 | `Update` | 毎フレーム、入力を作るため | `CharacterInput` に値を書き込む。`IInputSource` の `Update` を上書きする | [入力の手順](../入力/入力の手順.md) で作った（[CharacterInput.h](../../../../Game/Source/Character/Input/CharacterInput.h) の `IInputSource`） |
 | 型 | `InputSourceContext` | AI が、操作する自分のことを知るため | 自分の位置・陣営・自分自身・1フレームの時間など、入力元が知ってよい情報 | [入力の手順](../入力/入力の手順.md) で作った（[CharacterInput.h](../../../../Game/Source/Character/Input/CharacterInput.h)） |
 | 型 | `CharacterInput` | キャラクターが受け取る1フレーム分の入力をまとめるため | 移動の向き・ボタン・照準などを持つ構造体。AI はこれに書き込む | [入力の手順](../入力/入力の手順.md) で作った（[CharacterInput.h](../../../../Game/Source/Character/Input/CharacterInput.h)） |
+
 
 ### 1-2. AI の設定 Settings を書く（探す・近づく）
 
@@ -153,7 +153,6 @@ public:
 | 10 | この距離より近くにいる、敵対する相手を狙う |
 | 11 | この距離まで近づいたら止まる |
 | 12 | 移動の入力の大きさ（0〜1） |
-
 - **なぜ:** 距離などの数値を AI のコードに直接書かず、設定の構造体にまとめる。数値の意味が名前でわかり、Enemy ごとに値を変えられる。
 - **効果:** 数値を変えるだけで、探す範囲や近づき方を変えられるようになる。
 
@@ -164,6 +163,7 @@ public:
 | メンバー変数 | `searchRange` | 狙う相手を絞るため | この距離以内にいる、敵対する相手だけを狙う（既定 900） | この手順で作る（`Settings`） |
 | メンバー変数 | `stopDistance` | 相手に近づきすぎないため | この距離まで近づいたら止まる（既定 90） | この手順で作る（`Settings`） |
 | メンバー変数 | `moveRate` | 歩く速さを決めるため | 移動の入力の大きさ（0〜1）。1 なら全力で動く | この手順で作る（`Settings`） |
+
 
 ### 1-3. AI の設定に、撃つための値を足す
 
@@ -200,7 +200,6 @@ public:
 | 15〜16 | 撃つ間隔と、相手を見つけてから最初に撃つまでの時間（秒） |
 | 17 | 撃つボタンを押し続ける時間。長押しの魔法用。0 なら1フレームだけ押す |
 | 18 | 足元からこの高さで撃つ |
-
 - **なぜ:** 撃つかどうか・間隔・距離も、1-2 と同じく設定にまとめる。AI のコードを書き換えずに、撃ち方を変えられる。
 - **効果:** 撃たない敵や、ゆっくり撃つ敵を、設定だけで作れるようになる。
 
@@ -214,6 +213,7 @@ public:
 | メンバー変数 | `firstFireDelay` | 見つけた瞬間に撃たないため | 相手を見つけてから、最初に撃つまでの秒数 | この手順で作る（`Settings`） |
 | メンバー変数 | `fireHoldSeconds` | 長押しで撃つ魔法に使うため | 発射ボタンを押し続ける秒数。0 なら1フレームだけ押す | この手順で作る（`Settings`） |
 | メンバー変数 | `castHeight` | 足元ではなく胸のあたりから撃つため | 足元からこの高さで撃つ | この手順で作る（`Settings`） |
+
 
 ### 1-4. 設定を変える関数を足す
 
@@ -287,7 +287,6 @@ private:
 | 32 | 撃つボタンを押し続ける残り時間 |
 | 33 | 前のフレームで相手を見つけていたか |
 | 34 | 撃つボタンを押している最中か |
-
 - **なぜ:** 時間や「前のフレームのこと」は、1回の `Update` では終わらない。次のフレームまで覚えておくために、メンバー変数にする。
 - **効果:** 「次に撃てるまであと何秒か」「前のフレームで相手を見つけていたか」を、フレームをまたいで覚えられるようになる。
 
@@ -299,6 +298,7 @@ private:
 | メンバー変数 | `m_fireHoldTimer` | 長押しの魔法を押し続けるため | 発射ボタンを押し続ける残り秒数 | この手順で作る |
 | メンバー変数 | `m_hasTarget` | 相手を見つけた瞬間がわかるようにするため | 前のフレームで相手を見つけていたか | この手順で作る |
 | メンバー変数 | `m_isFiring` | 押している最中かを覚えるため | 発射ボタンを押している最中か | この手順で作る |
+
 
 ### 1-6. 使い方のコメントを書く
 
@@ -374,7 +374,7 @@ NpcInputSource::NpcInputSource(const Settings& settings)
 
 ### 1-8. 毎フレームの関数を書き、入力を「何もしない」にする
 
-[NpcInputSource.cpp](../../../../Game/Source/Character/Input/NpcInputSource.cpp) の **8行目** `}` の下に、12行足します（9〜20行目になります）。
+[NpcInputSource.cpp](../../../../Game/Source/Character/Input/NpcInputSource.cpp) の **8行目** `}` の下（ファイルの最後）に、11行足します（9〜19行目になります）。
 
 <!-- add: Action/Game/Source/Character/Input/NpcInputSource.cpp 9 -->
 <table class="code-lines"><tr><td>
@@ -391,7 +391,6 @@ NpcInputSource::NpcInputSource(const Settings& settings)
 17
 18
 19
-20
 ```
 
 </td><td>
@@ -405,7 +404,6 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 	input.isRun = false;
 	input.jump.Update(false);
 	input.dash.Update(false);
-	input.magicSwitch = 0;
 	input.hasAim = false;
 
 }
@@ -415,8 +413,7 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 
 | 行 | 何をしているか |
 |---|---|
-| 12〜18 | まず全部「何もしない」にする。このあと、要るものだけ入れる |
-
+| 12〜17 | まず全部「何もしない」にする。このあと、要るものだけ入れる |
 - **なぜ:** `input` には前のフレームの値が残っている。先に全部「何もしない」に戻しておけば、前のフレームの入力が残って動き続けることがない。
 - **効果:** このあと、要る入力だけを入れればよくなる。
 
@@ -432,17 +429,18 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 | メンバー変数 | `jump` | ジャンプのボタンを伝えるため | ジャンプのボタンの状態（`ButtonState`） | [入力の手順](../入力/入力の手順.md) で作った（`CharacterInput`） |
 | メンバー変数 | `dash` | ダッシュのボタンを伝えるため | ダッシュのボタンの状態（`ButtonState`） | [入力の手順](../入力/入力の手順.md) で作った（`CharacterInput`） |
 | 関数 | `Update`（`jump.Update(false)`） | ボタンの押した瞬間・離した瞬間を求めるため | 「今押しているか」を渡すと、`isTrigger`・`isPress`・`isRelease` を更新する。`false` は「押していない」 | [入力の手順](../入力/入力の手順.md) で作った（`ButtonState`） |
-| メンバー変数 | `magicSwitch` | 魔法の切り替えを伝えるため | -1 で前の魔法、+1 で次の魔法、0 は切り替えない | [入力の手順](../入力/入力の手順.md) で作った（`CharacterInput`） |
 | メンバー変数 | `hasAim` | 狙う向きを使うかを伝えるため | `true` なら、`aimOrigin` から `aimDirection` へ撃つ | [入力の手順](../入力/入力の手順.md) で作った（`CharacterInput`） |
+
 
 ### 1-9. 一番近い敵を探す
 
-[NpcInputSource.cpp](../../../../Game/Source/Character/Input/NpcInputSource.cpp) の **19行目**（`input.hasAim = false;` の下の空の行）の下、`}` の上に、9行足します（20〜28行目になります）。
+[NpcInputSource.cpp](../../../../Game/Source/Character/Input/NpcInputSource.cpp) の **18行目**（`input.hasAim = false;` の下の空の行）の下、`}` の上に、9行足します（19〜27行目になります）。
 
-<!-- add: Action/Game/Source/Character/Input/NpcInputSource.cpp 20 -->
+<!-- add: Action/Game/Source/Character/Input/NpcInputSource.cpp 19 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
+19
 20
 21
 22
@@ -451,7 +449,6 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 25
 26
 27
-28
 ```
 
 </td><td>
@@ -463,7 +460,7 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 	if (target == nullptr) {
 		m_hasTarget = false;
 		m_isFiring = false;
-		input.fire.Update(false);
+		input.Action(ActionButton::Action1).Update(false);
 		return;
 	}
 ```
@@ -472,9 +469,8 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 
 | 行 | 何をしているか |
 |---|---|
-| 20〜21 | 自分の位置から、探す範囲の中で一番近い、敵対する相手を探す。自分は除く |
-| 23〜28 | 見つからなければ、撃つのをやめて終わる |
-
+| 19〜20 | 自分の位置から、探す範囲の中で一番近い、敵対する相手を探す。自分は除く |
+| 22〜27 | 見つからなければ、撃つのをやめて終わる |
 - **なぜ:** 敵対する相手の一覧は `HitTargetRegistry` が持っている。そこに「一番近い敵対する相手」を探させれば、AI は一覧の中身や陣営の決まりを知らずに済む。
 - **効果:** 近くに敵がいるかと、どの相手を狙うかが、この数行でわかるようになる。
 
@@ -489,22 +485,24 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 | メンバー変数 | `position` | 自分の位置から探すため | 自分の足元の位置 | [入力の手順](../入力/入力の手順.md) で作った（`InputSourceContext`） |
 | メンバー変数 | `faction` | 敵か味方かを決めるため | 自分の陣営。これと敵対する陣営が相手になる | [入力の手順](../入力/入力の手順.md) で作った（`InputSourceContext`） |
 | メンバー変数 | `self` | 自分を狙わないため | 操作している自分自身。探す相手から除く | [入力の手順](../入力/入力の手順.md) で作った（`InputSourceContext`） |
-| メンバー変数 | `fire` | 魔法を撃つボタンを伝えるため | 魔法を撃つボタンの状態（`ButtonState`）。`false` を渡すと離した状態になる | [入力の手順](../入力/入力の手順.md) で作った（`CharacterInput`） |
+| 関数 | `Action` | 撃つボタン（`Action1`）の状態を書き込むため | そのボタンの `ButtonState` を返す。`Update(false)` で離した状態になる | [入力の手順](../入力/入力の手順.md) で作った（`CharacterInput`） |
+| 値 | `ActionButton::Action1` | どのボタンかを指すため | 1つ目のスキルのボタン。敵は氷魔法を登録する | [入力の手順](../入力/入力の手順.md) で作った（`CharacterInput.h`） |
+
 
 ### 1-10. 見つけた直後は、少し待つ
 
-[NpcInputSource.cpp](../../../../Game/Source/Character/Input/NpcInputSource.cpp) の **28行目** `}` の下、`}` の上に、6行足します（29〜34行目になります）。
+[NpcInputSource.cpp](../../../../Game/Source/Character/Input/NpcInputSource.cpp) の **27行目** `}` の下、`}` の上に、6行足します（28〜33行目になります）。
 
-<!-- add: Action/Game/Source/Character/Input/NpcInputSource.cpp 29 -->
+<!-- add: Action/Game/Source/Character/Input/NpcInputSource.cpp 28 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
+28
 29
 30
 31
 32
 33
-34
 ```
 
 </td><td>
@@ -522,23 +520,23 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 
 | 行 | 何をしているか |
 |---|---|
-| 29〜33 | 前のフレームで見つけていなかったら、最初に撃つまでの時間を入れる。見つけた直後にいきなり撃たないように |
-
+| 28〜32 | 前のフレームで見つけていなかったら、最初に撃つまでの時間を入れる。見つけた直後にいきなり撃たないように |
 - **なぜ:** 相手を見つけた瞬間に撃つと、不意打ちで避けようがない。最初の1回だけ待ち時間を入れる。「前のフレームで見つけていたか」を `m_hasTarget` で見れば、見つけた瞬間を1回だけ見分けられる。
 - **効果:** 見つけてから `firstFireDelay` 秒は撃たなくなる。
 
+
 ### 1-11. 相手までの向きと距離を求める
 
-[NpcInputSource.cpp](../../../../Game/Source/Character/Input/NpcInputSource.cpp) の **34行目**（`}` の下の空の行）の下、`}` の上に、4行足します（35〜38行目になります）。
+[NpcInputSource.cpp](../../../../Game/Source/Character/Input/NpcInputSource.cpp) の **33行目**（`}` の下の空の行）の下、`}` の上に、4行足します（34〜37行目になります）。
 
-<!-- add: Action/Game/Source/Character/Input/NpcInputSource.cpp 35 -->
+<!-- add: Action/Game/Source/Character/Input/NpcInputSource.cpp 34 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
+34
 35
 36
 37
-38
 ```
 
 </td><td>
@@ -554,8 +552,8 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 
 | 行 | 何をしているか |
 |---|---|
-| 36〜37 | 相手の中心までの向き。高さの差は無視して、水平に追う |
-| 38 | 相手までの距離（の2乗） |
+| 35〜36 | 相手の中心までの向き。高さの差は無視して、水平に追う |
+| 37 | 相手までの距離（の2乗） |
 
 - **なぜ:** 高さの差まで入れて追うと、相手が高い所にいるときに上を向いてしまう。`y` を 0 にして、水平だけで追う。距離は、平方根を使わずに済む2乗のまま持つ（計算が軽い）。
 - **効果:** 相手が高い所や低い所にいても、水平に近づける。
@@ -571,12 +569,13 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 
 ### 1-12. 相手の方を向いて近づく
 
-[NpcInputSource.cpp](../../../../Game/Source/Character/Input/NpcInputSource.cpp) の **38行目** `const float distanceSq = toTarget.LengthSq();` の下に、9行足します（39〜47行目になります）。
+[NpcInputSource.cpp](../../../../Game/Source/Character/Input/NpcInputSource.cpp) の **37行目** `const float distanceSq = toTarget.LengthSq();` の下、`}` の上に、9行足します（38〜46行目になります）。
 
-<!-- add: Action/Game/Source/Character/Input/NpcInputSource.cpp 39 -->
+<!-- add: Action/Game/Source/Character/Input/NpcInputSource.cpp 38 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
+38
 39
 40
 41
@@ -585,7 +584,6 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 44
 45
 46
-47
 ```
 
 </td><td>
@@ -606,8 +604,8 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 
 | 行 | 何をしているか |
 |---|---|
-| 40〜42 | 相手の方を向く |
-| 43〜45 | 止まる距離より遠ければ、相手の方へ動く |
+| 39〜41 | 相手の方を向く |
+| 42〜44 | 止まる距離より遠ければ、相手の方へ動く |
 
 - **なぜ:** 長さが 0 に近いベクトルは、向きを決められない（`Normalize` で壊れる）。0 に近いときは何もしない。止まる距離は、距離も2乗にそろえて比べる。
 - **効果:** 相手の真上や真下にいても壊れず、止まる距離までは近づき、そこで止まる。
@@ -622,12 +620,13 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 
 ### 1-13. 撃つための時間を進める
 
-[NpcInputSource.cpp](../../../../Game/Source/Character/Input/NpcInputSource.cpp) の **47行目**（`}` の下の空の行）の下、`}` の上に、11行足します（48〜58行目になります）。
+[NpcInputSource.cpp](../../../../Game/Source/Character/Input/NpcInputSource.cpp) の **46行目**（`}` の下の空の行）の下、`}` の上に、11行足します（47〜57行目になります）。
 
-<!-- add: Action/Game/Source/Character/Input/NpcInputSource.cpp 48 -->
+<!-- add: Action/Game/Source/Character/Input/NpcInputSource.cpp 47 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
+47
 48
 49
 50
@@ -638,7 +637,6 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 55
 56
 57
-58
 ```
 
 </td><td>
@@ -661,10 +659,9 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 
 | 行 | 何をしているか |
 |---|---|
-| 49 | 撃てる距離にいるか |
-| 50〜52 | 次に撃てるまでの時間を減らす |
-| 53〜58 | 押し続けている最中なら、押す時間を減らし、なくなったら離す |
-
+| 48 | 撃てる距離にいるか |
+| 49〜51 | 次に撃てるまでの時間を減らす |
+| 52〜57 | 押し続けている最中なら、押す時間を減らし、なくなったら離す |
 - **なぜ:** 撃つ時間は、ゲームの1回の更新ごとに `deltaTime` ずつ減らす。フレームの数ではなく秒で数えるので、速さの違うPCでも撃つ間隔が変わらない。
 - **効果:** 撃てる距離にいるかと、次に撃てるまでの残り時間が、毎フレーム正しく更新される。
 
@@ -675,21 +672,22 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 | 変数 | `isInFireRange` | 撃てる距離かを持つため | 相手までの距離が `fireRange` 以内か | この手順で作る |
 | メンバー変数 | `deltaTime` | 時間を秒で進めるため | 前のフレームから今のフレームまでの秒数 | [入力の手順](../入力/入力の手順.md) で作った（`InputSourceContext`） |
 
+
 ### 1-14. 撃ち始める
 
-[NpcInputSource.cpp](../../../../Game/Source/Character/Input/NpcInputSource.cpp) の **58行目** `}` の下、`}` の上に、7行足します（59〜65行目になります）。
+[NpcInputSource.cpp](../../../../Game/Source/Character/Input/NpcInputSource.cpp) の **57行目** `}` の下、`}` の上に、7行足します（58〜64行目になります）。
 
-<!-- add: Action/Game/Source/Character/Input/NpcInputSource.cpp 59 -->
+<!-- add: Action/Game/Source/Character/Input/NpcInputSource.cpp 58 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
+58
 59
 60
 61
 62
 63
 64
-65
 ```
 
 </td><td>
@@ -700,7 +698,7 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 		m_fireHoldTimer = m_settings.fireHoldSeconds;
 		m_fireTimer = m_settings.fireInterval;
 	}
-	input.fire.Update(m_isFiring);
+	input.Action(ActionButton::Action1).Update(m_isFiring);
 
 ```
 
@@ -708,25 +706,25 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 
 | 行 | 何をしているか |
 |---|---|
-| 59〜63 | 撃ってよくて、撃てる距離にいて、時間が来ていれば、撃ち始める |
-| 64 | 撃つボタンを押しているかを入れる |
-
+| 58〜62 | 撃ってよくて、撃てる距離にいて、時間が来ていれば、撃ち始める |
+| 62 | 撃つボタンを押しているかを入れる |
 - **なぜ:** 撃ってよい条件（撃つ設定・射程・時間）が全部そろったときだけ、撃ち始める。押している最中は、新しく撃ち始めない（`else if`）。
 - **効果:** 設定どおりの間隔で、射程に入っているときだけ撃つようになる。
 
+
 ### 1-15. 相手の胸のあたりを狙う
 
-[NpcInputSource.cpp](../../../../Game/Source/Character/Input/NpcInputSource.cpp) の **65行目**（`input.fire.Update(m_isFiring);` の下の空の行）の下、`}` の上に、5行足します（66〜70行目になります）。
+[NpcInputSource.cpp](../../../../Game/Source/Character/Input/NpcInputSource.cpp) の **64行目**（`input.Action(ActionButton::Action1).Update(m_isFiring);` の下の空の行）の下、`}` の上に、5行足します（65〜69行目になります）。
 
-<!-- add: Action/Game/Source/Character/Input/NpcInputSource.cpp 66 -->
+<!-- add: Action/Game/Source/Character/Input/NpcInputSource.cpp 65 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
+65
 66
 67
 68
 69
-70
 ```
 
 </td><td>
@@ -743,9 +741,9 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 
 | 行 | 何をしているか |
 |---|---|
-| 67 | 照準を使う |
-| 68〜69 | 足元から `castHeight` だけ上から撃つ |
-| 70 | 相手の当たり判定の中心へ向けて撃つ |
+| 66 | 照準を使う |
+| 67〜68 | 足元から `castHeight` だけ上から撃つ |
+| 69 | 相手の当たり判定の中心へ向けて撃つ |
 
 - **なぜ:** 足元から相手の中心へ撃つと、地面に向けて撃つことになる。胸のあたりの高さから撃たせる。
 - **効果:** 魔法が、相手の当たり判定に向かって飛ぶようになる。
@@ -922,7 +920,6 @@ private:
 68
 69
 70
-71
 ```
 
 </td><td>
@@ -944,7 +941,6 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 	input.isRun = false;
 	input.jump.Update(false);
 	input.dash.Update(false);
-	input.magicSwitch = 0;
 	input.hasAim = false;
 
 	const HitTarget* target = HitTargetRegistry::FindNearestHostile(
@@ -953,7 +949,7 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 	if (target == nullptr) {
 		m_hasTarget = false;
 		m_isFiring = false;
-		input.fire.Update(false);
+		input.Action(ActionButton::Action1).Update(false);
 		return;
 	}
 	if (!m_hasTarget) {
@@ -991,7 +987,7 @@ void NpcInputSource::Update(const InputSourceContext& context, CharacterInput& i
 		m_fireHoldTimer = m_settings.fireHoldSeconds;
 		m_fireTimer = m_settings.fireInterval;
 	}
-	input.fire.Update(m_isFiring);
+	input.Action(ActionButton::Action1).Update(m_isFiring);
 
 	// 相手の胸のあたりを狙う。
 	input.hasAim = true;
@@ -1052,7 +1048,6 @@ public:
 ```
 
 </td></tr></table>
-
 - **なぜ:** AI ができたので、仮に置いていた「何も入力しない入力元」は要らない。残すと、使われないクラスが残る。
 - **効果:** Enemy の入力元が、AI だけになる。
 
@@ -1061,6 +1056,7 @@ public:
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
 | 型 | `EmptyInputSource` | AI ができるまで、Enemy が何もしないようにするため | `Update` が空の入力元。入力を何も入れない | [入力の手順](../入力/入力の手順.md) で作った（`Enemy.h`）。この手順で消す |
+
 
 ### 2-2. NpcInputSource.h を読み込む
 
@@ -1121,7 +1117,6 @@ public:
 ```
 
 </td></tr></table>
-
 - **なぜ:** キャラクターは、決まった関数から入力元を受け取る。返す入力元を AI にすれば、Enemy は AI の入力で動く。
 - **効果:** Enemy が、何も入力しない状態ではなく、AI の入力で動くようになる。
 
@@ -1131,6 +1126,7 @@ public:
 |---|---|---|---|---|
 | メンバー変数 | `m_emptyInputSource` | AI ができるまでの入力元を持つため | 何も入力しない入力元。ここで使うのをやめる | [入力の手順](../入力/入力の手順.md) で作った（`Enemy.h`） |
 | メンバー変数 | `m_npcInputSource` | Enemy が AI を持つため | Enemy の AI（`NpcInputSource`） | この手順で作る |
+
 
 ### 2-4. 持つ入力元を AI にする
 
@@ -1169,9 +1165,9 @@ public:
 ```
 
 </td></tr></table>
-
 - **なぜ:** 2-3 で返す入力元が `m_npcInputSource` になったので、持つ変数も AI に変える。
 - **効果:** Enemy が作られると、AI も一緒に作られる。
+
 
 ### 2-5. Enemy のコメントを書き足す
 
@@ -1234,7 +1230,6 @@ public:
 |---|---|
 | 13 | 探す範囲を 0 にして、敵を止めておく。動かすときは 900 に戻す |
 | 14 | この距離まで近づいたら止まる |
-
 - **なぜ:** AI の設定は、Enemy の側で決める。関数にまとめておくと、コンストラクターが短くなる。今は探す範囲を 0 にして、敵を止めておく。
 - **効果:** 設定を直す場所が、この関数の1か所になる。
 
@@ -1244,6 +1239,7 @@ public:
 |---|---|---|---|---|
 | 関数 | `MakeAiSettings` | Enemy 用の AI の設定を作るため | 設定を作って返す。このファイルの中だけで使う | この手順で作る（`Enemy.cpp`） |
 | 変数 | `settings` | 設定を組み立てるため | 返す `NpcInputSource::Settings`。値を変えてから返す | この手順で作る |
+
 
 ### 2-7. 撃つための設定を足す
 
@@ -1275,9 +1271,9 @@ public:
 | 行 | 何をしているか |
 |---|---|
 | 17 | 撃つ間隔は 4 秒。凍結（2.5 秒）より長くして、凍らされ続けないようにする |
-
 - **なぜ:** 撃つ値も、Enemy の側で決める。撃つ間隔を凍結の長さより長くしておかないと、凍らされている間にまた撃たれてしまう。
 - **効果:** Enemy が、探した相手に、決めた間隔で撃つようになる。
+
 
 ### 2-8. コンストラクターで AI に設定を渡す
 
@@ -1301,8 +1297,8 @@ public:
 | 行 | 何をしているか |
 |---|---|
 | 26 | 2-6・2-7 の設定で AI を作る |
-
 - **なぜ:** Enemy を作るときに、設定を持った AI を作る。初期化子リストなので、AI は作る時点で設定が入っている。
 - **効果:** Enemy が作られたときから、2-6・2-7 の設定で AI が動く。
+
 
 **確かめ方（これで出来上がり）:** ソリューションのビルドが通る（探す範囲が 0 なので、Enemy はまだ動かない）。
