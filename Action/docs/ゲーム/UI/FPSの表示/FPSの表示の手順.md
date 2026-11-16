@@ -98,7 +98,6 @@ public:
 ```
 
 </td></tr></table>
-
 - **なぜ:** FPS のような開発用の表示を、ゲームの HUD と同じクラスに混ぜない。別のクラスにしておけば、出す・消すを1か所で決められる。
 - **効果:** `UIManager` が `DebugHud` を1つ持つだけで、開発用の表示を足していけるようになる。
 
@@ -110,6 +109,7 @@ public:
 | 型 | `Text` | 画面に文字を出すため | 位置・大きさ・色などを決めて文字を描く部品 | [UIの構成の手順](../UIの構成/UIの構成の手順.md) で作った（[Text.h](../../../../Game/Source/UI/Elements/Text.h)） |
 | 関数 | `Init` | 使う前の準備をするため | 文字の位置や見た目を決める。最初に1回だけ呼ぶ | この手順で作る |
 | 関数 | `Draw` | 文字を画面に出すため | 持っている文字を描く。毎フレーム呼ぶ | この手順で作る |
+
 
 ### 1-2. FPS の文字を持つメンバーを足す
 
@@ -173,9 +173,9 @@ private:
 | 行 | 何をしているか |
 |---|---|
 | 8〜9 | FPS は実際の時間で測る。ゲームの経過時間は 1/30 秒より長くならないように止めてあるので、それで測ると 30 FPS より下が出せない |
-
 - **なぜ:** 「なぜ実際の時間で測るのか」「どのビルドで出すのか」は、コードだけを見ても思い出せない。理由をクラスの上に書いておく。
 - **効果:** あとでこのクラスを読む人が、`GetFrameDeltaTime` を使ってはいけない理由で迷わなくなる。
+
 
 ### 1-4. DebugHud.cpp を作り、使うものを読み込む
 
@@ -266,7 +266,6 @@ namespace
 |---|---|
 | 7 | 画面の右端から、いちばん長い表示の右端までの距離 |
 | 8 | 画面の上端から、文字の中央までの距離 |
-
 - **なぜ:** 位置・大きさ・色を、コードの中に直接書かず、名前を付けて置く。あとで見た目を変えるときに、ここだけ直せばよい。
 - **効果:** FPS の文字の位置と見た目を、この7行だけで調整できるようになる。
 
@@ -280,6 +279,7 @@ namespace
 | 変数 | `FPS_COLOR` | 文字の色を決めるため | 白（少し透ける） | この手順で作る |
 | 変数 | `FPS_SHADOW_COLOR` | 影の色を決めるため | 黒（少し透ける） | この手順で作る |
 | 変数 | `FPS_SHADOW_OFFSET` | 影をずらす量を決めるため | 影をずらすピクセル数（1.5）。背景が明るくても読めるようにする | この手順で作る |
+
 
 ### 1-7. いちばん長い表示を決める
 
@@ -307,7 +307,6 @@ namespace
 | 行 | 何をしているか |
 |---|---|
 | 14 | 数字の幅で文字が左右に動かないよう、この文字が右端に収まる位置に左端を固定する |
-
 - **なぜ:** 数字の幅は、`1` と `8` で違う。文字の右端をそろえると、数字が変わるたびに左右に動いて見づらい。そこで、いちばん長くなる文字を決めて、左端を固定する。
 - **効果:** FPS の数字が変わっても、文字が左右に動かなくなる。
 
@@ -318,6 +317,7 @@ namespace
 | 変数 | `FPS_WIDEST_TEXT` | 左端の位置を決めるため | いちばん長くなる表示（`FPS 0000.0`）。この幅を測って、左端を決める | この手順で作る |
 | 型 | `wchar_t` | 日本語を含む文字（ワイド文字）を1つ持つため | `const wchar_t*` は、ワイド文字の文字列を指すポインター | C++ の書き方 |
 | C++ の書き方 | `L"…"` | ワイド文字の文字列を書くため | 文字列の前に `L` を付けると、`wchar_t` の文字列になる | C++ の書き方 |
+
 
 ### 1-8. FPS を出すかを決める
 
@@ -399,7 +399,6 @@ void DebugHud::Init()
 | 23 | 左寄せにする |
 | 27 | `SHOW_FPS` が `false` なら描かない |
 | 29 | 最初の平均が出るまでの表示 |
-
 - **なぜ:** 見た目の設定は、1回決めれば変わらない。`Init` で1回だけ入れておけば、毎フレームは描くだけでよい。
 - **効果:** 起動すると、FPS の文字が決めた見た目で、最初は「FPS --」と出るようになる。
 
@@ -414,6 +413,7 @@ void DebugHud::Init()
 | 関数 | `SetShadow` | 文字の周りに影を付けるため | 影をずらすピクセル数と、影の色を入れる | [UIの構成の手順](../UIの構成/UIの構成の手順.md) で作った（[Text.h](../../../../Game/Source/UI/Elements/Text.h)） |
 | 関数 | `SetVisible` | 見えるかを決めるため | `false` の間は、`Draw` を呼んでも何も描かない | [UIの構成の手順](../UIの構成/UIの構成の手順.md) で作った（[UIElement.h](../../../../Game/Source/UI/Elements/UIElement.h)。`Text` が継承している） |
 | 関数 | `SetText` | 出す文字を決めるため | 文字列を入れる。前と同じ文字なら何もしない | [UIの構成の手順](../UIの構成/UIの構成の手順.md) で作った（[Text.h](../../../../Game/Source/UI/Elements/Text.h)） |
+
 
 ### 1-10. 左端の位置を決める
 
@@ -451,7 +451,6 @@ void DebugHud::Init()
 | 23〜24 | 右寄せにすると、数字の幅が変わるたびに文字全体が左右に動いてガクガクして見える。そのため左寄せにして、左端を固定する |
 | 25 | いちばん長い表示の幅を、エンジンの `MeasureString()` で測る |
 | 26〜29 | 右端から 20 に収まる位置を左端にする |
-
 - **なぜ:** 右寄せにすると、数字の幅が変わるたびに文字全体が動く。左寄せにして、左端を「いちばん長い表示が右端に収まる位置」に固定すれば、動かない。
 - **効果:** FPS の文字が、右上にぴったり収まり、数字が変わってもガクガクしなくなる。
 
@@ -466,6 +465,7 @@ void DebugHud::Init()
 | 型 | `Vector2` | 横（x）と縦（y）の2つの値をまとめて持つため | 2次元の位置を表す。`{ x, y }` と書いて作る | k2EngineLow（エンジン）の [Vector.h](../../../../k2EngineLow/math/Vector.h) |
 | 関数 | `SetPosition` | 文字を置く位置を決めるため | 位置（`Vector2`）を入れる。原点は画面の中心で、右が +x、上が +y | [UIの構成の手順](../UIの構成/UIの構成の手順.md) で作った（[UIElement.h](../../../../Game/Source/UI/Elements/UIElement.h)） |
 | 値 | `UI_SPACE_WIDTH`・`UI_SPACE_HEIGHT` | 画面の大きさを知るため | UI を置く画面の幅（1920）と高さ（1080） | k2EngineLow（エンジン）の [k2EngineLowPreCompile.h](../../../../k2EngineLow/k2EngineLowPreCompile.h) |
+
 
 ### 1-11. 描く関数を書く
 
@@ -526,9 +526,9 @@ void DebugHud::Draw(RenderContext& rc)
 ```
 
 </td></tr></table>
-
 - **なぜ:** `UIManager.h` で `DebugHud` を使うために、先にその定義を読み込んでおく。
 - **効果:** `UIManager` のメンバーとして `DebugHud` を持てるようになる。
+
 
 ### 2-2. DebugHud を持つメンバーを足す
 
@@ -548,7 +548,6 @@ void DebugHud::Draw(RenderContext& rc)
 ```
 
 </td></tr></table>
-
 - **なぜ:** `PlayerHud`・`BossHud` と同じく、`UIManager` が持つ。ゲームの HUD と分けて、1つ別のメンバーにしておく。
 - **効果:** `UIManager` が動くとき、開発用の表示も一緒に準備・更新・描画できるようになる。
 
@@ -557,6 +556,7 @@ void DebugHud::Draw(RenderContext& rc)
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
 | メンバー変数 | `m_debugHud` | 開発用の表示を持つため | `DebugHud` 1つ。`UIManager` の準備・更新・描画から使う | この手順で作る |
+
 
 ### 2-3. 最初に DebugHud を準備する
 
@@ -617,9 +617,9 @@ void DebugHud::Draw(RenderContext& rc)
 ```
 
 </td></tr></table>
-
 - **なぜ:** いちばん上に描く理由を、描く順を書いたコメントに残しておく。
 - **効果:** あとで描く順を変える人が、`DebugHud` を最後にしておく理由がわかる。
+
 
 ### 2-5. DebugHud をいちばん上に描く
 
@@ -677,7 +677,6 @@ void DebugHud::Draw(RenderContext& rc)
 ```
 
 </td></tr></table>
-
 - **なぜ:** 実際の時間を測る道具（時計）は、標準ライブラリの `<chrono>` にある。使う前に読み込む。
 - **効果:** `DebugHud.h` で、時計と時刻の型が使えるようになる。
 
@@ -686,6 +685,7 @@ void DebugHud::Draw(RenderContext& rc)
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
 | C++ の書き方 | `<chrono>` | 時間を測るため | 時計・時刻・時間の長さの型が入っているヘッダー | C++ の標準ライブラリ（`#include <chrono>` で読み込む） |
+
 
 ### 3-2. 毎フレームの関数を宣言する
 
@@ -779,7 +779,6 @@ void DebugHud::Draw(RenderContext& rc)
 | 22 | 平均を取り始めた時刻 |
 | 23 | 平均を取り始めてからのフレーム数 |
 | 24 | 最初の `Update()` で、取り始める時刻を決めたか |
-
 - **なぜ:** 平均は「フレーム数 ÷ 時間」で出す。そのために、取り始めた時刻と、フレーム数を覚えておく。
 - **効果:** 0.5秒ごとに、その間の平均の FPS を出せるようになる。
 
@@ -791,6 +790,7 @@ void DebugHud::Draw(RenderContext& rc)
 | メンバー変数 | `m_averageStart` | 時間を計る始まりを覚えるため | 平均を取り始めた時刻 | この手順で作る |
 | メンバー変数 | `m_frameCount` | フレーム数を数えるため | 取り始めてから、`Update` が呼ばれた回数 | この手順で作る |
 | メンバー変数 | `m_isStarted` | 最初の1回だけ時刻を決めるため | 最初の `Update` で取り始める時刻を決めたか | この手順で作る |
+
 
 ### 3-5. 平均を取る間隔を決める
 
@@ -858,9 +858,9 @@ void DebugHud::Update(float deltaTime)
 | 行 | 何をしているか |
 |---|---|
 | 43〜45 | 出さない設定なら何もしない |
-
 - **なぜ:** `SHOW_FPS` が `false` のときは、時計を見る必要もない。最初に帰る。`m_fps.Update` は、文字の見た目を描く用に反映するために呼ぶ。
 - **効果:** FPS を出さない設定のときは、何も負担がかからない。
+
 
 ### 3-7. 最初のフレームで、測り始める
 
@@ -939,7 +939,6 @@ void DebugHud::Update(float deltaTime)
 | 51 | フレームを数える |
 | 52 | 取り始めてからの時間（秒） |
 | 53〜59 | 0.5秒たったら、フレーム数 ÷ 時間を出して、数え直す。`SetText()` は値が変わったときだけ作り直すので、毎フレームの負担も減る |
-
 - **なぜ:** 毎フレーム文字を書き換えると、揺れて読めない。0.5秒たったときだけ、その間のフレーム数を時間で割って書き換える。
 - **効果:** FPS の数字が、0.5秒ごとに落ち着いて変わるようになる。
 
@@ -951,6 +950,7 @@ void DebugHud::Update(float deltaTime)
 | 型 | `std::chrono::duration<float>` | 時間の長さを秒の `float` で持つため | 時刻の差を、秒の `float` にする。`.count()` で数字を取り出す | C++ の標準ライブラリ（`<chrono>`） |
 | 変数 | `text` | 出す文字を作るため | `FPS 60.0` のような文字を入れる、64 文字分の入れ物（`wchar_t` の配列） | この手順で作る |
 | 関数 | `swprintf_s` | 数字から文字を作るため | 書式（`%.1f` は小数点以下1桁）に数字を入れて、`text` に書く。`60.0` のようになる | C の標準ライブラリの Visual Studio 版（`<wchar.h>`） |
+
 
 ### 3-9. UIManager から Update() を呼ぶ
 
@@ -1230,7 +1230,6 @@ void DebugHud::Draw(RenderContext& rc)
 ```
 
 </td></tr></table>
-
 - **なぜ:** 文字の幅を測れるのは `FontEngine` だけで、`Font` からは呼べない。コメントアウトする中身（`m_fpsFont`）が使えるよう、`Font` から呼べる形にする。
 - **効果:** `Font` の使い手が、文字の幅を測って、右寄せ・中央寄せができるようになる。
 
@@ -1240,6 +1239,7 @@ void DebugHud::Draw(RenderContext& rc)
 |---|---|---|---|---|
 | 型 | `Font` | 文字を描くため | エンジンの文字描画のクラス（`Begin`・`Draw`・`End` の順に使う） | k2EngineLow（エンジン）の [Font.h](../../../../k2EngineLow/graphics/font/Font.h) |
 | 関数 | `Font::MeasureString` | `Font` から文字の幅を知るため | 文字列を大きさ 1 で描いたときの幅と高さを返す。1-10 の `FontEngine` の `MeasureString` を呼ぶ | この手順で作る |
+
 
 ### 4-2. 文字の幅を測る関数を書く
 
@@ -1281,14 +1281,16 @@ void DebugHud::Draw(RenderContext& rc)
 - 行の頭に `//` を付けてコメントアウトする（`#ifdef` / `#endif` の行も）。
 - その上に、なぜ止めたかのコメント2行を書く。
 
-[k2EngineLow.cpp](../../../../k2EngineLow/k2EngineLow.cpp) の **75〜83行目**を、次のように書き換えます（75〜90行目になります）。
+[k2EngineLow.cpp](../../../../k2EngineLow/k2EngineLow.cpp) の **73〜81行目**を、次のように書き換えます（73〜88行目になります）。
 
 **前**
 
-<!-- rewrite-before: Action/k2EngineLow/k2EngineLow.cpp 75 -->
+<!-- rewrite-before: Action/k2EngineLow/k2EngineLow.cpp 73 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
+73
+74
 75
 76
 77
@@ -1296,8 +1298,6 @@ void DebugHud::Draw(RenderContext& rc)
 79
 80
 81
-82
-83
 ```
 
 </td><td>
@@ -1318,10 +1318,12 @@ void DebugHud::Draw(RenderContext& rc)
 
 **後**
 
-<!-- rewrite-after: Action/k2EngineLow/k2EngineLow.cpp 75 -->
+<!-- rewrite-after: Action/k2EngineLow/k2EngineLow.cpp 73 -->
 <table class="code-lines"><tr><td>
 
 ```cpp
+73
+74
 75
 76
 77
@@ -1336,8 +1338,6 @@ void DebugHud::Draw(RenderContext& rc)
 86
 87
 88
-89
-90
 ```
 
 </td><td>
@@ -1364,7 +1364,6 @@ void DebugHud::Draw(RenderContext& rc)
 </td></tr></table>
 
 `m_fpsFont`・`m_fpsFontShadow` を作る処理（`K2EngineLow::Init()`）は、もとからあるので変えません。コメントを外したときにそのまま動くように残しています。
-
 - **なぜ:** ゲームの UI が FPS を出すので、エンジンの表示は止める。2つ出ると紛らわしい。消さずにコメントアウトしておけば、エンジンだけで動かすときに、コメントを外せばまた使える。
 - **効果:** Debug ビルドでも、FPS が右上の1つだけになる。
 
@@ -1385,8 +1384,61 @@ void DebugHud::Draw(RenderContext& rc)
 | 変数 | `fpsPosition` | 文字を描く位置を持つため | 文字の左上の位置。右端から `fpsWidth` だけ左にずらして、右端をそろえる | この手順で作る（コメントの中） |
 | 関数 | `Font::Draw` | 文字を描くため | 引数は、文字・位置・色・回転・大きさ・基準点（`pivot`）の順 | k2EngineLow（エンジン）の [Font.h](../../../../k2EngineLow/graphics/font/Font.h) |
 
+
 **確かめ方（これで出来上がり）:**
 
 - k2EngineLow とゲームのビルドが通る。
 - Debug ビルドで起動しても、エンジンの `FPS = xx.xx` が出ず、ゲームの `FPS xx.x` だけが右上に出る。
 - Release ビルドでも、右上に FPS が出る。
+
+---
+
+## もとからあるソースの変更前と変更後
+
+この手順書で書き換える、もとからあるソース（エンジンなど）を、変更前（左）と変更後（右）で並べます。「行」は変更前の行番号です。片側が空いている行は、消した行か足した行です。両側が同じ行は、場所を示すための変えない行です。
+
+[Font.cpp](../../../../k2EngineLow/graphics/font/Font.cpp)
+
+| 行 | 変更前 | 変更後 |
+|---|---|---|
+| 17 | `fontEngine.EndDraw(rc);` | `fontEngine.EndDraw(rc);` |
+|  |  | `}` |
+|  |  | `Vector2 Font::MeasureString(const wchar_t* text) const` |
+|  |  | `{` |
+|  |  | `return g_graphicsEngine->GetFontEngine().MeasureString(text);` |
+| 18 | `}` | `}` |
+
+[Font.h](../../../../k2EngineLow/graphics/font/Font.h)
+
+| 行 | 変更前 | 変更後 |
+|---|---|---|
+| 55 | `}` | `}` |
+|  |  | `/// <summary>` |
+|  |  | `/// 文字列を大きさ 1 で描いたときの幅と高さ（ピクセル）を測る。右寄せ・中央寄せに使う。` |
+|  |  | `/// Draw の pivot は割合ではなく、文字の左上からのピクセル数として扱われるので、寄せるときはこの値で位置をずらす。` |
+|  |  | `/// </summary>` |
+|  |  | `Vector2 MeasureString(const wchar_t* text) const;` |
+| 56 | `private:` | `private:` |
+
+[k2EngineLow.cpp](../../../../k2EngineLow/k2EngineLow.cpp)
+
+| 行 | 変更前 | 変更後 |
+|---|---|---|
+| 72 | `{` | `{` |
+| 73 | `#ifdef K2_DEBUG` | `// FPS の表示は、ゲームの UI（Game/Source/UI/Hud/DebugHud）で出すので、ここでは描かない。` |
+| 74 | `m_fpsFont->Begin(g_graphicsEngine->GetRenderContext());` | `// エンジンだけで動かすとき（ゲームの UI がないとき）は、下のコメントを外せば右上に出る。` |
+| 75 | `float time = g_gameTime->GetFrameDeltaTime();` | `//#ifdef K2_DEBUG` |
+| 76 | `wchar_t text[256];` | `//		m_fpsFont->Begin(g_graphicsEngine->GetRenderContext());` |
+| 77 | `swprintf(text, L"FPS = %0.2f", 1.0f / time);` | `//		float time = g_gameTime->GetFrameDeltaTime();` |
+| 78 | `m_fpsFontShadow->Draw(text, { UI_SPACE_WIDTH * -0.48f + 3.0f , UI_SPACE_HEIGHT * 0.48f - 3.0f }, { 0.0f, 0.0f, 0.0f, 1.0f }, 0.0f, 1.0f, { 0.0f, 1.0f });` | `//		wchar_t text[256];` |
+| 79 | `m_fpsFont->Draw(text, { UI_SPACE_WIDTH * -0.48f, UI_SPACE_HEIGHT * 0.48f }, { 1.0f, 1.0f, 1.0f, 1.0f }, 0.0f, 1.0f, { 0.0f, 1.0f });` | `//		swprintf(text, L"FPS = %0.2f", 1.0f / time);` |
+| 80 | `m_fpsFont->End(g_graphicsEngine->GetRenderContext());` | `//		const float fpsScale = 0.5f;` |
+| 81 | `#endif` | `//		const float fpsShadowOffset = 1.5f;` |
+|  |  | `//		// 右端をそろえるため、文字の幅だけ左から描き始める。位置は文字の左上。` |
+|  |  | `//		const float fpsWidth = m_fpsFont->MeasureString(text).x * fpsScale;` |
+|  |  | `//		const Vector2 fpsPosition = { UI_SPACE_WIDTH * 0.49f - fpsWidth, UI_SPACE_HEIGHT * 0.49f };` |
+|  |  | `//		m_fpsFontShadow->Draw(text, { fpsPosition.x + fpsShadowOffset, fpsPosition.y - fpsShadowOffset }, { 0.0f, 0.0f, 0.0f, 1.0f }, 0.0f, fpsScale, { 0.0f, 1.0f });` |
+|  |  | `//		m_fpsFont->Draw(text, fpsPosition, { 1.0f, 1.0f, 1.0f, 1.0f }, 0.0f, fpsScale, { 0.0f, 1.0f });` |
+|  |  | `//		m_fpsFont->End(g_graphicsEngine->GetRenderContext());` |
+|  |  | `//#endif` |
+| 82 | `m_graphicsEngine->EndRender();` | `m_graphicsEngine->EndRender();` |
