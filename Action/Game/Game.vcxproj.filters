@@ -204,6 +204,9 @@
     <ClCompile Include="Source\Magic\BurningGround.cpp">
       <Filter>Source\Magic</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Objects\CameraCollision.cpp">
+      <Filter>Source\Objects</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Objects\FirstPersonBob.cpp">
       <Filter>Source\Objects</Filter>
     </ClCompile>
@@ -430,6 +433,9 @@
     </ClInclude>
     <ClInclude Include="Source\Magic\MagicBase.h">
       <Filter>Source\Magic</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Objects\CameraCollision.h">
+      <Filter>Source\Objects</Filter>
     </ClInclude>
     <ClInclude Include="Source\Objects\FirstPersonBob.h">
       <Filter>Source\Objects</Filter>

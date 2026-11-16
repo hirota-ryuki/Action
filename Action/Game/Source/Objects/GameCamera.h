@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "CameraCollision.h"
 #include "CharacterInput.h"
 #include "FirstPersonArms.h"
 #include "FirstPersonBob.h"
@@ -46,6 +47,10 @@ private:
 	// forward の向きの後ろから、今のモードの距離と角度で見るように m_toCameraPos を置き直す。
 	void ResetThirdPersonOffset(const Vector3& forward);
 	void UpdateThirdPersonCamera();
+	// カメラが頭のすぐ近くまで寄ったら体を隠し、離れたら映す。三人称のときに呼ぶ。
+	void UpdateBodyHiddenByCollision();
+	// 壁よけで隠した体を映す。
+	void ShowBodyHiddenByCollision();
 	void UpdateFirstPersonCamera();
 	// 三人称／一人称を切り替えるボタンを、このフレームで押したか。
 	bool IsToggleTriggered();
@@ -61,6 +66,7 @@ private:
 	Player* m_player = nullptr;
 	FirstPersonArms m_firstPersonArms;  // 一人称のときに映す腕と手。
 	FirstPersonBob m_firstPersonBob;    // 一人称のカメラと腕の、歩き・走りの揺れと着地の沈み。
+	CameraCollision m_cameraCollision;  // 三人称のカメラを、壁の手前に寄せる。
 	ButtonState m_toggleKey;             // V キー。押した瞬間を見る。
 	ButtonState m_overheadKey;           // B キー。押した瞬間を見る。
 	Vector3 m_toCameraPos = Vector3(0.0f, 250.0f, -250.0f);  // 注視点からカメラへのオフセット（三人称）。モードに入るときに置き直す。
@@ -74,4 +80,5 @@ private:
 	float m_blendFromViewAngle = 0.0f;  // 切り替える前の画角（ラジアン）。
 	float m_defaultNear = 1.0f;         // 三人称時のNearを保持しておき、一人称終了時に復元する。
 	bool m_isMouseLookActive = false;   // trueの間カーソルを非表示にして中央固定する。
+	bool m_isBodyHiddenByCollision = false;  // 壁よけでカメラが頭のすぐ近くまで寄ったので、体を隠しているか。
 };

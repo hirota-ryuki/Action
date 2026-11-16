@@ -26,6 +26,10 @@ namespace
 	constexpr float OVERHEAD_VIEW_ANGLE_DEG = 90.0f;  // カメラを近づけた分、画角を通常の60度から広げる。
 	// 寄りと俯瞰を切り替えたときに、前のカメラからなめらかに移す時間（秒）。一瞬で飛ぶと酔いやすい。
 	constexpr float MODE_BLEND_SECONDS = 0.25f;
+	// 壁よけでカメラが頭の中心からこの距離（cm）より近くまで寄ったら、体を隠す（体が画面いっぱいに映らないように）。
+	constexpr float HIDE_BODY_DISTANCE = 60.0f;
+	// 隠した体を、この距離（cm）より離れたら映す。隠す距離と少し離し、境目で体が点滅しないようにする。
+	constexpr float SHOW_BODY_DISTANCE = 70.0f;
 	// 一人称カメラの目線の高さ（プレイヤー足元からのオフセット）。体のモデルの目の高さ（約 150 × 大きさ 1.128）に合わせる。
 	constexpr float FIRST_PERSON_EYE_HEIGHT = 168.0f;
 	constexpr float FIRST_PERSON_LOOK_DISTANCE = 1000.0f;
@@ -83,6 +87,7 @@ void GameCamera::Update()
 {
 	m_player = FindGO<Player>("player");
 	if (m_player == nullptr || m_player->IsDead()) {
+		ShowBodyHiddenByCollision();
 		EndMouseLook();
 		return;
 	}
@@ -134,6 +139,8 @@ void GameCamera::ToggleCameraMode()
 		m_lastThirdPersonMode = m_cameraMode;
 		m_cameraMode = EnCameraMode::FirstPerson;
 		m_player->SetRenderBody(false);
+		// 一人称では体を隠したままにするので、壁よけで隠した印は消しておく（三人称に戻るときに体を映す）。
+		m_isBodyHiddenByCollision = false;
 		m_firstPersonForward = g_camera3D->GetForward();
 		m_firstPersonForward.y = 0.0f;
 		if (m_firstPersonForward.LengthSq() <= FLT_EPSILON) {
@@ -169,6 +176,8 @@ void GameCamera::ChangeThirdPersonMode(EnCameraMode mode)
 		// 一人称の揺れで傾けた上の向きを戻す。
 		g_camera3D->SetUp(Vector3::AxisY);
 		g_camera3D->SetNear(m_defaultNear);
+		// 一人称に入る前に寄せていた分は古いので忘れ、今の当たりからすぐに置く。
+		m_cameraCollision.Reset();
 	}
 
 	// 寄りと俯瞰の間は、今のカメラからなめらかに移す。
@@ -259,10 +268,41 @@ void GameCamera::UpdateThirdPersonCamera()
 		viewAngle = m_blendFromViewAngle + (viewAngle - m_blendFromViewAngle) * smoothRate;
 	}
 
+	// 頭の中心とカメラの間に壁や床があれば、カメラを手前に寄せる。
+	// なめらかに移したあとの位置に掛けるので、寄りと俯瞰を移す途中でも壁に入らない。
+	// 始点は前へずらす前の注視点にする（前へずらした注視点は、壁を向くと壁に入りかける）。
+	Vector3 sweepStart = m_player->GetPosition();
+	sweepStart.y += GetThirdPersonSetting().targetHeight;
+	position = m_cameraCollision.Solve(sweepStart, position, g_gameTime->GetFrameDeltaTime());
+	UpdateBodyHiddenByCollision();
+
 	g_camera3D->SetPosition(position);
 	g_camera3D->SetTarget(target);
 	g_camera3D->SetViewAngle(viewAngle);
 	g_camera3D->Update();
+}
+
+void GameCamera::UpdateBodyHiddenByCollision()
+{
+	const float distance = m_cameraCollision.GetDistance();
+	if (!m_isBodyHiddenByCollision && distance < HIDE_BODY_DISTANCE) {
+		m_isBodyHiddenByCollision = true;
+		m_player->SetRenderBody(false);
+	}
+	else if (m_isBodyHiddenByCollision && distance > SHOW_BODY_DISTANCE) {
+		ShowBodyHiddenByCollision();
+	}
+}
+
+void GameCamera::ShowBodyHiddenByCollision()
+{
+	if (!m_isBodyHiddenByCollision) {
+		return;
+	}
+	m_isBodyHiddenByCollision = false;
+	if (m_player != nullptr) {
+		m_player->SetRenderBody(true);
+	}
 }
 
 void GameCamera::UpdateFirstPersonCamera()
