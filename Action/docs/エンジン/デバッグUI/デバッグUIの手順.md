@@ -28,6 +28,11 @@ ImGui を入れて、F1 キーで開発用の画面（デバッグUI）を出せ
 - 足す場所は「〇行目 `その行に書いてあること` の下」で示します。行番号は、それより前の小手順を済ませたときの番号です。
 - 枠の左の数字は、足したあとの行番号です。右の枠のコードを、そのまま書きます。
 - 消すところは、消す行を枠で示します（番号は消す前の番号）。書き換えるところは、「前」と「後」の枠を並べています。
+- コードの下に、3つを置きます。
+  - 「行・何をしているか」の表: 1行ずつの動き。
+  - 「なぜ」「効果」: その小手順でそう書く理由と、書くと何ができるようになるか。
+  - 「初めて出てくる名前」の表: このページで初めて出てくる変数・引数・関数・型・マクロ・C++ の書き方を、コードに出てくる順に並べます。2回目からは載せないので、わからない名前はページ内検索（`Ctrl+F`）で最初に出てきた所を探してください。「どこから来たもの」で、このゲームで作ったもの・エンジン（k2EngineLow）の機能・外部ライブラリ（ImGui）・Windows や DirectX 12 の API・C++ の書き方のどれかがわかります。
+- [前提知識](../../前提知識.md) で「よく知っている」にあるもの（クラス・継承・ポインター・テンプレート・`std::vector`・`nullptr`・`constexpr`・マクロ・`static_cast` など）は、表に載せません。ImGui は使い方を知っているので、窓を描く関数（`ImGui::Begin()` など）は載せませんが、導入（手順4〜6）に出てくる名前は省かずに載せます。
 - VSCode で `Ctrl+Shift+V` を押してプレビューで読みます。
 
 ---
@@ -126,6 +131,16 @@ ImGui の描画はエンジンのフレームの最後で行うので、ImGui �
 
 </td></tr></table>
 
+- **なぜ:** `WaitDraw()` は `private` で、`GraphicsEngine` の外から呼べない。`DebugUI` が終了のときに GPU を待てるように、`public` へ移す（1つの宣言を2か所に置くことはできないので、元の宣言は消す）。
+- **効果:** あとの手順で `DebugUI::Finalize()` から `g_graphicsEngine->WaitDraw()` を呼べるようになる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 型 | `GraphicsEngine` | 描画の土台をまとめるため | DirectX 12 のデバイスやコマンドキュー、フレームバッファを持つクラス | k2EngineLow（エンジン）の [GraphicsEngine.h](../../../k2EngineLow/graphics/GraphicsEngine.h) |
+| 関数 | `WaitDraw()` | GPU がまだ使っているものを、先に消してしまわないため | GPU が今の描画を終えるまで、CPU を止めて待つ（中身は `GraphicsEngine.cpp`。この手順では変えない） | k2EngineLow（エンジン）の [GraphicsEngine.h](../../../k2EngineLow/graphics/GraphicsEngine.h) |
+
 ### 3-2. 同じ宣言を public の最後に足す
 
 `EndGPUEvent()` の `#endif` のすぐ下、最初の `private:` の上です。
@@ -152,6 +167,9 @@ ImGui の描画はエンジンのフレームの最後で行うので、ImGui �
 ```
 
 </td></tr></table>
+
+- **なぜ:** `public` に置けば、`GraphicsEngine` の外から呼べる。関数の中身は変えずに、宣言の場所だけを変える。
+- **効果:** `DebugUI` が終了のときに GPU を待てるようになる。
 
 **確かめ方:** `k2EngineLow` のビルドが通る。
 
@@ -203,6 +221,16 @@ namespace nsK2EngineLow {
 
 </td></tr></table>
 
+- **なぜ:** `DebugUI` はゲームのどこからでも呼びたいので、インスタンスを作るクラスではなく、名前空間にした。持っておく状態は `.cpp` の中に隠せるので、ゲーム側から ImGui の中身が見えない。
+- **効果:** ゲームのコードは `DebugUI::〇〇()` と書くだけで使える。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| C++ の書き方 | `nsK2EngineLow` | エンジンの名前を、ゲームの名前とぶつからないようにするため | k2EngineLow のクラス・関数をすべて囲む名前空間 | k2EngineLow（エンジン）。どのヘッダーでもこの中に書く |
+| C++ の書き方 | `DebugUI` | ImGui を使う所を1か所にまとめるため | 開発用の画面の関数（`Init`・`BeginFrame` など）を入れる名前空間 | この手順で作る |
+
 ### 4-2. 起動と終了を宣言する
 
 [DebugUI.h](../../../k2EngineLow/dbg/DebugUI.h) の **4行目** `namespace DebugUI {` の下に、8行足します（5〜12行目になります）。
@@ -241,6 +269,17 @@ namespace nsK2EngineLow {
 | 8 | ImGui を起動する。グラフィックエンジンを作ったあとに1回だけ呼ぶ |
 | 12 | ImGui を終了する。グラフィックエンジンを消す前に呼ぶ |
 
+- **なぜ:** ImGui は、DirectX 12 のデバイスなどが出来てからでないと起動できず、それを消す前に止めないといけない。そのため、起動と終了を別々の関数にして、呼ぶ時を決められるようにする。
+- **効果:** エンジンの起動と終了から、決まった順番で ImGui を起動・終了できるようになる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `Init()` | ImGui を使える状態にするため | ImGui とそのバックエンドを起動する。ゲームの起動で1回だけ呼ぶ | この手順で作る |
+| 型 | `HWND` | どの窓か、を指すため | ウィンドウのハンドル（窓を指す番号）。ImGui がマウスやキーを窓から受け取るために使う | Windows の API（`Windows.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| 関数 | `Finalize()` | ImGui が持つものを片付けるため | ImGui とそのバックエンドを止めて、作ったものを消す。終了で1回だけ呼ぶ | この手順で作る |
+
 ### 4-3. 使い方のコメントを書く
 
 [DebugUI.h](../../../k2EngineLow/dbg/DebugUI.h) の **3行目** `namespace nsK2EngineLow {` の下に、7行足します（4〜10行目になります）。
@@ -272,6 +311,9 @@ namespace nsK2EngineLow {
 
 </td></tr></table>
 
+- **なぜ:** 使う人（ゲームを作る人）が、`DebugUI.h` を開いたときに使い方がわかるようにする。呼ぶ場所を間違えると描かれないので、決まりを書いておく。
+- **効果:** 別の画面を足すときに、どこで ImGui の関数を呼べばよいかを迷わない。
+
 ### 4-4. エンジン全体から見えるようにする
 
 Game の `stdafx.h` もこのファイルを読んでいるので、Game からも `DebugUI::` と書けるようになります。
@@ -292,6 +334,15 @@ Game の `stdafx.h` もこのファイルを読んでいるので、Game から�
 ```
 
 </td></tr></table>
+
+- **なぜ:** `k2EngineLowPreCompile.h` は、エンジンの `.cpp` と Game の `stdafx.h` が読み込む。ここに足せば、各ファイルに `#include` を書かなくても `DebugUI::` が使える。
+- **効果:** エンジンからもゲームからも、`DebugUI::Init()` などを呼べるようになる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| C++ の書き方 | `k2EngineLowPreCompile.h` | エンジンの `.cpp` がまとめて読むヘッダーを、1か所にするため | `#include` をまとめたプリコンパイル済みヘッダー。Game の `stdafx.h` が読み込む | k2EngineLow（エンジン）の [k2EngineLowPreCompile.h](../../../k2EngineLow/k2EngineLowPreCompile.h) |
 
 ### 4-5. DebugUI.cpp を作り、ImGui を読み込む
 
@@ -341,6 +392,17 @@ namespace nsK2EngineLow {
 | 3〜5 | ImGui 本体と、Win32・DirectX12 のバックエンド |
 | 9 | 名前のない `namespace` の中は、このファイルの中でだけ使える |
 
+- **なぜ:** `.cpp` から ImGui の関数を呼ぶには、ImGui 本体のヘッダーと、Win32・DirectX 12 のバックエンドのヘッダーが要る。ImGui 本体は絵を描く部品を持たず、バックエンドが Windows と DirectX 12 につなぐ。
+- **効果:** `ImGui::` と `ImGui_ImplWin32_`・`ImGui_ImplDX12_` の関数を、この `.cpp` で使えるようになる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| C++ の書き方 | `imgui.h` | ImGui の窓や文字の関数を使うため | ImGui 本体のヘッダー。`ImGui::` の関数を宣言している | 外部ライブラリ（ImGui）の [imgui.h](../../../exlib/imgui/imgui.h) |
+| C++ の書き方 | `imgui_impl_win32.h` | ImGui がマウス・キーを受け取れるようにするため | Windows（Win32）につなぐバックエンドのヘッダー | 外部ライブラリ（ImGui）の [imgui_impl_win32.h](../../../exlib/imgui/imgui_impl_win32.h) |
+| C++ の書き方 | `imgui_impl_dx12.h` | ImGui の絵を DirectX 12 で描けるようにするため | DirectX 12 につなぐバックエンドのヘッダー | 外部ライブラリ（ImGui）の [imgui_impl_dx12.h](../../../exlib/imgui/imgui_impl_dx12.h) |
+
 ### 4-6. 使う値を決める
 
 [DebugUI.cpp](../../../k2EngineLow/dbg/DebugUI.cpp) の **9行目** `namespace {` の下に、10行足します（10〜19行目になります）。
@@ -385,6 +447,21 @@ namespace nsK2EngineLow {
 | 16 | フレームバッファの数と同じにする |
 | 17〜18 | 日本語を出すためのフォントと、文字の大きさ |
 
+- **なぜ:** 数字や文字を直接書くと意味がわからなくなるので、名前を付けた定数にする。Debug・Preview の切り替えも、この1か所で決める。
+- **効果:** あとで値を変えたいときに、ここだけを直せばよい。Release ビルドでは ImGui が何もしなくなる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| マクロ | `K2_DEBUG` | Debug・Preview ビルドだけで、開発用のコードを動かすため | 定義されているときだけ、`#ifdef` の中が有効になる | プロジェクトの設定（`Game.vcxproj`・`k2Engine.vcxproj` の「プリプロセッサの定義」） |
+| 値 | `IS_ENABLED` | Release ビルドで ImGui を止めるため | Debug・Preview なら `true`、Release なら `false` | この手順で作る |
+| 値 | `SRV_HEAP_SIZE` | ImGui が使う、画像の置き場の数を決めるため | ImGui のテクスチャ（文字の画像など）に使うディスクリプタ（画像の場所を指す札）の数。64 個 | この手順で作る |
+| 値 | `NUM_FRAMES_IN_FLIGHT` | ImGui がフレームごとの作業用の場所を、いくつ持つか決めるため | 同時に準備しておくフレームの数。フレームバッファの数と同じ 2 | この手順で作る |
+| 値 | `FRAME_BUFFER_COUNT`（コメントに出てくる） | フレームバッファの数を表すため | フレームバッファ（画面に出す絵の置き場）の数。2 | k2EngineLow（エンジン）の [FrameBuffer.h](../../../k2EngineLow/graphics/FrameBuffer.h) |
+| 値 | `FONT_SIZE` | 文字の大きさを決めるため | ImGui の文字の高さ（ピクセル）。18 | この手順で作る |
+| 値 | `FONT_FILE_PATH` | 日本語を出すため | 日本語が出るフォント `meiryo.ttc`（メイリオ。Windows に入っている）の場所 | この手順で作る |
+
 ### 4-7. 持っておく状態を足す
 
 [DebugUI.cpp](../../../k2EngineLow/dbg/DebugUI.cpp) の **19行目**（`constexpr const char* FONT_FILE_PATH = "C:\\Windows\\Fonts\\meiryo.ttc";	// 日本語を出すためのフォント。` の下の空の行）の下、`}` の上に、7行足します（20〜26行目になります）。
@@ -421,6 +498,22 @@ namespace nsK2EngineLow {
 | 20 | `Init()` が成功したか |
 | 21〜22 | 開発用の画面・ImGui のデモを出しているか（手順6で使う） |
 | 23〜25 | ImGui 専用のディスクリプタヒープと、その空き |
+
+- **なぜ:** ImGui の状態はファイルの中だけで使うので、`.cpp` の無名の名前空間に置く。ヘッダーに出さなければ、ゲーム側から触られない。
+- **効果:** 起動したか・画面を出しているか・ディスクリプタの空きを、関数をまたいで覚えておける。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 変数 | `g_isInitialized` | 起動していないときに ImGui の関数を呼ばないため | `Init()` が成功したか | この手順で作る |
+| 変数 | `g_isVisible` | F1 で出す・隠すを覚えるため | 開発用の画面を出しているか | この手順で作る |
+| 変数 | `g_isShowDemoWindow` | ImGui のデモの窓を出すか覚えるため | ImGui に入っているデモの窓を出しているか | この手順で作る |
+| 変数 | `g_srvHeap` | ImGui の画像の置き場を、エンジンのものと分けるため | ImGui 専用のディスクリプタヒープ（ディスクリプタを並べて置く箱） | この手順で作る |
+| 型 | `ID3D12DescriptorHeap` | GPU に画像の場所を教える札を、まとめて置くため | ディスクリプタヒープ。ディスクリプタ（画像などの場所と使い方を書いた札）が並ぶ | DirectX 12（`d3d12.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| 変数 | `g_srvIncrementSize` | 札の場所を計算するため | ディスクリプタ1つ分の大きさ（バイト数） | この手順で作る |
+| 型 | `UINT` | 0 以上の整数を表すため | 符号なしの 32 ビット整数 | Windows の API（`Windows.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| 変数 | `g_freeSrvIndices` | 空いている札の番号を覚えるため | ヒープの中で、まだ使っていない番号の一覧 | この手順で作る |
 
 ### 4-8. ImGui にディスクリプタを渡す関数を書く
 
@@ -464,6 +557,22 @@ namespace nsK2EngineLow {
 | 30〜32 | 空いている番号を1つ取り出す |
 | 33〜34 | その番号の場所を、CPU・GPU から見たアドレスにして渡す |
 
+- **なぜ:** ImGui は文字の画像を作るたびに、「画像の場所を指す札（ディスクリプタ）を1つください」とアプリに頼む。DirectX 12 では札の置き場はアプリが管理するので、頼まれたら空きを1つ渡す関数が要る。
+- **効果:** ImGui が好きなときにテクスチャを作れる。エンジンのヒープとぶつからない。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `AllocSrv` | ImGui に札を1つ渡すため | 空き番号を1つ取り出し、その場所を CPU 用・GPU 用の2つのアドレスにして返す。4-15 で ImGui に登録する | この手順で作る |
+| 型 | `ImGui_ImplDX12_InitInfo` | DirectX 12 のバックエンドの設定をまとめるため | デバイス・コマンドキュー・形式・札の受け渡しの関数などを持つ構造体 | 外部ライブラリ（ImGui）の [imgui_impl_dx12.h](../../../exlib/imgui/imgui_impl_dx12.h) |
+| 型 | `D3D12_CPU_DESCRIPTOR_HANDLE` | CPU から札の場所を指すため | ディスクリプタの CPU 側のアドレス（`ptr` に入る） | DirectX 12（`d3d12.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| 型 | `D3D12_GPU_DESCRIPTOR_HANDLE` | GPU から札の場所を指すため | ディスクリプタの GPU 側のアドレス（`ptr` に入る） | DirectX 12（`d3d12.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| マクロ | `IM_ASSERT` | 空きがないときに、すぐ気づくため | 条件が `false` だと止める（標準では `assert`） | 外部ライブラリ（ImGui）の [imgui.h](../../../exlib/imgui/imgui.h) |
+| 関数 | `GetCPUDescriptorHandleForHeapStart()` | ヒープの先頭の場所を知るため | ヒープの先頭の CPU 側のアドレスを返す | DirectX 12（`d3d12.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| 関数 | `GetGPUDescriptorHandleForHeapStart()` | ヒープの先頭の場所を知るため | ヒープの先頭の GPU 側のアドレスを返す | DirectX 12（`d3d12.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| 型 | `SIZE_T`・`UINT64` | アドレスの計算で桁あふれしないため | 大きな整数の型（CPU のアドレスは `SIZE_T`、GPU のアドレスは `UINT64`） | Windows の API（`Windows.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+
 ### 4-9. ディスクリプタを空きに戻す関数を書く
 
 [DebugUI.cpp](../../../k2EngineLow/dbg/DebugUI.cpp) の **36行目**（`}` の下の空の行）の下、`}` の上に、7行足します（37〜43行目になります）。
@@ -494,6 +603,9 @@ namespace nsK2EngineLow {
 ```
 
 </td></tr></table>
+
+- **なぜ:** ImGui が画像を消すときに、札を返してもらう。返さないと、空きが減っていって、いつか `AllocSrv` が止まる。
+- **効果:** 札が使い回されるので、ImGui を長く動かしても `SRV_HEAP_SIZE` 個で足りる。
 
 ### 4-10. 起動する関数の形を書く
 
@@ -537,6 +649,17 @@ namespace nsK2EngineLow {
 | 48〜50 | Release ビルドか、グラフィックエンジンがなければ何もしない |
 | 51 | DirectX12 のデバイス |
 
+- **なぜ:** Release ビルドと、グラフィックエンジンがまだない場合は、何もせずに戻る。DirectX 12 のデバイスは、このあと何度も使うので、先に取り出しておく。
+- **効果:** Release ビルドでは ImGui が一切動かず、重くならない。起動の順番を間違えても落ちない。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 変数 | `g_graphicsEngine` | どこからでもグラフィックエンジンを使うため | `GraphicsEngine` を指すグローバルなポインター。エンジンが起動で入れる | k2EngineLow（エンジン）の [GraphicsEngine.h](../../../k2EngineLow/graphics/GraphicsEngine.h) |
+| 関数 | `GetD3DDevice()` | DirectX 12 のデバイスをもらうため | DirectX 12 のデバイス（GPU に頼みごとをする窓口）を返す | k2EngineLow（エンジン）の [GraphicsEngine.h](../../../k2EngineLow/graphics/GraphicsEngine.h) |
+| 型 | `ID3D12Device` | GPU に何かを作ってもらうため | DirectX 12 のデバイス。ヒープなどを作る関数を持つ | DirectX 12（`d3d12.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+
 ### 4-11. ImGui 専用のディスクリプタヒープを作る
 
 [DebugUI.cpp](../../../k2EngineLow/dbg/DebugUI.cpp) の **52行目**（`ID3D12Device* device = g_graphicsEngine->GetD3DDevice();` の下の空の行）の下、`g_isInitialized = true;` の上に、8行足します（53〜60行目になります）。
@@ -574,6 +697,20 @@ namespace nsK2EngineLow {
 |---|---|
 | 53〜60 | エンジンのヒープとは分けて、お互いに番号を気にしなくて済むようにする |
 
+- **なぜ:** ImGui のテクスチャの札は、エンジンのヒープと分けて置く。同じヒープに混ぜると、番号がぶつからないように気をつけ続けないといけない。
+- **効果:** ImGui が何枚画像を作っても、エンジンの描画に影響しない。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 型 | `D3D12_DESCRIPTOR_HEAP_DESC` | ヒープの作り方を伝えるため | ヒープの種類・数・使い方を入れる構造体 | DirectX 12（`d3d12.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| 値 | `D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV` | 画像（SRV）などの札を入れるヒープにするため | ヒープの種類。画像・定数・書き込める画像の札を入れる | DirectX 12（`d3d12.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| 値 | `D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE` | GPU のシェーダーから札を読めるようにするため | ヒープの使い方。これを付けないと、描くときに使えない | DirectX 12（`d3d12.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| 関数 | `CreateDescriptorHeap()` | ヒープを作るため | `heapDesc` のとおりにヒープを作り、`g_srvHeap` に入れる | DirectX 12（`d3d12.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| マクロ | `FAILED` | 失敗に気づくため | DirectX の関数の結果が失敗なら `true` | Windows の API（`Windows.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| マクロ | `IID_PPV_ARGS` | ポインターの型を間違えずに受け取るため | 作った物の型と、入れ先のポインターをまとめて渡す | Windows の API（`Windows.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+
 ### 4-12. 空いている番号の一覧を作る
 
 [DebugUI.cpp](../../../k2EngineLow/dbg/DebugUI.cpp) の **60行目** `}` の下、`g_isInitialized = true;` の上に、5行足します（61〜65行目になります）。
@@ -600,6 +737,15 @@ namespace nsK2EngineLow {
 ```
 
 </td></tr></table>
+
+- **なぜ:** 札の場所は「先頭から何番目か」で決まるので、空き番号の一覧を作っておく。後ろから取り出すので、大きい番号から入れて、0 番から使われるようにした。
+- **効果:** `AllocSrv` が一覧から番号を取り出すだけで、場所を決められる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `GetDescriptorHandleIncrementSize()` | 札1つ分の幅を知るため | ヒープの種類ごとの、ディスクリプタ1つ分の大きさを返す。N 番目の場所は「先頭 + N × この大きさ」 | DirectX 12（`d3d12.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
 
 ### 4-13. ImGui を作り、フォントと色を決める
 
@@ -645,6 +791,23 @@ namespace nsK2EngineLow {
 | 69〜70 | `imgui.ini`（窓の位置の記録）を作らない。ゲームのフォルダーにファイルが増えないように |
 | 71〜74 | 日本語のフォントがあれば使う。なければ英数字だけになる |
 
+- **なぜ:** ImGui は、最初に「文脈（Context）」を作らないと何も使えない。imgui.ini はゲームのフォルダーを汚すので作らない。ImGui の標準のフォントは日本語が出ないので、Windows のメイリオを読み込む。
+- **効果:** ImGui の関数を呼べるようになり、日本語も文字化けしない。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| マクロ | `IMGUI_CHECKVERSION()` | ヘッダーとビルドした ImGui の食い違いに気づくため | ImGui の版と、構造体の大きさが合っているか調べる | 外部ライブラリ（ImGui）の [imgui.h](../../../exlib/imgui/imgui.h) |
+| 関数 | `ImGui::CreateContext()` | ImGui の状態を入れる場所を作るため | ImGui の文脈を作る。ほかの `ImGui::` の関数より先に呼ぶ | 外部ライブラリ（ImGui）の [imgui.h](../../../exlib/imgui/imgui.h) |
+| 型 | `ImGuiIO` | ImGui の設定や入力をまとめて持つため | ファイル名・フォント・マウスやキーの状態などを持つ構造体 | 外部ライブラリ（ImGui）の [imgui.h](../../../exlib/imgui/imgui.h) |
+| 関数 | `ImGui::GetIO()` | ImGui の設定を書き換えるため | `ImGuiIO` への参照を返す | 外部ライブラリ（ImGui）の [imgui.h](../../../exlib/imgui/imgui.h) |
+| メンバー変数 | `io.IniFilename` | 窓の位置を記録するファイルの名前を決めるため | `nullptr` にすると、ファイルを作らない | 外部ライブラリ（ImGui）の [imgui.h](../../../exlib/imgui/imgui.h) |
+| 関数 | `GetFileAttributesA()` | フォントのファイルがあるか確かめるため | ファイルの属性を返す。なければ `INVALID_FILE_ATTRIBUTES` | Windows の API（`Windows.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| 値 | `INVALID_FILE_ATTRIBUTES` | ファイルがないことを見分けるため | `GetFileAttributesA` が「ファイルがない」ときに返す値 | Windows の API（`Windows.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| 関数 | `io.Fonts->AddFontFromFileTTF()` | 日本語を出すため | フォントのファイルを読み込み、指定の大きさで使えるようにする | 外部ライブラリ（ImGui）の [imgui.h](../../../exlib/imgui/imgui.h) |
+| 関数 | `ImGui::StyleColorsDark()` | 窓の色を決めるため | 窓の色を暗い配色にする | 外部ライブラリ（ImGui）の [imgui.h](../../../exlib/imgui/imgui.h) |
+
 ### 4-14. Win32 のバックエンドと、DirectX12 の設定を始める
 
 [DebugUI.cpp](../../../k2EngineLow/dbg/DebugUI.cpp) の **76行目**（`ImGui::StyleColorsDark();` の下の空の行）の下、`g_isInitialized = true;` の上に、7行足します（77〜83行目になります）。
@@ -680,6 +843,22 @@ namespace nsK2EngineLow {
 |---|---|
 | 83 | フレームバッファの色の形式（`FrameBuffer.cpp` と同じ） |
 
+- **なぜ:** ImGui は、マウスやキーを窓から受け取るバックエンド（Win32）と、絵を描くバックエンド（DirectX 12）の2つを起動する。DirectX 12 のほうは、渡すものが多いので、設定用の構造体に1つずつ入れていく。
+- **効果:** ImGui が窓の入力を受け取れるようになる。描くときに必要なデバイスやキューなどを、ImGui に渡せる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `ImGui_ImplWin32_Init()` | ImGui が窓のマウス・キーを受け取れるようにするため | Win32 のバックエンドを起動する。窓のハンドルを渡す | 外部ライブラリ（ImGui）の [imgui_impl_win32.h](../../../exlib/imgui/imgui_impl_win32.h) |
+| 変数 | `initInfo` | DirectX 12 のバックエンドの設定を入れるため | `ImGui_ImplDX12_InitInfo` の変数。作ると中身がすべて 0 になる | この手順で作る |
+| メンバー変数 | `Device` | ImGui が絵やバッファを作るため | DirectX 12 のデバイス | 外部ライブラリ（ImGui）の [imgui_impl_dx12.h](../../../exlib/imgui/imgui_impl_dx12.h) |
+| メンバー変数 | `CommandQueue` | ImGui が文字の画像を GPU に送るため | コマンドキュー（GPU への命令の待ち行列） | 外部ライブラリ（ImGui）の [imgui_impl_dx12.h](../../../exlib/imgui/imgui_impl_dx12.h) |
+| 関数 | `GetCommandQueue()` | コマンドキューをもらうため | エンジンが持つコマンドキューを返す | k2EngineLow（エンジン）の [GraphicsEngine.h](../../../k2EngineLow/graphics/GraphicsEngine.h) |
+| メンバー変数 | `NumFramesInFlight` | ImGui がフレームごとの作業場所の数を決めるため | 同時に準備しておくフレームの数 | 外部ライブラリ（ImGui）の [imgui_impl_dx12.h](../../../exlib/imgui/imgui_impl_dx12.h) |
+| メンバー変数 | `RTVFormat` | ImGui の絵がフレームバッファの形式に合うようにするため | 描く先（レンダーターゲット）の色の形式 | 外部ライブラリ（ImGui）の [imgui_impl_dx12.h](../../../exlib/imgui/imgui_impl_dx12.h) |
+| 値 | `DXGI_FORMAT_R8G8B8A8_UNORM` | 色の形式を決めるため | 赤・緑・青・透明度が、それぞれ 8 ビットの形式 | DirectX 12（`dxgiformat.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+
 ### 4-15. DirectX12 のバックエンドを起動する
 
 [DebugUI.cpp](../../../k2EngineLow/dbg/DebugUI.cpp) の **83行目** `initInfo.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;	// フレームバッファの色の形式（FrameBuffer.cpp）。` の下に、6行足します（84〜89行目になります）。
@@ -713,6 +892,20 @@ namespace nsK2EngineLow {
 |---|---|
 | 84 | フレームバッファの深度の形式 |
 | 85〜87 | 4-8・4-9 の関数で、ディスクリプタを受け渡す |
+
+- **なぜ:** 描く先の深度の形式を合わせ、4-8・4-9 の関数を ImGui に登録する。最後に `ImGui_ImplDX12_Init` を呼ぶと、DirectX 12 のバックエンドが使えるようになる。
+- **効果:** ImGui が、フレームバッファに合う形で絵を描け、画像の札を自分で受け取れる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| メンバー変数 | `DSVFormat` | ImGui の絵が深度の形式に合うようにするため | 深度ステンシルバッファの形式 | 外部ライブラリ（ImGui）の [imgui_impl_dx12.h](../../../exlib/imgui/imgui_impl_dx12.h) |
+| 値 | `DXGI_FORMAT_D32_FLOAT` | 深度の形式を決めるため | 深度を 32 ビットの小数で持つ形式 | DirectX 12（`dxgiformat.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| メンバー変数 | `SrvDescriptorHeap` | 札を置くヒープを教えるため | ImGui が使うディスクリプタヒープ | 外部ライブラリ（ImGui）の [imgui_impl_dx12.h](../../../exlib/imgui/imgui_impl_dx12.h) |
+| メンバー変数 | `SrvDescriptorAllocFn` | 札をもらう関数を教えるため | ImGui が札を欲しいときに呼ぶ関数（4-8 の `AllocSrv`） | 外部ライブラリ（ImGui）の [imgui_impl_dx12.h](../../../exlib/imgui/imgui_impl_dx12.h) |
+| メンバー変数 | `SrvDescriptorFreeFn` | 札を返す関数を教えるため | ImGui が札を返すときに呼ぶ関数（4-9 の `FreeSrv`） | 外部ライブラリ（ImGui）の [imgui_impl_dx12.h](../../../exlib/imgui/imgui_impl_dx12.h) |
+| 関数 | `ImGui_ImplDX12_Init()` | DirectX 12 のバックエンドを起動するため | `initInfo` のとおりに、ImGui の描画の準備をする | 外部ライブラリ（ImGui）の [imgui_impl_dx12.h](../../../exlib/imgui/imgui_impl_dx12.h) |
 
 ### 4-16. 終了する関数を書き、ImGui を止める
 
@@ -755,6 +948,17 @@ namespace nsK2EngineLow {
 |---|---|
 | 99 | GPU が ImGui のバッファを使い終わるまで待つ（手順3で `public` にした関数） |
 
+- **なぜ:** 終了の順番は、起動の逆にする。GPU がまだ ImGui のバッファを使っているうちに消すと落ちるので、先に GPU を待ってから、バックエンド → ImGui 本体の順に止める。
+- **効果:** 終了のときに、GPU の処理と ImGui の後片付けがぶつからない。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `ImGui_ImplDX12_Shutdown()` | DirectX 12 のバックエンドが持つものを消すため | DirectX 12 のバックエンドを止める | 外部ライブラリ（ImGui）の [imgui_impl_dx12.h](../../../exlib/imgui/imgui_impl_dx12.h) |
+| 関数 | `ImGui_ImplWin32_Shutdown()` | Win32 のバックエンドが持つものを消すため | Win32 のバックエンドを止める | 外部ライブラリ（ImGui）の [imgui_impl_win32.h](../../../exlib/imgui/imgui_impl_win32.h) |
+| 関数 | `ImGui::DestroyContext()` | ImGui の状態を消すため | 4-13 で作った文脈を消す | 外部ライブラリ（ImGui）の [imgui.h](../../../exlib/imgui/imgui.h) |
+
 ### 4-17. ディスクリプタヒープを消す
 
 [DebugUI.cpp](../../../k2EngineLow/dbg/DebugUI.cpp) の **102行目** `ImGui::DestroyContext();` の下に、6行足します（103〜108行目になります）。
@@ -784,6 +988,15 @@ namespace nsK2EngineLow {
 
 </td></tr></table>
 
+- **なぜ:** ヒープは `Init()` で自分で作ったものなので、自分で `Release()` して返す。そのあと `nullptr` にしておけば、使い終わったことがわかる。
+- **効果:** メモリが残らない。もう一度 `Init()` を呼んでも、きれいな状態から始められる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `Release()` | DirectX 12 のものを消すため | DirectX 12 のオブジェクトを解放する（使う人がいなくなったら消える） | DirectX 12（`d3d12.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+
 ### 4-18. エンジンのデストラクターで終了する
 
 ここから [k2EngineLow.cpp](../../../k2EngineLow/k2EngineLow.cpp) です。
@@ -811,6 +1024,9 @@ namespace nsK2EngineLow {
 |---|---|
 | 12 | ImGui はグラフィックエンジンを使っているので、先に終了する |
 
+- **なぜ:** ImGui はグラフィックエンジンを使うので、グラフィックエンジンを消す前に止める。順番が逆だと、消えた物を ImGui が触って落ちる。
+- **効果:** エンジンを閉じるときに、ImGui が先に片付く。
+
 ### 4-19. グラフィックエンジンを作ったあとに起動する
 
 [k2EngineLow.cpp](../../../k2EngineLow/k2EngineLow.cpp) の **41行目** `);` の下に、2行足します（42〜43行目になります）。
@@ -831,6 +1047,9 @@ namespace nsK2EngineLow {
 ```
 
 </td></tr></table>
+
+- **なぜ:** ImGui の起動には、グラフィックエンジンのデバイスとコマンドキューが要る。そのため、`GraphicsEngine::Init()` が終わったあとに呼ぶ。
+- **効果:** 起動のたびに、ImGui が使える状態になる。
 
 **確かめ方:** ゲームを起動して終了しても落ちない（まだ何も描かない）。
 
@@ -873,6 +1092,17 @@ ImGui がマウスやキーを受け取れるように、ウィンドウに来�
 
 </td></tr></table>
 
+- **なぜ:** ウィンドウに来るマウスやキーのメッセージを、ImGui にも見せるための窓口になる関数を用意する。
+- **効果:** ゲーム側の `MsgProc` が、ImGui を直接知らなくても、メッセージを渡せるようになる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `HandleWindowMessage()` | ImGui がマウス・キーを知るため | ウィンドウのメッセージを ImGui に渡す。ImGui が使ったら `true` を返す | この手順で作る |
+| 引数 | `msg`・`wParam`・`lParam` | メッセージの中身を受け取るため | 何が起きたか（`msg`）と、その詳しい値（`wParam`・`lParam`）。Windows がウィンドウに送る | Windows の API（`Windows.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| 型 | `WPARAM`・`LPARAM` | メッセージの詳しい値を入れるため | メッセージの追加の値の型（整数） | Windows の API（`Windows.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+
 ### 5-2. ImGui のメッセージを受け取る関数を宣言する
 
 [DebugUI.cpp](../../../k2EngineLow/dbg/DebugUI.cpp) の **6行目**（`#include <imgui/imgui_impl_dx12.h>` の下の空の行）の下、`namespace nsK2EngineLow {` の上に、3行足します（7〜9行目になります）。
@@ -899,6 +1129,18 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 | 行 | 何をしているか |
 |---|---|
 | 7〜8 | `imgui_impl_win32.h` では、`windows.h` に頼らないために宣言が `#if 0` で外してあるので、ここで宣言する |
+
+- **なぜ:** ImGui のメッセージの関数は、`imgui_impl_win32.h` に宣言があるが、`#if 0` で外れている。そのまま使えないので、同じ宣言をこちらに書く。
+- **効果:** 5-3 で、`ImGui_ImplWin32_WndProcHandler()` を呼べる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `ImGui_ImplWin32_WndProcHandler()` | ImGui がマウス・キーの動きを受け取るため | メッセージを見て、ImGui の入力の状態を直す。ImGui が使ったら 0 以外を返す | 外部ライブラリ（ImGui）の [imgui_impl_win32.h](../../../exlib/imgui/imgui_impl_win32.h) |
+| 型 | `LRESULT` | メッセージの結果を返すため | ウィンドウのメッセージの結果の型 | Windows の API（`Windows.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| C++ の書き方 | `extern` | 中身が別のファイルにあることを伝えるため | 「宣言だけで、中身は別の所にある」と書く | C++ の書き方 |
+| マクロ | `IMGUI_IMPL_API` | ImGui の関数の書き方をそろえるため | ImGui のバックエンドの関数の目印（ビルドの設定によって中身が変わる） | 外部ライブラリ（ImGui）の [imgui.h](../../../exlib/imgui/imgui.h) |
 
 ### 5-3. メッセージを渡す関数を書く
 
@@ -935,6 +1177,9 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 |---|---|
 | 117 | ImGui が使ったメッセージなら `true` |
 
+- **なぜ:** ImGui が使ったかどうかを、`true`・`false` に直して返す。起動していないときは、ImGui に渡さずに戻る。
+- **効果:** `MsgProc` が「ImGui が使ったか」を、型を気にせず調べられる。
+
 ### 5-4. ウィンドウのメッセージを ImGui に渡す
 
 [system.cpp](../../../Game/Source/System/system.cpp) の `MsgProc()` の先頭（`switch (msg)` より前）に足します。
@@ -965,6 +1210,15 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 | 行 | 何をしているか |
 |---|---|
 | 18〜20 | ImGui が使ったメッセージは、ゲームでは使わない |
+
+- **なぜ:** ウィンドウのメッセージは `MsgProc()` に来る。いちばん先に ImGui に見せて、ImGui が使ったら、ゲームでは使わずに戻る。
+- **効果:** ImGui の窓へのクリックやキー入力が、ゲームの操作に混ざらない。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 引数 | `hWnd`・`msg`・`wParam`・`lParam` | ウィンドウのメッセージを受け取るため | もとからある `MsgProc()` の引数（Windows がメッセージを届けるときに渡す）。そのまま ImGui に渡す | Windows の API（`Windows.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
 
 **確かめ方:** ソリューションのビルドが通る。
 
@@ -1015,6 +1269,16 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 </td></tr></table>
 
+- **なぜ:** ImGui は、フレームの始めに「受け付けを始める」、終わりに「絵にする」の2つを呼ばないと動かない。そのため、2つの関数を用意して、エンジンから呼べるようにする。
+- **効果:** ゲームの `Update()` の間に、ImGui の関数を呼べる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `BeginFrame()` | ImGui の新しいフレームを始めるため | ImGui の受け付けを始める。F1 で出す・隠すも切り替える | この手順で作る |
+| 関数 | `Render()` | ImGui の絵を画面に出すため | ImGui の画面をフレームバッファに描く | この手順で作る |
+
 ### 6-2. 出しているかを返す関数を宣言する
 
 [DebugUI.h](../../../k2EngineLow/dbg/DebugUI.h) の **27行目** `void Render();` の下に、4行足します（28〜31行目になります）。
@@ -1039,6 +1303,15 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 ```
 
 </td></tr></table>
+
+- **なぜ:** 出しているか、はゲーム側（カメラや入力）も知りたい。状態は `.cpp` に隠してあるので、関数で聞けるようにする。
+- **効果:** 7 で、窓を出している間にマウスを使わない、と決められる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `IsVisible()` | ゲームが窓を出しているか知るため | 開発用の画面を出していれば `true` | この手順で作る |
 
 ### 6-3. DebugUI の窓を描く関数を書く
 
@@ -1086,6 +1359,16 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 | 50〜54 | 「DebugUI」の窓に、閉じ方・FPS・デモを出すかのチェックを出す |
 | 55〜57 | チェックが入っていれば、ImGui のデモの窓を出す |
 
+- **なぜ:** 窓を出していることがわかるように、最低限の中身（閉じ方・FPS・デモ）を持つ窓を作る。窓を描く関数は、ImGui の使い方なので、この手順では詳しく説明しない。
+- **効果:** F1 を押すと、何かが画面に出るので、導入できたことを確かめられる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `DrawDebugUIWindow()` | 窓を出す処理を、1つにまとめるため | 「DebugUI」の窓を描く。出しているときだけ `BeginFrame()` から呼ぶ | この手順で作る |
+| C++ の書き方 | `u8"…"` | 日本語の文字列を、UTF-8 で ImGui に渡すため | 文字列を UTF-8 の並びにする。ImGui は UTF-8 で受け取る | C++ の書き方 |
+
 ### 6-4. フレームの始めの関数を書く
 
 [DebugUI.cpp](../../../k2EngineLow/dbg/DebugUI.cpp) の **123行目**（`}` の下の空の行）の下、`bool HandleWindowMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)` の上に、11行足します（124〜134行目になります）。
@@ -1129,6 +1412,17 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 |---|---|
 | 129〜131 | DirectX12・Win32・ImGui の順に、新しいフレームを始める |
 
+- **なぜ:** ImGui は、バックエンド2つとフレームを新しくしてから、ImGui の関数を呼ぶ。順番は DirectX 12 → Win32 → ImGui 本体と決まっている。
+- **効果:** このあとゲームの `Update()` で `ImGui::Begin()` などを呼んでも、その窓がフレームに出る。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `ImGui_ImplDX12_NewFrame()` | DirectX 12 側のフレームを始めるため | 描画に使うものを、必要なら作り直す | 外部ライブラリ（ImGui）の [imgui_impl_dx12.h](../../../exlib/imgui/imgui_impl_dx12.h) |
+| 関数 | `ImGui_ImplWin32_NewFrame()` | Win32 側のフレームを始めるため | 窓の大きさ・マウス・時間を ImGui に伝える | 外部ライブラリ（ImGui）の [imgui_impl_win32.h](../../../exlib/imgui/imgui_impl_win32.h) |
+| 関数 | `ImGui::NewFrame()` | ImGui の新しいフレームを始めるため | ここから `ImGui::Render()` までの間、窓の関数を呼べる | 外部ライブラリ（ImGui）の [imgui.h](../../../exlib/imgui/imgui.h) |
+
 ### 6-5. F1 で出す・隠すを切り替える
 
 [DebugUI.cpp](../../../k2EngineLow/dbg/DebugUI.cpp) の **132行目**（`ImGui::NewFrame();` の下の空の行）の下、`}` の上に、6行足します（133〜138行目になります）。
@@ -1162,6 +1456,9 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 |---|---|
 | 133〜135 | F1 を押した瞬間に切り替える |
 | 136〜138 | 出しているときは、6-3 の窓を描く |
+
+- **なぜ:** F1 を押した瞬間だけ切り替えたいので、押しっぱなしでは繰り返さない形で調べる。出しているときだけ窓を描く。
+- **効果:** F1 で、開発用の画面の出す・隠すを切り替えられる。
 
 ### 6-6. フレームの終わりの関数を書く
 
@@ -1202,6 +1499,15 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 |---|---|
 | 146〜147 | 隠しているときも、毎フレーム描く処理を通す。何も描かれないが、ImGui がテクスチャを片付けるため |
 
+- **なぜ:** `ImGui::Render()` は、そのフレームで作った窓を、描く命令（描画データ）にまとめる。隠しているときも毎フレーム呼ぶ。呼ばないと、ImGui の中で画像を作る・消す処理が終わらないため。
+- **効果:** 窓の関数で作ったものが、描ける形になる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `ImGui::Render()` | 窓を絵の命令にまとめるため | このフレームの窓を描画データにする。まだ画面には描かない | 外部ライブラリ（ImGui）の [imgui.h](../../../exlib/imgui/imgui.h) |
+
 ### 6-7. フレームバッファに描く
 
 [DebugUI.cpp](../../../k2EngineLow/dbg/DebugUI.cpp) の **147行目** `ImGui::Render();` の下に、8行足します（148〜155行目になります）。
@@ -1241,6 +1547,22 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 | 153〜154 | ImGui 専用のディスクリプタヒープを使う |
 | 155 | ImGui の絵を描く |
 
+- **なぜ:** 描画データを、ゲームの絵ができあがったフレームバッファに、上から重ねて描く。描く先と、使うヒープを、描く前に決めておく。
+- **効果:** 窓が、ゲームの絵の上に出る。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `GetCommandList()` | GPU への命令を書き込むため | 今のフレームで使っているコマンドリストを返す | k2EngineLow（エンジン）の [GraphicsEngine.h](../../../k2EngineLow/graphics/GraphicsEngine.h) |
+| 関数 | `GetCurrentFrameBuffuerRTV()` | 描く先を知るため | 今のフレームバッファの、描く先（レンダーターゲット）の場所を返す。名前の `Buffuer` はエンジンの綴りのまま | k2EngineLow（エンジン）の [GraphicsEngine.h](../../../k2EngineLow/graphics/GraphicsEngine.h) |
+| 関数 | `GetCurrentFrameBuffuerDSV()` | 深度の場所を知るため | 今のフレームバッファの、深度の場所を返す | k2EngineLow（エンジン）の [GraphicsEngine.h](../../../k2EngineLow/graphics/GraphicsEngine.h) |
+| 型 | `ID3D12GraphicsCommandList` | GPU への命令を貯めるため | コマンドリスト。描く命令を貯め、あとでまとめて GPU に送る | DirectX 12（`d3d12.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| 関数 | `OMSetRenderTargets()` | 描く先を決めるため | 描く先を `rtv`、深度を `dsv` に切り替える。最初の `1` は描く先の数 | DirectX 12（`d3d12.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| 関数 | `SetDescriptorHeaps()` | ImGui が札を使えるようにするため | 描くときに使うヒープを教える。`heaps` に ImGui のヒープ1つを入れて渡す | DirectX 12（`d3d12.h`。`k2EngineLowPreCompile.h` で読み込み済み） |
+| 関数 | `ImGui_ImplDX12_RenderDrawData()` | ImGui の絵を描くため | 描画データを、コマンドリストに命令として書き込む | 外部ライブラリ（ImGui）の [imgui_impl_dx12.h](../../../exlib/imgui/imgui_impl_dx12.h) |
+| 関数 | `ImGui::GetDrawData()` | 描画データを取り出すため | `ImGui::Render()` で作った描画データを返す | 外部ライブラリ（ImGui）の [imgui.h](../../../exlib/imgui/imgui.h) |
+
 ### 6-8. 出しているかを返す関数を書く
 
 [DebugUI.cpp](../../../k2EngineLow/dbg/DebugUI.cpp) の **157行目**（`}` の下の空の行）の下、`bool HandleWindowMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)` の上に、5行足します（158〜162行目になります）。
@@ -1268,6 +1590,9 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 </td></tr></table>
 
+- **なぜ:** 「起動して、かつ出している」ときだけ `true` にする。起動していないときは窓がなく、ImGui もマウスを使わないので、`false` にしておく。
+- **効果:** 7 で、ゲーム側が「ImGui がマウスを使っているか」を1つの関数で調べられる。
+
 ### 6-9. エンジンのフレームの始めで受け付けを始める
 
 [k2EngineLow.cpp](../../../k2EngineLow/k2EngineLow.cpp) の **70行目** `m_graphicsEngine->BeginRender();` の下に、2行足します（71〜72行目になります）。
@@ -1293,6 +1618,9 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 |---|---|
 | 72 | ここから `EndFrame()` までの間、ゲームの `Update()` で ImGui の関数を呼べる |
 
+- **なぜ:** ImGui の関数を呼べるのは、`BeginFrame()` から `Render()` の間だけ。ゲームの `Update()` より前に始める。
+- **効果:** ゲームの `Update()` の中で、毎フレーム ImGui の窓を作れる。
+
 ### 6-10. エンジンのフレームの終わりで描く
 
 [k2EngineLow.cpp](../../../k2EngineLow/k2EngineLow.cpp) の **96行目** `//#endif` の下に、2行足します（97〜98行目になります）。
@@ -1317,6 +1645,9 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 | 行 | 何をしているか |
 |---|---|
 | 98 | ゲームの絵の上に描く |
+
+- **なぜ:** ImGui の絵は、ゲームの絵の上に出したいので、フレームの終わり、画面に出す直前に描く。
+- **効果:** 窓が、ゲームの絵の上に重なって出る。
 
 ### 出来上がった DebugUI.h
 
@@ -1815,6 +2146,15 @@ namespace nsK2EngineLow {
 |---|---|
 | 260〜263 | 窓を出している間は、マウスで回すのをやめる（`EndMouseLook()` がカーソルを出し直す） |
 
+- **なぜ:** 窓を出している間にマウスでカメラが回ると、窓を操作できない。`DebugUI::IsVisible()` を見て、カメラを回すのをやめる。
+- **効果:** 窓のボタンをクリックしても、カメラが動かない。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `EndMouseLook()` | マウスで回すのをやめて、カーソルを戻すため | マウスで回している途中なら、回すのを終えてカーソルを出す | もとからある `GameCamera` の関数（[GameCamera.h](../../../Game/Source/Objects/GameCamera.h)） |
+
 ### 7-2. マウスを使ってよいかの関数を宣言する
 
 [PlayerInputSource.h](../../../Game/Source/Character/Input/PlayerInputSource.h) の **23行目** `static bool IsGameWindowActive();` の下に、2行足します（24〜25行目になります）。
@@ -1835,6 +2175,15 @@ namespace nsK2EngineLow {
 ```
 
 </td></tr></table>
+
+- **なぜ:** 「ウィンドウが前にある」だけでなく「窓を出していない」も見たいので、2つの条件を1つの関数にまとめる。
+- **効果:** 左右のクリックで魔法を撃つかを、同じ条件で決められる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `CanUseMouse()` | マウスをゲームの操作に使ってよいか調べるため | ウィンドウが前にあり、開発用の画面を出していなければ `true` | この手順で作る |
 
 ### 7-3. マウスを使ってよいかの関数を書く
 
@@ -1868,6 +2217,15 @@ bool PlayerInputSource::CanUseMouse()
 | 行 | 何をしているか |
 |---|---|
 | 52 | ゲームのウィンドウが前にあり、窓を出していなければ使ってよい |
+
+- **なぜ:** 窓を出している間のクリックは、ImGui のためのもの。魔法を撃ってしまわないように、条件を関数にする。
+- **効果:** 窓のボタンを押したときに、魔法が出ない。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `IsGameWindowActive()` | 別のアプリを使っているときに、操作しないため | ゲームのウィンドウが前にあれば `true` | もとからある（変えない）。[入力の手順](../../ゲーム/キャラクター/入力/入力の手順.md)で作った（[PlayerInputSource.h](../../../Game/Source/Character/Input/PlayerInputSource.h)） |
 
 ### 7-4. 左クリックを見る行を書き換える
 
@@ -1907,6 +2265,9 @@ bool PlayerInputSource::CanUseMouse()
 
 </td></tr></table>
 
+- **なぜ:** 左クリックの条件を、`IsGameWindowActive()` から `CanUseMouse()` に変える。ほかの条件（パッドの Y）はそのまま。
+- **効果:** 窓を出している間は、左クリックで魔法が出ない。
+
 ### 7-5. 右クリックを見る行を書き換える
 
 [PlayerInputSource.cpp](../../../Game/Source/Character/Input/PlayerInputSource.cpp) の **34行目**を、次のように書き換えます。
@@ -1944,6 +2305,9 @@ bool PlayerInputSource::CanUseMouse()
 ```
 
 </td></tr></table>
+
+- **なぜ:** 右クリックの条件も、`CanUseMouse()` に変える。
+- **効果:** 窓を出している間は、右クリックでも魔法が出ない。
 
 **確かめ方（これで出来上がり）:** F1 で窓を出している間は、マウスを動かしてもカメラが回らず、クリックしても魔法が出ない。窓のチェックボックスをクリックで操作できる。
 
