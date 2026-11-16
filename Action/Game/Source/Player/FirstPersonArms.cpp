@@ -44,8 +44,8 @@ namespace
 	const ArmPose CAST_POSE = { -10.0f, 46.0f, 12.0f, 0.0f, 30.0f };
 	// 歩き・走りで腕を振り切ったときに、構えに足す量（FirstPersonBob::GetArmSwing が 1 のとき前、-1 のとき後ろ）。
 	// 前は腕を上げて前へ出し、後ろは少しだけ下げて手前へ引く。後ろを小さくして、手が画面の下へ外れないようにする。
-	const ArmPose SWING_FORWARD_POSE = { 0.0f, 10.0f, 0.0f, 0.0f, 8.0f };
-	const ArmPose SWING_BACK_POSE = { 0.0f, -4.0f, 0.0f, 0.0f, -4.0f };
+	const ArmPose SWING_FORWARD_POSE = { 0.0f, 3.3f, 0.0f, 0.0f, 2.7f };
+	const ArmPose SWING_BACK_POSE = { 0.0f, -1.3f, 0.0f, 0.0f, -1.3f };
 	// 氷を撃ったあと、手を開いて突き出したまま見せる時間（秒）。そのあと構えに戻る。
 	constexpr float CAST_OPEN_SECONDS = 0.2f;
 	// 構えの拳の手のひらを、内側へ向けた向きから、カメラの方へ傾ける角度（度）。
