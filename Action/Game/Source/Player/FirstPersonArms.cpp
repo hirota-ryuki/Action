@@ -1,6 +1,7 @@
 ﻿#include "stdafx.h"
 #include "FirstPersonArms.h"
 
+#include "FirstPersonBob.h"
 #include "Player.h"
 
 namespace
@@ -41,6 +42,10 @@ namespace
 	// 氷を撃つとき（撃つ腕だけ。右と左で交互）: 炎を放つときと同じく腕を画面の端から内へ向けて前へ伸ばし、
 	// 開いた手を、撃つ位置（PlayerInputSource の FIRST_PERSON_HAND_OFFSET）のあたりに置く。
 	const ArmPose CAST_POSE = { -10.0f, 46.0f, 12.0f, 0.0f, 30.0f };
+	// 歩き・走りで腕を振り切ったときに、構えに足す量（FirstPersonBob::GetArmSwing が 1 のとき前、-1 のとき後ろ）。
+	// 前は腕を上げて前へ出し、後ろは少しだけ下げて手前へ引く。後ろを小さくして、手が画面の下へ外れないようにする。
+	const ArmPose SWING_FORWARD_POSE = { 0.0f, 3.3f, 0.0f, 0.0f, 2.7f };
+	const ArmPose SWING_BACK_POSE = { 0.0f, -1.3f, 0.0f, 0.0f, -1.3f };
 	// 氷を撃ったあと、手を開いて突き出したまま見せる時間（秒）。そのあと構えに戻る。
 	constexpr float CAST_OPEN_SECONDS = 0.2f;
 	// 構えの拳の手のひらを、内側へ向けた向きから、カメラの方へ傾ける角度（度）。
@@ -572,6 +577,11 @@ void FirstPersonArms::SpreadArms(Skeleton& skeleton)
 		ArmPose pose = BlendPose(IDLE_POSE, CAST_POSE, m_castWeight[side]);
 		pose = BlendPose(pose, CHARGE_POSE, m_chargeWeight[side]);
 		pose = BlendPose(pose, RELEASE_POSE, m_releaseWeight[side]);
+		// 歩き・走りの腕の振り（m_bobSwing）を足す。前に振るときと後ろに振るときで、足す置き方を変える。
+		const float swing = m_bobSwing[side];
+		const ArmPose& swingPose = swing >= 0.0f ? SWING_FORWARD_POSE : SWING_BACK_POSE;
+		pose.raiseDeg += swingPose.raiseDeg * fabsf(swing);
+		pose.push += swingPose.push * fabsf(swing);
 		const float spreadDeg = pose.spreadDeg;
 		const float raiseDeg = pose.raiseDeg;
 		const float sideShift = pose.sideShift;
@@ -594,7 +604,9 @@ void FirstPersonArms::SpreadArms(Skeleton& skeleton)
 		Matrix toOrigin, toPivot, toSide, aroundPivot;
 		toOrigin.MakeTranslation(pivot * -1.0f);
 		toPivot.MakeTranslation(pivot);
-		toSide.MakeTranslation(g_camera3D->GetRight() * (side == 0 ? sideShift : -sideShift) - cameraUp * drop + g_camera3D->GetForward() * push);
+		// 歩き・走りの揺れ（m_bobOffset）も、ここで足す。
+		const Vector3& bob = m_bobOffset[side];
+		toSide.MakeTranslation(g_camera3D->GetRight() * ((side == 0 ? sideShift : -sideShift) + bob.x) + cameraUp * (bob.y - drop) + g_camera3D->GetForward() * (push + bob.z));
 		aroundPivot.Multiply(toOrigin, rotation);
 		aroundPivot.Multiply(aroundPivot, toPivot);
 		aroundPivot.Multiply(aroundPivot, toSide);
@@ -620,13 +632,15 @@ void FirstPersonArms::Reset(const Player& player)
 		m_chargeWeight[side] = 0.0f;
 		m_releaseWeight[side] = 0.0f;
 		m_grip[side] = 1.0f;
+		m_bobOffset[side] = Vector3::Zero;
+		m_bobSwing[side] = 0.0f;
 	}
 	Play(enClip_Idle, 0.0f);
 	UpdateTransform();
 	m_model.Update();
 }
 
-void FirstPersonArms::Update(const Player& player)
+void FirstPersonArms::Update(const Player& player, const FirstPersonBob& bob)
 {
 	const float deltaTime = g_gameTime->GetFrameDeltaTime();
 	UpdateClip(player, deltaTime);
@@ -642,6 +656,10 @@ void FirstPersonArms::Update(const Player& player)
 		const float gripTarget = GetGripTarget(side);
 		const float gripSpeed = gripTarget < m_grip[side] ? GRIP_OPEN_SPEED : GRIP_CLOSE_SPEED;
 		m_grip[side] += (gripTarget - m_grip[side]) * min(1.0f, deltaTime * gripSpeed);
+		// 氷を突き出している腕と、炎を溜めている・放つ両腕は、揺らさない（手を撃つ位置・火の玉からずらさない）。
+		const float castWeight = max(m_castWeight[side], max(m_chargeWeight[side], m_releaseWeight[side]));
+		m_bobOffset[side] = bob.GetArmsOffset(side) * (1.0f - castWeight);
+		m_bobSwing[side] = bob.GetArmSwing(side) * (1.0f - castWeight);
 	}
 	UpdateTransform();
 	m_model.Update();

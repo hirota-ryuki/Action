@@ -273,6 +273,7 @@
     <ClCompile Include="Source\Magic\FireMagic.cpp" />
     <ClCompile Include="Source\Magic\SlashMagic.cpp" />
     <ClCompile Include="Source\Magic\BurningGround.cpp" />
+    <ClCompile Include="Source\Objects\FirstPersonBob.cpp" />
     <ClCompile Include="Source\Objects\GameCamera.cpp" />
     <ClCompile Include="Source\Core\Game.cpp" />
     <ClCompile Include="Source\Core\GameClock.cpp" />
@@ -353,6 +354,7 @@
     <ClInclude Include="Source\Character\Faction.h" />
     <ClInclude Include="Source\Character\Input\CharacterInput.h" />
     <ClInclude Include="Source\Magic\MagicBase.h" />
+    <ClInclude Include="Source\Objects\FirstPersonBob.h" />
     <ClInclude Include="Source\Objects\GameCamera.h" />
     <ClInclude Include="Source\Core\EffectId.h" />
     <ClInclude Include="Source\Core\Game.h" />

@@ -116,11 +116,14 @@ void GameCamera::ToggleCameraMode()
 		m_firstPersonForward.Normalize();
 		g_camera3D->SetNear(FIRST_PERSON_NEAR);
 		g_camera3D->SetViewAngle(Math::DegToRad(FIRST_PERSON_VIEW_ANGLE_DEG));
+		m_firstPersonBob.Reset(*m_player);
 		m_firstPersonArms.Reset(*m_player);
 	}
 	else {
 		m_cameraMode = EnCameraMode::ThirdPerson;
 		RestorePlayerRenderBody();
+		// 一人称の揺れで傾けた上の向きを戻す。
+		g_camera3D->SetUp(Vector3::AxisY);
 		g_camera3D->SetNear(m_defaultNear);
 		g_camera3D->SetViewAngle(Math::DegToRad(VIEW_ANGLE_DEG));
 	}
@@ -170,13 +173,29 @@ void GameCamera::UpdateFirstPersonCamera()
 	Vector3 eyePosition = m_player->GetPosition();
 	eyePosition.y += FIRST_PERSON_EYE_HEIGHT;
 
-	const Vector3 target = eyePosition + m_firstPersonForward * FIRST_PERSON_LOOK_DISTANCE;
+	// 歩き・走りの揺れと着地の沈みを、見た目にだけ足す（m_firstPersonForward は変えない）。
+	m_firstPersonBob.Update(*m_player);
+	// マウスで向けた向きに直交する、上と右の向き。
+	Vector3 up = Vector3::AxisY - m_firstPersonForward * m_firstPersonForward.y;
+	up.Normalize();
+	Vector3 right;
+	right.Cross(up, m_firstPersonForward);
+	// 位置は、右と上へずらす。向きは、首振りの分だけ下へ、傾きの分だけ右へ回す。
+	const Vector3& offset = m_firstPersonBob.GetCameraOffset();
+	eyePosition += right * offset.x + up * offset.y;
+	const float pitchRad = Math::DegToRad(m_firstPersonBob.GetPitchDeg());
+	const Vector3 forward = m_firstPersonForward * cosf(pitchRad) - up * sinf(pitchRad);
+	const float rollRad = Math::DegToRad(m_firstPersonBob.GetRollDeg());
+	const Vector3 cameraUp = up * cosf(rollRad) + right * sinf(rollRad);
+
+	const Vector3 target = eyePosition + forward * FIRST_PERSON_LOOK_DISTANCE;
 	g_camera3D->SetPosition(eyePosition);
 	g_camera3D->SetTarget(target);
+	g_camera3D->SetUp(cameraUp);
 	g_camera3D->Update();
 
 	// 腕はカメラに付いていくので、カメラを動かしたあとで動かす。
-	m_firstPersonArms.Update(*m_player);
+	m_firstPersonArms.Update(*m_player, m_firstPersonBob);
 }
 
 void GameCamera::RotateFirstPersonForward()

@@ -5,6 +5,7 @@
 
 class Player;
 class SkillController;
+class FirstPersonBob;
 
 // 一人称カメラのときに画面に映す、プレイヤーの腕と手。
 // プレイヤーの体（袖の肘から先を消したもの）の腕だけを映してカメラの前に置き、魔法に合わせて腕のアニメーションを流す。
@@ -18,8 +19,8 @@ public:
 	void Init();
 	// 一人称に切り替えたときに呼ぶ。構えの姿勢から始める。
 	void Reset(const Player& player);
-	// 毎フレーム、カメラを動かしたあとに呼ぶ。
-	void Update(const Player& player);
+	// 毎フレーム、カメラを動かしたあとに呼ぶ。bob の腕の揺れを、撃つ形になっていない腕にだけ足す。
+	void Update(const Player& player, const FirstPersonBob& bob);
 	void Draw(RenderContext& rc);
 
 private:
@@ -88,6 +89,10 @@ private:
 	float m_grip[2] = { 1.0f, 1.0f };        // 左右の手の握り具合（1 で握りこぶし、0 で開く）。
 	float m_releaseTimer = 0.0f;             // 炎を撃ったあと、両手を開いて見せている残りの秒数。
 	float m_castTimer[2] = { 0.0f, 0.0f };   // 左右の手の、氷を撃ったあと、手を開いて突き出している残りの秒数。
+	// 左右の腕の、歩き・走りの揺れと着地の沈み（x: カメラの右、y: 上、z: 前。cm）。撃つ形の腕は弱めてある。
+	Vector3 m_bobOffset[2] = { Vector3::Zero, Vector3::Zero };
+	// 左右の腕を、歩き・走りで前後に振る量（+ で前、- で後ろ）。撃つ形の腕は弱めてある。
+	float m_bobSwing[2] = { 0.0f, 0.0f };
 	int m_lastMainFireCount = 0;  // 前のフレームまでに、氷を撃った回数。
 	int m_lastSubFireCount = 0;   // 前のフレームまでに、炎を撃った回数。
 };
