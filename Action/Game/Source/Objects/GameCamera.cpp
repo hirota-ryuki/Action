@@ -12,17 +12,28 @@ namespace
 	constexpr float MOUSE_CAMERA_ROTATE_SPEED = 0.12f;
 	// 1フレームあたりのマウス回転量の上限。フレームレートの揺れによるカクつきを抑える。
 	constexpr float MAX_MOUSE_CAMERA_ROTATE_DEG = 12.0f;
-	// カメラをプレイヤーに近づける代わりに画角を広げてプレイヤー全体が収まるようにしてある。
-	constexpr float TARGET_HEIGHT = 170.0f;          // 注視点をプレイヤーの足元でなく腰あたりに合わせる高さ。
 	constexpr float TARGET_FORWARD_OFFSET = 20.0f;    // 注視点をカメラ正面方向に少しずらして奥行き感を出す。
+	// 三人称の寄り（原神くらい）。ほぼ水平の高さから、狭めの画角で見る。キャラクターが画面の下寄りに映り、奥の景色が広く見える。
+	constexpr float CLOSE_DISTANCE = 350.0f;
+	constexpr float CLOSE_TARGET_HEIGHT = 150.0f;     // 注視点を胸から頭のあたりに合わせる。
+	constexpr float CLOSE_PITCH_DEG = 10.0f;
+	constexpr float CLOSE_VIEW_ANGLE_DEG = 55.0f;
+	// 三人称の俯瞰。前からある三人称の視点（オフセット (0, 250, -250)、画角 90 度）と同じ。
+	// カメラをプレイヤーに近づける代わりに画角を広げてプレイヤー全体が収まるようにしてある。
+	constexpr float OVERHEAD_DISTANCE = 353.6f;       // (0, 250, -250) の長さ。
+	constexpr float OVERHEAD_TARGET_HEIGHT = 170.0f;  // 注視点をプレイヤーの足元でなく腰あたりに合わせる高さ。
+	constexpr float OVERHEAD_PITCH_DEG = 45.0f;
+	constexpr float OVERHEAD_VIEW_ANGLE_DEG = 90.0f;  // カメラを近づけた分、画角を通常の60度から広げる。
+	// 寄りと俯瞰を切り替えたときに、前のカメラからなめらかに移す時間（秒）。一瞬で飛ぶと酔いやすい。
+	constexpr float MODE_BLEND_SECONDS = 0.25f;
 	// 一人称カメラの目線の高さ（プレイヤー足元からのオフセット）。体のモデルの目の高さ（約 150 × 大きさ 1.128）に合わせる。
 	constexpr float FIRST_PERSON_EYE_HEIGHT = 168.0f;
-	constexpr float VIEW_ANGLE_DEG = 90.0f;           // カメラを近づけた分、画角を通常の60度から広げる。
 	constexpr float FIRST_PERSON_LOOK_DISTANCE = 1000.0f;
 	constexpr float FIRST_PERSON_NEAR = 5.0f;         // 一人称時はNearを小さくして手元の腕と手が見切れないようにする。
 	// 一人称の画角（縦、度）。三人称の 90 度のままだと広角すぎて、手が小さく画面の真ん中に寄って見える。
 	constexpr float FIRST_PERSON_VIEW_ANGLE_DEG = 50.0f;
 	constexpr int TOGGLE_CAMERA_KEY = 'V';            // 三人称／一人称を切り替えるキー（パッドは B ボタン）。
+	constexpr int TOGGLE_OVERHEAD_KEY = 'B';          // 俯瞰と寄りを切り替えるキー。
 
 	// マウス1フレームあたりの回転量を上限値で制限する。
 	float ClampMouseRotateDeg(float rotateDeg)
@@ -59,7 +70,9 @@ bool GameCamera::Start()
 	m_defaultNear = g_camera3D->GetNear();
 	m_firstPersonForward = m_player->GetForward();
 
-	g_camera3D->SetViewAngle(Math::DegToRad(VIEW_ANGLE_DEG));
+	// 最初は寄りで、プレイヤーの後ろから見る。
+	ResetThirdPersonOffset(m_player->GetForward());
+	g_camera3D->SetViewAngle(Math::DegToRad(GetThirdPersonSetting().viewAngleDeg));
 
 	m_firstPersonArms.Init();
 
@@ -76,6 +89,9 @@ void GameCamera::Update()
 
 	if (IsToggleTriggered()) {
 		ToggleCameraMode();
+	}
+	if (IsOverheadToggleTriggered()) {
+		ToggleOverheadMode();
 	}
 
 	if (m_cameraMode == EnCameraMode::FirstPerson) {
@@ -103,36 +119,106 @@ bool GameCamera::IsToggleTriggered()
 	return m_toggleKey.isTrigger || g_pad[0]->IsTrigger(enButtonB);
 }
 
+bool GameCamera::IsOverheadToggleTriggered()
+{
+	// ほかのウィンドウを使っている間のキーは拾わない。
+	const bool isWindowActive = g_hWnd != nullptr && GetForegroundWindow() == g_hWnd;
+	m_overheadKey.Update(isWindowActive && (GetAsyncKeyState(TOGGLE_OVERHEAD_KEY) & 0x8000) != 0);
+	return m_overheadKey.isTrigger;
+}
+
 void GameCamera::ToggleCameraMode()
 {
-	if (m_cameraMode == EnCameraMode::ThirdPerson) {
-		m_cameraMode = EnCameraMode::FirstPerson;
-		m_player->SetRenderBody(false);
-		m_firstPersonForward = g_camera3D->GetForward();
-		m_firstPersonForward.y = 0.0f;
-		if (m_firstPersonForward.LengthSq() <= FLT_EPSILON) {
-			m_firstPersonForward = m_player->GetForward();
-		}
-		m_firstPersonForward.Normalize();
-		g_camera3D->SetNear(FIRST_PERSON_NEAR);
-		g_camera3D->SetViewAngle(Math::DegToRad(FIRST_PERSON_VIEW_ANGLE_DEG));
-		m_firstPersonBob.Reset(*m_player);
-		m_firstPersonArms.Reset(*m_player);
+	if (m_cameraMode == EnCameraMode::FirstPerson) {
+		// 一人称に入る前に使っていた三人称（寄りか俯瞰）に戻る。
+		ChangeThirdPersonMode(m_lastThirdPersonMode);
+		return;
+	}
+
+	m_lastThirdPersonMode = m_cameraMode;
+	m_cameraMode = EnCameraMode::FirstPerson;
+	m_blendTimer = 0.0f;
+	m_player->SetRenderBody(false);
+	m_firstPersonForward = g_camera3D->GetForward();
+	m_firstPersonForward.y = 0.0f;
+	if (m_firstPersonForward.LengthSq() <= FLT_EPSILON) {
+		m_firstPersonForward = m_player->GetForward();
+	}
+	m_firstPersonForward.Normalize();
+	g_camera3D->SetNear(FIRST_PERSON_NEAR);
+	g_camera3D->SetViewAngle(Math::DegToRad(FIRST_PERSON_VIEW_ANGLE_DEG));
+	m_firstPersonBob.Reset(*m_player);
+	m_firstPersonArms.Reset(*m_player);
+}
+
+void GameCamera::ToggleOverheadMode()
+{
+	if (m_cameraMode == EnCameraMode::ThirdPersonOverhead) {
+		ChangeThirdPersonMode(EnCameraMode::ThirdPersonClose);
 	}
 	else {
-		m_cameraMode = EnCameraMode::ThirdPerson;
+		ChangeThirdPersonMode(EnCameraMode::ThirdPersonOverhead);
+	}
+}
+
+void GameCamera::ChangeThirdPersonMode(EnCameraMode mode)
+{
+	if (m_cameraMode == EnCameraMode::FirstPerson) {
 		RestorePlayerRenderBody();
 		// 一人称の揺れで傾けた上の向きを戻す。
 		g_camera3D->SetUp(Vector3::AxisY);
 		g_camera3D->SetNear(m_defaultNear);
-		g_camera3D->SetViewAngle(Math::DegToRad(VIEW_ANGLE_DEG));
+		// 一人称からはなめらかに移さない（体が急に映るので、移す途中を見せても不自然になる）。
+		m_blendTimer = 0.0f;
 	}
+	else {
+		// 寄りと俯瞰の間は、今のカメラからなめらかに移す。
+		m_blendTimer = MODE_BLEND_SECONDS;
+		m_blendFromPosition = g_camera3D->GetPosition();
+		m_blendFromTarget = g_camera3D->GetTarget();
+		m_blendFromViewAngle = g_camera3D->GetViewAngle();
+	}
+
+	m_cameraMode = mode;
+	m_lastThirdPersonMode = mode;
+	// 今カメラが向いている左右の向きは引き継ぎ、見下ろす角度と距離はモードの値にする。
+	ResetThirdPersonOffset(g_camera3D->GetForward());
+	if (m_blendTimer <= 0.0f) {
+		g_camera3D->SetViewAngle(Math::DegToRad(GetThirdPersonSetting().viewAngleDeg));
+	}
+}
+
+const GameCamera::ThirdPersonSetting& GameCamera::GetThirdPersonSetting() const
+{
+	static const ThirdPersonSetting CLOSE_SETTING = { CLOSE_DISTANCE, CLOSE_TARGET_HEIGHT, CLOSE_PITCH_DEG, CLOSE_VIEW_ANGLE_DEG };
+	static const ThirdPersonSetting OVERHEAD_SETTING = { OVERHEAD_DISTANCE, OVERHEAD_TARGET_HEIGHT, OVERHEAD_PITCH_DEG, OVERHEAD_VIEW_ANGLE_DEG };
+	if (m_cameraMode == EnCameraMode::ThirdPersonOverhead) {
+		return OVERHEAD_SETTING;
+	}
+	return CLOSE_SETTING;
+}
+
+void GameCamera::ResetThirdPersonOffset(const Vector3& forward)
+{
+	Vector3 horizontalForward = forward;
+	horizontalForward.y = 0.0f;
+	if (horizontalForward.LengthSq() <= FLT_EPSILON) {
+		horizontalForward = m_player->GetForward();
+		horizontalForward.y = 0.0f;
+	}
+	horizontalForward.Normalize();
+
+	// forward の後ろへ、見下ろす角度の分だけ上げた位置に置く。
+	const ThirdPersonSetting& setting = GetThirdPersonSetting();
+	const float pitchRad = Math::DegToRad(setting.pitchDeg);
+	m_toCameraPos = horizontalForward * (-cosf(pitchRad) * setting.distance);
+	m_toCameraPos.y = sinf(pitchRad) * setting.distance;
 }
 
 void GameCamera::UpdateThirdPersonCamera()
 {
 	Vector3 target = m_player->GetPosition();
-	target.y += TARGET_HEIGHT;
+	target.y += GetThirdPersonSetting().targetHeight;
 	target += g_camera3D->GetForward() * TARGET_FORWARD_OFFSET;
 
 	const Vector3 oldToCameraPos = m_toCameraPos;
@@ -160,9 +246,26 @@ void GameCamera::UpdateThirdPersonCamera()
 		m_toCameraPos = oldToCameraPos;
 	}
 
-	const Vector3 position = target + m_toCameraPos;
+	Vector3 position = target + m_toCameraPos;
+	float viewAngle = Math::DegToRad(GetThirdPersonSetting().viewAngleDeg);
+
+	// 寄りと俯瞰を切り替えた直後は、前のカメラから今のモードのカメラへ、なめらかに移す。
+	if (m_blendTimer > 0.0f) {
+		m_blendTimer -= g_gameTime->GetFrameDeltaTime();
+		if (m_blendTimer < 0.0f) {
+			m_blendTimer = 0.0f;
+		}
+		// 0 から 1 へ進む割合。始めと終わりをゆっくりにする（smoothstep）。
+		const float rate = 1.0f - m_blendTimer / MODE_BLEND_SECONDS;
+		const float smoothRate = rate * rate * (3.0f - 2.0f * rate);
+		position.Lerp(smoothRate, m_blendFromPosition, position);
+		target.Lerp(smoothRate, m_blendFromTarget, target);
+		viewAngle = m_blendFromViewAngle + (viewAngle - m_blendFromViewAngle) * smoothRate;
+	}
+
 	g_camera3D->SetPosition(position);
 	g_camera3D->SetTarget(target);
+	g_camera3D->SetViewAngle(viewAngle);
 	g_camera3D->Update();
 }
 
