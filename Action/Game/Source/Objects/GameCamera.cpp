@@ -129,26 +129,26 @@ bool GameCamera::IsOverheadToggleTriggered()
 
 void GameCamera::ToggleCameraMode()
 {
-	if (m_cameraMode == EnCameraMode::FirstPerson) {
-		// 一人称に入る前に使っていた三人称（寄りか俯瞰）に戻る。
+	if (m_cameraMode != EnCameraMode::FirstPerson) {
+		// 一人称から V で戻るときのために、今の三人称のモード（寄りか俯瞰）を覚えておく。
+		m_lastThirdPersonMode = m_cameraMode;
+		m_cameraMode = EnCameraMode::FirstPerson;
+		m_player->SetRenderBody(false);
+		m_firstPersonForward = g_camera3D->GetForward();
+		m_firstPersonForward.y = 0.0f;
+		if (m_firstPersonForward.LengthSq() <= FLT_EPSILON) {
+			m_firstPersonForward = m_player->GetForward();
+		}
+		m_firstPersonForward.Normalize();
+		g_camera3D->SetNear(FIRST_PERSON_NEAR);
+		g_camera3D->SetViewAngle(Math::DegToRad(FIRST_PERSON_VIEW_ANGLE_DEG));
+		m_firstPersonBob.Reset(*m_player);
+		m_firstPersonArms.Reset(*m_player);
+	}
+	else {
+		// 一人称に入る前に使っていた三人称に戻る。体を映す・上の向きと Near を戻すのも、この中でする。
 		ChangeThirdPersonMode(m_lastThirdPersonMode);
-		return;
 	}
-
-	m_lastThirdPersonMode = m_cameraMode;
-	m_cameraMode = EnCameraMode::FirstPerson;
-	m_blendTimer = 0.0f;
-	m_player->SetRenderBody(false);
-	m_firstPersonForward = g_camera3D->GetForward();
-	m_firstPersonForward.y = 0.0f;
-	if (m_firstPersonForward.LengthSq() <= FLT_EPSILON) {
-		m_firstPersonForward = m_player->GetForward();
-	}
-	m_firstPersonForward.Normalize();
-	g_camera3D->SetNear(FIRST_PERSON_NEAR);
-	g_camera3D->SetViewAngle(Math::DegToRad(FIRST_PERSON_VIEW_ANGLE_DEG));
-	m_firstPersonBob.Reset(*m_player);
-	m_firstPersonArms.Reset(*m_player);
 }
 
 void GameCamera::ToggleOverheadMode()
@@ -163,29 +163,25 @@ void GameCamera::ToggleOverheadMode()
 
 void GameCamera::ChangeThirdPersonMode(EnCameraMode mode)
 {
-	if (m_cameraMode == EnCameraMode::FirstPerson) {
+	const bool isFromFirstPerson = m_cameraMode == EnCameraMode::FirstPerson;
+	if (isFromFirstPerson) {
 		RestorePlayerRenderBody();
 		// 一人称の揺れで傾けた上の向きを戻す。
 		g_camera3D->SetUp(Vector3::AxisY);
 		g_camera3D->SetNear(m_defaultNear);
-		// 一人称からはなめらかに移さない（体が急に映るので、移す途中を見せても不自然になる）。
-		m_blendTimer = 0.0f;
 	}
-	else {
-		// 寄りと俯瞰の間は、今のカメラからなめらかに移す。
-		m_blendTimer = MODE_BLEND_SECONDS;
-		m_blendFromPosition = g_camera3D->GetPosition();
-		m_blendFromTarget = g_camera3D->GetTarget();
-		m_blendFromViewAngle = g_camera3D->GetViewAngle();
-	}
+
+	// 寄りと俯瞰の間は、今のカメラからなめらかに移す。
+	// 一人称からは移さない（体が急に映るので、移す途中を見せても不自然になる）。
+	m_blendTimer = isFromFirstPerson ? 0.0f : MODE_BLEND_SECONDS;
+	m_blendFromPosition = g_camera3D->GetPosition();
+	m_blendFromTarget = g_camera3D->GetTarget();
+	m_blendFromViewAngle = g_camera3D->GetViewAngle();
 
 	m_cameraMode = mode;
 	m_lastThirdPersonMode = mode;
-	// 今カメラが向いている左右の向きは引き継ぎ、見下ろす角度と距離はモードの値にする。
+	// 今カメラが向いている左右の向きは引き継ぎ、見下ろす角度と距離はモードの値にする（画角は UpdateThirdPersonCamera で渡す）。
 	ResetThirdPersonOffset(g_camera3D->GetForward());
-	if (m_blendTimer <= 0.0f) {
-		g_camera3D->SetViewAngle(Math::DegToRad(GetThirdPersonSetting().viewAngleDeg));
-	}
 }
 
 const GameCamera::ThirdPersonSetting& GameCamera::GetThirdPersonSetting() const
