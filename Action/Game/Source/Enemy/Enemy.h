@@ -38,7 +38,13 @@ protected:
 	void FilterSkillInput(CharacterInput& input) const override;
 
 private:
+	// F1 の開発用の窓「黒騎士のモーション」。Walk・Run を選ぶと、AI とステートを止めて、その場でそのクリップを繰り返す。
+	void UpdateDebugWindow();
+
 	BlackKnightInputSource m_aiInputSource;
+	int m_debugMotion = -1;           // 窓で選んだクリップ（EnEnemyAnimClip）。-1 ならふだんどおり AI で動く。
+	int m_playingDebugMotion = -1;    // いま窓から流しているクリップ。-1 なら流していない。
+	float m_debugPlaySpeed = 1.0f;    // 窓から流すときの再生の速さ。
 	Status m_status;
 	EnemyStateMachine m_stateMachine;
 	EnemyDamageState m_damage;  // 当たった・倒れて消えた（ステートと受け渡す）。

@@ -3,6 +3,7 @@
 #include "DashSlashAttack.h"
 #include "HeavyComboAttack.h"
 #include "SlashWaveAttack.h"
+#include <imgui/imgui.h>
 
 namespace
 {
@@ -144,8 +145,46 @@ void Enemy::UpdateAction(float deltaTime)
 		m_hitTarget.SetEnabled(false);
 		return;
 	}
+	UpdateDebugWindow();
+	if (m_debugMotion >= 0) {
+		// 窓で選んだクリップを、その場で繰り返す。AI の入力は捨てる（攻撃もしない）。
+		m_input = CharacterInput();
+		if (m_playingDebugMotion != m_debugMotion) {
+			m_playingDebugMotion = m_debugMotion;
+			m_model.PlayAnimation(m_debugMotion, 0.2f);
+		}
+		m_model.GetModelRender().SetAnimationSpeed(m_debugPlaySpeed);
+		return;
+	}
+	if (m_playingDebugMotion >= 0) {
+		// 窓で「AI」に戻したら、Idle からやり直す（流していたクリップのまま止まらないように）。
+		m_playingDebugMotion = -1;
+		m_stateMachine.Reset();
+	}
 	// 移動とアニメーションはステートが行う。凍結中は Frozen ステートになり、重力で落ちるだけになる。
 	// PLAY_SPEED を掛けて、移動・攻撃の時間（突進・斬撃を出すとき）もアニメーションと同じだけ遅くする。
 	m_stateMachine.Update(m_input, deltaTime * PLAY_SPEED);
+}
+
+void Enemy::UpdateDebugWindow()
+{
+	// Release ビルドでは ImGui を起動しないので、出していないときは何も呼ばない。
+	if (!DebugUI::IsVisible()) {
+		return;
+	}
+	ImGui::Begin(u8"黒騎士のモーション");
+	ImGui::RadioButton(u8"AI（ふだんどおり）", &m_debugMotion, -1);
+	ImGui::RadioButton(u8"Walk（歩く）", &m_debugMotion, enEnemyAnimClip_Walk);
+	ImGui::RadioButton(u8"Run（走る）", &m_debugMotion, enEnemyAnimClip_Run);
+	// 歩く速さに合わせた Walk の速さ（足が滑らない速さ）にすぐ戻せるように、ボタンも置く。
+	ImGui::SliderFloat(u8"再生の速さ", &m_debugPlaySpeed, 0.05f, 1.5f, "%.2f");
+	if (ImGui::Button(u8"等速（1.0）")) {
+		m_debugPlaySpeed = 1.0f;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button(u8"ゲームの Walk の速さ")) {
+		m_debugPlaySpeed = WALK_SPEED / WALK_ANIM_FOOT_SPEED;
+	}
+	ImGui::End();
 }
 
