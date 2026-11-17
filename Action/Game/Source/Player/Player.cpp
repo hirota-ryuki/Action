@@ -3,6 +3,7 @@
 #include "PlayerConfig.h"
 #include "IceMagic.h"
 #include "FireMagic.h"
+#include "MagicConfig.h"
 
 namespace
 {
@@ -35,8 +36,8 @@ void Player::OnStart()
 	m_animator.Init(&m_model.GetModelRender(), stateContext.settings.animBlendSeconds);
 	m_stateMachine.Init(stateContext);  // Idle から始める。
 
-	m_skillController.Register<IceMagic>(ActionButton::Action1);
-	m_skillController.Register<FireMagic>(ActionButton::Action2);
+	m_skillController.Register<IceMagic>(ActionButton::Action1, MagicConfig::GetIce().cooldown);
+	m_skillController.Register<FireMagic>(ActionButton::Action2, MagicConfig::GetFire().cooldown);
 }
 
 void Player::FillInputContext(InputSourceContext& context) const

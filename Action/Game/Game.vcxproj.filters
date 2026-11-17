@@ -192,6 +192,9 @@
     <ClCompile Include="Source\Magic\MagicBase.cpp">
       <Filter>Source\Magic</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Magic\MagicConfig.cpp">
+      <Filter>Source\Magic</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Magic\IceMagic.cpp">
       <Filter>Source\Magic</Filter>
     </ClCompile>
@@ -432,6 +435,9 @@
       <Filter>Source\Character\Input</Filter>
     </ClInclude>
     <ClInclude Include="Source\Magic\MagicBase.h">
+      <Filter>Source\Magic</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Magic\MagicConfig.h">
       <Filter>Source\Magic</Filter>
     </ClInclude>
     <ClInclude Include="Source\Objects\CameraCollision.h">

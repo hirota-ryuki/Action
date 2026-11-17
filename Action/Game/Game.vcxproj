@@ -269,6 +269,7 @@
     <ClCompile Include="Source\Skill\SkillBase.cpp" />
     <ClCompile Include="Source\Skill\SkillController.cpp" />
     <ClCompile Include="Source\Magic\MagicBase.cpp" />
+    <ClCompile Include="Source\Magic\MagicConfig.cpp" />
     <ClCompile Include="Source\Magic\IceMagic.cpp" />
     <ClCompile Include="Source\Magic\FireMagic.cpp" />
     <ClCompile Include="Source\Magic\SlashMagic.cpp" />
@@ -355,6 +356,7 @@
     <ClInclude Include="Source\Character\Faction.h" />
     <ClInclude Include="Source\Character\Input\CharacterInput.h" />
     <ClInclude Include="Source\Magic\MagicBase.h" />
+    <ClInclude Include="Source\Magic\MagicConfig.h" />
     <ClInclude Include="Source\Objects\CameraCollision.h" />
     <ClInclude Include="Source\Objects\FirstPersonBob.h" />
     <ClInclude Include="Source\Objects\GameCamera.h" />

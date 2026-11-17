@@ -10,8 +10,7 @@
 class FireMagic : public MagicBase
 {
 public:
-	static constexpr float COOLDOWN = 0.6f;  // 撃ってから次に溜め始められるまでの秒数。
-
+	// 撃ってから次に溜め始められるまでの秒数は magic.json（MagicConfig::GetFire().cooldown）にあり、登録するときに渡す。
 	FireMagic();
 	~FireMagic() override;
 

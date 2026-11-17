@@ -3,6 +3,7 @@
 #include "EffectId.h"
 #include "HitTarget.h"
 #include "StatusEffects.h"
+#include "MagicConfig.h"
 
 namespace
 {
@@ -14,20 +15,10 @@ namespace
 	constexpr const char16_t* HIT_EFFECT_PATH = u"Assets/effect/ice_hit.efk";
 
 	const Vector3 EFFECT_SCALE = { 10.0f, 10.0f, 10.0f };  // Effekseerの1単位をワールド10単位に拡大。
-	constexpr float FREEZE_SECONDS = 2.5f;                  // 命中した相手を凍らせる時間。
-
-	MagicSettings MakeSettings()
-	{
-		MagicSettings settings;
-		settings.speed = 1500.0f;
-		settings.range = 2000.0f;
-		settings.radius = 10.0f;
-		return settings;
-	}
 }
 
 IceMagic::IceMagic()
-	: MagicBase(MakeSettings())
+	: MagicBase(MagicConfig::GetIce().settings)
 {
 }
 
@@ -80,7 +71,7 @@ void IceMagic::OnHitTarget(HitTarget& target, const Vector3& hitPosition)
 {
 	(void)hitPosition;
 	if (StatusEffects* statusEffects = target.GetStatusEffects()) {
-		statusEffects->Freeze(FREEZE_SECONDS);
+		statusEffects->Freeze(MagicConfig::GetIce().freezeSeconds);
 	}
 }
 

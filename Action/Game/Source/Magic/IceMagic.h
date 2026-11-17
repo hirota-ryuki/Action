@@ -7,8 +7,7 @@
 class IceMagic : public MagicBase
 {
 public:
-	static constexpr float COOLDOWN = 0.35f;  // 連射間隔（秒）。
-
+	// 連射間隔は magic.json（MagicConfig::GetIce().cooldown）にあり、登録するときに渡す。
 	IceMagic();
 	~IceMagic() override;
 
