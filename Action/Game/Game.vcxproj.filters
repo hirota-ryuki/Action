@@ -99,6 +99,9 @@
     <ClCompile Include="Source\Player\PlayerAnimator.cpp">
       <Filter>Source\Player</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Player\PlayerUpperBody.cpp">
+      <Filter>Source\Player</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Player\FirstPersonArms.cpp">
       <Filter>Source\Player</Filter>
     </ClCompile>
@@ -306,6 +309,9 @@
       <Filter>Source\Actor</Filter>
     </ClInclude>
     <ClInclude Include="Source\Player\PlayerAnimator.h">
+      <Filter>Source\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Player\PlayerUpperBody.h">
       <Filter>Source\Player</Filter>
     </ClInclude>
     <ClInclude Include="Source\Player\FirstPersonArms.h">

@@ -167,6 +167,30 @@ namespace nsK2EngineLow {
 			}
 		}
 		/// <summary>
+		/// 層として使う。骨ごとの重み（0〜1）を渡すと、スケルトンに書き込まず、
+		/// 先に流した別のアニメーション（下の層）の姿勢の上に、重みの分だけ重ねる。
+		/// </summary>
+		/// <param name="boneWeights">骨の番号ごとの重み。数は骨の数と同じ。</param>
+		void SetLayerBoneWeights(const std::vector<float>& boneWeights);
+		/// <summary>
+		/// 層か。
+		/// </summary>
+		bool IsLayer() const
+		{
+			return !m_layerBoneWeights.empty();
+		}
+		/// <summary>
+		/// 層の全体の重み（0〜1）。骨ごとの重みに掛ける。
+		/// </summary>
+		void SetLayerWeight(float weight)
+		{
+			m_layerWeight = weight;
+		}
+		float GetLayerWeight() const
+		{
+			return m_layerWeight;
+		}
+		/// <summary>
 		/// ワールド空間でのフットステップの移動量を計算する。
 		/// </summary>
 		/// <remarks>
@@ -213,6 +237,10 @@ namespace nsK2EngineLow {
 		/// グローバルポーズの更新。
 		/// </summary>
 		void UpdateGlobalPose();
+		/// <summary>
+		/// 層のとき、計算した姿勢を下の層の姿勢に重ねて、スケルトンに書き込む。
+		/// </summary>
+		void ApplyAsLayer(const Vector3* scales, const Quaternion* rotations, const Vector3* translations);
 	private:
 
 		/// <summary>
@@ -248,5 +276,8 @@ namespace nsK2EngineLow {
 		Vector3 m_footstepDeltaValue = g_vec3Zero;					//footstepボーンの移動量。
 		bool m_isInited = false;
 		float m_deltaTimeOnUpdate = 0.0f;							//Update関数を実行したときのデルタタイム。
+		std::vector<float> m_layerBoneWeights;						//層のときの、骨ごとの重み。空なら層ではない。
+		std::vector<int> m_layerBoneOrder;							//層を重ねるときに骨を計算する順（親が先）。
+		float m_layerWeight = 0.0f;									//層の全体の重み。
 	};
 }

@@ -115,6 +115,7 @@ void Character::UpdateInput(float deltaTime)
 	context.position = m_transform.position;
 	context.forward = GetForward();
 	context.deltaTime = deltaTime;
+	context.castForward = m_castSettings.castForward;
 	FillInputContext(context);
 
 	GetDefaultInputSource().Update(context, m_input);

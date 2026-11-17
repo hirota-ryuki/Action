@@ -105,6 +105,17 @@
 		"exitBlendSeconds": 0.2
 	},
 
+	// 三人称の溜め撃ち（右クリック）。上半身だけ Attack3（両手で撃つ）を流し、下半身は歩けるようにする。
+	// コマは Attack3 のコマ（上の "attack" と同じ数え方）。
+	"charge": {
+		"holdFrame": 7,          // 溜めている間、ここで止める（両手を前へ伸ばしかけたところ）。離すと続きを流して撃つ。
+		"castEndFrame": 17,      // 撃ったあと、ここ（下ろし始め）まで流したら、上半身を下の動きへ戻し始める。
+		"fadeInSeconds": 0.15,   // 上半身を溜める動きに替えるのにかける時間。
+		"fadeOutSeconds": 0.25,  // 上半身を下の動きへ戻すのにかける時間。
+		"moveSpeedRate": 0.6,    // 溜めている間の歩く速さ（ふだんの歩きの何倍か）。走れない。
+		"ballForward": 15.0      // 火の玉を、両手の真ん中からこれだけ前（cm）に置く。
+	},
+
 	"model": {
 		"path": "Assets/modelData/player/Model/SK_Player.FBX",
 		"upAxis": "Z",  // 3ds Max（Z-up）で作られているので Z を上にして起こす（Y のままだと仰向けに倒れる）。

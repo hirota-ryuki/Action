@@ -77,6 +77,10 @@ struct InputSourceContext
 	bool isFirstPerson = false;         // 一人称視点か。プレイヤーの照準をカメラに合わせるのに使う。
 	// Action1 のスキルを撃った回数。一人称のプレイヤーが、右手と左手で交互に撃つ（撃つ位置を右と左に分ける）のに使う。
 	int action1UseCount = 0;
+	// 三人称で溜め撃ちを構えているか。true なら、カメラの向き（画面の真ん中）へ、chargePosition から撃つ。
+	bool isThirdPersonAim = false;
+	Vector3 chargePosition = Vector3::Zero;  // 溜めている火の玉を置く位置（両手の前）。
+	float castForward = 0.0f;                // スキルを撃つ位置を前に出す距離（CharacterCastSettings の castForward）。
 };
 
 // 入力元のインターフェース。プレイヤーの操作もNPCのAIもこれを実装する。

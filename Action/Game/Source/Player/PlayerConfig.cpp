@@ -353,3 +353,16 @@ PlayerStateSettings PlayerConfig::MakeStateSettings()
 {
 	return BuildStateSettings();
 }
+
+PlayerChargeSettings PlayerConfig::MakeChargeSettings()
+{
+	const Json section = GetSection("charge");
+	PlayerChargeSettings settings;
+	settings.holdTime = ReadFramesAsSeconds(section, "charge", "holdFrame", 7.0f);
+	settings.castEndTime = ReadFramesAsSeconds(section, "charge", "castEndFrame", 17.0f);
+	settings.fadeInSeconds = Read(section, "charge", "fadeInSeconds", 0.15f);
+	settings.fadeOutSeconds = Read(section, "charge", "fadeOutSeconds", 0.25f);
+	settings.moveSpeedRate = Read(section, "charge", "moveSpeedRate", 0.6f);
+	settings.ballForward = Read(section, "charge", "ballForward", 15.0f);
+	return settings;
+}

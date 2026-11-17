@@ -46,11 +46,20 @@ void PlayerInputSource::Update(const InputSourceContext& context, CharacterInput
 	input.Action(ActionButton::Action2).Update((CanUseMouse() && IsKeyPressed(VK_RBUTTON)) || pad.IsPress(enButtonRB2));
 
 	// 一人称では視線の方向へ目の位置から撃つ。三人称ではキャラクターの正面へ撃つ（hasAim = false）。
-	input.hasAim = context.isFirstPerson;
+	// 三人称で溜め撃ちを構えている間は、画面の真ん中へ、両手の前から撃つ。
+	input.hasAim = context.isFirstPerson || context.isThirdPersonAim;
 	for (Vector3& offset : input.aimOffsets) {
 		offset = Vector3::Zero;
 	}
-	if (input.hasAim) {
+	if (context.isThirdPersonAim) {
+		input.aimOrigin = g_camera3D->GetPosition();
+		input.aimDirection = g_camera3D->GetForward();
+		// 構えている間は、体をカメラの向きへ向ける（弓を構えるときのように）。
+		input.lookDirection = cameraForward;
+		// Character は、照準の位置から castForward だけ前に出し、そこからずらす。ずらした先が chargePosition になるようにする。
+		input.AimOffset(ActionButton::Action2) = context.chargePosition - input.aimOrigin - input.aimDirection * context.castForward;
+	}
+	else if (input.hasAim) {
 		input.aimOrigin = g_camera3D->GetPosition();
 		input.aimDirection = g_camera3D->GetForward();
 		const Matrix& cameraRotation = g_camera3D->GetCameraRotation();

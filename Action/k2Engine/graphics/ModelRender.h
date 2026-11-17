@@ -144,6 +144,34 @@ namespace nsK2Engine {
 		}
 
 		/// <summary>
+		/// アニメーションの層を作る。上半身だけ別のアニメーションを流す、などに使う。
+		/// 骨の名前と重みの組を渡すと、その骨とその子孫に重みが付く（子孫に別の組があれば、そちらが優先）。
+		/// 組に入らない骨は、重み 0（下のアニメーションのまま）。クリップは Init に渡したものを使う。
+		/// </summary>
+		void InitAnimationLayer(const std::vector<std::pair<const wchar_t*, float>>& boneWeights);
+		/// <summary>
+		/// 層のアニメーションを、startTime 秒の位置から、interpolateTime 秒の補間つきで再生する。
+		/// </summary>
+		void PlayLayerAnimationFromTime(int animNo, float interpolateTime, float startTime)
+		{
+			m_layerAnimation.PlayFromTime(animNo, interpolateTime, startTime);
+		}
+		/// <summary>
+		/// 層の全体の重み（0〜1）。0 なら層を進めず、下のアニメーションのままになる。
+		/// </summary>
+		void SetLayerWeight(float weight)
+		{
+			m_layerAnimation.SetLayerWeight(weight);
+		}
+		/// <summary>
+		/// 層のアニメーションの再生速度（倍）。0 にすると、その姿勢で止まる。
+		/// </summary>
+		void SetLayerAnimationSpeed(float speed)
+		{
+			m_layerAnimationSpeed = speed;
+		}
+
+		/// <summary>
 		/// モデルを取得。
 		/// </summary>
 		/// <returns>モデル</returns>
@@ -516,6 +544,8 @@ namespace nsK2Engine {
 		Vector3						m_scale = Vector3::One;				// 拡大率。
 		EnModelUpAxis				m_enFbxUpAxis = enModelUpAxisZ;		// FBXの上方向。
 		Animation					m_animation;						// アニメーション。
+		Animation					m_layerAnimation;					// 上に重ねるアニメーションの層（InitAnimationLayer で作る）。
+		float						m_layerAnimationSpeed = 1.0f;		// 層の再生速度。
 		ComputeAnimationVertexBuffer m_computeAnimationVertexBuffer;	// アニメーション済み頂点バッファの計算処理。
 		Model						m_zprepassModel;					// ZPrepassで描画されるモデル
 		Model						m_forwardRenderModel;				// フォワードレンダリングの描画パスで描画されるモデル

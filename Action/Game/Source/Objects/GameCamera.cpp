@@ -38,6 +38,13 @@ namespace
 	constexpr float FIRST_PERSON_VIEW_ANGLE_DEG = 50.0f;
 	constexpr int TOGGLE_CAMERA_KEY = 'V';            // 三人称／一人称を切り替えるキー（パッドは B ボタン）。
 	constexpr int TOGGLE_OVERHEAD_KEY = 'B';          // 俯瞰と寄りを切り替えるキー。
+	// 溜め撃ちを構えている間の肩越しの視点（フォートナイトや原神で弓を構えるときのように、キャラクターを画面の左に寄せる）。
+	constexpr float AIM_DISTANCE = 200.0f;            // 注視点からカメラまでの距離。
+	constexpr float AIM_TARGET_HEIGHT = 160.0f;       // 注視点の高さ（足元から）。
+	constexpr float AIM_SIDE_OFFSET = 55.0f;          // 注視点とカメラを、カメラの右へずらす量。キャラクターが画面の左に寄る。
+	constexpr float AIM_VIEW_ANGLE_DEG = 50.0f;       // 画角（寄りの 55 度より少し狭くして、狙う先を大きく見せる）。
+	constexpr float AIM_ENTER_SECONDS = 0.2f;         // 肩越しへ移る時間。
+	constexpr float AIM_EXIT_SECONDS = 0.3f;          // 元の三人称へ戻る時間。
 
 	// マウス1フレームあたりの回転量を上限値で制限する。
 	float ClampMouseRotateDeg(float rotateDeg)
@@ -98,6 +105,8 @@ void GameCamera::Update()
 	if (IsOverheadToggleTriggered()) {
 		ToggleOverheadMode();
 	}
+	// プレイヤーが溜め撃ちで上半身を構えるのは、三人称のときだけ。
+	m_player->SetThirdPersonCamera(m_cameraMode != EnCameraMode::FirstPerson);
 
 	if (m_cameraMode == EnCameraMode::FirstPerson) {
 		UpdateFirstPersonCamera();
@@ -268,6 +277,10 @@ void GameCamera::UpdateThirdPersonCamera()
 		viewAngle = m_blendFromViewAngle + (viewAngle - m_blendFromViewAngle) * smoothRate;
 	}
 
+	// 溜め撃ちを構えている間は、肩越しの視点へ寄せる。寄りと俯瞰のどちらの上にも重ねる。
+	UpdateAimRate();
+	ApplyShoulderView(position, target, viewAngle);
+
 	// 頭の中心とカメラの間に壁や床があれば、カメラを手前に寄せる。
 	// なめらかに移したあとの位置に掛けるので、寄りと俯瞰を移す途中でも壁に入らない。
 	// 始点は前へずらす前の注視点にする（前へずらした注視点は、壁を向くと壁に入りかける）。
@@ -280,6 +293,49 @@ void GameCamera::UpdateThirdPersonCamera()
 	g_camera3D->SetTarget(target);
 	g_camera3D->SetViewAngle(viewAngle);
 	g_camera3D->Update();
+}
+
+void GameCamera::UpdateAimRate()
+{
+	const float deltaTime = g_gameTime->GetFrameDeltaTime();
+	if (m_player->IsThirdPersonAiming()) {
+		m_aimRate = min(1.0f, m_aimRate + deltaTime / AIM_ENTER_SECONDS);
+	}
+	else {
+		m_aimRate = max(0.0f, m_aimRate - deltaTime / AIM_EXIT_SECONDS);
+	}
+}
+
+void GameCamera::ApplyShoulderView(Vector3& position, Vector3& target, float& viewAngle) const
+{
+	if (m_aimRate <= 0.0f) {
+		return;
+	}
+	// カメラの水平の前と右。
+	Vector3 forward = m_toCameraPos * -1.0f;
+	forward.y = 0.0f;
+	if (forward.LengthSq() <= FLT_EPSILON) {
+		return;
+	}
+	forward.Normalize();
+	Vector3 right;
+	right.Cross(Vector3::AxisY, forward);
+	right.Normalize();
+	Vector3 toCameraDir = m_toCameraPos;
+	toCameraDir.Normalize();
+
+	// 注視点もカメラも、同じだけ右へずらす（画面の真ん中は、キャラクターの右前を指す）。
+	Vector3 aimTarget = m_player->GetPosition();
+	aimTarget.y += AIM_TARGET_HEIGHT;
+	aimTarget += right * AIM_SIDE_OFFSET;
+	const Vector3 aimPosition = aimTarget + toCameraDir * AIM_DISTANCE;
+	aimTarget += g_camera3D->GetForward() * TARGET_FORWARD_OFFSET;
+
+	// 始めと終わりをゆっくりにする（smoothstep）。
+	const float rate = m_aimRate * m_aimRate * (3.0f - 2.0f * m_aimRate);
+	position.Lerp(rate, position, aimPosition);
+	target.Lerp(rate, target, aimTarget);
+	viewAngle += (Math::DegToRad(AIM_VIEW_ANGLE_DEG) - viewAngle) * rate;
 }
 
 void GameCamera::UpdateBodyHiddenByCollision()

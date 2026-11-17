@@ -132,6 +132,11 @@ protected:
 	{
 		m_bodyLink.SetAttackWeight(attackWeight);
 	}
+	// スキルを撃つ位置の数値（高さ・前に出す距離）。
+	const CharacterCastSettings& GetCastSettings() const
+	{
+		return m_castSettings;
+	}
 
 	CharacterInput m_input;
 	CharacterMover m_mover;
