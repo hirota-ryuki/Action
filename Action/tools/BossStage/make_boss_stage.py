@@ -378,6 +378,8 @@ def build():
     # 扉（入口の壁の内側）
     d_obj, d_size = parts["Door"]
     place(d_obj, 0, 0, -L + d_size[1] / 2, 0, visual)
+    # 扉は入口の壁から広間の方へ出ているので、当たり判定の箱も置く（カメラやプレイヤーが扉の中に入らないように）
+    box("DoorCol", (-d_size[0] / 2, 0, -L), (d_size[0] / 2, d_size[2], -L + d_size[1]), wall_mat, 4.0, col)
     # 玉座（台座の上で、入口の方を向く）
     t_obj, t_size = parts["Throne"]
     place(t_obj, 0, dais_top, THRONE_Z, 180, visual)
