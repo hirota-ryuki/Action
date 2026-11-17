@@ -3,10 +3,17 @@
 #include "DashSlashAttack.h"
 #include "HeavyComboAttack.h"
 #include "SlashWaveAttack.h"
+#include "SpringBones.h"
 #include <imgui/imgui.h>
 
 namespace
 {
+	// 行列の位置（平行移動の成分）。
+	Vector3 GetTranslation(const Matrix& m)
+	{
+		return Vector3(m.m[3][0], m.m[3][1], m.m[3][2]);
+	}
+
 	// 黒騎士の大きさ。兜のあご〜頭頂（モデルで 0.175）が、Player の顔のあご〜頭頂（0.217 × 1.128）と同じになる 1.128 × 0.217 ÷ 0.175。
 	constexpr float MODEL_SCALE = 1.4f;
 	// 当たり判定とカプセルは、前の大きさ（1.3）で体に合わせた値を、同じ割合で大きくする。
@@ -123,6 +130,40 @@ void Enemy::OnStart()
 	m_skillController.Register<DashSlashAttack>(ActionButton::Action1);
 	m_skillController.Register<HeavyComboAttack>(ActionButton::Action2);
 	m_skillController.Register<SlashWaveAttack>(ActionButton::Action3);
+
+	// 黒騎士は揺れ物・体の連動を使わない（垂れ布の揺れはモーションに焼き込んである）ので、
+	// アニメーションの姿勢ができたあとの処理は、開発用の窓の「右肩 前後」だけに使う。
+	m_model.GetModelRender().GetSkeleton().SetOnPostUpdateWorldMatrix([this](Skeleton& skeleton) {
+		RotateDebugShoulder(skeleton);
+	});
+}
+
+void Enemy::RotateDebugShoulder(Skeleton& skeleton)
+{
+	if (m_playingDebugMotion != enEnemyAnimClip_Run || fabsf(m_debugShoulderDeg) < 0.01f) {
+		return;
+	}
+	const int rightNo = skeleton.FindBoneID(L"J_Bip_R_UpperArm");
+	const int leftNo = skeleton.FindBoneID(L"J_Bip_L_UpperArm");
+	if (rightNo < 0 || leftNo < 0) {
+		return;
+	}
+	Bone* rightArm = skeleton.GetBone(rightNo);
+	// 回す中心は右の肩の関節（右上腕の根元）。回す軸は、左右の肩の関節を結ぶ向き（体の横の向き）。
+	const Vector3 rightShoulder = GetTranslation(rightArm->GetWorldMatrix());
+	const Vector3 leftShoulder = GetTranslation(skeleton.GetBone(leftNo)->GetWorldMatrix());
+	Vector3 axis = rightShoulder - leftShoulder;
+	if (axis.LengthSq() <= FLT_EPSILON) {
+		return;
+	}
+	axis.Normalize();
+	Quaternion rotation;
+	rotation.SetRotationDeg(axis, m_debugShoulderDeg);
+	Matrix toOrigin, rotationMatrix, back;
+	toOrigin.MakeTranslation(rightShoulder * -1.0f);
+	rotationMatrix.MakeRotationFromQuaternion(rotation);
+	back.MakeTranslation(rightShoulder);
+	SpringBones::RotateBoneTree(*rightArm, toOrigin * rotationMatrix * back);
 }
 
 void Enemy::FilterSkillInput(CharacterInput& input) const
@@ -184,6 +225,11 @@ void Enemy::UpdateDebugWindow()
 	ImGui::SameLine();
 	if (ImGui::Button(u8"ゲームの Walk の速さ")) {
 		m_debugPlaySpeed = WALK_SPEED / WALK_ANIM_FOOT_SPEED;
+	}
+	// Run を流している間だけ効く。決めた角度は、モーションの設定（black_knight_anims.json の Run の adjust）に書き写す。
+	ImGui::SliderFloat(u8"右肩 前後（Run・度）", &m_debugShoulderDeg, -60.0f, 60.0f, "%.0f");
+	if (ImGui::Button(u8"右肩を戻す")) {
+		m_debugShoulderDeg = 0.0f;
 	}
 	ImGui::End();
 }
