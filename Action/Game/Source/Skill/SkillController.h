@@ -33,9 +33,15 @@ public:
 	template <class T>
 	void Register(ActionButton button)
 	{
+		Register<T>(button, T::COOLDOWN);
+	}
+	// クールダウンを、調整値のファイル（magic.json など）から読んだ値で渡すとき。
+	template <class T>
+	void Register(ActionButton button, float cooldown)
+	{
 		Entry& entry = m_entries[static_cast<int>(button)];
 		entry.create = [] { return NewGO<T>(T::PRIORITY, SkillBase::OBJECT_NAME); };
-		entry.cooldown = T::COOLDOWN;
+		entry.cooldown = cooldown;
 	}
 
 	// 毎フレーム、入力とボタンごとの撃つ位置・向きを渡す。登録したボタンが押された瞬間にスキルを作り、そのあとの入力を渡す。

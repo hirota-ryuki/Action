@@ -4,6 +4,7 @@
 #include "Character.h"
 #include "EffectId.h"
 #include "HitTarget.h"
+#include "MagicConfig.h"
 
 namespace
 {
@@ -28,23 +29,15 @@ namespace
 		{ EffectId::FireGround, u"Assets/effect/fire_ground.efk" },
 	};
 
-	constexpr float MAX_CHARGE_SECONDS = 1.2f;  // 最大まで溜まる秒数。
 	constexpr float FULL_PULSE_SPEED = 18.0f;   // 最大まで溜まった後に火の玉が脈打つ速さ（ラジアン/秒）。
 	constexpr float FULL_PULSE_DEPTH = 0.12f;   // 脈打ちで大きさが変わる割合。
 
 	// 溜めなし(0)〜最大まで溜めた(1)ときの値。間は線形に補間する。
-	constexpr float MIN_RADIUS = 14.0f;               // 当たり判定の半径。
-	constexpr float MAX_RADIUS = 45.0f;
+	// 当たり判定の半径・燃える床の半径は、magic.json（MagicConfig）にある。
 	constexpr float MIN_FLY_EFFECT_SCALE = 8.0f;      // 飛ぶ炎（と溜め中の火の玉）のエフェクトの拡大率。
 	constexpr float MAX_FLY_EFFECT_SCALE = 26.0f;
 	constexpr float MIN_HIT_EFFECT_SCALE = 12.0f;     // 着弾エフェクトの拡大率。
 	constexpr float MAX_HIT_EFFECT_SCALE = 26.0f;
-	constexpr float MIN_GROUND_RADIUS = 130.0f;       // 炎魔法発射後の燃える床の半径。
-	constexpr float MAX_GROUND_RADIUS = 300.0f;
-
-	constexpr float SPEED = 1300.0f;
-	constexpr float RANGE = 2000.0f;
-	constexpr float GROUND_BURN_SECONDS = 4.0f;       // 床が燃えている時間。
 
 	// 炎魔法発射後の燃える床を置く場所を探すレイ。着弾点の少し手前・少し上から真下へ飛ばす。
 	constexpr float FLOOR_RAY_BACK_OFF = 20.0f;       // 壁に当たったとき、壁にめり込まないよう手前に戻す距離。
@@ -58,10 +51,11 @@ namespace
 
 	MagicSettings MakeSettings(float chargeRate)
 	{
+		const FireMagicConfig& config = MagicConfig::GetFire();
 		MagicSettings settings;
-		settings.speed = SPEED;
-		settings.range = RANGE;
-		settings.radius = Lerp(chargeRate, MIN_RADIUS, MAX_RADIUS);
+		settings.speed = config.speed;
+		settings.range = config.range;
+		settings.radius = Lerp(chargeRate, config.minRadius, config.maxRadius);
 		return settings;
 	}
 
@@ -133,7 +127,7 @@ bool FireMagic::OnStart()
 
 void FireMagic::OnCharge(float chargeSeconds)
 {
-	m_chargeRate = min(chargeSeconds / MAX_CHARGE_SECONDS, 1.0f);
+	m_chargeRate = min(chargeSeconds / MagicConfig::GetFire().maxChargeSeconds, 1.0f);
 	if (m_chargeRate >= 1.0f && !m_isFullCharged) {
 		// 溜まり切った瞬間に一度だけ閃光を出す。
 		m_isFullCharged = true;
@@ -234,11 +228,12 @@ void FireMagic::SpawnBurningGround(const Vector3& hitPosition)
 		return;
 	}
 
+	const FireMagicConfig& config = MagicConfig::GetFire();
 	BurningGround* ground = NewGO<BurningGround>(1, BurningGround::OBJECT_NAME);
 	ground->Init(
 		floorPosition,
-		Lerp(m_chargeRate, MIN_GROUND_RADIUS, MAX_GROUND_RADIUS),
-		GROUND_BURN_SECONDS,
+		Lerp(m_chargeRate, config.minGroundRadius, config.maxGroundRadius),
+		config.groundBurnSeconds,
 		GetOwner(),
 		GetFaction());
 }
