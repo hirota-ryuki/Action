@@ -59,6 +59,7 @@ void Player::UpdateAction(float deltaTime)
 	// 移動とアニメーションはステートが行う。凍結中は Frozen ステートになり、重力で落ちるだけになる。
 	CharacterInput input = m_input;
 	FilterAimingInput(input);
+	m_stateMachine.SetAiming(IsThirdPersonAiming());
 	m_stateMachine.Update(input, deltaTime);
 	UpdateJumpWeight(deltaTime);
 	UpdateAttackWeight(deltaTime);

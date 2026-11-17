@@ -82,6 +82,8 @@ struct PlayerStateSettings
 	float moveThreshold = 0.1f;       // 移動入力の長さがこれより小さければ立ち止まっているとみなす。
 	float animBlendSeconds = 0.2f;    // アニメーションを切り替えるときの補間時間。
 	float walkAnimMoveSpeed = 0.0f;   // 歩くアニメーションを等速で再生したとき、足が地面を送る速さ。0なら等速で再生する。
+	float walkBackAnimMoveSpeed = 0.0f; // 後ろ歩き（WalkBack）の、足が地面を送る速さ。0なら等速で再生する。
+	float strafeAnimMoveSpeed = 0.0f;   // 横歩き（StrafeL・StrafeR）の、足が地面を送る速さ。0なら等速で再生する。
 };
 
 // ステートが触ってよいもの。ステートは Player クラスを直接は知らない。
@@ -99,6 +101,8 @@ struct PlayerStateContext
 	// このフレームに魔法の発射ボタンを押したことにする。Attack が手を突き出したコマで立て、
 	// Player が魔法を撃つ入力に使う。PlayerStateMachine が毎フレームの最初に下ろす。
 	bool attackFire = false;
+	// 三人称の溜め撃ちで構えているか。Walk が、動く向きで前・後ろ・横の歩きを選ぶのに使う。PlayerStateMachine が毎フレーム入れる。
+	bool isAiming = false;
 };
 
 // プレイヤーのステートの基底クラス。中身は共通の State（Character/StateMachine/State.h）にある。

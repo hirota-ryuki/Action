@@ -493,8 +493,9 @@ namespace nsK2Engine {
 		//アニメーションを進める。
 		m_animation.Progress(g_gameTime->GetFrameDeltaTime() * m_animationSpeed);
 		//層のアニメーションを、下のアニメーションの上に重ねる。
+		//速さは、下のアニメーションの速さ（m_animationSpeed）とは別にする（歩く速さに合わせた再生の速さに、つられないように）。
 		if (m_layerAnimation.IsInited() && m_layerAnimation.GetLayerWeight() > 0.0f) {
-			m_layerAnimation.Progress(g_gameTime->GetFrameDeltaTime() * m_animationSpeed * m_layerAnimationSpeed);
+			m_layerAnimation.Progress(g_gameTime->GetFrameDeltaTime() * m_layerAnimationSpeed);
 		}
 
 	}

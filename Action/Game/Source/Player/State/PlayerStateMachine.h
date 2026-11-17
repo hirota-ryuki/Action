@@ -20,7 +20,15 @@ public:
 	{
 		return GetContext().attackFire;
 	}
+	// 三人称の溜め撃ちで構えているか。Update の前に Player が入れる。
+	void SetAiming(bool isAiming)
+	{
+		m_isAiming = isAiming;
+	}
 
 protected:
 	void OnBeforeUpdate(PlayerStateContext& context, const CharacterInput& input) override;
+
+private:
+	bool m_isAiming = false;
 };

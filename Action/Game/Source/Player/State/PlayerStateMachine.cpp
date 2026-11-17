@@ -26,6 +26,7 @@ PlayerStateMachine::PlayerStateMachine()
 void PlayerStateMachine::OnBeforeUpdate(PlayerStateContext& context, const CharacterInput& input)
 {
 	context.attackFire = false;
+	context.isAiming = m_isAiming;
 	// 移動の入力を離したら、ダッシュのあとの「走り続ける」を終える。
 	if (input.moveDirection.Length() < context.settings.moveThreshold) {
 		context.keepRunAfterDash = false;
