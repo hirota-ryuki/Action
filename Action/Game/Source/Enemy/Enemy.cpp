@@ -132,38 +132,67 @@ void Enemy::OnStart()
 	m_skillController.Register<SlashWaveAttack>(ActionButton::Action3);
 
 	// 黒騎士は揺れ物・体の連動を使わない（垂れ布の揺れはモーションに焼き込んである）ので、
-	// アニメーションの姿勢ができたあとの処理は、開発用の窓の「右肩 前後」だけに使う。
+	// アニメーションの姿勢ができたあとの処理は、開発用の窓の「剣を持つ右腕」の調整だけに使う。
 	m_model.GetModelRender().GetSkeleton().SetOnPostUpdateWorldMatrix([this](Skeleton& skeleton) {
-		RotateDebugShoulder(skeleton);
+		RotateDebugArm(skeleton);
 	});
 }
 
-void Enemy::RotateDebugShoulder(Skeleton& skeleton)
+namespace
 {
-	if (m_playingDebugMotion != enEnemyAnimClip_Run || fabsf(m_debugShoulderDeg) < 0.01f) {
+	// bone とその子孫を、center を中心に、axis（向き）のまわりに deg 度回す。
+	void RotateBoneTreeAround(Bone& bone, const Vector3& center, Vector3 axis, float deg)
+	{
+		if (fabsf(deg) < 0.01f || axis.LengthSq() <= FLT_EPSILON) {
+			return;
+		}
+		axis.Normalize();
+		Quaternion rotation;
+		rotation.SetRotationDeg(axis, deg);
+		Matrix toOrigin, rotationMatrix, back;
+		toOrigin.MakeTranslation(center * -1.0f);
+		rotationMatrix.MakeRotationFromQuaternion(rotation);
+		back.MakeTranslation(center);
+		SpringBones::RotateBoneTree(bone, toOrigin * rotationMatrix * back);
+	}
+}
+
+void Enemy::RotateDebugArm(Skeleton& skeleton)
+{
+	if (m_playingDebugMotion != enEnemyAnimClip_Run) {
 		return;
 	}
-	const int rightNo = skeleton.FindBoneID(L"J_Bip_R_UpperArm");
+	const int upperNo = skeleton.FindBoneID(L"J_Bip_R_UpperArm");
 	const int leftNo = skeleton.FindBoneID(L"J_Bip_L_UpperArm");
-	if (rightNo < 0 || leftNo < 0) {
+	const int lowerNo = skeleton.FindBoneID(L"J_Bip_R_LowerArm");
+	const int handNo = skeleton.FindBoneID(L"J_Bip_R_Hand");
+	if (upperNo < 0 || leftNo < 0 || lowerNo < 0 || handNo < 0) {
 		return;
 	}
-	Bone* rightArm = skeleton.GetBone(rightNo);
-	// 回す中心は右の肩の関節（右上腕の根元）。回す軸は、左右の肩の関節を結ぶ向き（体の横の向き）。
-	const Vector3 rightShoulder = GetTranslation(rightArm->GetWorldMatrix());
-	const Vector3 leftShoulder = GetTranslation(skeleton.GetBone(leftNo)->GetWorldMatrix());
-	Vector3 axis = rightShoulder - leftShoulder;
-	if (axis.LengthSq() <= FLT_EPSILON) {
-		return;
+	Bone* upper = skeleton.GetBone(upperNo);
+	Bone* hand = skeleton.GetBone(handNo);
+	auto position = [&](int boneNo) { return GetTranslation(skeleton.GetBone(boneNo)->GetWorldMatrix()); };
+
+	// ① 右肩 前後: 右肩の関節を中心に、左右の肩を結ぶ向き（体の横の向き）のまわりに回す。
+	const Vector3 shoulder = position(upperNo);
+	RotateBoneTreeAround(*upper, shoulder, shoulder - position(leftNo), m_debugShoulderDeg);
+
+	// ② ひじから下 内・外: 上腕を、その向き（肩 → ひじ）を軸にひねる。ひじは動かず、曲げた前腕が体の内・外へ振れる。
+	RotateBoneTreeAround(*upper, shoulder, position(lowerNo) - shoulder, m_debugForearmDeg);
+
+	// ③ 手首: 手首を中心に、前腕から見た3つの向きで回す（剣も一緒に回る）。
+	const Vector3 elbow = position(lowerNo);
+	const Vector3 wrist = position(handNo);
+	Vector3 forearm = wrist - elbow;               // ひねりの軸（ひじ → 手首）。
+	Vector3 upperDir = elbow - shoulder;
+	Vector3 bendAxis = Cross(upperDir, forearm);   // ひじの曲がる軸。手首の曲げもこの軸まわり。
+	if (bendAxis.LengthSq() <= FLT_EPSILON) {
+		bendAxis = Cross(Vector3::AxisY, forearm);
 	}
-	axis.Normalize();
-	Quaternion rotation;
-	rotation.SetRotationDeg(axis, m_debugShoulderDeg);
-	Matrix toOrigin, rotationMatrix, back;
-	toOrigin.MakeTranslation(rightShoulder * -1.0f);
-	rotationMatrix.MakeRotationFromQuaternion(rotation);
-	back.MakeTranslation(rightShoulder);
-	SpringBones::RotateBoneTree(*rightArm, toOrigin * rotationMatrix * back);
+	const Vector3 sideAxis = Cross(forearm, bendAxis);  // 手首を横（親指側・小指側）へ倒す軸。
+	RotateBoneTreeAround(*hand, wrist, bendAxis, m_debugWristBendDeg);
+	RotateBoneTreeAround(*hand, wrist, sideAxis, m_debugWristSideDeg);
+	RotateBoneTreeAround(*hand, wrist, forearm, m_debugWristTwistDeg);
 }
 
 void Enemy::FilterSkillInput(CharacterInput& input) const
@@ -227,9 +256,18 @@ void Enemy::UpdateDebugWindow()
 		m_debugPlaySpeed = WALK_SPEED / WALK_ANIM_FOOT_SPEED;
 	}
 	// Run を流している間だけ効く。決めた角度は、モーションの設定（black_knight_anims.json の Run の adjust）に書き写す。
-	ImGui::SliderFloat(u8"右肩 前後（Run・度）", &m_debugShoulderDeg, -60.0f, 60.0f, "%.0f");
-	if (ImGui::Button(u8"右肩を戻す")) {
+	ImGui::SeparatorText(u8"剣を持つ右腕（Run のときだけ）");
+	ImGui::SliderFloat(u8"右肩 前後（＋で前）", &m_debugShoulderDeg, -60.0f, 60.0f, "%.0f");
+	ImGui::SliderFloat(u8"ひじから下 内・外（－で内）", &m_debugForearmDeg, -90.0f, 90.0f, "%.0f");
+	ImGui::SliderFloat(u8"手首 曲げ", &m_debugWristBendDeg, -90.0f, 90.0f, "%.0f");
+	ImGui::SliderFloat(u8"手首 横", &m_debugWristSideDeg, -90.0f, 90.0f, "%.0f");
+	ImGui::SliderFloat(u8"手首 ひねり", &m_debugWristTwistDeg, -90.0f, 90.0f, "%.0f");
+	if (ImGui::Button(u8"右腕を戻す")) {
 		m_debugShoulderDeg = 0.0f;
+		m_debugForearmDeg = 0.0f;
+		m_debugWristBendDeg = 0.0f;
+		m_debugWristSideDeg = 0.0f;
+		m_debugWristTwistDeg = 0.0f;
 	}
 	ImGui::End();
 }
