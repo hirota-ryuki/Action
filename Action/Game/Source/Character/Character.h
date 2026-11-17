@@ -117,6 +117,10 @@ protected:
 	virtual void OnLateUpdate(float deltaTime)
 	{
 	}
+	// アニメーションの姿勢と体の連動のあと、揺れ物の前に、骨に手を加える（派生クラス）。
+	virtual void OnPostBodyLink(Skeleton& skeleton)
+	{
+	}
 	// 体を描いたあと、自分だけのものを描く。
 	virtual void OnRender(RenderContext& rc)
 	{

@@ -48,6 +48,7 @@ protected:
 	void UpdateAction(float deltaTime) override;
 	void FilterSkillInput(CharacterInput& input) const override;
 	void OnLateUpdate(float deltaTime) override;
+	void OnPostBodyLink(Skeleton& skeleton) override;
 
 private:
 	void Respawn();
@@ -59,6 +60,8 @@ private:
 	void FilterAimingInput(CharacterInput& input);
 	// 溜めている火の玉を置く位置を、両手の前に合わせる。
 	void UpdateChargePosition();
+	// 溜め撃ちを構えている間、脚が横を向いていても、上半身をカメラの向きへひねる。
+	void TwistUpperBodyToAim(Skeleton& skeleton);
 
 	PlayerInputSource m_playerInputSource;
 	PlayerStatus m_status;
@@ -70,5 +73,6 @@ private:
 	PlayerUpperBody m_upperBody;
 	bool m_isThirdPersonCamera = true;
 	int m_handBones[2] = { -1, -1 };          // 左手・右手の骨の番号。
+	int m_twistBones[3] = { -1, -1, -1 };     // 上半身をひねる骨（背骨・胸・上の胸）の番号。
 	Vector3 m_chargePosition = Vector3::Zero; // 溜めている火の玉を置く位置。
 };
