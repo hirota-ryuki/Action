@@ -17,6 +17,8 @@ namespace
 	constexpr float TARGET_RADIUS_RATE = 0.5f;  // 相手の当たり判定の半径のうち、範囲の判定に足す割合。
 	constexpr float SPREAD_SECONDS = 0.4f;     // 中心から最大の広さまで燃え広がる秒数。着弾の飛び散りに合わせる。
 	constexpr float SPREAD_START_RATE = 0.1f;   // 燃え始めの広さ（最大に対する割合）。
+	// 同時に燃えていられる床の数。連射で床が重なると、炎の粒が重なって描くのが重くなるため。
+	constexpr int MAX_BURNING_COUNT = 3;
 }
 
 BurningGround::~BurningGround()
@@ -48,6 +50,7 @@ bool BurningGround::Start()
 	m_effect.Play();
 	m_effect.SetPosition(m_position);
 	UpdateEffectScale();
+	LimitBurningCount();
 	return true;
 }
 
@@ -68,9 +71,7 @@ void BurningGround::Update()
 		BurnTargetsInRange();
 		m_elapsed += g_gameTime->GetFrameDeltaTime();
 		if (m_elapsed >= m_seconds) {
-			// 炎の発生だけを止め、出ている炎は寿命まで燃やして自然に消す。
-			m_effect.StopRoot();
-			m_state = EnState::Vanishing;
+			StopBurning();
 		}
 		break;
 	case EnState::Vanishing:
@@ -78,6 +79,42 @@ void BurningGround::Update()
 			DeleteGO(this);
 		}
 		break;
+	}
+}
+
+void BurningGround::StopBurning()
+{
+	if (m_state != EnState::Burning) {
+		return;
+	}
+	// 炎の発生だけを止め、出ている炎は寿命まで燃やして自然に消す。
+	if (m_isValid) {
+		m_effect.StopRoot();
+	}
+	m_state = EnState::Vanishing;
+}
+
+void BurningGround::LimitBurningCount()
+{
+	// 自分を入れて MAX_BURNING_COUNT 枚になるまで、いちばん長く燃えているものから止める。
+	while (true) {
+		int burningCount = 1;
+		BurningGround* oldest = nullptr;
+		QueryGOs<BurningGround>(OBJECT_NAME, [&](BurningGround* ground) {
+			// Start() がまだの床（エフェクトをまだ再生していない）は数えない。
+			if (ground == this || !ground->m_isValid || !ground->IsBurning()) {
+				return true;
+			}
+			burningCount++;
+			if (oldest == nullptr || ground->m_elapsed > oldest->m_elapsed) {
+				oldest = ground;
+			}
+			return true;
+		});
+		if (burningCount <= MAX_BURNING_COUNT || oldest == nullptr) {
+			return;
+		}
+		oldest->StopBurning();
 	}
 }
 

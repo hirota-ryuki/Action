@@ -22,6 +22,14 @@ public:
 	bool Start();
 	void Update();
 
+	// まだ燃えている（炎を出している）か。
+	bool IsBurning() const
+	{
+		return m_state == EnState::Burning;
+	}
+	// 燃えている時間を待たずに炎の発生を止め、出ている炎が消え切るのを待つ。
+	void StopBurning();
+
 private:
 	enum class EnState
 	{
@@ -29,6 +37,8 @@ private:
 		Vanishing,  // 燃え終わった。残りの炎が消えるのを待つ。
 	};
 
+	// 自分のほかに燃えている床が多すぎたら、長く燃えているものから止める。
+	void LimitBurningCount();
 	void BurnTargetsInRange();
 	// 今燃えている範囲の半径。燃え広がっている途中は radius より小さい。
 	float GetCurrentRadius() const;
