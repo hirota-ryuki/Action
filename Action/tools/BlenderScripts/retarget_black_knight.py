@@ -34,10 +34,10 @@
 #     arm_tweak {"shoulder": 度, "forearm_in_out": 度, "forearm_front_back": 度, "wrist_bend": 度, "wrist_side": 度, "wrist_twist": 度}
 #              ゲームの F1 の窓「黒騎士のモーション」の右腕のスライダー（右肩 前後・ひじから下 内・外・ひじから下 前後・手首 曲げ・横・ひねり）の
 #              値をそのまま書くと、窓と同じ回し方で全部のコマに焼き込む（書き出しの最後、キーを打ったあと）
-#     arm_pose {"right": {"out": 度, "wrist_bend": 度, "wrist_side": 度, "wrist_twist": 度}, "left": {...}}
-#              ゲームの F1 の窓「黒騎士のモーション」の右腕・左腕（外へ・手首 曲げ・横・ひねり）の値をそのまま書くと、窓と同じ回し方
-#              （外へ: 肩の関節を中心に、軸は「上腕の向き × 外の向き」、＋で体の外へ開く。手首: arm_tweak の手首と同じ3つの軸）で
-#              全部のコマに焼き込む（arm_tweak のあと）。書かない項目は 0
+#     arm_pose {"right": {"out": 度, "wrist_out": 度}, "left": {"out": 度}}
+#              ゲームの F1 の窓「黒騎士のモーション」の「右腕 外へ」「左腕 外へ」「右手首 外へ」の値をそのまま書くと、窓と同じ回し方で
+#              全部のコマに焼き込む（arm_tweak のあと）。書かない項目は 0。
+#              out: 肩の関節を中心に、軸は「上腕の向き × 外の向き」。wrist_out: 手首を中心に、軸は「前腕の向き × 外の向き」。＋で体の外へ
 #     arms     "both" なら、元の左腕の動きを左右の反転で右腕にも写して、両手で同じ動きにする。
 #              体（腰〜頭）は、元と反転したものの平均（左右対称）にする
 #     speed    再生の速さ（2 なら半分のコマ数にする）。segments の1つずつにも書ける
@@ -947,9 +947,9 @@ def key_chain(chain, M, parent_m, f):
 
 
 def apply_arm_pose(length, o):
-    """ゲームの F1 の窓「黒騎士のモーション」の右腕・左腕（Enemy::RotateDebugArm）と同じ回し方を、全部のコマに焼き込む。
+    """ゲームの F1 の窓「黒騎士のモーション」の腕の調整（Enemy::RotateDebugArm）と同じ回し方を、全部のコマに焼き込む。
     ① 外へ: 肩の関節を中心に、軸は「上腕の向き（肩 → ひじ）× 外の向き（反対の肩 → この肩）」。＋で上腕が体の外へ開く。
-    ② 手首: 手首を中心に、曲げ（上腕 × 前腕）→ 横（前腕 × 曲げの軸）→ ひねり（前腕）の順に回す。"""
+    ② 手首 外へ: 手首を中心に、軸は「前腕の向き（ひじ → 手首）× 外の向き」。＋で手が体の外へ曲がる。"""
     if not o:
         return
     s = GAME_SIGN
@@ -975,16 +975,10 @@ def apply_arm_pose(length, o):
                     M[m] = r @ M[m]
 
             shoulder = M[up_n].translation.copy()
-            rot(up_n, shoulder, (M[low_n].translation - shoulder).cross(shoulder - other_pos), t.get("out", 0.0))
-            elbow, wrist = M[low_n].translation.copy(), M[hand_n].translation.copy()
-            forearm = wrist - elbow
-            bend = (elbow - shoulder).cross(forearm)
-            if bend.length < 1e-6:
-                bend = Vector((0, 0, 1)).cross(forearm)
-            side_axis = forearm.cross(bend)
-            rot(hand_n, wrist, bend, t.get("wrist_bend", 0.0))
-            rot(hand_n, wrist, side_axis, t.get("wrist_side", 0.0))
-            rot(hand_n, wrist, forearm, t.get("wrist_twist", 0.0))
+            outward = shoulder - other_pos
+            rot(up_n, shoulder, (M[low_n].translation - shoulder).cross(outward), t.get("out", 0.0))
+            wrist = M[hand_n].translation.copy()
+            rot(hand_n, wrist, (wrist - M[low_n].translation).cross(outward), t.get("wrist_out", 0.0))
             key_chain(chain, M, parent_of_up, f)
             if f == 0:
                 SCENE.frame_set(0)
