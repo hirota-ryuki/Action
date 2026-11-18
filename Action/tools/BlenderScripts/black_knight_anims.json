@@ -45,8 +45,15 @@
                   "B-thumb01.R", "B-thumb02.R", "B-thumb03.R"]
       },
       "adjust": [
-        {"bone": "J_Bip_R_Hand", "axis": [1, 0, 0], "deg": -55}
-      ]
+        {"bone": "J_Bip_R_LowerArm", "bend": 80},
+        {"bone": "J_Bip_R_Hand", "axis": [1, 0, 0], "deg": -55},
+        {"bone": "J_Bip_R_Hand", "axis": [0, 1, 0], "deg": -40}
+      ],
+      "lock": [
+        {"bone": "J_Bip_R_Hand", "frame": 0}
+      ],
+      "arm_tweak": {"shoulder": 41, "forearm_in_out": -40, "forearm_front_back": 34,
+                    "wrist_bend": -50, "wrist_side": -33, "wrist_twist": -13}
     },
     {
       "name": "Attack1",
