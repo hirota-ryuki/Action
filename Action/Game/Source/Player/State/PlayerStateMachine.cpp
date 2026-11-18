@@ -28,7 +28,8 @@ void PlayerStateMachine::OnBeforeUpdate(PlayerStateContext& context, const Chara
 	context.attackFire = false;
 	context.isAiming = m_isAiming;
 	// 移動の入力を離したら、ダッシュのあとの「走り続ける」を終える。
-	if (input.moveDirection.Length() < context.settings.moveThreshold) {
+	// 三人称の溜め撃ちで構えたときも終える（構えている間は走らない。走るボタンは Player::FilterAimingInput が外す）。
+	if (m_isAiming || input.moveDirection.Length() < context.settings.moveThreshold) {
 		context.keepRunAfterDash = false;
 	}
 }
