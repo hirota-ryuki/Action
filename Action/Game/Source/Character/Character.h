@@ -117,6 +117,10 @@ protected:
 	virtual void OnLateUpdate(float deltaTime)
 	{
 	}
+	// アニメーションの姿勢と体の連動のあと、揺れ物の前に、骨に手を加える（派生クラス）。
+	virtual void OnPostBodyLink(Skeleton& skeleton)
+	{
+	}
 	// 体を描いたあと、自分だけのものを描く。
 	virtual void OnRender(RenderContext& rc)
 	{
@@ -131,6 +135,11 @@ protected:
 	void SetAttackWeight(float attackWeight)
 	{
 		m_bodyLink.SetAttackWeight(attackWeight);
+	}
+	// スキルを撃つ位置の数値（高さ・前に出す距離）。
+	const CharacterCastSettings& GetCastSettings() const
+	{
+		return m_castSettings;
 	}
 
 	CharacterInput m_input;

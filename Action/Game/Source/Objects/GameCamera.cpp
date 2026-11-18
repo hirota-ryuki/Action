@@ -3,6 +3,7 @@
 
 #include "Player.h"
 #include "system.h"
+#include <imgui/imgui.h>
 
 namespace
 {
@@ -38,6 +39,16 @@ namespace
 	constexpr float FIRST_PERSON_VIEW_ANGLE_DEG = 50.0f;
 	constexpr int TOGGLE_CAMERA_KEY = 'V';            // 三人称／一人称を切り替えるキー（パッドは B ボタン）。
 	constexpr int TOGGLE_OVERHEAD_KEY = 'B';          // 俯瞰と寄りを切り替えるキー。
+	// 溜め撃ちを構えている間の肩越しの視点（フォートナイトや原神で弓を構えるときのように、キャラクターを画面の左に寄せる）。
+	// 最初の値。F1 の画面（肩越しの視点）で変えられる。
+	constexpr float AIM_DISTANCE = 120.0f;            // 注視点からカメラまでの距離。腰から上が映るくらい。
+	constexpr float AIM_TARGET_HEIGHT = 160.0f;       // 注視点の高さ（足元から）。
+	// キャラクターを映す横の位置（0 = 画面の中心、1 = 左端）。0.5 で中心と左端の真ん中。
+	// 距離と画角から、注視点とカメラを右へずらす量を出すので、距離を変えても映る位置は変わらない。
+	constexpr float AIM_SCREEN_X = 0.5f;
+	constexpr float AIM_VIEW_ANGLE_DEG = 50.0f;       // 画角（寄りの 55 度より少し狭くして、狙う先を大きく見せる）。
+	constexpr float AIM_ENTER_SECONDS = 0.2f;         // 肩越しへ移る時間。
+	constexpr float AIM_EXIT_SECONDS = 0.15f;          // 元の三人称へ戻る時間。
 
 	// マウス1フレームあたりの回転量を上限値で制限する。
 	float ClampMouseRotateDeg(float rotateDeg)
@@ -74,6 +85,8 @@ bool GameCamera::Start()
 	m_defaultNear = g_camera3D->GetNear();
 	m_firstPersonForward = m_player->GetForward();
 
+	m_shoulderView = { AIM_DISTANCE, AIM_TARGET_HEIGHT, AIM_SCREEN_X, AIM_VIEW_ANGLE_DEG };
+
 	// 最初は寄りで、プレイヤーの後ろから見る。
 	ResetThirdPersonOffset(m_player->GetForward());
 	g_camera3D->SetViewAngle(Math::DegToRad(GetThirdPersonSetting().viewAngleDeg));
@@ -98,6 +111,8 @@ void GameCamera::Update()
 	if (IsOverheadToggleTriggered()) {
 		ToggleOverheadMode();
 	}
+	// プレイヤーが溜め撃ちで上半身を構えるのは、三人称のときだけ。
+	m_player->SetThirdPersonCamera(m_cameraMode != EnCameraMode::FirstPerson);
 
 	if (m_cameraMode == EnCameraMode::FirstPerson) {
 		UpdateFirstPersonCamera();
@@ -105,6 +120,24 @@ void GameCamera::Update()
 	else {
 		UpdateThirdPersonCamera();
 	}
+
+	if (DebugUI::IsVisible()) {
+		DrawShoulderViewDebugUI();
+	}
+}
+
+void GameCamera::DrawShoulderViewDebugUI()
+{
+	ImGui::Begin(u8"肩越しの視点");
+	ImGui::Checkbox(u8"構えた視点のままにする（確認用）", &m_isPreviewShoulderView);
+	ImGui::SliderFloat(u8"距離", &m_shoulderView.distance, 50.0f, 300.0f, "%.0f");
+	ImGui::SliderFloat(u8"注視点の高さ", &m_shoulderView.targetHeight, 80.0f, 220.0f, "%.0f");
+	ImGui::SliderFloat(u8"横の位置（0 中心・1 左端）", &m_shoulderView.screenX, 0.0f, 1.0f, "%.2f");
+	ImGui::SliderFloat(u8"画角（度）", &m_shoulderView.viewAngleDeg, 30.0f, 90.0f, "%.0f");
+	if (ImGui::Button(u8"最初の値に戻す")) {
+		m_shoulderView = { AIM_DISTANCE, AIM_TARGET_HEIGHT, AIM_SCREEN_X, AIM_VIEW_ANGLE_DEG };
+	}
+	ImGui::End();
 }
 
 void GameCamera::Render(RenderContext& rc)
@@ -268,6 +301,10 @@ void GameCamera::UpdateThirdPersonCamera()
 		viewAngle = m_blendFromViewAngle + (viewAngle - m_blendFromViewAngle) * smoothRate;
 	}
 
+	// 溜め撃ちを構えている間は、肩越しの視点へ寄せる。寄りと俯瞰のどちらの上にも重ねる。
+	UpdateAimRate();
+	ApplyShoulderView(position, target, viewAngle);
+
 	// 頭の中心とカメラの間に壁や床があれば、カメラを手前に寄せる。
 	// なめらかに移したあとの位置に掛けるので、寄りと俯瞰を移す途中でも壁に入らない。
 	// 始点は前へずらす前の注視点にする（前へずらした注視点は、壁を向くと壁に入りかける）。
@@ -280,6 +317,53 @@ void GameCamera::UpdateThirdPersonCamera()
 	g_camera3D->SetTarget(target);
 	g_camera3D->SetViewAngle(viewAngle);
 	g_camera3D->Update();
+}
+
+void GameCamera::UpdateAimRate()
+{
+	const float deltaTime = g_gameTime->GetFrameDeltaTime();
+	// 離して撃ったら、撃つ動きの終わりを待たずに戻し始める。
+	if (m_player->IsThirdPersonCharging() || m_isPreviewShoulderView) {
+		m_aimRate = min(1.0f, m_aimRate + deltaTime / AIM_ENTER_SECONDS);
+	}
+	else {
+		m_aimRate = max(0.0f, m_aimRate - deltaTime / AIM_EXIT_SECONDS);
+	}
+}
+
+void GameCamera::ApplyShoulderView(Vector3& position, Vector3& target, float& viewAngle) const
+{
+	if (m_aimRate <= 0.0f) {
+		return;
+	}
+	// カメラの水平の前と右。
+	Vector3 forward = m_toCameraPos * -1.0f;
+	forward.y = 0.0f;
+	if (forward.LengthSq() <= FLT_EPSILON) {
+		return;
+	}
+	forward.Normalize();
+	Vector3 right;
+	right.Cross(Vector3::AxisY, forward);
+	right.Normalize();
+	Vector3 toCameraDir = m_toCameraPos;
+	toCameraDir.Normalize();
+
+	// 注視点もカメラも、同じだけ右へずらす（画面の真ん中は、キャラクターの右前を指す）。
+	Vector3 aimTarget = m_player->GetPosition();
+	// 右へずらす量: 距離 distance の所の、画面の横幅の半分（縦の画角の半分の tan × 横長の比 × 距離）に、横の位置を掛ける。
+	const float halfWidthRate = tanf(Math::DegToRad(m_shoulderView.viewAngleDeg) * 0.5f) * g_camera3D->GetAspect();
+	const float sideOffset = m_shoulderView.screenX * halfWidthRate * m_shoulderView.distance;
+	aimTarget.y += m_shoulderView.targetHeight;
+	aimTarget += right * sideOffset;
+	const Vector3 aimPosition = aimTarget + toCameraDir * m_shoulderView.distance;
+	aimTarget += g_camera3D->GetForward() * TARGET_FORWARD_OFFSET;
+
+	// 始めと終わりをゆっくりにする（smoothstep）。
+	const float rate = m_aimRate * m_aimRate * (3.0f - 2.0f * m_aimRate);
+	position.Lerp(rate, position, aimPosition);
+	target.Lerp(rate, target, aimTarget);
+	viewAngle += (Math::DegToRad(m_shoulderView.viewAngleDeg) - viewAngle) * rate;
 }
 
 void GameCamera::UpdateBodyHiddenByCollision()

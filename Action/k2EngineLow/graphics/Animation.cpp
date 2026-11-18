@@ -147,6 +147,11 @@ namespace nsK2EngineLow {
 				qGlobalPose[boneNo].Slerp(intepolateRate, qGlobalPose[boneNo], qBone);
 			}
 		}
+		if (IsLayer()) {
+			//層のときは、下の層が書いた姿勢の上に、骨ごとの重みで重ねる。
+			ApplyAsLayer(vGlobalScale, qGlobalPose, vGlobalPose);
+		}
+		else
 		//グローバルポーズをスケルトンに反映させていく。
 		for (int boneNo = 0; boneNo < numBone; boneNo++) {
 
@@ -196,5 +201,99 @@ namespace nsK2EngineLow {
 
 		//グローバルポーズを計算していく。
 		UpdateGlobalPose();
+	}
+
+	namespace {
+		// 拡大・回転・平行移動から、ボーン行列を作る（UpdateGlobalPose と同じ順に掛ける）。
+		Matrix ComposeBoneMatrix(const Vector3& scale, const Quaternion& rotation, const Vector3& translation)
+		{
+			Matrix scaleMatrix;
+			scaleMatrix.MakeScaling(scale);
+			Matrix rotMatrix;
+			rotMatrix.MakeRotationFromQuaternion(rotation);
+			Matrix transMat;
+			transMat.MakeTranslation(translation);
+			return scaleMatrix * rotMatrix * transMat;
+		}
+		// ボーン行列を、拡大・回転・平行移動に分ける。
+		void DecomposeBoneMatrix(Matrix m, Vector3& scale, Quaternion& rotation, Vector3& translation)
+		{
+			translation = *(Vector3*)m.m[3];
+			m.m[3][0] = 0.0f;
+			m.m[3][1] = 0.0f;
+			m.m[3][2] = 0.0f;
+			scale.x = (*(Vector3*)m.m[0]).Length();
+			scale.y = (*(Vector3*)m.m[1]).Length();
+			scale.z = (*(Vector3*)m.m[2]).Length();
+			for (int i = 0; i < 3; i++) {
+				m.m[0][i] /= scale.x;
+				m.m[1][i] /= scale.y;
+				m.m[2][i] /= scale.z;
+			}
+			rotation.SetRotation(m);
+		}
+		// 親の骨から見た行列にする。ルートの骨は、そのまま。
+		Matrix ToParentSpace(const Matrix* rootSpaceMatrices, int boneNo, int parentNo)
+		{
+			if (parentNo < 0) {
+				return rootSpaceMatrices[boneNo];
+			}
+			Matrix invParent;
+			invParent.Inverse(rootSpaceMatrices[parentNo]);
+			return rootSpaceMatrices[boneNo] * invParent;
+		}
+	}
+
+	void Animation::SetLayerBoneWeights(const std::vector<float>& boneWeights)
+	{
+		m_layerBoneWeights = boneWeights;
+		// 親を子より先に計算できるよう、親から順に並べておく。
+		const int numBone = m_skeleton->GetNumBones();
+		std::vector<bool> isAdded(numBone, false);
+		m_layerBoneOrder.clear();
+		for (int boneNo = 0; boneNo < numBone; boneNo++) {
+			// 根元までさかのぼってから、根元に近い方から足していく。
+			std::vector<int> chain;
+			for (int no = boneNo; no >= 0 && !isAdded[no]; no = m_skeleton->GetBone(no)->GetParentBoneNo()) {
+				chain.push_back(no);
+			}
+			for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
+				isAdded[*it] = true;
+				m_layerBoneOrder.push_back(*it);
+			}
+		}
+	}
+
+	void Animation::ApplyAsLayer(const Vector3* scales, const Quaternion* rotations, const Vector3* translations)
+	{
+		// 骨の姿勢は、親からではなく、モデルの根元から見た行列で持っている。
+		// そのまま差し替えると、下の層で腰が上下しても胸が付いてこないので、
+		// 親から見た姿勢に直してから混ぜ、根元から見た姿勢に組み直す。
+		const int numBone = m_skeleton->GetNumBones();
+		Matrix* baseRoot = (Matrix*)alloca(sizeof(Matrix) * numBone);   // 下の層が書いた姿勢。
+		Matrix* layerRoot = (Matrix*)alloca(sizeof(Matrix) * numBone);  // この層の姿勢。
+		Matrix* mixedRoot = (Matrix*)alloca(sizeof(Matrix) * numBone);  // 混ぜたあとの姿勢。
+		for (int boneNo = 0; boneNo < numBone; boneNo++) {
+			baseRoot[boneNo] = m_skeleton->GetBone(boneNo)->GetLocalMatrix();
+			layerRoot[boneNo] = ComposeBoneMatrix(scales[boneNo], rotations[boneNo], translations[boneNo]);
+		}
+		for (int boneNo : m_layerBoneOrder) {
+			const int parentNo = m_skeleton->GetBone(boneNo)->GetParentBoneNo();
+			const float weight = m_layerBoneWeights[boneNo] * m_layerWeight;
+			Matrix mixedLocal = ToParentSpace(baseRoot, boneNo, parentNo);
+			if (weight > 0.0f) {
+				Vector3 baseScale, layerScale, baseTrans, layerTrans;
+				Quaternion baseRot, layerRot;
+				DecomposeBoneMatrix(mixedLocal, baseScale, baseRot, baseTrans);
+				DecomposeBoneMatrix(ToParentSpace(layerRoot, boneNo, parentNo), layerScale, layerRot, layerTrans);
+				const float rate = min(weight, 1.0f);
+				baseScale.Lerp(rate, baseScale, layerScale);
+				baseRot.Slerp(rate, baseRot, layerRot);
+				baseTrans.Lerp(rate, baseTrans, layerTrans);
+				mixedLocal = ComposeBoneMatrix(baseScale, baseRot, baseTrans);
+			}
+			mixedRoot[boneNo] = parentNo < 0 ? mixedLocal : mixedLocal * mixedRoot[parentNo];
+			m_skeleton->SetBoneLocalMatrix(boneNo, mixedRoot[boneNo]);
+		}
 	}
 }

@@ -62,6 +62,21 @@ private:
 	bool TryGetMouseRotationInput(float& yawDeg, float& pitchDeg);
 	void RestorePlayerRenderBody();
 	void EndMouseLook();
+	// 溜め撃ちを構えている間は肩越しの視点へ、やめたら元の三人称へ、少しずつ移す。
+	void UpdateAimRate();
+	// 三人称の位置・注視点・画角を、肩越しの視点へ m_aimRate の分だけ寄せる。
+	void ApplyShoulderView(Vector3& position, Vector3& target, float& viewAngle) const;
+	// F1 の画面に、肩越しの視点の数値を出して変えられるようにする。
+	void DrawShoulderViewDebugUI();
+
+	// 溜め撃ちを構えている間の肩越しの視点の数値。F1 の画面で変えられる。
+	struct ShoulderViewSetting
+	{
+		float distance;      // 注視点からカメラまでの距離。
+		float targetHeight;  // 注視点の高さ（足元から）。
+		float screenX;       // キャラクターを映す横の位置（0 = 画面の中心、1 = 左端）。
+		float viewAngleDeg;  // 画角（縦、度）。
+	};
 
 	Player* m_player = nullptr;
 	FirstPersonArms m_firstPersonArms;  // 一人称のときに映す腕と手。
@@ -81,4 +96,7 @@ private:
 	float m_defaultNear = 1.0f;         // 三人称時のNearを保持しておき、一人称終了時に復元する。
 	bool m_isMouseLookActive = false;   // trueの間カーソルを非表示にして中央固定する。
 	bool m_isBodyHiddenByCollision = false;  // 壁よけでカメラが頭のすぐ近くまで寄ったので、体を隠しているか。
+	float m_aimRate = 0.0f;             // 肩越しの視点の度合い（0 = ふだんの三人称、1 = 肩越し）。
+	ShoulderViewSetting m_shoulderView = {};  // 肩越しの視点の数値（Start で最初の値を入れる）。
+	bool m_isPreviewShoulderView = false;     // F1 の画面で、構えていなくても肩越しの視点にする（確かめる用）。
 };

@@ -17,7 +17,9 @@ public:
 	void Enter(PlayerStateContext& context, const CharacterInput& input) override
 	{
 		m_stopRemaining = context.previousId == PlayerStateId::Run ? context.settings.stopAfterRunSeconds : 0.0f;
+		m_clip = enPlayerAnimClip_Walk;
 		PlayerGroundState::Enter(context, input);
+		UpdateAimClip(context, input);
 	}
 	PlayerStateId CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const override
 	{
@@ -31,10 +33,45 @@ public:
 	{
 		m_stopRemaining -= deltaTime;
 		PlayerGroundState::Update(context, input, deltaTime);
+		UpdateAimClip(context, input);
 	}
 
 private:
+	// 溜め撃ちで構えている間は、体がカメラの向きを向いたまま動くので、
+	// 動く向き（体から見て前・後ろ・左・右のいちばん近いもの）で歩きのクリップを選び、足の速さを動く速さに合わせる。
+	// 構えるのをやめたら、ふだんの前歩きに戻す。
+	void UpdateAimClip(PlayerStateContext& context, const CharacterInput& input)
+	{
+		int clip = enPlayerAnimClip_Walk;
+		float animMoveSpeed = context.settings.walkAnimMoveSpeed;
+		if (context.isAiming) {
+			Vector3 forward = context.mover->GetForward();
+			forward.y = 0.0f;
+			forward.Normalize();
+			Vector3 right;
+			right.Cross(Vector3::AxisY, forward);
+			const float front = input.moveDirection.Dot(forward);
+			const float side = input.moveDirection.Dot(right);
+			if (fabsf(side) > fabsf(front)) {
+				clip = side > 0.0f ? enPlayerAnimClip_StrafeR : enPlayerAnimClip_StrafeL;
+				animMoveSpeed = context.settings.strafeAnimMoveSpeed;
+			}
+			else if (front < 0.0f) {
+				clip = enPlayerAnimClip_WalkBack;
+				animMoveSpeed = context.settings.walkBackAnimMoveSpeed;
+			}
+		}
+		else if (m_clip == enPlayerAnimClip_Walk) {
+			return;  // ふだんは Enter で流したまま。
+		}
+		m_clip = clip;
+		const float moveSpeed = GetMoveSpeed(context) * min(input.moveDirection.Length(), 1.0f);
+		const float speed = animMoveSpeed > 0.0f ? moveSpeed / animMoveSpeed : 1.0f;
+		context.animator->Play(clip, context.isAiming ? speed : GetAnimSpeed(context));
+	}
+
 	float m_stopRemaining = 0.0f;  // 走りから移ってきたあと、離したら Stop にする残り時間。
+	int m_clip = enPlayerAnimClip_Walk;  // 今流している歩きのクリップ。
 
 protected:
 	int GetAnimClip() const override

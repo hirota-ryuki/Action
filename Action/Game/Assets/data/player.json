@@ -105,6 +105,20 @@
 		"exitBlendSeconds": 0.2
 	},
 
+	// 三人称の溜め撃ち（右クリック）。上半身だけ Attack1（右手で撃つ）を流し、下半身は歩けるようにする。
+	// コマは Attack1 のコマ（上の "attack" と同じ数え方）。
+	"charge": {
+		"holdFrame": 9,          // 溜めている間、ここで止める（右手を前へ突き出しきる手前）。離すと続きを流して撃つ。
+		"castEndFrame": 17,      // 撃ったあと、ここ（下ろし始め）まで流したら、上半身を下の動きへ戻し始める。
+		"fadeInSeconds": 0.15,   // 上半身を溜める動きに替えるのにかける時間。
+		"fadeOutSeconds": 0.25,  // 上半身を下の動きへ戻すのにかける時間。
+		"moveSpeedRate": 0.6,    // 溜めている間の歩く速さ（ふだんの歩きの何倍か）。走れない。
+		"ballForward": 35.0,     // 火の玉を、右手からこれだけ前（cm、狙う向き）に置く。
+		"backMoveSpeedRate": 0.6, // 構えて後ろへ歩くときは、さらにこれを掛ける。
+		"shoulderBackDeg": 25.0,   // 構えている間、右肩を後ろへ引く角度（度）。首は狙う向きへ戻す。
+		"armOutDeg": 25.0        // 構えている右腕を、狙う向きから外（画面の右）へ開く角度（度）。体に隠れないようにする。
+	},
+
 	"model": {
 		"path": "Assets/modelData/player/Model/SK_Player.FBX",
 		"upAxis": "Z",  // 3ds Max（Z-up）で作られているので Z を上にして起こす（Y のままだと仰向けに倒れる）。
@@ -180,7 +194,10 @@
 		"blendSeconds": 0.2, // アニメーションを切り替えるときの補間時間。
 		// Walk.fbx（Mixamo の Female Walk）の足が地面を送る速さ。UE で足のボーンを測った 115/秒 × モデルの大きさ 1.128。
 		"walkMoveSpeed": 130.0,
-		// クリップの名前は PlayerConfig.cpp の対応表（Idle・Walk・Run・JumpStart・JumpLoop・JumpLand・Dash・StopL・StopR・Attack1〜3）と同じにする。
+		// 後ろ歩き（WalkBack）・横歩き（StrafeL・StrafeR）の、足が地面を送る速さ。三人称の溜め撃ちで構えて歩くときに使う。
+		"walkBackMoveSpeed": 88.0,
+		"strafeMoveSpeed": 46.0,
+		// クリップの名前は PlayerConfig.cpp の対応表（Idle・Walk・Run・JumpStart・JumpLoop・JumpLand・Dash・StopL・StopR・Attack1〜3・WalkBack・StrafeL・StrafeR）と同じにする。
 		"clips": {
 			// Idle・Walk は Mixamo のモーションを UE で SK_Player にリターゲットしたもの。
 			"Idle": { "path": "Assets/modelData/player/Animation/Idle.fbx", "loop": true },
@@ -201,7 +218,12 @@
 			// Attack1〜3 は KinemIQ の Spell を Blender で SK_Player に移したもの（上の "attack" を参照）。
 			"Attack1": { "path": "Assets/modelData/player/Animation/Attack1.fbx", "loop": false },
 			"Attack2": { "path": "Assets/modelData/player/Animation/Attack2.fbx", "loop": false },
-			"Attack3": { "path": "Assets/modelData/player/Animation/Attack3.fbx", "loop": false }
+			"Attack3": { "path": "Assets/modelData/player/Animation/Attack3.fbx", "loop": false },
+			// WalkBack・StrafeL・StrafeR は KinemIQ の Walk - backwards・Walk - side steps left を Blender で SK_Player に移したもの
+			// （tools/BlenderScripts/player_charge_walk_anims.json）。StrafeR は StrafeL を左右反転したもの。
+			"WalkBack": { "path": "Assets/modelData/player/Animation/WalkBack.fbx", "loop": true },
+			"StrafeL":  { "path": "Assets/modelData/player/Animation/StrafeL.fbx",  "loop": true },
+			"StrafeR":  { "path": "Assets/modelData/player/Animation/StrafeR.fbx",  "loop": true }
 		}
 	}
 }

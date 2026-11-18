@@ -167,6 +167,8 @@ namespace
 		const Json animation = GetSection("animation");
 		settings.animBlendSeconds = Read(animation, "animation", "blendSeconds", 0.2f);
 		settings.walkAnimMoveSpeed = Read(animation, "animation", "walkMoveSpeed", 130.0f);
+		settings.walkBackAnimMoveSpeed = Read(animation, "animation", "walkBackMoveSpeed", 88.0f);
+		settings.strafeAnimMoveSpeed = Read(animation, "animation", "strafeMoveSpeed", 46.0f);
 		return settings;
 	}
 
@@ -190,6 +192,9 @@ namespace
 		{ "Attack1", enPlayerAnimClip_Attack1, { "Assets/modelData/player/Animation/Attack1.fbx", false } },
 		{ "Attack2", enPlayerAnimClip_Attack2, { "Assets/modelData/player/Animation/Attack2.fbx", false } },
 		{ "Attack3", enPlayerAnimClip_Attack3, { "Assets/modelData/player/Animation/Attack3.fbx", false } },
+		{ "WalkBack", enPlayerAnimClip_WalkBack, { "Assets/modelData/player/Animation/WalkBack.fbx", true } },
+		{ "StrafeL",  enPlayerAnimClip_StrafeL,  { "Assets/modelData/player/Animation/StrafeL.fbx",  true } },
+		{ "StrafeR",  enPlayerAnimClip_StrafeR,  { "Assets/modelData/player/Animation/StrafeR.fbx",  true } },
 	};
 	static_assert(sizeof(CLIP_TABLE) / sizeof(CLIP_TABLE[0]) == enPlayerAnimClip_Num,
 		"EnPlayerAnimClip を足したら、CLIP_TABLE と player.json の animation.clips にも足してください。");
@@ -352,4 +357,20 @@ CharacterConfig PlayerConfig::MakeCharacterConfig()
 PlayerStateSettings PlayerConfig::MakeStateSettings()
 {
 	return BuildStateSettings();
+}
+
+PlayerChargeSettings PlayerConfig::MakeChargeSettings()
+{
+	const Json section = GetSection("charge");
+	PlayerChargeSettings settings;
+	settings.holdTime = ReadFramesAsSeconds(section, "charge", "holdFrame", 9.0f);
+	settings.castEndTime = ReadFramesAsSeconds(section, "charge", "castEndFrame", 17.0f);
+	settings.fadeInSeconds = Read(section, "charge", "fadeInSeconds", 0.15f);
+	settings.fadeOutSeconds = Read(section, "charge", "fadeOutSeconds", 0.25f);
+	settings.moveSpeedRate = Read(section, "charge", "moveSpeedRate", 0.6f);
+	settings.ballForward = Read(section, "charge", "ballForward", 35.0f);
+	settings.backMoveSpeedRate = Read(section, "charge", "backMoveSpeedRate", 0.6f);
+	settings.shoulderBackDeg = Read(section, "charge", "shoulderBackDeg", 25.0f);
+	settings.armOutDeg = Read(section, "charge", "armOutDeg", 25.0f);
+	return settings;
 }

@@ -1,0 +1,33 @@
+{
+  "target": "../../Game/Assets/modelData/player/Model/SK_Player.FBX",
+  "out_dir": "../../Game/Assets/modelData/player/Animation",
+  "secondary": false,
+  "sword_fit": false,
+  "clips": [
+    {
+      "name": "WalkBack",
+      "comment": "後ろ歩き（三人称の溜め撃ちで、構えたまま後ろへ歩く）。KinemIQ の Walk - backwards の 48〜109コマ目（2周期。最初と最後の足の位置がいちばん近いところ）",
+      "source": "C:/Users/r-hir/Downloads/Walk_-_backwards.fbx",
+      "rig": "ue4",
+      "frames": [48, 109],
+      "loop": true
+    },
+    {
+      "name": "StrafeL",
+      "comment": "左への横歩き。KinemIQ の Walk - side steps left の 17〜64コマ目（立った姿勢から左へ1歩踏み、また立つまで）",
+      "source": "C:/Users/r-hir/Downloads/Walk_-_side_steps_left.fbx",
+      "rig": "ue4",
+      "frames": [17, 64],
+      "loop": true
+    },
+    {
+      "name": "StrafeR",
+      "comment": "右への横歩き。StrafeL を左右反転したもの",
+      "source": "C:/Users/r-hir/Downloads/Walk_-_side_steps_left.fbx",
+      "rig": "ue4",
+      "mirror": true,
+      "frames": [17, 64],
+      "loop": true
+    }
+  ]
+}

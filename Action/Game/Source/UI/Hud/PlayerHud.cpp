@@ -112,11 +112,11 @@ void PlayerHud::Update(float deltaTime)
 	m_frozen.Update(deltaTime);
 	m_burning.Update(deltaTime);
 
-	// 一人称のとき（体を描いていないとき）だけ出す。
-	const bool isFirstPerson = !m_player->IsRenderBody();
+	// 一人称のとき（体を描いていないとき）と、三人称で溜め撃ちを構えているときだけ出す。
+	const bool isReticleVisible = !m_player->IsRenderBody() || m_player->IsThirdPersonAiming();
 	for (int i = 0; i < 4; i++) {
-		m_reticleShadow[i].SetVisible(isFirstPerson);
-		m_reticle[i].SetVisible(isFirstPerson);
+		m_reticleShadow[i].SetVisible(isReticleVisible);
+		m_reticle[i].SetVisible(isReticleVisible);
 		m_reticleShadow[i].Update(deltaTime);
 		m_reticle[i].Update(deltaTime);
 	}

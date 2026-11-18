@@ -27,13 +27,12 @@ bool Character::Start()
 	m_bodyLean.Init(config.lean);
 	m_springBones.Init(m_model.GetModelRender(), config.springBones);
 	m_bodyLink.Init(m_model.GetModelRender(), config.bodyLink);
-	// アニメーションの姿勢ができたあとに、体の連動 → 揺れ物の順に手を加える（揺れ物は連動した体の動きに遅れて付いてくる）。
-	if (m_bodyLink.IsActive() || m_springBones.IsActive()) {
-		m_model.GetModelRender().GetSkeleton().SetOnPostUpdateWorldMatrix([this](Skeleton& skeleton) {
-			m_bodyLink.Update(skeleton);
-			m_springBones.Update(skeleton);
-		});
-	}
+	// アニメーションの姿勢ができたあとに、体の連動 → 派生クラス → 揺れ物の順に手を加える（揺れ物は連動した体の動きに遅れて付いてくる）。
+	m_model.GetModelRender().GetSkeleton().SetOnPostUpdateWorldMatrix([this](Skeleton& skeleton) {
+		m_bodyLink.Update(skeleton);
+		OnPostBodyLink(skeleton);
+		m_springBones.Update(skeleton);
+	});
 
 	m_statusEffects.Init(&m_model.GetModelRender());
 
@@ -115,6 +114,7 @@ void Character::UpdateInput(float deltaTime)
 	context.position = m_transform.position;
 	context.forward = GetForward();
 	context.deltaTime = deltaTime;
+	context.castForward = m_castSettings.castForward;
 	FillInputContext(context);
 
 	GetDefaultInputSource().Update(context, m_input);
