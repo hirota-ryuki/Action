@@ -31,6 +31,9 @@
 #              曲がる軸はコマごとに、親の骨とその骨の向きから出す
 #     lock     [{"bone": "J_Bip_R_Hand", "frame": 0}, ...]。adjust のあとで、その骨を、frame コマ目（出来上がりのコマ番号）の
 #              親の骨から見た向きのまま、全部のコマで止める（剣を肩に乗せたまま手首を動かさない、など）。その下の骨も一緒に動く
+#     arm_tweak {"shoulder": 度, "forearm_in_out": 度, "forearm_front_back": 度, "wrist_bend": 度, "wrist_side": 度, "wrist_twist": 度}
+#              ゲームの F1 の窓「黒騎士のモーション」の右腕のスライダー（右肩 前後・ひじから下 内・外・ひじから下 前後・手首 曲げ・横・ひねり）の
+#              値をそのまま書くと、窓と同じ回し方で全部のコマに焼き込む（書き出しの最後、キーを打ったあと）
 #     arms     "both" なら、元の左腕の動きを左右の反転で右腕にも写して、両手で同じ動きにする。
 #              体（腰〜頭）は、元と反転したものの平均（左右対称）にする
 #     speed    再生の速さ（2 なら半分のコマ数にする）。segments の1つずつにも書ける
@@ -856,6 +859,7 @@ def bake(clip):
         p_arm = M_INV @ hips_world[f]
         hb.location = REST_Q[hips].inverted() @ (p_arm - REST_H[hips])
         hb.keyframe_insert("location", frame=f)
+    apply_arm_tweak(length, clip.get("arm_tweak"))
     fit_sword_to_grip(length)
     act = TGT.animation_data.action
     act.name = clip["name"]
@@ -865,6 +869,72 @@ def bake(clip):
     print_sword_path(clip["name"], length)
     print_hands(clip["name"], length)
     return act, length
+
+
+# ゲームの窓の角度を Blender で回すときの符号。ゲームの画面は左右が反転して見えるが、骨の向きの計算は Blender と同じ向きになる
+GAME_SIGN = 1.0
+
+
+def apply_arm_tweak(length, t):
+    """ゲームの F1 の窓「黒騎士のモーション」の右腕の調整（Enemy::RotateDebugArm）と同じ回し方を、全部のコマに焼き込む。
+    値は窓のスライダーの数字をそのまま書く。順は、右肩 前後 → ひじから下 内・外 → ひじから下 前後 → 手首 曲げ・横・ひねり。"""
+    if not t:
+        return
+    up_n, left_n, low_n, hand_n = S("R", "UpperArm"), S("L", "UpperArm"), S("R", "LowerArm"), S("R", "Hand")
+    chain = [up_n, low_n, hand_n]   # 親 → 子の順
+
+    s = GAME_SIGN
+    for f in range(length + 1):
+        SCENE.frame_set(f)
+        # 姿勢の行列（アーマチュアの空間）を写して、行列だけで回す。
+        # （骨の姿勢を変えてから Blender に計算し直させると、キーの値で上書きされることがあるため）
+        M = {n: TGT.pose.bones[n].matrix.copy() for n in chain}
+        left = TGT.pose.bones[left_n].matrix.translation.copy()
+        parent_of_up = TGT.pose.bones[up_n].parent.matrix.copy()
+
+        def pos(n):
+            return M[n].translation.copy()
+
+        def rot(n, center, axis, deg):
+            if abs(deg) < 0.01 or axis.length < 1e-6:
+                return
+            r = (Matrix.Translation(center) @ Quaternion(axis.normalized(), math.radians(deg)).to_matrix().to_4x4()
+                 @ Matrix.Translation(-center))
+            for m in chain[chain.index(n):]:   # その骨と、その下の骨
+                M[m] = r @ M[m]
+
+        shoulder = pos(up_n)
+        rot(up_n, shoulder, shoulder - left, s * t.get("shoulder", 0.0))
+        rot(up_n, shoulder, pos(low_n) - shoulder, s * t.get("forearm_in_out", 0.0))
+        rot(low_n, pos(low_n), shoulder - left, s * t.get("forearm_front_back", 0.0))
+        elbow, wrist = pos(low_n), pos(hand_n)
+        forearm = wrist - elbow
+        bend = (elbow - shoulder).cross(forearm)
+        if bend.length < 1e-6:
+            bend = Vector((0, 0, 1)).cross(forearm)
+        side = forearm.cross(bend)
+        rot(hand_n, wrist, bend, s * t.get("wrist_bend", 0.0))
+        rot(hand_n, wrist, side, s * t.get("wrist_side", 0.0))
+        rot(hand_n, wrist, forearm, s * t.get("wrist_twist", 0.0))
+
+        # 回した姿勢の行列を、親から見た回転（キーに打つ値）に戻す
+        parent_m = parent_of_up
+        for n in chain:
+            pb = TGT.pose.bones[n]
+            rest = pb.bone.matrix_local
+            rest_rel = pb.parent.bone.matrix_local.inverted() @ rest
+            basis = (parent_m @ rest_rel).inverted() @ M[n]
+            q = basis.to_quaternion()
+            if q.dot(pb.rotation_quaternion) < 0:
+                q = -q
+            pb.rotation_quaternion = q
+            pb.keyframe_insert("rotation_quaternion", frame=f)
+            parent_m = M[n]
+        if f == 0:
+            # キーを打った姿勢が、行列で回したとおりになっているか（手の向きの差、度）
+            SCENE.frame_set(0)
+            got = TGT.pose.bones[hand_n].matrix.to_quaternion()
+            print("ARM_TWEAK 0コマ目の手の向きの差 %.3f 度" % math.degrees(got.rotation_difference(M[hand_n].to_quaternion()).angle))
 
 
 def print_hands(name, length):

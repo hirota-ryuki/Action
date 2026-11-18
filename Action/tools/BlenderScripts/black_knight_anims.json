@@ -51,7 +51,9 @@
       ],
       "lock": [
         {"bone": "J_Bip_R_Hand", "frame": 0}
-      ]
+      ],
+      "arm_tweak": {"shoulder": 41, "forearm_in_out": -40, "forearm_front_back": 34,
+                    "wrist_bend": -50, "wrist_side": -33, "wrist_twist": -13}
     },
     {
       "name": "Attack1",
