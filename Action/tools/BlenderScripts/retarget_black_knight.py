@@ -29,6 +29,8 @@
 #              軸は体（腰の向き）から見た向き（+X が体の左、-Y が前、+Z が上）。その骨と、その下の骨がまとめて回る
 #              {"bone": "J_Bip_R_LowerArm", "bend": 度} と書くと、親の骨との角度をその度にする（肘の曲がりを浅くする、など）。
 #              曲がる軸はコマごとに、親の骨とその骨の向きから出す
+#     lock     [{"bone": "J_Bip_R_Hand", "frame": 0}, ...]。adjust のあとで、その骨を、frame コマ目（出来上がりのコマ番号）の
+#              親の骨から見た向きのまま、全部のコマで止める（剣を肩に乗せたまま手首を動かさない、など）。その下の骨も一緒に動く
 #     arms     "both" なら、元の左腕の動きを左右の反転で右腕にも写して、両手で同じ動きにする。
 #              体（腰〜頭）は、元と反転したものの平均（左右対称）にする
 #     speed    再生の速さ（2 なら半分のコマ数にする）。segments の1つずつにも書ける
@@ -704,6 +706,24 @@ def blend_world(wa, wb, t):
     return {n: wa[n].slerp(wb[n], t).normalized() for n in wa if n in wb}
 
 
+def apply_lock(frames_world, lock):
+    """骨を、決めたコマでの親の骨から見た向きのまま、全部のコマで止める（剣を肩に乗せたまま手首を動かさない、など）。"""
+    for a in lock or []:
+        n = a["bone"]
+        p = PARENT[n]
+        ref = frames_world[a.get("frame", 0)]
+        if n not in ref or p not in ref:
+            continue
+        rel = ref[p].inverted() @ ref[n]   # 親から見た向き
+        for W in frames_world:
+            if n not in W or p not in W:
+                continue
+            q = (W[p] @ rel) @ W[n].inverted()   # 今の向き → 止めたい向き
+            for m in [n] + descendants(n):
+                if m in W:
+                    W[m] = (q @ W[m]).normalized()
+
+
 def build_frames(clip):
     """1本の元のモーションか、いくつかをつないだもの（segments）を、骨の世界での向きのコマの並びにする。"""
     segments = clip.get("segments", [clip])
@@ -716,6 +736,7 @@ def build_frames(clip):
         print(f"SEGMENT [{clip['name']}] {k}: 出来上がりの {start} コマ目から（元の {seg.get('frames', ['最初'])[0]} コマ目）")
         for w in W:
             apply_adjust(w, seg.get("adjust"))
+        apply_lock(W, seg.get("lock"))
         apply_spin(W, H, seg.get("spin"))
         if not frames_world:
             frames_world, hips_world = W, H

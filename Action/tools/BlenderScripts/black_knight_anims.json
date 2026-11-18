@@ -48,6 +48,9 @@
         {"bone": "J_Bip_R_LowerArm", "bend": 80},
         {"bone": "J_Bip_R_Hand", "axis": [1, 0, 0], "deg": -55},
         {"bone": "J_Bip_R_Hand", "axis": [0, 1, 0], "deg": -40}
+      ],
+      "lock": [
+        {"bone": "J_Bip_R_Hand", "frame": 0}
       ]
     },
     {
