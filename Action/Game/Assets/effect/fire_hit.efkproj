@@ -752,9 +752,9 @@
                 <Min>10</Min>
               </Life>
               <GenerationTime>
-                <Center>1</Center>
-                <Max>1</Max>
-                <Min>1</Min>
+                <Center>3</Center>
+                <Max>3</Max>
+                <Min>3</Min>
               </GenerationTime>
             </CommonValues>
             <RotationValues>
@@ -780,9 +780,9 @@
               <Type>3</Type>
               <SinglePVA>
                 <Scale>
-                  <Center>1.1</Center>
-                  <Max>1.4</Max>
-                  <Min>0.8</Min>
+                  <Center>1.43</Center>
+                  <Max>1.82</Max>
+                  <Min>1.04</Min>
                 </Scale>
                 <Velocity>
                   <Center>-0.06</Center>
@@ -823,9 +823,9 @@
                       <Min>90</Min>
                     </B>
                     <A>
-                      <Center>200</Center>
-                      <Max>200</Max>
-                      <Min>200</Min>
+                      <Center>255</Center>
+                      <Max>255</Max>
+                      <Min>255</Min>
                     </A>
                   </Start>
                   <End>
@@ -845,9 +845,9 @@
                       <Min>0</Min>
                     </B>
                     <A>
-                      <Center>80</Center>
-                      <Max>80</Max>
-                      <Min>80</Min>
+                      <Center>130</Center>
+                      <Max>130</Max>
+                      <Min>130</Min>
                     </A>
                   </End>
                 </ColorAll_Easing>
@@ -868,9 +868,9 @@
                 <Min>14</Min>
               </Life>
               <GenerationTime>
-                <Center>2</Center>
-                <Max>2</Max>
-                <Min>2</Min>
+                <Center>6</Center>
+                <Max>6</Max>
+                <Min>6</Min>
               </GenerationTime>
             </CommonValues>
             <LocationValues>

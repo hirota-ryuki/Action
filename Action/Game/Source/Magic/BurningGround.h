@@ -33,6 +33,10 @@ private:
 	// 今燃えている範囲の半径。燃え広がっている途中は radius より小さい。
 	float GetCurrentRadius() const;
 	void UpdateEffectScale();
+	// ほかに燃えている床と合わせて MAX_BURNING_COUNT 枚を超えたら、長く燃えているものから止める。
+	void LimitBurningCount();
+	// 燃えている時間を待たずに炎の発生を止め、出ている炎が消え切るのを待つ。
+	void StopBurning();
 
 	Effect m_effect;
 	Vector3 m_position = Vector3::Zero;
