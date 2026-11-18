@@ -5,6 +5,7 @@
 #include "FireMagic.h"
 #include "MagicConfig.h"
 #include "SpringBones.h"
+#include <imgui/imgui.h>
 
 namespace
 {
@@ -50,6 +51,8 @@ void Player::OnStart()
 	m_twistBones[0] = modelRender.FindBoneID(L"J_Bip_C_Spine");
 	m_twistBones[1] = modelRender.FindBoneID(L"J_Bip_C_Chest");
 	m_twistBones[2] = modelRender.FindBoneID(L"J_Bip_C_UpperChest");
+	m_rightUpperArmBone = modelRender.FindBoneID(L"J_Bip_R_UpperArm");
+	m_neckBone = modelRender.FindBoneID(L"J_Bip_C_Neck");
 	m_stateMachine.Init(stateContext);  // Idle から始める。
 
 	m_skillController.Register<IceMagic>(ActionButton::Action1, MagicConfig::GetIce().cooldown);
@@ -143,6 +146,10 @@ void Player::FilterAimingInput(CharacterInput& input)
 		if (move.Dot(input.lookDirection) > AIM_TURN_LEGS_MIN_DOT) {
 			input.lookDirection = move;
 		}
+		else {
+			// 後ろ歩きは、前・横よりさらにゆっくりにする。
+			input.moveDirection *= m_upperBody.GetSettings().backMoveSpeedRate;
+		}
 	}
 }
 
@@ -183,18 +190,44 @@ void Player::TwistUpperBodyToAim(Skeleton& skeleton)
 		angle = -angle;
 	}
 	// 構える・戻すのに合わせて、少しずつひねる（smoothstep）。
-	angle *= weight * weight * (3.0f - 2.0f * weight);
+	const float smoothWeight = weight * weight * (3.0f - 2.0f * weight);
+	angle *= smoothWeight;
 	// 背骨・胸・上の胸に分けて、その骨から先をまとめて回す。
 	for (int i = 0; i < 3; i++) {
-		Bone* bone = skeleton.GetBone(m_twistBones[i]);
-		const Matrix& world = bone->GetWorldMatrix();
-		const Vector3 center(world.m[3][0], world.m[3][1], world.m[3][2]);
-		Matrix toOrigin, rotation, back;
-		toOrigin.MakeTranslation(center * -1.0f);
-		rotation.MakeRotationAxis(Vector3::AxisY, angle * AIM_TWIST_SHARES[i]);
-		back.MakeTranslation(center);
-		SpringBones::RotateBoneTree(*bone, toOrigin * rotation * back);
+		RotateBoneTreeY(skeleton, m_twistBones[i], angle * AIM_TWIST_SHARES[i]);
 	}
+
+	// 右肩を後ろへ引く（上の胸をさらにひねる）。首は引いた分だけ戻して、狙う向きのままにする。
+	// 右腕は引いた分を戻したうえで、さらに外（画面の右）へ開く（真っすぐ奥へ向けると、体に隠れて見えないため）。
+	// 回す向きを確かめる。体の右（狙う向きの右）が、回したあと後ろ（狙う向きの反対）へ行く向きを正にする。
+	Vector3 aimRight;
+	aimRight.Cross(Vector3::AxisY, aimForward);
+	Matrix shoulderCheck;
+	shoulderCheck.MakeRotationAxis(Vector3::AxisY, 1.0f);
+	Vector3 rotatedRight = aimRight;
+	shoulderCheck.Apply(rotatedRight);
+	const float sign = rotatedRight.Dot(aimForward) < 0.0f ? 1.0f : -1.0f;
+	const PlayerChargeSettings& settings = m_upperBody.GetSettings();
+	const float shoulderAngle = sign * Math::DegToRad(settings.shoulderBackDeg) * smoothWeight;
+	const float armOutAngle = sign * Math::DegToRad(settings.armOutDeg) * smoothWeight;
+	RotateBoneTreeY(skeleton, m_twistBones[2], shoulderAngle);
+	RotateBoneTreeY(skeleton, m_rightUpperArmBone, armOutAngle - shoulderAngle);
+	RotateBoneTreeY(skeleton, m_neckBone, -shoulderAngle);
+}
+
+void Player::RotateBoneTreeY(Skeleton& skeleton, int boneId, float angle)
+{
+	if (boneId < 0) {
+		return;
+	}
+	Bone* bone = skeleton.GetBone(boneId);
+	const Matrix& world = bone->GetWorldMatrix();
+	const Vector3 center(world.m[3][0], world.m[3][1], world.m[3][2]);
+	Matrix toOrigin, rotation, back;
+	toOrigin.MakeTranslation(center * -1.0f);
+	rotation.MakeRotationAxis(Vector3::AxisY, angle);
+	back.MakeTranslation(center);
+	SpringBones::RotateBoneTree(*bone, toOrigin * rotation * back);
 }
 
 void Player::OnLateUpdate(float deltaTime)
@@ -205,6 +238,28 @@ void Player::OnLateUpdate(float deltaTime)
 		m_isThirdPersonCamera,
 		deltaTime);
 	UpdateChargePosition();
+	if (DebugUI::IsVisible()) {
+		DrawChargeDebugUI();
+	}
+}
+
+void Player::DrawChargeDebugUI()
+{
+	PlayerChargeSettings& settings = m_upperBody.GetSettingsForEdit();
+	ImGui::Begin(u8"溜め撃ちの構え");
+	float holdFrame = settings.holdTime * 30.0f;
+	if (ImGui::SliderFloat(u8"止めるコマ（Attack1）", &holdFrame, 0.0f, 16.0f, "%.0f")) {
+		settings.holdTime = holdFrame / 30.0f;
+	}
+	ImGui::SliderFloat(u8"火の玉の前への距離（cm）", &settings.ballForward, 0.0f, 80.0f, "%.0f");
+	ImGui::SliderFloat(u8"右肩を引く角度（度）", &settings.shoulderBackDeg, 0.0f, 60.0f, "%.0f");
+	ImGui::SliderFloat(u8"右腕を外へ開く角度（度）", &settings.armOutDeg, -30.0f, 60.0f, "%.0f");
+	ImGui::SliderFloat(u8"構えて歩く速さ（倍）", &settings.moveSpeedRate, 0.2f, 1.0f, "%.2f");
+	ImGui::SliderFloat(u8"後ろ歩きにさらに掛ける（倍）", &settings.backMoveSpeedRate, 0.2f, 1.0f, "%.2f");
+	if (ImGui::Button(u8"最初の値に戻す")) {
+		settings = PlayerConfig::MakeChargeSettings();
+	}
+	ImGui::End();
 }
 
 void Player::UpdateChargePosition()
@@ -220,12 +275,13 @@ void Player::UpdateChargePosition()
 		m_chargePosition = chestFront;
 		return;
 	}
-	// 構えたら、両手の真ん中の少し前。上半身の層の重みで、胸の前から移す。
+	// 構えたら、右手の少し前（狙う向き）。上半身の層の重みで、胸の前から移す。
 	ModelRender& modelRender = m_model.GetModelRender();
-	const Matrix& left = modelRender.GetBone(m_handBones[0])->GetWorldMatrix();
 	const Matrix& right = modelRender.GetBone(m_handBones[1])->GetWorldMatrix();
-	Vector3 handFront = (*(const Vector3*)left.m[3] + *(const Vector3*)right.m[3]) * 0.5f;
-	handFront += forward * m_upperBody.GetSettings().ballForward;
+	Vector3 handFront = *(const Vector3*)right.m[3];
+	Vector3 aimForward = m_isThirdPersonCamera ? g_camera3D->GetForward() : forward;
+	aimForward.Normalize();
+	handFront += aimForward * m_upperBody.GetSettings().ballForward;
 	m_chargePosition.Lerp(m_upperBody.GetWeight(), chestFront, handFront);
 }
 

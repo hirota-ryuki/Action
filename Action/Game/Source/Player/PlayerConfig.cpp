@@ -363,11 +363,14 @@ PlayerChargeSettings PlayerConfig::MakeChargeSettings()
 {
 	const Json section = GetSection("charge");
 	PlayerChargeSettings settings;
-	settings.holdTime = ReadFramesAsSeconds(section, "charge", "holdFrame", 7.0f);
+	settings.holdTime = ReadFramesAsSeconds(section, "charge", "holdFrame", 9.0f);
 	settings.castEndTime = ReadFramesAsSeconds(section, "charge", "castEndFrame", 17.0f);
 	settings.fadeInSeconds = Read(section, "charge", "fadeInSeconds", 0.15f);
 	settings.fadeOutSeconds = Read(section, "charge", "fadeOutSeconds", 0.25f);
 	settings.moveSpeedRate = Read(section, "charge", "moveSpeedRate", 0.6f);
-	settings.ballForward = Read(section, "charge", "ballForward", 15.0f);
+	settings.ballForward = Read(section, "charge", "ballForward", 35.0f);
+	settings.backMoveSpeedRate = Read(section, "charge", "backMoveSpeedRate", 0.6f);
+	settings.shoulderBackDeg = Read(section, "charge", "shoulderBackDeg", 25.0f);
+	settings.armOutDeg = Read(section, "charge", "armOutDeg", 25.0f);
 	return settings;
 }

@@ -48,7 +48,7 @@ namespace
 	constexpr float AIM_SCREEN_X = 0.5f;
 	constexpr float AIM_VIEW_ANGLE_DEG = 50.0f;       // 画角（寄りの 55 度より少し狭くして、狙う先を大きく見せる）。
 	constexpr float AIM_ENTER_SECONDS = 0.2f;         // 肩越しへ移る時間。
-	constexpr float AIM_EXIT_SECONDS = 0.3f;          // 元の三人称へ戻る時間。
+	constexpr float AIM_EXIT_SECONDS = 0.15f;          // 元の三人称へ戻る時間。
 
 	// マウス1フレームあたりの回転量を上限値で制限する。
 	float ClampMouseRotateDeg(float rotateDeg)
@@ -322,7 +322,8 @@ void GameCamera::UpdateThirdPersonCamera()
 void GameCamera::UpdateAimRate()
 {
 	const float deltaTime = g_gameTime->GetFrameDeltaTime();
-	if (m_player->IsThirdPersonAiming() || m_isPreviewShoulderView) {
+	// 離して撃ったら、撃つ動きの終わりを待たずに戻し始める。
+	if (m_player->IsThirdPersonCharging() || m_isPreviewShoulderView) {
 		m_aimRate = min(1.0f, m_aimRate + deltaTime / AIM_ENTER_SECONDS);
 	}
 	else {

@@ -4,8 +4,8 @@
 
 namespace
 {
-	// 上半身に流すクリップ。3段攻撃の3段目（両手で撃つ）を、途中で止めて溜めに使う。
-	constexpr int CHARGE_CLIP = enPlayerAnimClip_Attack3;
+	// 上半身に流すクリップ。3段攻撃の1段目（右手で撃つ）を、途中で止めて溜めに使う。
+	constexpr int CHARGE_CLIP = enPlayerAnimClip_Attack1;
 }
 
 void PlayerUpperBody::Init(ModelRender* modelRender, const PlayerChargeSettings& settings)

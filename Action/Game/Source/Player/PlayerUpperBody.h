@@ -1,13 +1,16 @@
 ﻿#pragma once
-// 三人称の溜め撃ちの調整値。時間はどれもクリップ（Attack3）の中の位置（秒）。
+// 三人称の溜め撃ちの調整値。時間はどれもクリップ（Attack1）の中の位置（秒）。
 struct PlayerChargeSettings
 {
-	float holdTime = 7.0f / 30.0f;      // 溜めている間、ここで止める（両手を前へ伸ばしかけたところ）。
+	float holdTime = 9.0f / 30.0f;      // 溜めている間、ここで止める（右手を前へ突き出しきる手前）。
 	float castEndTime = 17.0f / 30.0f;  // 撃ったあと、ここまで流したら上半身を下の動きへ戻し始める（下ろし始め）。
 	float fadeInSeconds = 0.15f;        // 上半身を溜める動きに替えるのにかける時間。
 	float fadeOutSeconds = 0.25f;       // 上半身を下の動き（歩きなど）へ戻すのにかける時間。
 	float moveSpeedRate = 0.6f;         // 溜めている間の歩く速さ（ふだんの歩きの何倍か）。
-	float ballForward = 15.0f;          // 火の玉を、両手の真ん中からこれだけ前（cm）に置く。
+	float ballForward = 35.0f;          // 火の玉を、右手からこれだけ前（cm、狙う向き）に置く。
+	float backMoveSpeedRate = 0.6f;     // 構えて後ろへ歩くときは、さらにこれを掛ける。
+	float shoulderBackDeg = 25.0f;      // 構えている間、右肩を後ろへ引く（上の胸をひねる）角度（度）。首は狙う向きへ戻す。
+	float armOutDeg = 25.0f;            // 構えている右腕を、狙う向きから外（画面の右）へ開く角度（度）。体に隠れないようにする。
 };
 
 // 三人称で溜め撃ちをするときの、上半身の動きを受け持つ部品。
@@ -29,12 +32,22 @@ public:
 	{
 		return m_phase != Phase::None;
 	}
+	// 溜めている最中か（撃ったあとの動きは含まない）。肩越しのカメラに使う。
+	bool IsCharging() const
+	{
+		return m_phase == Phase::Charge;
+	}
 	// 上半身の層の重み（0〜1）。
 	float GetWeight() const
 	{
 		return m_weight;
 	}
 	const PlayerChargeSettings& GetSettings() const
+	{
+		return m_settings;
+	}
+	// 調整用（F1 の窓から値を変える）。
+	PlayerChargeSettings& GetSettingsForEdit()
 	{
 		return m_settings;
 	}
