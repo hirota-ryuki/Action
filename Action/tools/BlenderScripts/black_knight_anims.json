@@ -28,7 +28,10 @@
       "adjust": [
         {"bone": "J_Bip_R_Hand", "axis": [1, 0, 0], "deg": 45},
         {"bone": "J_Bip_R_Hand", "axis": [0, 0, 1], "deg": -15}
-      ]
+      ],
+      "arm_pose": {"right": {"out": 13, "shoulder_front": 0, "elbow_front": -25,
+                             "wrist_out": 22, "wrist_front": 19, "wrist_twist": -14},
+                   "left": {"out": 13}}
     },
     {
       "name": "Run",
