@@ -49,8 +49,12 @@ private:
 	int m_playingDebugMotion = -1;    // いま窓から流しているクリップ。-1 なら流していない。
 	float m_debugRightArmOutDeg = 0.0f;    // 窓から Walk を流すときに、右腕を体の外へ開く角度（度。マイナスで内へ）。
 	float m_debugLeftArmOutDeg = 0.0f;     // 窓から Walk を流すときに、左腕を体の外へ開く角度（度。マイナスで内へ）。
-	float m_debugRightWristOutDeg = 0.0f;  // 窓から Walk を流すときに、剣を持つ右手の手首を体の外へ曲げる角度（度。マイナスで内へ）。
-	float m_debugRightWristFrontDeg = 0.0f;  // 窓から Walk を流すときに、剣を持つ右手の手首を前へ曲げる角度（度。マイナスで後ろへ）。
+	// ここから下は、窓から Walk を流すときの剣を持つ右腕の角度（度）。
+	float m_debugRightShoulderFrontDeg = 0.0f;  // 右肩 前後（肩 → ひじを前へ。マイナスで後ろへ）。
+	float m_debugRightElbowFrontDeg = 0.0f;     // ひじから下 前後（ひじ → 手首を前へ。マイナスで後ろへ）。
+	float m_debugRightWristOutDeg = 0.0f;       // 右手首 外へ（マイナスで内へ）。
+	float m_debugRightWristFrontDeg = 0.0f;     // 右手首 前後（マイナスで後ろへ）。
+	float m_debugRightWristTwistDeg = 0.0f;     // 右手首 ひねり（前腕の向きのまわり）。
 	Status m_status;
 	EnemyStateMachine m_stateMachine;
 	EnemyDamageState m_damage;  // 当たった・倒れて消えた（ステートと受け渡す）。

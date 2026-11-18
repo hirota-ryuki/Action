@@ -182,15 +182,25 @@ void Enemy::RotateDebugArm(Skeleton& skeleton)
 	openOutward(rightNo, rightLowerNo, leftNo, m_debugRightArmOutDeg);
 	openOutward(leftNo, leftLowerNo, rightNo, m_debugLeftArmOutDeg);
 
-	// ② 右手首 外へ（剣を持つ右手だけ）: 手首を中心に、手を、前腕の向き（ひじ → 手首）から体の外へ曲げる。
-	// 軸は「前腕の向き × 外の向き」（①と同じ考え方）。剣も一緒に回る。
-	const Vector3 wrist = position(rightHandNo);
-	const Vector3 forearm = wrist - position(rightLowerNo);
-	const Vector3 outward = position(rightNo) - position(leftNo);
-	RotateBoneTreeAround(*skeleton.GetBone(rightHandNo), wrist, Cross(forearm, outward), m_debugRightWristOutDeg);
+	// ここから下は剣を持つ右腕だけ。前後は、体の横の向き（左の肩 → 右の肩）のまわりに回す（＋で前。前の Run の「右肩 前後」と同じ軸）。
+	const Vector3 shoulder = position(rightNo);
+	const Vector3 outward = shoulder - position(leftNo);
+	// ② 右肩 前後: 右肩の関節を中心に、上腕から先を回す。
+	RotateBoneTreeAround(*skeleton.GetBone(rightNo), shoulder, outward, m_debugRightShoulderFrontDeg);
+	// ③ ひじから下 前後: ひじを中心に、前腕から先を回す。
+	const Vector3 elbow = position(rightLowerNo);
+	RotateBoneTreeAround(*skeleton.GetBone(rightLowerNo), elbow, outward, m_debugRightElbowFrontDeg);
 
-	// ③ 右手首 前後: 手首を中心に、体の横の向き（左の肩 → 右の肩）のまわりに手を回す（＋で前。前の Run の「右肩 前後」と同じ軸）。
-	RotateBoneTreeAround(*skeleton.GetBone(rightHandNo), wrist, outward, m_debugRightWristFrontDeg);
+	// ④〜⑥ 右手首: 手首を中心に回す。剣も一緒に回る。
+	Bone& hand = *skeleton.GetBone(rightHandNo);
+	const Vector3 wrist = position(rightHandNo);
+	const Vector3 forearm = wrist - elbow;   // 前腕の向き（ひじ → 手首）。
+	// ④ 外へ: 軸は「前腕の向き × 外の向き」（①と同じ考え方）。手が前腕の向きから体の外へ曲がる。
+	RotateBoneTreeAround(hand, wrist, Cross(forearm, outward), m_debugRightWristOutDeg);
+	// ⑤ 前後: 軸は体の横の向き。
+	RotateBoneTreeAround(hand, wrist, outward, m_debugRightWristFrontDeg);
+	// ⑥ ひねり: 軸は前腕の向き。
+	RotateBoneTreeAround(hand, wrist, forearm, m_debugRightWristTwistDeg);
 }
 
 void Enemy::FilterSkillInput(CharacterInput& input) const
@@ -250,13 +260,20 @@ void Enemy::UpdateDebugWindow()
 	ImGui::SeparatorText(u8"腕を外へ開く（Walk のときだけ）");
 	ImGui::SliderFloat(u8"右腕 外へ（度）", &m_debugRightArmOutDeg, -45.0f, 45.0f, "%.0f");
 	ImGui::SliderFloat(u8"左腕 外へ（度）", &m_debugLeftArmOutDeg, -45.0f, 45.0f, "%.0f");
+	ImGui::SeparatorText(u8"剣を持つ右腕（Walk のときだけ）");
+	ImGui::SliderFloat(u8"右肩 前後（＋で前）", &m_debugRightShoulderFrontDeg, -60.0f, 60.0f, "%.0f");
+	ImGui::SliderFloat(u8"ひじから下 前後（＋で前）", &m_debugRightElbowFrontDeg, -90.0f, 90.0f, "%.0f");
 	ImGui::SliderFloat(u8"右手首 外へ（度）", &m_debugRightWristOutDeg, -90.0f, 90.0f, "%.0f");
 	ImGui::SliderFloat(u8"右手首 前後（＋で前）", &m_debugRightWristFrontDeg, -90.0f, 90.0f, "%.0f");
+	ImGui::SliderFloat(u8"右手首 ひねり", &m_debugRightWristTwistDeg, -90.0f, 90.0f, "%.0f");
 	if (ImGui::Button(u8"腕を戻す")) {
 		m_debugRightArmOutDeg = 0.0f;
 		m_debugLeftArmOutDeg = 0.0f;
+		m_debugRightShoulderFrontDeg = 0.0f;
+		m_debugRightElbowFrontDeg = 0.0f;
 		m_debugRightWristOutDeg = 0.0f;
 		m_debugRightWristFrontDeg = 0.0f;
+		m_debugRightWristTwistDeg = 0.0f;
 	}
 	ImGui::End();
 }
