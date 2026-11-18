@@ -50,6 +50,7 @@ private:
 	float m_debugRightArmOutDeg = 0.0f;    // 窓から Walk を流すときに、右腕を体の外へ開く角度（度。マイナスで内へ）。
 	float m_debugLeftArmOutDeg = 0.0f;     // 窓から Walk を流すときに、左腕を体の外へ開く角度（度。マイナスで内へ）。
 	float m_debugRightWristOutDeg = 0.0f;  // 窓から Walk を流すときに、剣を持つ右手の手首を体の外へ曲げる角度（度。マイナスで内へ）。
+	float m_debugRightWristFrontDeg = 0.0f;  // 窓から Walk を流すときに、剣を持つ右手の手首を前へ曲げる角度（度。マイナスで後ろへ）。
 	Status m_status;
 	EnemyStateMachine m_stateMachine;
 	EnemyDamageState m_damage;  // 当たった・倒れて消えた（ステートと受け渡す）。

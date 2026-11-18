@@ -34,10 +34,11 @@
 #     arm_tweak {"shoulder": 度, "forearm_in_out": 度, "forearm_front_back": 度, "wrist_bend": 度, "wrist_side": 度, "wrist_twist": 度}
 #              ゲームの F1 の窓「黒騎士のモーション」の右腕のスライダー（右肩 前後・ひじから下 内・外・ひじから下 前後・手首 曲げ・横・ひねり）の
 #              値をそのまま書くと、窓と同じ回し方で全部のコマに焼き込む（書き出しの最後、キーを打ったあと）
-#     arm_pose {"right": {"out": 度, "wrist_out": 度}, "left": {"out": 度}}
-#              ゲームの F1 の窓「黒騎士のモーション」の「右腕 外へ」「左腕 外へ」「右手首 外へ」の値をそのまま書くと、窓と同じ回し方で
-#              全部のコマに焼き込む（arm_tweak のあと）。書かない項目は 0。
-#              out: 肩の関節を中心に、軸は「上腕の向き × 外の向き」。wrist_out: 手首を中心に、軸は「前腕の向き × 外の向き」。＋で体の外へ
+#     arm_pose {"right": {"out": 度, "wrist_out": 度, "wrist_front": 度}, "left": {"out": 度}}
+#              ゲームの F1 の窓「黒騎士のモーション」の「右腕 外へ」「左腕 外へ」「右手首 外へ」「右手首 前後」の値をそのまま書くと、
+#              窓と同じ回し方で全部のコマに焼き込む（arm_tweak のあと）。書かない項目は 0。
+#              out: 肩の関節を中心に、軸は「上腕の向き × 外の向き」。wrist_out: 手首を中心に、軸は「前腕の向き × 外の向き」（＋で体の外へ）。
+#              wrist_front: 手首を中心に、軸は外の向き（反対の肩 → この肩。＋で前）
 #     arms     "both" なら、元の左腕の動きを左右の反転で右腕にも写して、両手で同じ動きにする。
 #              体（腰〜頭）は、元と反転したものの平均（左右対称）にする
 #     speed    再生の速さ（2 なら半分のコマ数にする）。segments の1つずつにも書ける
@@ -979,6 +980,7 @@ def apply_arm_pose(length, o):
             rot(up_n, shoulder, (M[low_n].translation - shoulder).cross(outward), t.get("out", 0.0))
             wrist = M[hand_n].translation.copy()
             rot(hand_n, wrist, (wrist - M[low_n].translation).cross(outward), t.get("wrist_out", 0.0))
+            rot(hand_n, wrist, outward, t.get("wrist_front", 0.0))
             key_chain(chain, M, parent_of_up, f)
             if f == 0:
                 SCENE.frame_set(0)

@@ -188,6 +188,9 @@ void Enemy::RotateDebugArm(Skeleton& skeleton)
 	const Vector3 forearm = wrist - position(rightLowerNo);
 	const Vector3 outward = position(rightNo) - position(leftNo);
 	RotateBoneTreeAround(*skeleton.GetBone(rightHandNo), wrist, Cross(forearm, outward), m_debugRightWristOutDeg);
+
+	// ③ 右手首 前後: 手首を中心に、体の横の向き（左の肩 → 右の肩）のまわりに手を回す（＋で前。前の Run の「右肩 前後」と同じ軸）。
+	RotateBoneTreeAround(*skeleton.GetBone(rightHandNo), wrist, outward, m_debugRightWristFrontDeg);
 }
 
 void Enemy::FilterSkillInput(CharacterInput& input) const
@@ -248,10 +251,12 @@ void Enemy::UpdateDebugWindow()
 	ImGui::SliderFloat(u8"右腕 外へ（度）", &m_debugRightArmOutDeg, -45.0f, 45.0f, "%.0f");
 	ImGui::SliderFloat(u8"左腕 外へ（度）", &m_debugLeftArmOutDeg, -45.0f, 45.0f, "%.0f");
 	ImGui::SliderFloat(u8"右手首 外へ（度）", &m_debugRightWristOutDeg, -90.0f, 90.0f, "%.0f");
+	ImGui::SliderFloat(u8"右手首 前後（＋で前）", &m_debugRightWristFrontDeg, -90.0f, 90.0f, "%.0f");
 	if (ImGui::Button(u8"腕を戻す")) {
 		m_debugRightArmOutDeg = 0.0f;
 		m_debugLeftArmOutDeg = 0.0f;
 		m_debugRightWristOutDeg = 0.0f;
+		m_debugRightWristFrontDeg = 0.0f;
 	}
 	ImGui::End();
 }
