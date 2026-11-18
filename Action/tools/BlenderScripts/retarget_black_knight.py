@@ -34,6 +34,9 @@
 #     arm_tweak {"shoulder": 度, "forearm_in_out": 度, "forearm_front_back": 度, "wrist_bend": 度, "wrist_side": 度, "wrist_twist": 度}
 #              ゲームの F1 の窓「黒騎士のモーション」の右腕のスライダー（右肩 前後・ひじから下 内・外・ひじから下 前後・手首 曲げ・横・ひねり）の
 #              値をそのまま書くと、窓と同じ回し方で全部のコマに焼き込む（書き出しの最後、キーを打ったあと）
+#     arm_open {"right": 度, "left": 度}
+#              ゲームの F1 の窓「黒騎士のモーション」の「右腕 外へ」「左腕 外へ」の値をそのまま書くと、窓と同じ回し方
+#              （肩の関節を中心に、軸は「上腕の向き × 外の向き」、＋で体の外へ開く）で全部のコマに焼き込む（arm_tweak のあと）
 #     arms     "both" なら、元の左腕の動きを左右の反転で右腕にも写して、両手で同じ動きにする。
 #              体（腰〜頭）は、元と反転したものの平均（左右対称）にする
 #     speed    再生の速さ（2 なら半分のコマ数にする）。segments の1つずつにも書ける
@@ -860,6 +863,7 @@ def bake(clip):
         hb.location = REST_Q[hips].inverted() @ (p_arm - REST_H[hips])
         hb.keyframe_insert("location", frame=f)
     apply_arm_tweak(length, clip.get("arm_tweak"))
+    apply_arm_open(length, clip.get("arm_open"))
     fit_sword_to_grip(length)
     act = TGT.animation_data.action
     act.name = clip["name"]
@@ -918,23 +922,60 @@ def apply_arm_tweak(length, t):
         rot(hand_n, wrist, forearm, s * t.get("wrist_twist", 0.0))
 
         # 回した姿勢の行列を、親から見た回転（キーに打つ値）に戻す
-        parent_m = parent_of_up
-        for n in chain:
-            pb = TGT.pose.bones[n]
-            rest = pb.bone.matrix_local
-            rest_rel = pb.parent.bone.matrix_local.inverted() @ rest
-            basis = (parent_m @ rest_rel).inverted() @ M[n]
-            q = basis.to_quaternion()
-            if q.dot(pb.rotation_quaternion) < 0:
-                q = -q
-            pb.rotation_quaternion = q
-            pb.keyframe_insert("rotation_quaternion", frame=f)
-            parent_m = M[n]
+        key_chain(chain, M, parent_of_up, f)
         if f == 0:
             # キーを打った姿勢が、行列で回したとおりになっているか（手の向きの差、度）
             SCENE.frame_set(0)
             got = TGT.pose.bones[hand_n].matrix.to_quaternion()
             print("ARM_TWEAK 0コマ目の手の向きの差 %.3f 度" % math.degrees(got.rotation_difference(M[hand_n].to_quaternion()).angle))
+
+
+def key_chain(chain, M, parent_m, f):
+    """姿勢の行列（アーマチュアの空間）で回した骨を、親から見た回転（キーに打つ値）に戻して f コマ目にキーを打つ。chain は親 → 子の順"""
+    for n in chain:
+        pb = TGT.pose.bones[n]
+        rest = pb.bone.matrix_local
+        rest_rel = pb.parent.bone.matrix_local.inverted() @ rest
+        basis = (parent_m @ rest_rel).inverted() @ M[n]
+        q = basis.to_quaternion()
+        if q.dot(pb.rotation_quaternion) < 0:
+            q = -q
+        pb.rotation_quaternion = q
+        pb.keyframe_insert("rotation_quaternion", frame=f)
+        parent_m = M[n]
+
+
+def apply_arm_open(length, o):
+    """ゲームの F1 の窓「黒騎士のモーション」の「右腕 外へ」「左腕 外へ」（Enemy::RotateDebugArm）と同じ回し方を、全部のコマに焼き込む。
+    肩の関節を中心に、軸は「上腕の向き（肩 → ひじ）× 外の向き（反対の肩 → この肩）」。＋で上腕が体の外へ開く。"""
+    if not o:
+        return
+    s = GAME_SIGN
+    for side, other, key in (("R", "L", "right"), ("L", "R", "left")):
+        deg = o.get(key, 0.0)
+        if abs(deg) < 0.01:
+            continue
+        up_n, low_n, hand_n, other_n = S(side, "UpperArm"), S(side, "LowerArm"), S(side, "Hand"), S(other, "UpperArm")
+        chain = [up_n, low_n, hand_n]   # 親 → 子の順
+        for f in range(length + 1):
+            SCENE.frame_set(f)
+            # arm_tweak と同じく、姿勢の行列を写して行列だけで回す
+            M = {n: TGT.pose.bones[n].matrix.copy() for n in chain}
+            other_pos = TGT.pose.bones[other_n].matrix.translation.copy()
+            parent_of_up = TGT.pose.bones[up_n].parent.matrix.copy()
+            shoulder = M[up_n].translation.copy()
+            axis = (M[low_n].translation - shoulder).cross(shoulder - other_pos)
+            if axis.length < 1e-6:
+                continue
+            r = (Matrix.Translation(shoulder) @ Quaternion(axis.normalized(), math.radians(s * deg)).to_matrix().to_4x4()
+                 @ Matrix.Translation(-shoulder))
+            for n in chain:
+                M[n] = r @ M[n]
+            key_chain(chain, M, parent_of_up, f)
+            if f == 0:
+                SCENE.frame_set(0)
+                got = TGT.pose.bones[hand_n].matrix.to_quaternion()
+                print("ARM_OPEN [%s] 0コマ目の手の向きの差 %.3f 度" % (side, math.degrees(got.rotation_difference(M[hand_n].to_quaternion()).angle)))
 
 
 def print_hands(name, length):
