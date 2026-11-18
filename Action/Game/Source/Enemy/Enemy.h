@@ -49,6 +49,7 @@ private:
 	float m_debugPlaySpeed = 1.0f;    // 窓から流すときの再生の速さ。
 	float m_debugShoulderDeg = 0.0f;  // 窓から Run を流すときに、右腕を肩で前へ回す角度（度。マイナスで後ろへ）。
 	float m_debugForearmDeg = 0.0f;   // 上腕をひねって、ひじから下を内・外へ振る角度（度）。
+	float m_debugElbowDeg = 0.0f;     // ひじを中心に、ひじから下を前へ回す角度（度。マイナスで後ろへ）。
 	float m_debugWristBendDeg = 0.0f; // 手首を曲げる角度（度。ひじの曲がる軸まわり）。
 	float m_debugWristSideDeg = 0.0f; // 手首を横へ倒す角度（度）。
 	float m_debugWristTwistDeg = 0.0f;// 手首（前腕）をひねる角度（度）。

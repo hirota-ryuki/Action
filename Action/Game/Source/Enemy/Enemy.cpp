@@ -180,7 +180,10 @@ void Enemy::RotateDebugArm(Skeleton& skeleton)
 	// ② ひじから下 内・外: 上腕を、その向き（肩 → ひじ）を軸にひねる。ひじは動かず、曲げた前腕が体の内・外へ振れる。
 	RotateBoneTreeAround(*upper, shoulder, position(lowerNo) - shoulder, m_debugForearmDeg);
 
-	// ③ 手首: 手首を中心に、前腕から見た3つの向きで回す（剣も一緒に回る）。
+	// ③ ひじから下 前後: ひじを中心に、①と同じ体の横の向きのまわりに前腕から先を回す（＋で前）。
+	RotateBoneTreeAround(*skeleton.GetBone(lowerNo), position(lowerNo), shoulder - position(leftNo), m_debugElbowDeg);
+
+	// ④ 手首: 手首を中心に、前腕から見た3つの向きで回す（剣も一緒に回る）。
 	const Vector3 elbow = position(lowerNo);
 	const Vector3 wrist = position(handNo);
 	Vector3 forearm = wrist - elbow;               // ひねりの軸（ひじ → 手首）。
@@ -259,12 +262,14 @@ void Enemy::UpdateDebugWindow()
 	ImGui::SeparatorText(u8"剣を持つ右腕（Run のときだけ）");
 	ImGui::SliderFloat(u8"右肩 前後（＋で前）", &m_debugShoulderDeg, -60.0f, 60.0f, "%.0f");
 	ImGui::SliderFloat(u8"ひじから下 内・外（－で内）", &m_debugForearmDeg, -90.0f, 90.0f, "%.0f");
+	ImGui::SliderFloat(u8"ひじから下 前後（＋で前）", &m_debugElbowDeg, -90.0f, 90.0f, "%.0f");
 	ImGui::SliderFloat(u8"手首 曲げ", &m_debugWristBendDeg, -90.0f, 90.0f, "%.0f");
 	ImGui::SliderFloat(u8"手首 横", &m_debugWristSideDeg, -90.0f, 90.0f, "%.0f");
 	ImGui::SliderFloat(u8"手首 ひねり", &m_debugWristTwistDeg, -90.0f, 90.0f, "%.0f");
 	if (ImGui::Button(u8"右腕を戻す")) {
 		m_debugShoulderDeg = 0.0f;
 		m_debugForearmDeg = 0.0f;
+		m_debugElbowDeg = 0.0f;
 		m_debugWristBendDeg = 0.0f;
 		m_debugWristSideDeg = 0.0f;
 		m_debugWristTwistDeg = 0.0f;
