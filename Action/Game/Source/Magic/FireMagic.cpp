@@ -174,7 +174,7 @@ void FireMagic::OnMove()
 	m_flyEffect.SetPosition(GetPosition());
 	m_flyEffect.SetRotation(GetRotation());
 	m_flyEffect.SetScale(GetFlyEffectScale(m_chargeRate));
-	// 全体ではなくルートだけを動かし、炎と煙の尾を通った場所に残す。
+	// 全体ではなくルートだけを動かし、炎と火の粉の尾を通った場所に残す。
 	m_flyEffect.UpdateRoot();
 }
 
@@ -188,7 +188,7 @@ void FireMagic::OnHitTarget(HitTarget& target, const Vector3& hitPosition)
 
 void FireMagic::OnExplode(const Vector3& hitPosition)
 {
-	// 飛んでいる炎は即座に消し、尾の炎と煙は寿命まで残す。
+	// 飛んでいる炎は即座に消し、尾の炎と火の粉は寿命まで残す。
 	m_flyEffect.StopRoot();
 
 	const float hitScale = Lerp(m_chargeRate, MIN_HIT_EFFECT_SCALE, MAX_HIT_EFFECT_SCALE);

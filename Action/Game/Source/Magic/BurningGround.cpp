@@ -71,7 +71,9 @@ void BurningGround::Update()
 		BurnTargetsInRange();
 		m_elapsed += g_gameTime->GetFrameDeltaTime();
 		if (m_elapsed >= m_seconds) {
-			StopBurning();
+			// 炎の発生だけを止め、出ている炎は寿命まで燃やして自然に消す。
+			m_effect.StopRoot();
+			m_state = EnState::Vanishing;
 		}
 		break;
 	case EnState::Vanishing:
@@ -79,42 +81,6 @@ void BurningGround::Update()
 			DeleteGO(this);
 		}
 		break;
-	}
-}
-
-void BurningGround::StopBurning()
-{
-	if (m_state != EnState::Burning) {
-		return;
-	}
-	// 炎の発生だけを止め、出ている炎は寿命まで燃やして自然に消す。
-	if (m_isValid) {
-		m_effect.StopRoot();
-	}
-	m_state = EnState::Vanishing;
-}
-
-void BurningGround::LimitBurningCount()
-{
-	// 自分を入れて MAX_BURNING_COUNT 枚になるまで、いちばん長く燃えているものから止める。
-	while (true) {
-		int burningCount = 1;
-		BurningGround* oldest = nullptr;
-		QueryGOs<BurningGround>(OBJECT_NAME, [&](BurningGround* ground) {
-			// Start() がまだの床（エフェクトをまだ再生していない）は数えない。
-			if (ground == this || !ground->m_isValid || !ground->IsBurning()) {
-				return true;
-			}
-			burningCount++;
-			if (oldest == nullptr || ground->m_elapsed > oldest->m_elapsed) {
-				oldest = ground;
-			}
-			return true;
-		});
-		if (burningCount <= MAX_BURNING_COUNT || oldest == nullptr) {
-			return;
-		}
-		oldest->StopBurning();
 	}
 }
 
@@ -163,4 +129,35 @@ void BurningGround::UpdateEffectScale()
 	const float scale = GetCurrentRadius() / EFFECT_RADIUS_AT_SCALE_ONE;
 	m_effect.SetScale(Vector3(scale, scale, scale));
 	m_effect.Update();
+}
+
+void BurningGround::LimitBurningCount()
+{
+	// 自分を入れて MAX_BURNING_COUNT 枚になるまで、いちばん長く燃えているものから止める。
+	while (true) {
+		int burningCount = 1;
+		BurningGround* oldest = nullptr;
+		QueryGOs<BurningGround>(OBJECT_NAME, [&](BurningGround* ground) {
+			// Start() がまだの床（エフェクトをまだ再生していない）と、燃え終わった床は数えない。
+			if (ground == this || !ground->m_isValid || ground->m_state != EnState::Burning) {
+				return true;
+			}
+			burningCount++;
+			if (oldest == nullptr || ground->m_elapsed > oldest->m_elapsed) {
+				oldest = ground;
+			}
+			return true;
+		});
+		if (burningCount <= MAX_BURNING_COUNT || oldest == nullptr) {
+			return;
+		}
+		oldest->StopBurning();
+	}
+}
+
+void BurningGround::StopBurning()
+{
+	// 炎の発生だけを止め、出ている炎は寿命まで燃やして自然に消す。
+	m_effect.StopRoot();
+	m_state = EnState::Vanishing;
 }
