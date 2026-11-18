@@ -166,20 +166,35 @@ void Enemy::RotateDebugArm(Skeleton& skeleton)
 	const int leftNo = skeleton.FindBoneID(L"J_Bip_L_UpperArm");
 	const int rightLowerNo = skeleton.FindBoneID(L"J_Bip_R_LowerArm");
 	const int leftLowerNo = skeleton.FindBoneID(L"J_Bip_L_LowerArm");
-	if (rightNo < 0 || leftNo < 0 || rightLowerNo < 0 || leftLowerNo < 0) {
+	const int rightHandNo = skeleton.FindBoneID(L"J_Bip_R_Hand");
+	const int leftHandNo = skeleton.FindBoneID(L"J_Bip_L_Hand");
+	if (rightNo < 0 || leftNo < 0 || rightLowerNo < 0 || leftLowerNo < 0 || rightHandNo < 0 || leftHandNo < 0) {
 		return;
 	}
 	auto position = [&](int boneNo) { return GetTranslation(skeleton.GetBone(boneNo)->GetWorldMatrix()); };
-	// 肩の関節を中心に、上腕の向き（肩 → ひじ）を、体の外（反対の肩から離れる向き）へ倒す。
-	// 軸は「上腕の向き × 外の向き」。この軸のまわりに＋へ回すと、上腕が外の向きへ近づく。
-	auto openOutward = [&](int upperNo, int lowerNo, int otherNo, float deg) {
+	auto adjustArm = [&](int upperNo, int lowerNo, int handNo, int otherNo, const DebugArm& arm) {
+		// ① 外へ: 肩の関節を中心に、上腕の向き（肩 → ひじ）を、体の外（反対の肩から離れる向き）へ倒す。
+		// 軸は「上腕の向き × 外の向き」。この軸のまわりに＋へ回すと、上腕が外の向きへ近づく。
 		const Vector3 shoulder = position(upperNo);
 		const Vector3 outward = shoulder - position(otherNo);
-		const Vector3 axis = Cross(position(lowerNo) - shoulder, outward);
-		RotateBoneTreeAround(*skeleton.GetBone(upperNo), shoulder, axis, deg);
+		RotateBoneTreeAround(*skeleton.GetBone(upperNo), shoulder, Cross(position(lowerNo) - shoulder, outward), arm.outDeg);
+
+		// ② 手首: 手首を中心に、前腕から見た3つの向きで回す（右手なら剣も一緒に回る）。
+		const Vector3 elbow = position(lowerNo);
+		const Vector3 wrist = position(handNo);
+		Vector3 forearm = wrist - elbow;                       // ひねりの軸（ひじ → 手首）。
+		Vector3 bendAxis = Cross(elbow - shoulder, forearm);   // ひじの曲がる軸。手首の曲げもこの軸まわり。
+		if (bendAxis.LengthSq() <= FLT_EPSILON) {
+			bendAxis = Cross(Vector3::AxisY, forearm);
+		}
+		const Vector3 sideAxis = Cross(forearm, bendAxis);     // 手首を横（親指側・小指側）へ倒す軸。
+		Bone& hand = *skeleton.GetBone(handNo);
+		RotateBoneTreeAround(hand, wrist, bendAxis, arm.wristBendDeg);
+		RotateBoneTreeAround(hand, wrist, sideAxis, arm.wristSideDeg);
+		RotateBoneTreeAround(hand, wrist, forearm, arm.wristTwistDeg);
 	};
-	openOutward(rightNo, rightLowerNo, leftNo, m_debugRightArmOutDeg);
-	openOutward(leftNo, leftLowerNo, rightNo, m_debugLeftArmOutDeg);
+	adjustArm(rightNo, rightLowerNo, rightHandNo, leftNo, m_debugArm[DEBUG_ARM_RIGHT]);
+	adjustArm(leftNo, leftLowerNo, leftHandNo, rightNo, m_debugArm[DEBUG_ARM_LEFT]);
 }
 
 void Enemy::FilterSkillInput(CharacterInput& input) const
@@ -236,12 +251,20 @@ void Enemy::UpdateDebugWindow()
 	ImGui::RadioButton(u8"Walk（歩く）", &m_debugMotion, enEnemyAnimClip_Walk);
 	ImGui::RadioButton(u8"Run（走る）", &m_debugMotion, enEnemyAnimClip_Run);
 	// Walk を流している間だけ効く。決めた角度は、モーションの設定（black_knight_anims.json）に書き写す。
-	ImGui::SeparatorText(u8"腕を外へ開く（Walk のときだけ）");
-	ImGui::SliderFloat(u8"右腕 外へ（度）", &m_debugRightArmOutDeg, -45.0f, 45.0f, "%.0f");
-	ImGui::SliderFloat(u8"左腕 外へ（度）", &m_debugLeftArmOutDeg, -45.0f, 45.0f, "%.0f");
+	auto armSliders = [](const char* title, DebugArm& arm) {
+		ImGui::SeparatorText(title);
+		ImGui::PushID(title);
+		ImGui::SliderFloat(u8"外へ（度）", &arm.outDeg, -45.0f, 45.0f, "%.0f");
+		ImGui::SliderFloat(u8"手首 曲げ", &arm.wristBendDeg, -90.0f, 90.0f, "%.0f");
+		ImGui::SliderFloat(u8"手首 横", &arm.wristSideDeg, -90.0f, 90.0f, "%.0f");
+		ImGui::SliderFloat(u8"手首 ひねり", &arm.wristTwistDeg, -90.0f, 90.0f, "%.0f");
+		ImGui::PopID();
+	};
+	armSliders(u8"右腕（Walk のときだけ）", m_debugArm[DEBUG_ARM_RIGHT]);
+	armSliders(u8"左腕（Walk のときだけ）", m_debugArm[DEBUG_ARM_LEFT]);
 	if (ImGui::Button(u8"腕を戻す")) {
-		m_debugRightArmOutDeg = 0.0f;
-		m_debugLeftArmOutDeg = 0.0f;
+		m_debugArm[DEBUG_ARM_RIGHT] = DebugArm();
+		m_debugArm[DEBUG_ARM_LEFT] = DebugArm();
 	}
 	ImGui::End();
 }

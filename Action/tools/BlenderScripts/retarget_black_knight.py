@@ -34,9 +34,10 @@
 #     arm_tweak {"shoulder": 度, "forearm_in_out": 度, "forearm_front_back": 度, "wrist_bend": 度, "wrist_side": 度, "wrist_twist": 度}
 #              ゲームの F1 の窓「黒騎士のモーション」の右腕のスライダー（右肩 前後・ひじから下 内・外・ひじから下 前後・手首 曲げ・横・ひねり）の
 #              値をそのまま書くと、窓と同じ回し方で全部のコマに焼き込む（書き出しの最後、キーを打ったあと）
-#     arm_open {"right": 度, "left": 度}
-#              ゲームの F1 の窓「黒騎士のモーション」の「右腕 外へ」「左腕 外へ」の値をそのまま書くと、窓と同じ回し方
-#              （肩の関節を中心に、軸は「上腕の向き × 外の向き」、＋で体の外へ開く）で全部のコマに焼き込む（arm_tweak のあと）
+#     arm_pose {"right": {"out": 度, "wrist_bend": 度, "wrist_side": 度, "wrist_twist": 度}, "left": {...}}
+#              ゲームの F1 の窓「黒騎士のモーション」の右腕・左腕（外へ・手首 曲げ・横・ひねり）の値をそのまま書くと、窓と同じ回し方
+#              （外へ: 肩の関節を中心に、軸は「上腕の向き × 外の向き」、＋で体の外へ開く。手首: arm_tweak の手首と同じ3つの軸）で
+#              全部のコマに焼き込む（arm_tweak のあと）。書かない項目は 0
 #     arms     "both" なら、元の左腕の動きを左右の反転で右腕にも写して、両手で同じ動きにする。
 #              体（腰〜頭）は、元と反転したものの平均（左右対称）にする
 #     speed    再生の速さ（2 なら半分のコマ数にする）。segments の1つずつにも書ける
@@ -863,7 +864,7 @@ def bake(clip):
         hb.location = REST_Q[hips].inverted() @ (p_arm - REST_H[hips])
         hb.keyframe_insert("location", frame=f)
     apply_arm_tweak(length, clip.get("arm_tweak"))
-    apply_arm_open(length, clip.get("arm_open"))
+    apply_arm_pose(length, clip.get("arm_pose"))
     fit_sword_to_grip(length)
     act = TGT.animation_data.action
     act.name = clip["name"]
@@ -945,15 +946,16 @@ def key_chain(chain, M, parent_m, f):
         parent_m = M[n]
 
 
-def apply_arm_open(length, o):
-    """ゲームの F1 の窓「黒騎士のモーション」の「右腕 外へ」「左腕 外へ」（Enemy::RotateDebugArm）と同じ回し方を、全部のコマに焼き込む。
-    肩の関節を中心に、軸は「上腕の向き（肩 → ひじ）× 外の向き（反対の肩 → この肩）」。＋で上腕が体の外へ開く。"""
+def apply_arm_pose(length, o):
+    """ゲームの F1 の窓「黒騎士のモーション」の右腕・左腕（Enemy::RotateDebugArm）と同じ回し方を、全部のコマに焼き込む。
+    ① 外へ: 肩の関節を中心に、軸は「上腕の向き（肩 → ひじ）× 外の向き（反対の肩 → この肩）」。＋で上腕が体の外へ開く。
+    ② 手首: 手首を中心に、曲げ（上腕 × 前腕）→ 横（前腕 × 曲げの軸）→ ひねり（前腕）の順に回す。"""
     if not o:
         return
     s = GAME_SIGN
     for side, other, key in (("R", "L", "right"), ("L", "R", "left")):
-        deg = o.get(key, 0.0)
-        if abs(deg) < 0.01:
+        t = o.get(key)
+        if not t or all(abs(v) < 0.01 for v in t.values()):
             continue
         up_n, low_n, hand_n, other_n = S(side, "UpperArm"), S(side, "LowerArm"), S(side, "Hand"), S(other, "UpperArm")
         chain = [up_n, low_n, hand_n]   # 親 → 子の順
@@ -963,19 +965,31 @@ def apply_arm_open(length, o):
             M = {n: TGT.pose.bones[n].matrix.copy() for n in chain}
             other_pos = TGT.pose.bones[other_n].matrix.translation.copy()
             parent_of_up = TGT.pose.bones[up_n].parent.matrix.copy()
+
+            def rot(n, center, axis, deg):
+                if abs(deg) < 0.01 or axis.length < 1e-6:
+                    return
+                r = (Matrix.Translation(center) @ Quaternion(axis.normalized(), math.radians(s * deg)).to_matrix().to_4x4()
+                     @ Matrix.Translation(-center))
+                for m in chain[chain.index(n):]:   # その骨と、その下の骨
+                    M[m] = r @ M[m]
+
             shoulder = M[up_n].translation.copy()
-            axis = (M[low_n].translation - shoulder).cross(shoulder - other_pos)
-            if axis.length < 1e-6:
-                continue
-            r = (Matrix.Translation(shoulder) @ Quaternion(axis.normalized(), math.radians(s * deg)).to_matrix().to_4x4()
-                 @ Matrix.Translation(-shoulder))
-            for n in chain:
-                M[n] = r @ M[n]
+            rot(up_n, shoulder, (M[low_n].translation - shoulder).cross(shoulder - other_pos), t.get("out", 0.0))
+            elbow, wrist = M[low_n].translation.copy(), M[hand_n].translation.copy()
+            forearm = wrist - elbow
+            bend = (elbow - shoulder).cross(forearm)
+            if bend.length < 1e-6:
+                bend = Vector((0, 0, 1)).cross(forearm)
+            side_axis = forearm.cross(bend)
+            rot(hand_n, wrist, bend, t.get("wrist_bend", 0.0))
+            rot(hand_n, wrist, side_axis, t.get("wrist_side", 0.0))
+            rot(hand_n, wrist, forearm, t.get("wrist_twist", 0.0))
             key_chain(chain, M, parent_of_up, f)
             if f == 0:
                 SCENE.frame_set(0)
                 got = TGT.pose.bones[hand_n].matrix.to_quaternion()
-                print("ARM_OPEN [%s] 0コマ目の手の向きの差 %.3f 度" % (side, math.degrees(got.rotation_difference(M[hand_n].to_quaternion()).angle)))
+                print("ARM_POSE [%s] 0コマ目の手の向きの差 %.3f 度" % (side, math.degrees(got.rotation_difference(M[hand_n].to_quaternion()).angle)))
 
 
 def print_hands(name, length):

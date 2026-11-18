@@ -40,14 +40,23 @@ protected:
 private:
 	// F1 の開発用の窓「黒騎士のモーション」。Walk・Run を選ぶと、AI とステートを止めて、その場でそのクリップを繰り返す。
 	void UpdateDebugWindow();
-	// 窓から Walk を流している間、左右の腕を肩の関節のところで体の外へ開く（アニメーションの姿勢ができたあとに呼ぶ）。
+	// 窓から Walk を流している間、左右の腕を肩の関節のところで体の外へ開き、手首を回す（アニメーションの姿勢ができたあとに呼ぶ）。
 	void RotateDebugArm(Skeleton& skeleton);
+
+	// 窓から Walk を流すときの、片方の腕の調整（度）。
+	struct DebugArm {
+		float outDeg = 0.0f;         // 腕を体の外へ開く角度（マイナスで内へ）。
+		float wristBendDeg = 0.0f;   // 手首 曲げ（ひじの曲がる軸のまわり）。
+		float wristSideDeg = 0.0f;   // 手首 横（親指側・小指側へ倒す）。
+		float wristTwistDeg = 0.0f;  // 手首 ひねり（前腕の向きのまわり）。
+	};
+	static constexpr int DEBUG_ARM_RIGHT = 0;
+	static constexpr int DEBUG_ARM_LEFT = 1;
 
 	BlackKnightInputSource m_aiInputSource;
 	int m_debugMotion = -1;           // 窓で選んだクリップ（EnEnemyAnimClip）。-1 ならふだんどおり AI で動く。
 	int m_playingDebugMotion = -1;    // いま窓から流しているクリップ。-1 なら流していない。
-	float m_debugRightArmOutDeg = 0.0f;  // 窓から Walk を流すときに、右腕を体の外へ開く角度（度。マイナスで内へ）。
-	float m_debugLeftArmOutDeg = 0.0f;   // 窓から Walk を流すときに、左腕を体の外へ開く角度（度。マイナスで内へ）。
+	DebugArm m_debugArm[2];           // [DEBUG_ARM_RIGHT] が右腕、[DEBUG_ARM_LEFT] が左腕。
 	Status m_status;
 	EnemyStateMachine m_stateMachine;
 	EnemyDamageState m_damage;  // 当たった・倒れて消えた（ステートと受け渡す）。
