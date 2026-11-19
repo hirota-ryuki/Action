@@ -55,6 +55,28 @@ namespace
 		return settings;
 	}
 
+	// マントとフードの揺れ（骨の名前が J_Sec_Cloth・J_Sec_Hood で始まるもの）。体の動きから遅れて付いてきて、止まると揺り返す。
+	// 重い布なのでプレイヤーの髪（3.5・0.6）よりゆっくり、大きく揺らす。
+	SpringBonesSettings MakeSpringBonesSettings()
+	{
+		SpringBonesSettings settings;
+		settings.isEnabled = true;
+		settings.legRadius = 0.0f;  // マントは脚に当てない（脚のカプセルはモデルの大きさに合わせていないため）。
+		SpringBoneGroupSettings cloth;
+		cloth.match = L"Cloth";
+		cloth.frequency = 1.8f;
+		cloth.dampingRatio = 0.3f;
+		cloth.maxAngleDeg = 40.0f;
+		settings.groups.push_back(cloth);
+		SpringBoneGroupSettings hood;
+		hood.match = L"Hood";
+		hood.frequency = 2.5f;
+		hood.dampingRatio = 0.4f;
+		hood.maxAngleDeg = 25.0f;
+		settings.groups.push_back(hood);
+		return settings;
+	}
+
 	CharacterModelDesc MakeModelDesc()
 	{
 		CharacterModelDesc desc;
@@ -91,6 +113,7 @@ CharacterConfig Enemy::MakeConfig() const
 	config.hitRadius = HIT_RADIUS;
 	config.hitCenterHeight = HIT_CENTER_HEIGHT;
 	config.maxHp = MAX_HP;
+	config.springBones = MakeSpringBonesSettings();
 	return config;
 }
 
