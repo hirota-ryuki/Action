@@ -1,0 +1,46 @@
+{
+  "name": "claude-accounts",
+  "displayName": "Claude アカウント",
+  "description": "保存した Claude のログイン情報を入れ替えて、アカウントを切り替える",
+  "version": "0.0.1",
+  "publisher": "local",
+  "engines": { "vscode": "^1.80.0" },
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "claudeAccounts.remove", "title": "保存を消す", "icon": "$(trash)" },
+      { "command": "claudeAccounts.switch", "title": "このアカウントに切り替える" },
+      { "command": "claudeAccounts.save", "title": "今のアカウントを保存", "icon": "$(add)" },
+      { "command": "claudeAccounts.refresh", "title": "一覧を読み直す", "icon": "$(refresh)" }
+    ],
+    "menus": {
+      "view/item/context": [
+        { "command": "claudeAccounts.remove", "when": "view == claudeAccounts.list", "group": "inline" }
+      ],
+      "commandPalette": [
+        { "command": "claudeAccounts.remove", "when": "false" },
+        { "command": "claudeAccounts.switch", "when": "false" }
+      ],
+      "view/title": [
+        { "command": "claudeAccounts.save", "when": "view == claudeAccounts.list", "group": "navigation" },
+        { "command": "claudeAccounts.refresh", "when": "view == claudeAccounts.list", "group": "navigation" }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "claudeAccounts.list",
+        "contents": "保存したアカウントがありません。\nClaude で /login してから、今のアカウントを保存してください。\n[今のアカウントを保存](command:claudeAccounts.save)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        { "id": "claudeAccounts", "title": "Claude アカウント", "icon": "media/accounts.svg" }
+      ]
+    },
+    "views": {
+      "claudeAccounts": [
+        { "id": "claudeAccounts.list", "name": "アカウント" }
+      ]
+    }
+  }
+}
