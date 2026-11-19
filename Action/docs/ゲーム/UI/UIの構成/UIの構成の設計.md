@@ -8,21 +8,18 @@
 画面に出す UI（HPゲージ・アイコン・文字）を、どのクラスがどう受け持つかのページです。
 HUD の中身（Player 用・Boss 用に何を出すか）は [HUDの設計](../HUD/HUDの設計.md) を見てください。
 
-**用語:**
-
-| 用語 | 何のことか |
-|---|---|
-| HUD | Head-Up Display。遊んでいる間ずっと画面に出ている、HPゲージなどの UI |
-
 - **UI はゲームを読むだけ。** 矢印は UI → ゲームの一方向で、Player や Enemy は UI のことを知らない。UI はキャラクターを `const` で受け取り、値を書き換えない。
 - **UI に話しかけるのは Game だけ。** UIManager をどこからでも呼べる形（シングルトン・グローバル変数）にはしない。
 - **3段に分ける。** UIManager（まとめ役）→ 〇〇Hud（どの値をどの部品に入れるか）→ 部品（描くだけ）。
 
-**用語:**
-
 | 用語 | 何のことか |
 |---|---|
+| HUD | Head-Up Display。遊んでいる間ずっと画面に出ている、HPゲージなどの UI |
 | シングルトン | クラスのインスタンスを1つだけ作り、どこからでも呼べるようにする作り方 |
+| アルファ | 色の透明さを表す値（0 で見えない、1 で不透明）。`Vector4` の4つ目（`w`）に入っている |
+| フェード | 透明度を少しずつ変えて、表示を出したり消したりすること |
+| pivot | 画像や文字の「どこを基準に位置を決めるか」。エンジンの画像は割合（0〜1）で、文字は左上からのピクセル数で指定する |
+| DDS | [用語集の「描画」](../../../用語集.md#描画) |
 
 ---
 
@@ -71,23 +68,18 @@ UIElement（基底）… 位置・表示する／しない・透明度。Update(
 - `Draw()` は、見えない（`SetVisible(false)` か透明度 0）ときは何もせず、見えるときだけ派生クラスの `OnDraw()` を呼ぶ。
 - 透明度は `ApplyAlpha()` で各部品の色のアルファに掛ける。フェードはこれで行う。
 - 画像がまだないものは、4×4 の白い画像（`Assets/sprite/white.dds`）に `SetMulColor` で色を付けて使う。ゲージの中身は、上が白く下へ少し暗くなる 4×16 の画像（`Assets/sprite/gauge.dds`）に色を付けて、立体感を出す。
-- エンジンの文字（`Font`）は、pivot を割合ではなく「文字の左上からのピクセル数」として扱う。そのため `Text` は pivot で寄せず、`Font::MeasureString()` で測った幅だけ位置をずらして寄せる。
+- エンジンの文字（`Font`）は、pivot を割合ではなく「文字の左上からのピクセル数」として扱う。そのため `Text` は、左・中央・右のどこにそろえるか（`Align`）を pivot では決めず、`Font::MeasureString()` で測った幅だけ位置をずらして、そろえる。
 - `Button`（押されたら登録した処理を呼ぶ）は、メニュー画面を作るときに作る。
-
-**用語:**
-
-| 用語 | 何のことか |
-|---|---|
-| アルファ | 色の透明さを表す値（0 で見えない、1 で不透明）。`Vector4` の4つ目（`w`）に入っている |
-| フェード | 透明度を少しずつ変えて、表示を出したり消したりすること |
-| DDS | 画像のファイル形式（`.dds`）。DirectX が直接読める |
-| pivot | 画像や文字の「どこを基準に位置を決めるか」。エンジンの画像は割合（0〜1）で、文字は左上からのピクセル数で指定する |
 
 **名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
 | 関数 | `SetMulColor` | 白い画像に色を付けて、ゲージや仮のアイコンにするため | 画像の色に、渡した色を掛ける | k2Engine（エンジン）の [SpriteRender.h](../../../../k2Engine/graphics/SpriteRender.h)（`SpriteRender` のメンバー） |
+| 関数 | `ApplyAlpha()` | 透明度（フェード）を、各部品の色に反映するため | 渡した色のアルファに、部品の透明度を掛けた色を返す | ゲームの [UIElement.h](../../../../Game/Source/UI/Elements/UIElement.h) の `UIElement` |
+| 関数 | `OnDraw()` | 部品ごとの描き方を、派生クラスに書かせるため | 純粋仮想関数。`Draw()` が、見えるときだけ呼ぶ | ゲームの `UIElement.h` の `UIElement`（`Gauge`・`Icon`・`Text` が上書きする） |
+| C++ の書き方 | `UISprite` | UI の部品で使う画像のパスを1か所にまとめるため | `WHITE_PATH`（4×4 の白い画像）と `GAUGE_PATH`（ゲージの中身の画像）を持つ | ゲームの [UISprite.h](../../../../Game/Source/UI/Elements/UISprite.h) |
+| 型 | `Align` | 文字をどの端にそろえるかを選ぶため | `Left`・`Center`・`Right` を持つ `enum class`。`Text::SetAlign()` で選ぶ | ゲームの [Text.h](../../../../Game/Source/UI/Elements/Text.h) の `Text` |
 | 型 | `Font` | 文字の幅を測るため | 文字を描くエンジンのクラス。`MeasureString()` で、文字の幅と高さ（大きさ 1 のとき）を返す | k2EngineLow（エンジン）の [Font.h](../../../../k2EngineLow/graphics/font/Font.h) |
 
 ---
@@ -100,8 +92,8 @@ UIElement（基底）… 位置・表示する／しない・透明度。Update(
 class UIManager : public IGameObject
 {
 public:
-    bool Start() override;   // 各 Hud の Init（画像を読む）
-    void Update() override;  // PlayerHud → BossHud の順に Update(deltaTime)
+    bool Start() override;   // PlayerHud・BossHud・DebugHud の Init（画像を読む）
+    void Update() override;  // PlayerHud → BossHud → DebugHud の順に Update(deltaTime)
     void Render(RenderContext& rc) override;  // 同じ順に Draw。後に描いたものが上
 
     void SetPlayer(const Player* player);
@@ -110,6 +102,7 @@ public:
 private:
     PlayerHud m_playerHud;
     BossHud   m_bossHud;
+    DebugHud  m_debugHud;    // 開発用の表示（FPS）。いちばん上に描く
 };
 ```
 
@@ -149,7 +142,7 @@ private:
 ## 4. 呼ぶ順番
 
 1. **ゲーム開始**: `Game::Start()` が Player などを作ったあと、`NewGO<UIManager>(3, "uiManager")` を作り、`SetPlayer(m_player)` を呼ぶ。
-2. **毎フレーム**: キャラクターが動く（優先度 1）→ `UIManager::Update`（優先度 3）が PlayerHud・BossHud を更新 → 各 Hud が `GetHpRate()` などを読んで部品に入れる。
+2. **毎フレーム**: キャラクターが動く（優先度 1）→ `UIManager::Update`（優先度 3）が PlayerHud・BossHud・DebugHud を更新 → 各 Hud が `GetHpRate()` などを読んで部品に入れる。
 3. **ボス戦の始まり**: ボス戦を始める側（今は Game）が `ShowBoss(boss, 名前)` を呼ぶ。
 4. **ボスを倒した**: 先に `HideBoss()` を呼び、そのあとで `DeleteGO(boss)` する。
 5. **ゲーム終了**: `Game` のデストラクタで、UIManager をキャラクターより先に `DeleteGO` する。

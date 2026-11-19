@@ -7,11 +7,10 @@
 
 NPC の AI は、プレイヤーと同じ `CharacterInput` を作る入力元（`NpcInputSource`）です。敵対する相手を見つけたら近づき、相手との距離を「近い・中くらい・遠い」の3段に分けて、段ごとに決めたボタンを押します。
 
-**今は、どのキャラクターもこの AI を使っていません。** 敵の黒騎士は、同じ3段の分け方の専用の AI（[黒騎士のAIの設計](../../敵/黒騎士のAI/黒騎士のAIの設計.md)）で動きます。`NpcInputSource` は、魔法を撃つ敵や、味方・中立の NPC を作るときの土台として残してあります。
-
 - **AI はボタンを押すだけ。** 動くのはキャラクターの部品で、押したボタンで何が起きるかは、キャラクターが `SkillController` に登録したスキルで決まる（剣の攻撃でも魔法でもよい）。
 - **相手はクラスでなく陣営で探す。** Player を直接は知らない。
 - **段ごとに、押すボタンと押し続ける秒数を決める。** 溜める魔法（炎魔法）は、押し続けてから離して撃つ。
+- **今は、どのキャラクターもこの AI を使っていない**（[既知の課題](#6-既知の課題)）。魔法を撃つ敵や、味方・中立の NPC を作るときの土台として残してある。
 
 ---
 
@@ -28,14 +27,14 @@ flowchart TD
     R -->|中くらい・遠い| D{決め直す間隔ごと}
     D -->|runChance| RUN[走る]
     D -->|残り| B[midAction か farAction を押す]
-    RUN -->|近くまで来た| A
+    RUN -->|nearRange に入った| A
 ```
 
 | 距離 | すること |
 |---|---|
 | 近い（`nearRange` 以内） | `actionInterval` ごとに、`nearAction` のボタンを押す |
 | 中くらい（`midRange` 以内）・遠い（`searchRange` 以内） | 歩きながら、`decideInterval` ごとに `runChance` の確率で走る。残りは、その段のボタン（`midAction`・`farAction`）を押す |
-| 走っている | 押さない。近くまで来たら歩きに戻し、すぐに `nearAction` を押す |
+| 走ると決まったあと（走っている間） | 押さない。相手が `nearRange` 以内に入ったら走るのをやめて歩きに戻し、すぐに `nearAction` を押す |
 
 相手は `HitTargetRegistry::FindNearestHostile` で、当たり判定の一覧から探す（[陣営と当たり判定の設計](../陣営と当たり判定/陣営と当たり判定の設計.md)）。照準は相手の胸（足元から `castHeight` の高さから、相手の当たり判定の中心へ）。
 
@@ -81,7 +80,19 @@ for (int button = 0; button < static_cast<int>(ActionButton::Num); button++) {
 | 型 | `Range` | 相手との距離の分け方を表すため | `Near`・`Middle`・`Far` を持つ `enum class` | ゲームの `NpcInputSource.h` |
 | 関数 | `DecideButton` | 押すボタンを決めるため | 段と秒数を渡すと、押すボタンを返す（走る・決め直す間隔の処理もここ） | ゲームの `NpcInputSource.cpp`（private） |
 | メンバー変数 | `m_holdButton`・`m_holdTimer` | 押し続けている途中を覚えるため | 押し続けているボタンと、残り秒数 | ゲームの `NpcInputSource.h` |
+| 関数 | `ClassifyRange` | 距離を3段に分けるため | 距離を渡すと、`nearRange`・`midRange` と比べて `Range` を返す | ゲームの `NpcInputSource.cpp`（private） |
+| 関数 | `GetRangeAction` | 段に合う設定を取り出すため | `Range` を渡すと、`nearAction`・`midAction`・`farAction` のどれかを返す | ゲームの `NpcInputSource.cpp`（private） |
+| メンバー変数 | `m_actionTimer` | ボタンを押す間隔を数えるため | 次に押せるまでの残り秒数（`actionInterval`・`firstActionDelay` で決める） | ゲームの `NpcInputSource.h` |
+| 引数 | `context` | AI が自分の状態を知るため | `Update` に渡される `InputSourceContext`。自分の位置・陣営・`deltaTime` などを持つ（[入力の設計](../入力/入力の設計.md)） | ゲームの [CharacterInput.h](../../../../Game/Source/Character/Input/CharacterInput.h) |
 | 型 | `ActionButton` | 攻撃や魔法のボタンを区別するため | `Action1`〜`Action3` と、数を表す `Num` を持つ `enum class` | ゲームの [CharacterInput.h](../../../../Game/Source/Character/Input/CharacterInput.h) |
+
+---
+
+名前（3章のコードに出てくるもの）:
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| クラス | `MagicConfig` | 魔法の強さを1か所で持つため | `GetIce()`・`GetFire()` で、その魔法の `cooldown`・`maxChargeSeconds` などを返す | ゲームの [MagicConfig.h](../../../../Game/Source/Magic/MagicConfig.h)（[魔法の調整値の設計](../../魔法/魔法の調整値/魔法の調整値の設計.md)） |
 
 ---
 
@@ -110,20 +121,21 @@ for (int button = 0; button < static_cast<int>(ActionButton::Num); button++) {
 
 ## 4. 調整用の数値（`NpcInputSource.h` の `Settings` の既定の値）
 
-使うキャラクターが、`Settings` を作って `NpcInputSource` に渡します。黒騎士の AI の `Settings`（`BlackKnightInputSource.h`）の既定の値と同じです（黒騎士は `Enemy.cpp` で、探す範囲 1800・中くらい 1200・攻撃の間隔 5.4秒に変えている）。
+使うキャラクターが、`Settings` を作って `NpcInputSource` に渡します。既定の値は、黒騎士の AI の `Settings`（`BlackKnightInputSource.h`）とほぼ同じです。黒騎士は `Enemy.cpp` で、いくつかを変えて使っています（右の列。空の欄は既定と同じ）。
 
-| 内容 | 値 |
-|---|---|
-| 相手を探す範囲（`searchRange`。ここまでが「遠い」） | 900 |
-| 「近い」・「中くらい」の距離（`nearRange`・`midRange`） | 220・600 |
-| 止まる距離（`stopDistance`） | 150（剣が届くところ） |
-| 移動入力の大きさ（`moveRate`） | 1 |
-| 決め直す間隔（`decideInterval`） | 2秒 |
-| 走る確率（`runChance`） | 0.5 |
-| ボタンを押してから次に押せるまで（`actionInterval`） | 3.5秒 |
-| 見つけてから最初に押せるまで（`firstActionDelay`） | 0.6秒 |
-| 狙う高さ（`castHeight`） | 60 |
-| 段ごとのボタン（`nearAction`・`midAction`・`farAction`） | 初めは `Num`（何も押さない） |
+| 内容 | 既定の値 | 黒騎士の値 |
+|---|---|---|
+| 相手を探す範囲（`searchRange`。ここまでが「遠い」） | 900 | 1800 |
+| 「近い」の距離（`nearRange`） | 220 | |
+| 「中くらい」の距離（`midRange`） | 600 | 1200 |
+| 止まる距離（`stopDistance`） | 150（剣が届くところ） | |
+| 移動入力の大きさ（`moveRate`） | 1 | （黒騎士の AI に無い） |
+| 決め直す間隔（`decideInterval`） | 2秒 | |
+| 走る確率（`runChance`） | 0.5 | |
+| ボタンを押してから次に押せるまで（`actionInterval`。黒騎士は `attackInterval`） | 3.5秒 | 5.4秒 |
+| 見つけてから最初に押せるまで（`firstActionDelay`。黒騎士は `firstAttackDelay`） | 0.6秒 | |
+| 狙う高さ（`castHeight`。黒騎士は `aimHeight`） | 60 | 110 |
+| 段ごとのボタン（`nearAction`・`midAction`・`farAction`） | 初めは `Num`（何も押さない） | （黒騎士は攻撃1〜3 に固定） |
 
 ---
 
@@ -141,7 +153,7 @@ for (int button = 0; button < static_cast<int>(ActionButton::Num); button++) {
 
 ## 6. 既知の課題
 
-- **今は、この AI を使っているキャラクターがない。** 手順書もビルドが通ることまでで、動かして確かめていない。魔法を撃つ敵を作るときに確かめる。
+- **今は、この AI を使っているキャラクターがない。** 敵の黒騎士は、同じ3段の分け方の専用の AI（[黒騎士のAIの設計](../../敵/黒騎士のAI/黒騎士のAIの設計.md)）で動く。 手順書もビルドが通ることまでで、動かして確かめていない。魔法を撃つ敵を作るときに確かめる。
 - **走る・歩く以外の動き（よける・逃げる）はない。** 相手に近づいて、段のボタンを押すだけ。
 
 ---
