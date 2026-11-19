@@ -29,6 +29,7 @@ void CharacterModel::Init(const CharacterModelDesc& desc)
 	m_scale = Vector3(desc.scale, desc.scale, desc.scale);
 
 	const int numClips = static_cast<int>(desc.clips.size());
+	m_numClips = numClips;
 	m_animClips = std::make_unique<AnimationClip[]>(numClips);
 
 	// FBX のアニメーションをリターゲットするにはモデルのスケルトン(.tks)が要る。
@@ -55,4 +56,13 @@ void CharacterModel::Init(const CharacterModelDesc& desc)
 	// ModelRender::Init は中で 0 番のクリップを再生するので、クリップは必ずこれより前に読み込む。
 	m_modelRender.Init(desc.modelPath.c_str(), numClips > 0 ? m_animClips.get() : nullptr, numClips, desc.upAxis);
 	m_modelRender.SetShadowCasterFlag(desc.isShadowCaster);
+}
+
+float CharacterModel::GetClipLength(int animClip) const
+{
+	if (animClip < 0 || animClip >= m_numClips || m_animClips[animClip].GetKeyFramePtrListArray().empty()) {
+		return 0.0f;
+	}
+	const auto& topBone = m_animClips[animClip].GetTopBoneKeyFrameList();
+	return topBone.empty() ? 0.0f : topBone.back()->time;
 }

@@ -49,8 +49,6 @@ public:
 	}
 	// アニメーションの姿勢（ワールド行列）を揺らす。体の連動（BodyLink）のあとに呼ぶ。
 	void Update(Skeleton& skeleton);
-	// 骨とその子孫のワールド行列に、rotationAroundCenter をかける。
-	static void RotateBoneTree(Bone& bone, const Matrix& rotationAroundCenter);
 
 private:
 	struct Joint

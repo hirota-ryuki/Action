@@ -4,7 +4,7 @@
 #include "IceMagic.h"
 #include "FireMagic.h"
 #include "MagicConfig.h"
-#include "SpringBones.h"
+#include "PoseLayers.h"
 #include <imgui/imgui.h>
 
 namespace
@@ -153,9 +153,10 @@ void Player::FilterAimingInput(CharacterInput& input)
 	}
 }
 
-void Player::OnPostBodyLink(Skeleton& skeleton)
+void Player::OnAddPoseLayers(PoseLayers& layers)
 {
-	TwistUpperBodyToAim(skeleton);
+	// 照準の向きはカメラで変わるので、焼き込まない。
+	layers.Add([this](Skeleton& skeleton) { TwistUpperBodyToAim(skeleton); }, false);
 }
 
 void Player::TwistUpperBodyToAim(Skeleton& skeleton)
@@ -227,7 +228,7 @@ void Player::RotateBoneTreeY(Skeleton& skeleton, int boneId, float angle)
 	toOrigin.MakeTranslation(center * -1.0f);
 	rotation.MakeRotationAxis(Vector3::AxisY, angle);
 	back.MakeTranslation(center);
-	SpringBones::RotateBoneTree(*bone, toOrigin * rotation * back);
+	PoseLayers::RotateBoneTree(*bone, toOrigin * rotation * back);
 }
 
 void Player::OnLateUpdate(float deltaTime)

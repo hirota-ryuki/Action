@@ -27,12 +27,17 @@ bool Character::Start()
 	m_bodyLean.Init(config.lean);
 	m_springBones.Init(m_model.GetModelRender(), config.springBones);
 	m_bodyLink.Init(m_model.GetModelRender(), config.bodyLink);
-	// アニメーションの姿勢ができたあとに、体の連動 → 派生クラス → 揺れ物の順に手を加える（揺れ物は連動した体の動きに遅れて付いてくる）。
-	m_model.GetModelRender().GetSkeleton().SetOnPostUpdateWorldMatrix([this](Skeleton& skeleton) {
-		m_bodyLink.Update(skeleton);
-		OnPostBodyLink(skeleton);
-		m_springBones.Update(skeleton);
-	});
+	// アニメーションの姿勢ができたあとに、体の連動 → 派生クラスの層 → 揺れ物の順に重ねる（揺れ物は連動した体の動きに遅れて付いてくる）。
+	// 使わない部品（黒騎士の体の連動・揺れ物など）は、層に入れない。
+	m_poseLayers.Init(m_model.GetModelRender());
+	if (m_bodyLink.IsActive()) {
+		m_poseLayers.Add([this](Skeleton& skeleton) { m_bodyLink.Update(skeleton); });
+	}
+	OnAddPoseLayers(m_poseLayers);
+	if (m_springBones.IsActive()) {
+		// 揺れ物は体の動き（移動・向きを変える）で変わるので、焼き込まない。
+		m_poseLayers.Add([this](Skeleton& skeleton) { m_springBones.Update(skeleton); }, false);
+	}
 
 	m_statusEffects.Init(&m_model.GetModelRender());
 

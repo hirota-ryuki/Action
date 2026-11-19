@@ -5,6 +5,7 @@
 #include<dxgidebug.h>
 
 #include "Game.h"
+#include "FirstPersonArmsPoser.h"
 
 
 
@@ -34,6 +35,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	//////////////////////////////////////
 	// ここから初期化を行うコードを記述する。
 	//////////////////////////////////////
+
+#ifdef _DEBUG
+	// 一人称の腕の形を焼き込む（-bakeFirstPersonArms）・焼き込んだクリップを確かめる（-verifyFirstPersonArms）ときは、
+	// ゲームを始めずに、それだけをして終わる。結果は tools/FirstPerson/BakedPose/ のログに書く。開発用なので Debug ビルドだけ。
+	if (wcsstr(lpCmdLine, L"-bakeFirstPersonArms") != nullptr || wcsstr(lpCmdLine, L"-verifyFirstPersonArms") != nullptr) {
+		const bool isBake = wcsstr(lpCmdLine, L"-bakeFirstPersonArms") != nullptr;
+		const bool isOk = isBake
+			? FirstPersonArmsPoser::BakeAll("../tools/FirstPerson/BakedPose/bake_log.txt")
+			: FirstPersonArmsPoser::VerifyAll("../tools/FirstPerson/BakedPose/verify_log.txt");
+		K2Engine::DeleteInstance();
+		return isOk ? 0 : 1;
+	}
+#endif
 
 	//Gameクラスのオブジェクトを作成。
 	NewGO<Game>(0, "game");

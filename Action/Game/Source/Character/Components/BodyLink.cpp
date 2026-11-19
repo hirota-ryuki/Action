@@ -1,6 +1,6 @@
 ﻿#include "stdafx.h"
 #include "BodyLink.h"
-#include "SpringBones.h"
+#include "PoseLayers.h"
 
 namespace
 {
@@ -142,7 +142,7 @@ void BodyLink::RotateAround(Skeleton& skeleton, EnBone bone, const Vector3& axis
 	if (fabsf(angle) <= 1.0e-5f) {
 		return;
 	}
-	SpringBones::RotateBoneTree(*skeleton.GetBone(m_boneNos[bone]), MakeRotationAround(GetPosition(skeleton, bone), axis, angle));
+	PoseLayers::RotateBoneTree(*skeleton.GetBone(m_boneNos[bone]), MakeRotationAround(GetPosition(skeleton, bone), axis, angle));
 }
 
 bool BodyLink::MakeLevelRotation(Skeleton& skeleton, EnBone left, EnBone right, const Vector3& forward, Vector3& axis, float& angle) const
