@@ -1,15 +1,15 @@
 # Claudeアカウントの切り替えの設計
 
 作成日: 2026-11-19
-対象: [extension.js](../../../../.claude/extensions/claude-accounts/extension.js)・[package.json](../../../../.claude/extensions/claude-accounts/package.json)・[install-claude-accounts.ps1](../../../../.claude/scripts/install-claude-accounts.ps1)
+対象: [extension.js](../../../../.claude/extensions/claude-accounts/extension.js)・[view.js](../../../../.claude/extensions/claude-accounts/media/view.js)・[view.css](../../../../.claude/extensions/claude-accounts/media/view.css)・[package.json](../../../../.claude/extensions/claude-accounts/package.json)・[install-claude-accounts.ps1](../../../../.claude/scripts/install-claude-accounts.ps1)
 経緯: [Claudeアカウントの切り替えの経緯](Claudeアカウントの切り替えの経緯.md)
 手順: [Claudeアカウントの切り替えの手順](Claudeアカウントの切り替えの手順.md)
 
-VSCode のアクティビティバーに「Claude アカウント」を足し、一覧の名前を押すだけで Claude Code のアカウントを切り替える、自分用の拡張機能です。各アカウントの残りの使用量（5時間・週）と、復活する時刻も出します。
+VSCode のアクティビティバーに「Claude アカウント」を足し、ボタンを押すだけで Claude Code のアカウントを切り替える、自分用の拡張機能です。アカウントごとの枠に、5時間の枠と週の枠の使用量をバーで出し、残りと復活する時刻もわかるようにします。
 
 - **ログアウト・ログインはしない。** アカウントごとに一度だけ普通にログインし、そのログイン情報を保存しておいて、押したらファイルを入れ替える。ブラウザは開かない。
 - **保存したログイン情報は、各PCの `~/.claude/account-profiles/` にだけ置く。** リポジトリには入れない。
-- **入れ替えたあとは、ウィンドウの再読み込みで開いている Claude に効かせる。**
+- **使用中のアカウントの使用量は、Claude の会話が進むたびに聞き直す**（30秒に1回まで）。
 
 **用語:**
 
@@ -18,6 +18,7 @@ VSCode のアクティビティバーに「Claude アカウント」を足し、
 | アクティビティバー | VSCode の左端の、アイコンの縦の列 |
 | ログイン情報 | Claude のサーバーに入るための鍵（アクセストークンと、それを取り替えるためのリフレッシュトークン）。`~/.claude/.credentials.json` に入っている |
 | `oauthAccount` | `~/.claude.json` の中の、だれでログインしているか（番号 `accountUuid`・メールアドレスなど） |
+| Webview | VSCode の中で動く小さな Web ページ。決まった形の一覧（木の形）では描けないバーや色を描ける |
 | ジャンクション | Windows の、フォルダへのリンク。管理者の権限なしで作れる |
 
 ---
@@ -26,14 +27,19 @@ VSCode のアクティビティバーに「Claude アカウント」を足し、
 
 ```
 アクティビティバーのアイコン
-  └ 一覧（保存したアカウント。使用中に印。並びは↑↓で変えられる）
-      ├ 見出しの「+」     … 今のアカウントを保存（名前を付ける）
-      ├ 見出しの回る矢印 … 一覧と使用量を読み直す
-      ├ 名前を押す       … そのアカウントに切り替え → 「再読み込み」
-      ├ 行の↑↓           … 1つ上・1つ下と入れ替える
-      ├ 行のゴミ箱       … 保存を消す（ログアウトはしない）
-      └ 行の下           … 5時間: 残り 92%・17:00 に復活（あと 4時間38分）
-                           週: 残り 53%・11/23(月) 20:00 に復活（あと 4日7時間）
+  └ 欄（見出しに「+」＝今のアカウントを保存、回る矢印＝使用量を今すぐ聞き直す）
+      ├ （保存していないアカウントで使っているとき）「〇〇 は保存されていません。」［今のアカウントを保存］
+      └ アカウントごとの枠（↑↓で並べ替え）
+          ● 名前                                   ↑ ↓ ✕
+            メールアドレス
+          5時間の枠                           残り 83%
+          ███░░░░░░░░░░░░░░░░
+          17% 使用・17:10 に復活（あと 41分）
+          週の枠                               残り 7%    ← 30% 以下は黄、10% 以下は赤
+          ██████████████████░
+          93% 使用・11/20(金) 07:00 に復活（あと 14時間31分）
+                                       16:28:19 に取った値
+          ［このアカウントに切り替える］  または  使用中
 ```
 
 | 置き場所 | 中身 | 書くもの |
@@ -42,7 +48,7 @@ VSCode のアクティビティバーに「Claude アカウント」を足し、
 | `~/.claude.json` | Claude Code の設定。`oauthAccount` だけを切り替えで書く | Claude Code・切り替え |
 | `~/.claude/account-profiles/<accountUuid>.json` | アカウント1つ分 `{ name, oauthAccount, credentials }` | 保存・切り替え |
 | VSCode の `globalState` の `order` | 並び順（`accountUuid` を上から並べた配列） | ↑↓ |
-| VSCode の `globalState` の `usage` | アカウントごとの、最後に取れた使用量 | 使用量の取り直し |
+| VSCode の `globalState` の `usage` | アカウントごとの、最後に取れた使用量と、今取れない理由 | 使用量の聞き直し |
 
 `~` は `%USERPROFILE%`（`C:\Users\<ユーザー名>`）です。`globalState` は、VSCode がこのPCに覚えておく場所です（どのフォルダを開いても同じ）。
 
@@ -57,78 +63,84 @@ VSCode のアクティビティバーに「Claude アカウント」を足し、
 
 ## 3. 使用量の出し方
 
-- Claude Code の `/usage` と同じ API（`https://api.anthropic.com/api/oauth/usage`）に、アカウントの鍵（使用中は `.credentials.json`、ほかは保存した鍵）を付けて聞く。返ってくる `five_hour`・`seven_day` の `utilization`（使った割合）と `resets_at`（復活する時刻）を使う。
-- 残りは `100 − utilization`。復活の時刻は、16:59:59.68 のような値を次の分（17:00）に切り上げて出す。週の枠だけ日付も出す。時刻を過ぎていれば「残り 100%（復活済み）」。
-- 取り直すのは、一覧が見えていて、前に取ってから5分たったとき（読み直しのボタン・保存・切り替え・消したあとは、すぐ）。「あと〇分」は1分ごとに描き直す。
-- 期限の切れた鍵では聞かず、前に取れた値を「〇時〇分に取った値」と添えて出す。使っていない鍵をこちらで新しくする（リフレッシュ）ことはしない。
-- 401（鍵が無効）が返ったら「保存した鍵が無効」と出す。そのあと 401 ではない理由（429 の混雑・期限切れなど）で取れなければ「取れなかった」に替える（「無効」を残すと、鍵が使えるようになっても変わらないため）。
-- 保存のボタンで保存し直したら、そのアカウントの前の値を消して、新しい鍵ですぐ取り直す。
+- Claude Code の `/usage` と同じ API（`https://api.anthropic.com/api/oauth/usage`）に、アカウントの鍵（使用中は `.credentials.json`、ほかは保存した鍵）を付けて聞く。返ってくる `five_hour`（5時間の枠）・`seven_day`（週の枠）の `utilization`（使った割合）と `resets_at`（0% に戻る時刻）を使う。
+- バーは使った分を塗る（`/usage` と同じ向き）。右に「残り 〇%」（`100 − utilization`）を大きく出し、30% 以下で黄、10% 以下で赤にする。
+- 復活の時刻は、16:59:59.68 のような値を次の分（17:00）に切り上げて出す。週の枠だけ日付も出す。時刻を過ぎていれば 0%（復活済み）。「あと〇分」はページが30秒ごとに描き直す。
 
-| 出る行 | いつ |
-|---|---|
-| `5時間: 残り 92%・17:00 に復活（あと 4時間38分）` | ふつう |
-| `（11/19 11:21 に取った値。鍵の期限切れなどで取り直せていない）` | 10分より前の値のまま |
-| `使用量: まだ取れていない（このアカウントに切り替えると取れる）` | 1回も取れていない |
-| `保存した鍵が無効（ログインし直して、保存し直す）` | 401 が返った |
-| `使用量: 取れなかった（混んでいる・鍵の期限切れなど。5分ごとに取り直す）` | 「無効」のあと、401 ではない理由で取れなかった |
+**いつ聞くか:**
+
+| きっかけ | 使用中のアカウント | ほかのアカウント |
+|---|---|---|
+| Claude の会話が進んだ（`~/.claude/projects` の下が書かれ、5秒静かになった） | 前に聞いてから30秒たっていれば | 5分たっていれば |
+| 1分ごと | 同上 | 同上 |
+| 欄を開いた・見えるようになった | 同上 | 同上 |
+| 保存・切り替え・消した・回る矢印 | すぐ | すぐ |
+
+- 欄が見えていないときは聞かない。聞いている最中に頼まれたら、終わったあとにもう一度だけ聞く。
+- **取れなかったとき**は、前に取れた値を残して、理由だけを出す。理由は毎回入れ替えるので、前の理由が残り続けない。
+
+| 理由 | 出る文 | 次にすること |
+|---|---|---|
+| 401 | 保存した鍵が無効（ログインし直して、保存し直す） | — |
+| 429 | 混んでいて取れなかった（2分後に聞き直す） | そのアカウントは2分聞かない |
+| 鍵の期限切れ | 鍵の期限切れで聞けない（切り替えると取れる） | 使っていない鍵をこちらで新しくする（リフレッシュ）ことはしない |
+| そのほか・通信できない | 取れなかった（通信できない など） | — |
+
+- 保存のボタンで保存し直したら、そのアカウントの前の値を消して、新しい鍵ですぐ聞き直す。
 
 ## 4. 実装方法
 
-拡張機能は JavaScript 1ファイル（[extension.js](../../../../.claude/extensions/claude-accounts/extension.js)）で、ビルドも Node.js のインストールも要りません。画面の部品（アイコン・一覧・ボタン・コマンド）は [package.json](../../../../.claude/extensions/claude-accounts/package.json) の `contributes` に書き、動きは `activate` でコマンドに結びつけます。
+拡張機能は JavaScript だけで、ビルドも Node.js のインストールも要りません。画面の部品（アイコン・欄・見出しのボタン・コマンド）は [package.json](../../../../.claude/extensions/claude-accounts/package.json) の `contributes` に書き、欄は `"type": "webview"` にします。
 
-**アカウントは番号で見分ける。** 一覧の印・保存し直す先は、`oauthAccount.accountUuid`（アカウントごとに変わらない番号）で決めます。保存ファイルの名前も `<accountUuid>.json` なので、同じアカウントを2回保存しても1つのファイルに上書きされます（名前を付け直すのにも使えます）。
+**ファイルを読む側と、描く側を分ける。** [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) はファイルの読み書き・API・切り替えをし、画面に送る中身（`viewData()`。番号・名前・メールアドレス・使用中か・使用量）を `postMessage` で送ります。ログイン情報（鍵）は画面に送りません。[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) は届いた中身から枠を描き、ボタンが押されたら `{ type, id }`（`save`・`switch`・`remove`・`up`・`down`）を送り返します。`extension.js` の `onMessage` が、`id` で保存ファイルを探し直して動かします。
 
 ```js
-function findProfile(accountUuid) {
-  return loadProfiles().find((p) => p.oauthAccount.accountUuid === accountUuid);
+// extension.js（AccountsView）
+render() {
+  if (this.view) this.view.webview.postMessage(viewData());
 }
 ```
 
-**書きかけを読ませない。** Claude Code が読んでいる最中のファイルを書くので、`〇〇.tmp` に書いてから名前を変えて置き換えます。読む側は前の中身か新しい中身のどちらかしか見ません。
+ページは、受け取る関数を登録してから `ready` を送り、`extension.js` はそれを受けて最初の中身を送ります（先に送ると取りこぼすため）。ページで動かせる JavaScript は、`nonce` を付けた `view.js` だけにしています（`Content-Security-Policy`）。見た目は [view.css](../../../../.claude/extensions/claude-accounts/media/view.css) で、色は全部 VSCode のテーマの色（`var(--vscode-〇〇)`）です。欄を切り替えてもページを作り直さないよう、`retainContextWhenHidden` を付けています。
+
+**アカウントは番号で見分ける。** 印・保存し直す先・画面とのやりとりは、`oauthAccount.accountUuid`（アカウントごとに変わらない番号）で決めます。保存ファイルの名前も `<accountUuid>.json` なので、同じアカウントを2回保存しても1つのファイルに上書きされます（名前を付け直すのにも使えます）。
+
+**書きかけを読ませない。** Claude Code が読んでいる最中のファイルを書くので、`〇〇.tmp` に書いてから名前を変えて置き換えます（`writeJson`。Node.js の `fs.renameSync` は同じ名前があれば置き換える）。`~/.claude.json` は、読んで `oauthAccount` だけを差し替えて書き戻します（`applyProfile`）。
+
+**聞き直しは1か所にまとめる。** `updateUsage(view, force)` が、アカウントごとに「429 のあとの待ち中か」「前に聞いてから間（使用中30秒・ほか5分）がたったか」を見て、聞くものだけ聞きます。きっかけ（会話・1分ごと・欄を開く・保存など）は、どれもこれを呼ぶだけです。
 
 ```js
-function writeJson(file, value) {
-  const temp = file + '.tmp';
-  fs.writeFileSync(temp, JSON.stringify(value, null, 2), 'utf8');
-  fs.renameSync(temp, file);   // Node.js の fs。同じ名前があれば置き換える
-}
+if (Date.now() < (busyUntil[id] || 0)) continue;                         // 429 のあと2分
+if (!force && Date.now() - (lastAsked[id] || 0) < gap) continue;          // 30秒・5分
+...
+usage[id] = result.status === 'ok' ? result : { ...usage[id], status: result.status };
 ```
 
-**`~/.claude.json` は `oauthAccount` だけを替える。** このファイルにはプロジェクトごとの設定なども入っているので、読んで `oauthAccount` だけを差し替えて書き戻します（`applyProfile`）。
+会話が進んだことは、`fs.watch`（Node.js の標準。`recursive: true` で下のフォルダも見る）で `~/.claude/projects` を見張って知ります。Claude Code は返事を書く間に何度も書くので、5秒静かになってから1回だけ呼びます（`watchClaude`）。
 
-**一覧は `TreeDataProvider`。** `AccountsProvider` の `getChildren` が、保存したアカウントを1行（`vscode.TreeItem`）ずつにします。行を押すと `claudeAccounts.switch` がそのアカウントを受け取り、ゴミ箱のボタンは行（`item.profile` に持たせたアカウント）を受け取ります。保存・切り替え・消したあとは `refresh()`（`EventEmitter.fire`）で描き直します。行の種類（`contextValue = 'account'`）を付け、↑↓とゴミ箱はアカウントの行にだけ出します。
+**並び順は番号の配列。** `sortByOrder` が `globalState` の `order` の順に並べ、`order` にないアカウント（新しく保存したもの）は後ろに、名前の順のまま置きます（`sort` は同じ順位の前後を変えない）。↑↓は、画面の今の並びを `order` として覚え直します。`fetch` は Node.js 18 からなので、`engines` は VSCode 1.82 以降にしています。
 
-**使用量は、アカウントの行の下（子）の行。** アカウントの行は開いた形（`TreeItemCollapsibleState.Expanded`）にし、VSCode が子を聞いてきたら（`getChildren(element)`）使用量の行を返します。一番上の行を描くときに、5分たっていれば取り直しを始めます（待たずに先へ進み、取れたら描き直す）。
-
-```js
-getChildren(element) {
-  if (element) return usageItems(element.profile);
-  if (Date.now() - usageFetchedAt > USAGE_INTERVAL_MS) updateUsage(this);
-  ...
-```
-
-`refresh()` は `usageFetchedAt = 0` にしてから描き直すので、読み直し・保存・切り替えのあとはすぐ取り直します。1分ごとの描き直しと並べ替えは `changed.fire()` だけで、取り直しは5分ごとのままです。`fetch` は Node.js 18 からなので、`engines` は VSCode 1.82 以降にしています。
-
-**並び順は番号の配列。** `sortByOrder` が `globalState` の `order` の順に並べ、`order` にないアカウント（新しく保存したもの）は後ろに、名前の順のまま置きます（`sort` は同じ順位の前後を変えない）。↑↓は、画面の今の並びを `order` として覚え直します。
-
-**入れ方はジャンクション。** [install-claude-accounts.ps1](../../../../.claude/scripts/install-claude-accounts.ps1) が `%USERPROFILE%\.vscode\extensions\local.claude-accounts-0.0.1` に、リポジトリの `.claude\extensions\claude-accounts` を指すジャンクションを作ります。git pull で中身が新しくなっても、入れ直さずに再読み込みだけで効きます。
+**入れ方はジャンクション。** [install-claude-accounts.ps1](../../../../.claude/scripts/install-claude-accounts.ps1) が `%USERPROFILE%\.vscode\extensions\local.claude-accounts-0.0.1` に、リポジトリの `.claude\extensions\claude-accounts` を指すジャンクションを作ります。git pull で中身が新しくなっても、入れ直さずに効きます。ただし、動いている VSCode は読み込んだ古いコードのまま動くので、`Ctrl+Shift+P` →「Developer: Restart Extension Host」（または「Developer: Reload Window」）が要ります。
 
 ## 5. 使い方
 
 - **このPCに入れる**（PCごとに1回）: リポジトリのフォルダで `powershell -ExecutionPolicy Bypass -File .claude\scripts\install-claude-accounts.ps1` を動かし、`Ctrl+Shift+P` →「Developer: Reload Window」。外すときは `-Uninstall` を付ける。
-- **アカウントを足す**: 足したいアカウントでログインし、一覧の「+」で名前を付けて保存する。**保存したアカウントで `/logout` しない**（その鍵がサーバーで無効になり、保存した鍵も使えなくなる。6. 既知の課題）。
-- **切り替える**: 一覧の名前を押し、「再読み込み」を押す。ほかの VSCode のウィンドウでも Claude を開いているときは、そちらも再読み込みする。
-- **並べ替える**: 行にマウスを乗せて↑↓を押す。
-- **残りの使用量を見る**: 各アカウントの下の2行を見る。すぐ新しくしたいときは、見出しの回る矢印を押す。
-- **消す**: 行にマウスを乗せてゴミ箱を押す。保存ファイルが消えるだけで、ログアウトはしない。
+- **アカウントを足す**: 足したいアカウントでログインし、見出しの「+」（保存していないときは欄の一番上のボタン）で名前を付けて保存する。**保存したアカウントで `/logout` しない**（その鍵がサーバーで無効になり、保存した鍵も使えなくなる。7. 既知の課題）。
+- **切り替える**: 枠の「このアカウントに切り替える」を押し、「再読み込み」を押す。ほかの VSCode のウィンドウでも Claude を開いているときは、そちらも再読み込みする。
+- **並べ替える**: 枠の右上の↑↓を押す。
+- **使用量を見る**: 枠のバーと「残り 〇%」を見る。すぐ新しくしたいときは、見出しの回る矢印を押す。
+- **消す**: 枠の右上の ✕ を押す。保存ファイルが消えるだけで、ログアウトはしない。
 
 ## 6. 決めたこと
 
 - **ログアウトしてログインし直す形にしない。** その形だと毎回ブラウザでアカウントを選ぶことになり、一覧はメモにしかならないため。
 - **保存はPCごと。** ログイン情報をリポジトリや OneDrive に置くと、ほかの人や別のPCに鍵を渡すことになる。別のPCでは、そのPCで一度ずつログインして保存する。
 - **VSCode のストア向けの形（`.vsix`）にしない。** 自分のPCで使うだけなので、ジャンクションで直接読ませる。
+- **画面は Webview にする。** 決まった形の一覧（`TreeView`）では、バー・色付きの数字・ボタンの並びを描けないため。
+- **バーは使った分、数字は残り。** バーの向きは Claude Code の `/usage`（「〇% used」）とそろえ、すぐ知りたい「あとどれだけ使えるか」は数字で大きく出す。
 - **並び順と使用量は保存ファイルに書かない。** 保存ファイルは切り替えのたびに書き直すので、見た目のための値は `globalState` に分けた。
-- **使っていないアカウントの鍵は新しくしない。** こちらで新しくすると、Claude Code の知らない所で鍵が取り替わる。期限が切れたら前の値を出し、そのアカウントに切り替えたときに取り直す。
+- **使っていないアカウントの鍵は新しくしない。** こちらで新しくすると、Claude Code の知らない所で鍵が取り替わる。期限が切れたら前の値を出し、そのアカウントに切り替えたときに聞き直す。
+- **会話のたびに聞くが、30秒は空ける。** 聞きすぎると API が 429 で断る（2026-11-19 に見た）ため。
 
 ## 7. 既知の課題
 
@@ -136,8 +148,9 @@ getChildren(element) {
 - 再読み込みしない Claude（ほかのウィンドウなど）は、前のアカウントのログイン情報を持ったまま動く。その Claude が鍵を取り替えると、`.credentials.json` を前のアカウントで書き戻すことがある。切り替えたら、Claude を開いているウィンドウを全部再読み込みする。
 - 保存ファイルは、もとの `.credentials.json` と同じく暗号化していない。
 - **`/logout` すると、そのアカウントの保存した鍵も無効になる**（2026-11-19 に 401「OAuth access token has been revoked」で確かめた）。保存したあと、別のアカウントでログインするときに、`/logout` せずに済む方法はまだ作っていない（`/login` だけで前の鍵が無効になるかも、まだ確かめていない）。
-- 使用量の API（`/api/oauth/usage`）も公式に公開された決まりではない。返事の形が変わると、使用量が出なくなる。
-- 使っていないアカウントの値は、鍵の期限（数時間。`.credentials.json` の `expiresAt`）が切れると取り直せない。そのアカウントをほかの所（別のPC・claude.ai）で使っていると、出ている残りより実際は少ないことがある。
+- 使用量の API（`/api/oauth/usage`）も公式に公開された決まりではない。返事の形が変わると、使用量が出なくなる。聞く回数の上限もわからない。
+- 使っていないアカウントの値は、鍵の期限（数時間。`.credentials.json` の `expiresAt`）が切れると聞き直せない。そのアカウントをほかの所（別のPC・claude.ai）で使っていると、出ている残りより実際は少ないことがある。
+- 会話の見張りは、このPCの Claude Code の会話だけに気づく。claude.ai や別のPCで使った分は、1分ごとの聞き直しまで出ない。
 
 ## 関連するページ
 
