@@ -76,3 +76,90 @@
 |---|---|
 | `globalState` | VSCode が拡張機能ごとに、このPCに値を覚えておく場所。VSCode を閉じても残る |
 | 401 | API の返事の番号で、「認証できない（鍵が使えない）」 |
+
+## 2026-11-19 「保存した鍵が無効」が消えないのを直す
+
+「保存した鍵が無効から更新できない」という知らせで直した。画像は付けていない。直す前と直した後の比較は、一覧に出る文で載せる。画面は VSCode のサイドバーで、撮るには動いている VSCode を前に出す必要があるため。
+
+### 1. 現状の問題
+
+- 一覧に「保存した鍵が無効（ログインし直して、保存し直す）」と一度出ると、そのまま変わらなかった。
+- そのとき、保存してある鍵を1つずつ API に送ると、次のようになった。
+
+| アカウント | API の返事 |
+|---|---|
+| 使用中（保存なし） | 200（取れた） |
+| 保存した1つ目 | 200（取れた） |
+| 「無効」と出ていた保存 | 429「Rate limited. Please try again later.」 |
+
+- 429 は「混んでいるので後で」の返事で、鍵が無効かどうかは、この返事からはわからない（あとで同じ鍵を送ると 401 だったので、この保存は本当に無効だった）。
+- 名前とアカウントの食い違いもあった。「claudehirota@gmail.com」という名前の保存の中身が、別のアカウント（claudehirota2）だった。使用中の claudehirota@gmail.com は保存されていなかった。ユーザーはその保存を消し、使用中のアカウントを保存し直した。
+
+### 2. ソースコードの問題箇所
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の `updateUsage` は、取れたときだけ値を新しくしていた。
+
+```js
+      const fetched = await fetchUsage(isCurrent ? readJson(CREDENTIALS_PATH) : p.credentials);
+      if (fetched) usage[p.oauthAccount.accountUuid] = fetched;
+```
+
+- `fetchUsage` は、401 のときだけ `{ invalid: true }` を返し、429 や鍵の期限切れのときは `null` を返す。`null` のときは前の値をそのまま残す。
+- 前の値が「無効」だと、そのあと取れない間はずっと「無効」と出る。鍵が使えるようになっていても、表示は変わらない。
+- 保存のボタン（`onSave`）は、保存したあと読み直すだけで、前に取った値を消していなかった。新しい鍵で取り直すときに 429 が返ると、前の鍵の「無効」が残る。
+
+### 3. 直し方
+
+1. 401 ではない理由で取れなかったときは、前の値が「無効」なら「取れなかった」に替える。「無効」は、401 が返ったそのときだけの印にする。前の値が使用量なら、前と同じく残す（古い値だと書いた行が付く）。
+2. 保存のボタンで保存したら、そのアカウントの前の使用量を消してから読み直す。切り替える前の保存し直し（`onSwitch`）では消さない。そのときの今のアカウントは、もともと `.credentials.json` の鍵で取っているので、「無効」が残ることはない。
+
+### 4. ソースコードの直し
+
+```diff
+       const fetched = await fetchUsage(isCurrent ? readJson(CREDENTIALS_PATH) : p.credentials);
+       if (fetched) usage[p.oauthAccount.accountUuid] = fetched;
++      // 401 のほかの理由（429 の混雑・鍵の期限切れなど）で取れなかったときは、前の「無効」の印を残さない
++      else if (usage[p.oauthAccount.accountUuid]?.invalid) usage[p.oauthAccount.accountUuid] = { failed: true, fetchedAt: Date.now() };
+```
+
+```diff
++// 保存し直したアカウントの、前に取った使用量を消す（新しい鍵で取り直すため）。
++async function forgetUsage(accountUuid) {
++  const usage = state.get('usage', {});
++  delete usage[accountUuid];
++  await state.update('usage', usage);
++}
+```
+
+```diff
+   if (usage.invalid) return [new vscode.TreeItem('保存した鍵が無効（ログインし直して、保存し直す）')];
++  if (usage.failed) return [new vscode.TreeItem('使用量: 取れなかった（混んでいる・鍵の期限切れなど。5分ごとに取り直す）')];
+```
+
+```diff
+   saveCurrent(name);
++  await forgetUsage(account.accountUuid);
+   provider.refresh();
+```
+
+一覧に出る文の比較:
+
+| 起きたこと | 直す前 | 直した後 |
+|---|---|---|
+| 401 のあと 429 | 保存した鍵が無効 | 使用量: 取れなかった（混んでいる・鍵の期限切れなど。5分ごとに取り直す） |
+| そのあとまた 401 | 保存した鍵が無効 | 保存した鍵が無効 |
+| 「無効」のアカウントにログインし直して保存したが、API は 429 | 保存した鍵が無効 | 使用量: まだ取れていない |
+| そのあと取れた | 5時間・週の2行 | 5時間・週の2行 |
+
+### 5. どう確かめたか
+
+1. **直した動き。** 前の項と同じく、使い捨てのフォルダを `USERPROFILE` にし、`vscode` と `fetch` を差し替えて `extension.js` を動かした。返事の番号を 401 → 429 → 401 と変え、そのあと新しい鍵にして保存した。一覧に出る文は、上の比較の表の「直した後」のとおりになった。
+2. **前の試験（並べ替え・使用量・5分の間隔・古い値）。** 前の項と同じ結果だった。
+3. **手順書。** 手順8に 8-14・8-15 を足し、8-5・8-8 に直しの行を足した。前の項と同じ道具で枠を当て、4つのファイルが今のファイルと一字一句同じになった（枠 64 個、食い違い 0）。
+4. **画面での確かめ。** 動いている VSCode の拡張機能ホストの起動し直しは会話を止めるので、ユーザーに頼んだ。
+
+**用語:**
+
+| 用語 | 何のことか |
+|---|---|
+| 429 | API の返事の番号で、「混んでいるので後で」。鍵が使えるかどうかとは別 |
