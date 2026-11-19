@@ -12,6 +12,7 @@
 #include "BodyLean.h"
 #include "SpringBones.h"
 #include "BodyLink.h"
+#include "PoseLayers.h"
 
 // 魔法を撃つ位置の調整値。
 struct CharacterCastSettings
@@ -117,8 +118,8 @@ protected:
 	virtual void OnLateUpdate(float deltaTime)
 	{
 	}
-	// アニメーションの姿勢と体の連動のあと、揺れ物の前に、骨に手を加える（派生クラス）。
-	virtual void OnPostBodyLink(Skeleton& skeleton)
+	// 骨の調整の層（PoseLayers）に、派生クラスだけの層を足す。体の連動のあと、揺れ物の前に重なる。
+	virtual void OnAddPoseLayers(PoseLayers& layers)
 	{
 	}
 	// 体を描いたあと、自分だけのものを描く。
@@ -163,6 +164,7 @@ private:
 	BodyLean m_bodyLean;
 	SpringBones m_springBones;
 	BodyLink m_bodyLink;
+	PoseLayers m_poseLayers;
 	CharacterCastSettings m_castSettings;
 	Faction m_faction = Faction::Neutral;
 	bool m_isRenderBody = true;

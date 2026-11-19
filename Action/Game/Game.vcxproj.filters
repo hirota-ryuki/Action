@@ -87,6 +87,12 @@
     <ClCompile Include="Source\Character\Components\BodyLean.cpp">
       <Filter>Source\Character\Components</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Character\Components\PoseLayers.cpp">
+      <Filter>Source\Character\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Character\Components\PoseBaker.cpp">
+      <Filter>Source\Character\Components</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Character\Components\BodyLink.cpp">
       <Filter>Source\Character\Components</Filter>
     </ClCompile>
@@ -103,6 +109,9 @@
       <Filter>Source\Player</Filter>
     </ClCompile>
     <ClCompile Include="Source\Player\FirstPersonArms.cpp">
+      <Filter>Source\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Player\FirstPersonArmsPoser.cpp">
       <Filter>Source\Player</Filter>
     </ClCompile>
     <ClCompile Include="Source\Enemy\Enemy.cpp">
@@ -290,6 +299,12 @@
     <ClInclude Include="Source\Character\Components\BodyLean.h">
       <Filter>Source\Character\Components</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Character\Components\PoseLayers.h">
+      <Filter>Source\Character\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\Components\PoseBaker.h">
+      <Filter>Source\Character\Components</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Character\Components\BodyLink.h">
       <Filter>Source\Character\Components</Filter>
     </ClInclude>
@@ -315,6 +330,9 @@
       <Filter>Source\Player</Filter>
     </ClInclude>
     <ClInclude Include="Source\Player\FirstPersonArms.h">
+      <Filter>Source\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Player\FirstPersonArmsPoser.h">
       <Filter>Source\Player</Filter>
     </ClInclude>
     <ClInclude Include="Source\Enemy\Enemy.h">

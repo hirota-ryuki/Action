@@ -53,7 +53,7 @@ protected:
 	void UpdateAction(float deltaTime) override;
 	void FilterSkillInput(CharacterInput& input) const override;
 	void OnLateUpdate(float deltaTime) override;
-	void OnPostBodyLink(Skeleton& skeleton) override;
+	void OnAddPoseLayers(PoseLayers& layers) override;
 
 private:
 	void Respawn();

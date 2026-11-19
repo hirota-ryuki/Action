@@ -234,12 +234,15 @@
     <ClCompile Include="Source\Enemy\State\EnemyGroundState.cpp" />
     <ClCompile Include="Source\Character\Components\SpringBones.cpp" />
     <ClCompile Include="Source\Character\Components\BodyLean.cpp" />
+    <ClCompile Include="Source\Character\Components\PoseLayers.cpp" />
+    <ClCompile Include="Source\Character\Components\PoseBaker.cpp" />
     <ClCompile Include="Source\Character\Components\BodyLink.cpp" />
     <ClCompile Include="Source\Player\PlayerConfig.cpp" />
     <ClCompile Include="Source\Character\Character.cpp" />
     <ClCompile Include="Source\Player\PlayerAnimator.cpp" />
     <ClCompile Include="Source\Player\PlayerUpperBody.cpp" />
     <ClCompile Include="Source\Player\FirstPersonArms.cpp" />
+    <ClCompile Include="Source\Player\FirstPersonArmsPoser.cpp" />
     <ClCompile Include="Source\Enemy\Enemy.cpp" />
     <ClCompile Include="Source\Enemy\BlackKnightInputSource.cpp" />
     <ClCompile Include="Source\UI\UIManager.cpp" />
@@ -307,6 +310,8 @@
     <ClInclude Include="Source\Character\Components\FallRespawn.h" />
     <ClInclude Include="Source\Character\Components\SpringBones.h" />
     <ClInclude Include="Source\Character\Components\BodyLean.h" />
+    <ClInclude Include="Source\Character\Components\PoseLayers.h" />
+    <ClInclude Include="Source\Character\Components\PoseBaker.h" />
     <ClInclude Include="Source\Character\Components\BodyLink.h" />
     <ClInclude Include="Source\Player\PlayerConfig.h" />
     <ClInclude Include="Source\Player\PlayerStatus.h" />
@@ -316,6 +321,7 @@
     <ClInclude Include="Source\Player\PlayerAnimator.h" />
     <ClInclude Include="Source\Player\PlayerUpperBody.h" />
     <ClInclude Include="Source\Player\FirstPersonArms.h" />
+    <ClInclude Include="Source\Player\FirstPersonArmsPoser.h" />
     <ClInclude Include="Source\Enemy\Enemy.h" />
     <ClInclude Include="Source\Enemy\BlackKnightInputSource.h" />
     <ClInclude Include="Source\UI\UIManager.h" />

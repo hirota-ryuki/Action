@@ -1,5 +1,6 @@
 ﻿#include "stdafx.h"
 #include "SpringBones.h"
+#include "PoseLayers.h"
 
 namespace
 {
@@ -228,17 +229,9 @@ void SpringBones::Update(Skeleton& skeleton)
 		toOrigin.MakeTranslation(head * -1.0f);
 		rotationMatrix.MakeRotationFromQuaternion(rotation);
 		back.MakeTranslation(head);
-		RotateBoneTree(*bone, toOrigin * rotationMatrix * back);
+		PoseLayers::RotateBoneTree(*bone, toOrigin * rotationMatrix * back);
 	}
 	m_isFirstFrame = false;
-}
-
-void SpringBones::RotateBoneTree(Bone& bone, const Matrix& rotationAroundCenter)
-{
-	bone.SetWorldMatrix(bone.GetWorldMatrix() * rotationAroundCenter);
-	for (Bone* child : bone.GetChildren()) {
-		RotateBoneTree(*child, rotationAroundCenter);
-	}
 }
 
 Vector3 SpringBones::PushOutFromLegs(Skeleton& skeleton, const Vector3& tail, const Vector3& animTail) const

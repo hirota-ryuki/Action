@@ -36,6 +36,7 @@ protected:
 	void UpdateAction(float deltaTime) override;
 	// 攻撃のステートに入ったフレームのボタンだけを SkillController に渡す（倒れている間などに攻撃しないように）。
 	void FilterSkillInput(CharacterInput& input) const override;
+	void OnAddPoseLayers(PoseLayers& layers) override;
 
 private:
 	// F1 の開発用の窓「黒騎士のモーション」。Walk・Run を選ぶと、AI とステートを止めて、その場でそのクリップを繰り返す。
