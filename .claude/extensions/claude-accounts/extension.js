@@ -75,41 +75,66 @@ function sortByOrder(profiles) {
 }
 
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage';
-const USAGE_INTERVAL_MS = 5 * 60 * 1000;
-let usageFetchedAt = 0;
+const CURRENT_GAP_MS = 30 * 1000;      // 使用中のアカウントを、続けて聞かない間（Claude の会話が進むたびに聞く）
+const OTHER_GAP_MS = 5 * 60 * 1000;    // ほかのアカウントを、続けて聞かない間
+const BUSY_WAIT_MS = 2 * 60 * 1000;    // 429（混んでいる）のあと、聞かずに待つ間
+const lastAsked = {};                  // アカウントの番号 → 最後に聞いた時刻
+const busyUntil = {};                  // アカウントの番号 → この時刻までは聞かない
+let updating = false;                  // 聞いている最中か
+let again = null;                      // 聞いている最中に頼まれたら、終わったあとにもう一度聞く（null・false・true は force）
 
-// アカウントの使用量（5時間の枠と週の枠）を取る。鍵の期限が切れていて取れないときは null。
+// 1つのアカウントの使用量を聞く。返すのは { fiveHour, sevenDay } か、取れなかった理由（status）。
 async function fetchUsage(credentials) {
   const oauth = credentials.claudeAiOauth;
-  if (!oauth || oauth.expiresAt < Date.now()) return null;
+  if (!oauth || oauth.expiresAt < Date.now()) return { status: 'expired' };
   const response = await fetch(USAGE_URL, {
     headers: { Authorization: `Bearer ${oauth.accessToken}`, 'anthropic-beta': 'oauth-2025-04-20' },
   });
-  // 401 は、鍵がサーバーで無効にされている（/logout したときなど）
-  if (response.status === 401) return { invalid: true, fetchedAt: Date.now() };
-  if (!response.ok) return null;
+  // 401 は、鍵がサーバーで無効にされている（/logout したときなど）。429 は、聞く回数が多すぎる
+  if (response.status === 401) return { status: 'invalid' };
+  if (response.status === 429) return { status: 'busy' };
+  if (!response.ok) return { status: 'error' };
   const body = await response.json();
-  return { fiveHour: body.five_hour, sevenDay: body.seven_day, fetchedAt: Date.now() };
+  return { status: 'ok', fiveHour: body.five_hour, sevenDay: body.seven_day, fetchedAt: Date.now() };
 }
 
-// 全部のアカウントの使用量を取り直す。取れなかったアカウントは、前に取った値のまま。
-async function updateUsage(provider) {
-  usageFetchedAt = Date.now();
-  const current = currentAccount();
-  const usage = state.get('usage', {});
-  for (const p of loadProfiles()) {
-    const isCurrent = current && p.oauthAccount.accountUuid === current.accountUuid;
-    try {
-      const fetched = await fetchUsage(isCurrent ? readJson(CREDENTIALS_PATH) : p.credentials);
-      if (fetched) usage[p.oauthAccount.accountUuid] = fetched;
-      // 401 のほかの理由（429 の混雑・鍵の期限切れなど）で取れなかったときは、前の「無効」の印を残さない
-      else if (usage[p.oauthAccount.accountUuid]?.invalid) usage[p.oauthAccount.accountUuid] = { failed: true, fetchedAt: Date.now() };
-    } catch {
-      // 通信できないときは、前に取った値を出す
-    }
+// 間があいたアカウントの使用量を聞き直す。force なら間を待たない（429 のあとは待つ）。
+async function updateUsage(view, force) {
+  if (updating) {
+    again = again || force;
+    return;
   }
-  await state.update('usage', usage);
-  provider.changed.fire();
+  updating = true;
+  try {
+    const current = currentAccount();
+    const usage = state.get('usage', {});
+    for (const p of loadProfiles()) {
+      const id = p.oauthAccount.accountUuid;
+      const isCurrent = current && id === current.accountUuid;
+      const gap = isCurrent ? CURRENT_GAP_MS : OTHER_GAP_MS;
+      if (Date.now() < (busyUntil[id] || 0)) continue;
+      if (!force && Date.now() - (lastAsked[id] || 0) < gap) continue;
+      lastAsked[id] = Date.now();
+      let result;
+      try {
+        result = await fetchUsage(isCurrent ? readJson(CREDENTIALS_PATH) : p.credentials);
+      } catch {
+        result = { status: 'error' };   // 通信できない
+      }
+      if (result.status === 'busy') busyUntil[id] = Date.now() + BUSY_WAIT_MS;
+      // 取れなかったときは、前に取れた値を残して理由だけ替える（理由は毎回替わるので、前の理由は残らない）
+      usage[id] = result.status === 'ok' ? result : { ...usage[id], status: result.status };
+    }
+    await state.update('usage', usage);
+  } finally {
+    updating = false;
+  }
+  view.render();
+  if (again !== null) {
+    const nextForce = again;
+    again = null;
+    updateUsage(view, nextForce);
+  }
 }
 
 // 保存し直したアカウントの、前に取った使用量を消す（新しい鍵で取り直すため）。
@@ -117,74 +142,66 @@ async function forgetUsage(accountUuid) {
   const usage = state.get('usage', {});
   delete usage[accountUuid];
   await state.update('usage', usage);
+  delete lastAsked[accountUuid];
+  delete busyUntil[accountUuid];
 }
 
-// 「残り 96%・17:00 に復活（あと 4時間42分）」のような1行の文にする。
-function formatLimit(label, limit, withDate) {
-  if (!limit || !limit.resets_at) return `${label}: 使用量なし`;
-  if (Date.parse(limit.resets_at) <= Date.now()) return `${label}: 残り 100%（復活済み）`;
-  // 16:59:59.68 のような時刻を、次の分（17:00）に切り上げる
-  const reset = new Date(Math.ceil(Date.parse(limit.resets_at) / 60000) * 60000);
-  const minutes = Math.max(1, Math.floor((reset - Date.now()) / 60000));
-  const left = minutes >= 1440 ? `${Math.floor(minutes / 1440)}日${Math.floor((minutes % 1440) / 60)}時間`
-    : minutes >= 60 ? `${Math.floor(minutes / 60)}時間${minutes % 60}分` : `${minutes}分`;
-  const day = withDate ? reset.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' }) + ' ' : '';
-  const time = reset.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-  return `${label}: 残り ${100 - Math.round(limit.utilization)}%・${day}${time} に復活（あと ${left}）`;
+// 画面に渡す中身。アカウントを並び順に並べ、使用量を添える。
+function viewData() {
+  const current = currentAccount();
+  const usage = state.get('usage', {});
+  const profiles = loadProfiles();
+  sortByOrder(profiles);
+  const accounts = profiles.map((p) => ({
+    id: p.oauthAccount.accountUuid,
+    name: p.name,
+    email: p.oauthAccount.emailAddress,
+    isCurrent: !!current && p.oauthAccount.accountUuid === current.accountUuid,
+    usage: usage[p.oauthAccount.accountUuid] || null,
+  }));
+  const data = { accounts };
+  // 今のアカウントが保存されていなければ、保存を勧める
+  if (current && !accounts.some((a) => a.isCurrent)) data.unsaved = current.emailAddress;
+  return data;
 }
 
-// アカウントの行の下に出す、使用量の行。
-function usageItems(profile) {
-  const usage = state.get('usage', {})[profile.oauthAccount.accountUuid];
-  if (!usage) return [new vscode.TreeItem('使用量: まだ取れていない（このアカウントに切り替えると取れる）')];
-  if (usage.invalid) return [new vscode.TreeItem('保存した鍵が無効（ログインし直して、保存し直す）')];
-  if (usage.failed) return [new vscode.TreeItem('使用量: 取れなかった（混んでいる・鍵の期限切れなど。5分ごとに取り直す）')];
-  const items = [formatLimit('5時間', usage.fiveHour, false), formatLimit('週', usage.sevenDay, true)]
-    .map((text) => new vscode.TreeItem(text));
-  if (Date.now() - usage.fetchedAt > USAGE_INTERVAL_MS * 2) {
-    const at = new Date(usage.fetchedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    items.push(new vscode.TreeItem(`（${at} に取った値。鍵の期限切れなどで取り直せていない）`));
-  }
-  return items;
-}
-
-// アクティビティバーに出す一覧。今のアカウントには印を付ける。
-class AccountsProvider {
-  constructor() {
-    this.changed = new vscode.EventEmitter();
-    this.onDidChangeTreeData = this.changed.event;
+// アクティビティバーに出す画面（Webview）。描くのは media/view.js で、ここは中身を渡すだけ。
+class AccountsView {
+  constructor(extensionUri) {
+    this.extensionUri = extensionUri;
+    this.view = null;
   }
 
-  refresh() {
-    usageFetchedAt = 0;
-    this.changed.fire();
-  }
-
-  getTreeItem(item) {
-    return item;
-  }
-
-  getChildren(element) {
-    if (element) return usageItems(element.profile);
-    if (Date.now() - usageFetchedAt > USAGE_INTERVAL_MS) updateUsage(this);
-    const current = currentAccount();
-    const profiles = loadProfiles();
-    sortByOrder(profiles);
-    return profiles.map((p) => {
-      const isCurrent = current && p.oauthAccount.accountUuid === current.accountUuid;
-      const item = new vscode.TreeItem(p.name);
-      item.description = p.oauthAccount.emailAddress + (isCurrent ? '（使用中）' : '');
-      item.iconPath = new vscode.ThemeIcon(isCurrent ? 'pass-filled' : 'account');
-      item.command = { command: 'claudeAccounts.switch', title: '切り替える', arguments: [p] };
-      item.profile = p;
-      item.contextValue = 'account';
-      item.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
-      return item;
+  resolveWebviewView(webviewView) {
+    this.view = webviewView;
+    const webview = webviewView.webview;
+    const media = vscode.Uri.joinPath(this.extensionUri, 'media');
+    webview.options = { enableScripts: true, localResourceRoots: [media] };
+    const nonce = String(Math.random()).slice(2);
+    const script = webview.asWebviewUri(vscode.Uri.joinPath(media, 'view.js'));
+    const style = webview.asWebviewUri(vscode.Uri.joinPath(media, 'view.css'));
+    webview.html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+<link rel="stylesheet" href="${style}"></head>
+<body><div id="root"></div><script nonce="${nonce}" src="${script}"></script></body></html>`;
+    webview.onDidReceiveMessage((message) => onMessage(this, message));
+    webviewView.onDidChangeVisibility(() => {
+      if (webviewView.visible) updateUsage(this, false);
     });
   }
+
+  render() {
+    if (this.view) this.view.webview.postMessage(viewData());
+  }
+
+  // 保存・切り替え・消したあと。すぐ描き直し、使用量もすぐ聞き直す。
+  refresh() {
+    this.render();
+    updateUsage(this, true);
+  }
 }
 
-async function onSave(provider) {
+async function onSave(view) {
   const account = currentAccount();
   if (!account || !fs.existsSync(CREDENTIALS_PATH)) {
     vscode.window.showWarningMessage('Claude にログインしていません。Claude で /login してから保存してください。');
@@ -198,10 +215,10 @@ async function onSave(provider) {
   if (!name) return;
   saveCurrent(name);
   await forgetUsage(account.accountUuid);
-  provider.refresh();
+  view.refresh();
 }
 
-async function onSwitch(provider, profile) {
+async function onSwitch(view, profile) {
   const current = currentAccount();
   if (current && current.accountUuid === profile.oauthAccount.accountUuid) return;
   // 今のアカウントの最新のログイン情報を先に取っておく（使っている間に Claude が更新しているため）。
@@ -215,46 +232,75 @@ async function onSwitch(provider, profile) {
     if (answer !== '切り替える') return;
   }
   applyProfile(profile);
-  provider.refresh();
+  view.refresh();
   const answer = await vscode.window.showInformationMessage(
     `${profile.name} に切り替えました。開いている Claude に効かせるには、ウィンドウを再読み込みしてください。`,
     '再読み込み');
   if (answer === '再読み込み') vscode.commands.executeCommand('workbench.action.reloadWindow');
 }
 
-async function onRemove(provider, item) {
+async function onRemove(view, profile) {
   const answer = await vscode.window.showWarningMessage(
-    `${item.profile.name} の保存を消しますか？（ログアウトはしません）`, { modal: true }, '消す');
+    `${profile.name} の保存を消しますか？（ログアウトはしません）`, { modal: true }, '消す');
   if (answer !== '消す') return;
-  fs.unlinkSync(item.profile.file);
-  provider.refresh();
+  fs.unlinkSync(profile.file);
+  view.refresh();
 }
 
-// 押した行を、1つ上（step = -1）か1つ下（step = 1）と入れ替える。
-async function onMove(provider, item, step) {
+// 押したアカウントを、1つ上（step = -1）か1つ下（step = 1）と入れ替える。
+async function onMove(view, profile, step) {
   const ids = sortByOrder(loadProfiles()).map((p) => p.oauthAccount.accountUuid);
-  const from = ids.indexOf(item.profile.oauthAccount.accountUuid);
+  const from = ids.indexOf(profile.oauthAccount.accountUuid);
   const to = from + step;
   if (to < 0 || to >= ids.length) return;
   [ids[from], ids[to]] = [ids[to], ids[from]];
   await state.update('order', ids);
-  provider.changed.fire();
+  view.render();
+}
+
+// 画面から届いた知らせ。{ type: 'ready' | 'save' | 'switch' | 'up' | 'down' | 'remove', id }
+function onMessage(view, message) {
+  if (message.type === 'ready') {
+    view.render();
+    updateUsage(view, false);
+    return;
+  }
+  if (message.type === 'save') return onSave(view);
+  const profile = findProfile(message.id);
+  if (!profile) return;
+  if (message.type === 'switch') return onSwitch(view, profile);
+  if (message.type === 'remove') return onRemove(view, profile);
+  if (message.type === 'up') return onMove(view, profile, -1);
+  if (message.type === 'down') return onMove(view, profile, 1);
+}
+
+// Claude の会話のファイル（~/.claude/projects の下）が書かれたら、少し待って onChange を呼ぶ。
+function watchClaude(onChange) {
+  const dir = path.join(HOME, '.claude', 'projects');
+  if (!fs.existsSync(dir)) return { dispose() {} };
+  let timer;
+  const watcher = fs.watch(dir, { recursive: true }, () => {
+    clearTimeout(timer);
+    timer = setTimeout(onChange, 5000);   // 書き終わるのを待つ
+  });
+  return { dispose: () => { clearTimeout(timer); watcher.close(); } };
 }
 
 function activate(context) {
   state = context.globalState;
-  const provider = new AccountsProvider();
+  const view = new AccountsView(context.extensionUri);
+  // 画面が見えているときだけ、間があいたアカウントを聞き直す
+  const update = () => {
+    if (view.view && view.view.visible) updateUsage(view, false);
+  };
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider('claudeAccounts.list', provider),
-    vscode.commands.registerCommand('claudeAccounts.save', () => onSave(provider)),
-    vscode.commands.registerCommand('claudeAccounts.refresh', () => provider.refresh()),
-    vscode.commands.registerCommand('claudeAccounts.switch', (p) => onSwitch(provider, p)),
-    vscode.commands.registerCommand('claudeAccounts.remove', (item) => onRemove(provider, item)),
-    vscode.commands.registerCommand('claudeAccounts.moveUp', (item) => onMove(provider, item, -1)),
-    vscode.commands.registerCommand('claudeAccounts.moveDown', (item) => onMove(provider, item, 1)),
+    vscode.window.registerWebviewViewProvider('claudeAccounts.list', view, { webviewOptions: { retainContextWhenHidden: true } }),
+    vscode.commands.registerCommand('claudeAccounts.save', () => onSave(view)),
+    vscode.commands.registerCommand('claudeAccounts.refresh', () => view.refresh()),
+    watchClaude(update),
   );
-  // 「あと〇分」を進めるため、1分ごとに描き直す（5分たっていれば使用量も取り直す）
-  const timer = setInterval(() => provider.changed.fire(), 60 * 1000);
+  // 会話が進んでいなくても、1分ごとに聞き直す（間があいたアカウントだけ）
+  const timer = setInterval(update, 60 * 1000);
   context.subscriptions.push({ dispose: () => clearInterval(timer) });
 }
 

@@ -8,36 +8,15 @@
   "main": "./extension.js",
   "contributes": {
     "commands": [
-      { "command": "claudeAccounts.moveUp", "title": "上へ", "icon": "$(arrow-up)" },
-      { "command": "claudeAccounts.moveDown", "title": "下へ", "icon": "$(arrow-down)" },
-      { "command": "claudeAccounts.remove", "title": "保存を消す", "icon": "$(trash)" },
-      { "command": "claudeAccounts.switch", "title": "このアカウントに切り替える" },
-      { "command": "claudeAccounts.save", "title": "今のアカウントを保存", "icon": "$(add)" },
-      { "command": "claudeAccounts.refresh", "title": "一覧を読み直す", "icon": "$(refresh)" }
+      { "command": "claudeAccounts.refresh", "title": "使用量を聞き直す", "icon": "$(refresh)" },
+      { "command": "claudeAccounts.save", "title": "今のアカウントを保存", "icon": "$(add)" }
     ],
     "menus": {
-      "view/item/context": [
-        { "command": "claudeAccounts.moveUp", "when": "view == claudeAccounts.list && viewItem == account", "group": "inline@1" },
-        { "command": "claudeAccounts.moveDown", "when": "view == claudeAccounts.list && viewItem == account", "group": "inline@2" },
-        { "command": "claudeAccounts.remove", "when": "view == claudeAccounts.list && viewItem == account", "group": "inline@9" }
-      ],
-      "commandPalette": [
-        { "command": "claudeAccounts.moveUp", "when": "false" },
-        { "command": "claudeAccounts.moveDown", "when": "false" },
-        { "command": "claudeAccounts.remove", "when": "false" },
-        { "command": "claudeAccounts.switch", "when": "false" }
-      ],
       "view/title": [
-        { "command": "claudeAccounts.save", "when": "view == claudeAccounts.list", "group": "navigation" },
-        { "command": "claudeAccounts.refresh", "when": "view == claudeAccounts.list", "group": "navigation" }
+        { "command": "claudeAccounts.refresh", "when": "view == claudeAccounts.list", "group": "navigation@2" },
+        { "command": "claudeAccounts.save", "when": "view == claudeAccounts.list", "group": "navigation@1" }
       ]
     },
-    "viewsWelcome": [
-      {
-        "view": "claudeAccounts.list",
-        "contents": "保存したアカウントがありません。\nClaude で /login してから、今のアカウントを保存してください。\n[今のアカウントを保存](command:claudeAccounts.save)"
-      }
-    ],
     "viewsContainers": {
       "activitybar": [
         { "id": "claudeAccounts", "title": "Claude アカウント", "icon": "media/accounts.svg" }
@@ -45,7 +24,7 @@
     },
     "views": {
       "claudeAccounts": [
-        { "id": "claudeAccounts.list", "name": "アカウント" }
+        { "type": "webview", "id": "claudeAccounts.list", "name": "アカウント" }
       ]
     }
   }

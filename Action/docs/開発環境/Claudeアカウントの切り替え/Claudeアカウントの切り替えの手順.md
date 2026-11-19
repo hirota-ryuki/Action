@@ -5,24 +5,24 @@
 
 VSCode のアクティビティバーに「Claude アカウント」のアイコンを足し、保存しておいたログイン情報を入れ替えて Claude のアカウントを切り替える拡張機能を、一から作る手順です。
 
-**出来上がるもの:** アクティビティバーのアイコンを押すと、保存したアカウントの一覧が出ます。今のアカウントを「+」で保存し、一覧の名前を押すとそのアカウントに切り替わります。ブラウザでのログインは、アカウントごとに最初の1回だけです。行は↑↓で並べ替えられ、各アカウントの下に、5時間の枠と週の枠の残りと、復活する時刻が出ます。
+**出来上がるもの:** アクティビティバーのアイコンを押すと、保存したアカウントが1つずつ枠（カード）で並びます。今のアカウントを「+」で保存し、枠の「このアカウントに切り替える」を押すと、そのアカウントに切り替わります。ブラウザでのログインは、アカウントごとに最初の1回だけです。枠は↑↓で並べ替えられます。各枠には、5時間の枠と週の枠の使用量がバーで出て、残り何%か・何時に復活するかもわかります。使用中のアカウントの使用量は、Claude の会話が進むたびに（30秒に1回まで）新しくなります。
 
 **前提:**
 
-- VSCode 1.80 以降。拡張機能は JavaScript で書き、VSCode がそのまま読むので、ビルドや Node.js のインストールは要らない。
+- VSCode 1.82 以降。拡張機能は JavaScript で書き、VSCode がそのまま読むので、ビルドや Node.js のインストールは要らない。
 - Claude Code（VSCode の拡張機能）で、切り替えたいアカウントにそれぞれ1回ログインできる。
-- 新しく作る `.ps1` は UTF-8（BOM 付き）、`.json`・`.js`・`.svg` は UTF-8（BOM なし）で保存する。Windows の PowerShell 5.1 は、BOM のない `.ps1` の日本語を読み違えるため。
+- 新しく作る `.ps1` は UTF-8（BOM 付き）、`.json`・`.js`・`.css`・`.svg` は UTF-8（BOM なし）で保存する。Windows の PowerShell 5.1 は、BOM のない `.ps1` の日本語を読み違えるため。
 
 | 手順 | 足すもの | 確かめ方 |
 |---|---|---|
-| 1 | アクティビティバーのアイコンと、空の一覧（`package.json`・`accounts.svg`） | 手順2で入れてから見る |
+| 1 | アクティビティバーのアイコンと、空の欄（`package.json`・`accounts.svg`） | 手順2で入れてから見る |
 | 2 | このPCの VSCode に入れるスクリプト | アイコンが出る |
-| 3 | 保存したアカウントの一覧を出す（`extension.js`） | エラーなく一覧が開く |
-| 4 | 今のアカウントを保存する | 保存したアカウントが一覧に出る |
+| 3 | 保存したアカウントを枠で並べる画面（`extension.js`・`view.js`・`view.css`） | エラーなく欄が開く |
+| 4 | 今のアカウントを保存する | 保存したアカウントの枠が出る |
 | 5 | アカウントを切り替える | 押したアカウントに替わる |
-| 6 | 保存を消す | 一覧から消える |
-| 7 | 並べ替える | ↑↓で行が入れ替わる |
-| 8 | 残りの使用量（5時間・週）と復活する時刻を出す | アカウントの下に使用量の行が出る |
+| 6 | 保存を消す | 枠が消える |
+| 7 | 並べ替える | ↑↓で枠が入れ替わる |
+| 8 | 使用量（5時間・週）のバーと、復活する時刻を出す | 枠にバーが出て、会話が進むと新しくなる |
 
 **読み方:**
 
@@ -32,8 +32,8 @@ VSCode のアクティビティバーに「Claude アカウント」のアイコ
 - コードの下に、3つを置きます。
   - 「行・何をしているか」の表: 1行ずつの動き。
   - 「なぜ」「効果」: その小手順でそう書く理由と、書くと何ができるようになるか。
-  - 「初めて出てくる名前」の表: このページで初めて出てくる名前を、コードに出てくる順に並べます。2回目からは載せないので、わからない名前はページ内検索（`Ctrl+F`）で最初に出てきた所を探してください。「どこから来たもの」で、この手順で作るもの・VSCode の拡張機能の決まり・Node.js の標準ライブラリ・JavaScript の書き方・PowerShell のどれかがわかります。
-- [前提知識](../../前提知識.md) は C++ が中心で、JavaScript・PowerShell・VSCode の拡張機能は載っていないので、知らない前提で書きます。C++ と同じ意味のもの（`if`・`return`・`class`・`!`・`&&` など）は載せません。
+  - 「初めて出てくる名前」の表: このページで初めて出てくる名前を、コードに出てくる順に並べます。2回目からは載せないので、わからない名前はページ内検索（`Ctrl+F`）で最初に出てきた所を探してください。「どこから来たもの」で、この手順で作るもの・VSCode の拡張機能の決まり・Node.js の標準ライブラリ・JavaScript の書き方・ブラウザ（HTML・CSS）・PowerShell のどれかがわかります。
+- [前提知識](../../前提知識.md) は C++ が中心で、JavaScript・CSS・PowerShell・VSCode の拡張機能は載っていないので、知らない前提で書きます。C++ と同じ意味のもの（`if`・`return`・`class`・`!`・`&&`・`? :` など）は載せません。
 - VSCode で `Ctrl+Shift+V` を押してプレビューで読みます。
 
 ---
@@ -42,10 +42,12 @@ VSCode のアクティビティバーに「Claude アカウント」のアイコ
 
 | ファイル | 何をするか | 手順 |
 |---|---|---|
-| [package.json](../../../../.claude/extensions/claude-accounts/package.json) | 新しく作る（あとの手順で書き足す） | 1・3・4・5・6・7 |
+| [package.json](../../../../.claude/extensions/claude-accounts/package.json) | 新しく作る（あとの手順で書き足す） | 1・3・4・8 |
 | [accounts.svg](../../../../.claude/extensions/claude-accounts/media/accounts.svg) | 新しく作る | 1 |
 | [install-claude-accounts.ps1](../../../../.claude/scripts/install-claude-accounts.ps1) | 新しく作る | 2 |
-| [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) | 新しく作る（あとの手順で書き足す） | 3・4・5・6・7・8 |
+| [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) | 新しく作る（あとの手順で書き足す）。ファイルを読み書きし、画面に中身を送る | 3〜8 |
+| [view.js](../../../../.claude/extensions/claude-accounts/media/view.js) | 新しく作る（あとの手順で書き足す）。画面（Webview）の中で動き、枠を描く | 3〜8 |
+| [view.css](../../../../.claude/extensions/claude-accounts/media/view.css) | 新しく作る（あとの手順で書き足す）。枠・ボタン・バーの見た目 | 3・4・6・8 |
 
 VSCode の外のファイルで、拡張機能が読み書きするものは次の3つです（どれもリポジトリには入れません）。
 
@@ -166,7 +168,7 @@ VSCode の拡張機能は、`package.json` に「画面のどこに何を足す�
     },
     "views": {
       "claudeAccounts": [
-        { "id": "claudeAccounts.list", "name": "アカウント" }
+        { "type": "webview", "id": "claudeAccounts.list", "name": "アカウント" }
       ]
     }
 ```
@@ -176,9 +178,9 @@ VSCode の拡張機能は、`package.json` に「画面のどこに何を足す�
 | 行 | 何をしているか |
 |---|---|
 | 9〜13 | アクティビティバーに入れ物を1つ足す。`id` は入れ物の名前、`title` はアイコンにマウスを乗せたときの名前、`icon` は 1-4 で作る絵 |
-| 14〜18 | 入れ物 `claudeAccounts` の中に、一覧を1つ置く。`claudeAccounts.list` の名前で、手順3 から中身（アカウント）を渡す |
+| 14〜18 | 入れ物 `claudeAccounts` の中に、欄を1つ置く。`"type": "webview"` で、中身を Web ページ（Webview）で描く欄にする。`claudeAccounts.list` の名前で、手順3 から中身を渡す |
 
-- **なぜ:** アクティビティバーのアイコンは「入れ物（`viewsContainers`）」、その中の一覧は「ビュー（`views`）」として別々に書く決まりのため。
+- **なぜ:** アクティビティバーのアイコンは「入れ物（`viewsContainers`）」、その中の欄は「ビュー（`views`）」として別々に書く決まりのため。VSCode の決まった形の一覧（木の形）では、バーや色付きの文字を描けないので、Web ページで描く欄にする。
 - **効果:** アクティビティバーにアイコンが出て、押すと「アカウント」の欄が開く。
 
 **初めて出てくる名前:**
@@ -189,7 +191,8 @@ VSCode の拡張機能は、`package.json` に「画面のどこに何を足す�
 | 値 | `activitybar` | 入れ物を置く場所を決めるため | アクティビティバー（VSCode の左端のアイコンの列）に置く | 同上 |
 | 値 | `claudeAccounts` | 入れ物を見分けるため | アクティビティバーに足す入れ物の名前。14行目でこの名前を使う | この手順で作る |
 | 値 | `views` | 入れ物の中に一覧を置くため | 入れ物の名前ごとに、置くビュー（一覧）を書く | [VSCode の拡張機能の決まり（Contribution Points）](https://code.visualstudio.com/api/references/contribution-points#contributes.views) |
-| 値 | `claudeAccounts.list` | 一覧を見分けるため | アカウントの一覧のビューの名前。`extension.js` からこの名前で中身を渡す | この手順で作る |
+| 値 | `"type": "webview"` | Web ページで描く欄にするため | 書かないと、VSCode の決まった形の一覧（木の形）になる | 同上 |
+| 値 | `claudeAccounts.list` | 欄を見分けるため | アカウントの欄のビューの名前。`extension.js` からこの名前で中身を渡す | この手順で作る |
 
 ### 1-4. アイコンの絵を作る
 
@@ -448,20 +451,27 @@ powershell -ExecutionPolicy Bypass -File .claude\scripts\install-claude-accounts
 
 1. `入れました: ...` と出る。
 2. `code --list-extensions` を動かすと、`local.claude-accounts` が出る。
-3. VSCode で `Ctrl+Shift+P` →「Developer: Reload Window」（ウィンドウの再読み込み）を選ぶと、アクティビティバーに人と矢印のアイコンが出る。押すと「アカウント」の欄が開く（中身を渡していないので、英語で「データを出すものがない」という文が出る）。
+3. VSCode で `Ctrl+Shift+P` →「Developer: Reload Window」（ウィンドウの再読み込み）を選ぶと、アクティビティバーに人と矢印のアイコンが出る。押すと「アカウント」の欄が開く（中身を渡していないので、空のまま）。
 
 ---
 
-## 手順3: 保存したアカウントの一覧を出す
+## 手順3: 保存したアカウントを枠で並べる画面を作る
 
-`extension.js` を作り、`~/.claude/account-profiles/` に保存したアカウントを読んで、1-3 の一覧に出します。保存はまだできないので（手順4）、この手順では一覧は空のままです。
+`extension.js` を作り、`~/.claude/account-profiles/` に保存したアカウントを読んで、1-3 の欄に送ります。欄の中は Web ページ（Webview）で、`view.js` が届いた中身からアカウントごとの枠を描き、`view.css` で見た目を付けます。保存はまだできないので（手順4）、この手順では欄は空のままです。
+
+```
+extension.js（ファイルを読む） ──中身を送る（postMessage）──▶ view.js（枠を描く）
+                               ◀──ボタンの知らせ（postMessage）──
+```
 
 **この手順で触るファイル:**
 
 | ファイル | 何をするか |
 |---|---|
 | [package.json](../../../../.claude/extensions/claude-accounts/package.json) | 追加（3-1 で、動かすファイルの名前） |
-| [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) | 新しく作る（3-2〜3-8） |
+| [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) | 新しく作る（3-2〜3-12） |
+| [view.js](../../../../.claude/extensions/claude-accounts/media/view.js) | 新しく作る（3-13〜3-16） |
+| [view.css](../../../../.claude/extensions/claude-accounts/media/view.css) | 新しく作る（3-17〜3-22） |
 
 ### 3-1. 動かすファイルを書く
 
@@ -623,7 +633,7 @@ function currentAccount() {
 | 22〜23 | ファイルがない・読めないときも `null` を返す |
 
 - **なぜ:** `oauthAccount` には、アカウントごとに変わらない番号（`accountUuid`）とメールアドレスが入っている。これで「今のアカウントが保存したどれか」を見分けられる。
-- **効果:** あとの手順で、今のアカウントに印を付けたり（3-7）、保存したり（手順4）できる。
+- **効果:** あとの手順で、今のアカウントに印を付けたり（3-5）、保存したり（手順4）できる。
 
 **初めて出てくる名前:**
 
@@ -705,9 +715,11 @@ function loadProfiles() {
 
 ### 3-5. 一覧に中身を渡すクラスを作る
 
-VSCode の一覧は、決まった名前の関数を持つクラスから中身をもらいます。まず、中身が変わったことを VSCode に知らせる仕組みだけを持つクラスを作ります。
+### 3-5. 画面に渡す中身を作る関数を足す
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **34行目** `}` の下に、8行足します（35〜42行目になります）。
+保存したアカウントを、画面に送る形（番号・名前・メールアドレス・使用中か）に作り替えます。
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **34行目** `}` の下に、14行足します（35〜48行目になります）。
 
 <!-- add: .claude/extensions/claude-accounts/extension.js 35 -->
 <table class="code-lines"><tr><td>
@@ -721,17 +733,91 @@ VSCode の一覧は、決まった名前の関数を持つクラスから中身�
 40
 41
 42
+43
+44
+45
+46
+47
+48
 ```
 
 </td><td>
 
 ```js
 
-// アクティビティバーに出す一覧。今のアカウントには印を付ける。
-class AccountsProvider {
-  constructor() {
-    this.changed = new vscode.EventEmitter();
-    this.onDidChangeTreeData = this.changed.event;
+// 画面に渡す中身。アカウントを並び順に並べ、使用量を添える。
+function viewData() {
+  const current = currentAccount();
+  const profiles = loadProfiles();
+  const accounts = profiles.map((p) => ({
+    id: p.oauthAccount.accountUuid,
+    name: p.name,
+    email: p.oauthAccount.emailAddress,
+    isCurrent: !!current && p.oauthAccount.accountUuid === current.accountUuid,
+  }));
+  const data = { accounts };
+  return data;
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 38 | 今のアカウントを取る（3-3） |
+| 39 | 保存したアカウントを読む（3-4） |
+| 40 | 1つずつ、画面に送る形に作り替える |
+| 41〜43 | 番号・名前・メールアドレス |
+| 44 | 番号（`accountUuid`）が今のアカウントと同じなら、使用中 |
+| 46 | 画面に送るものをまとめる（手順4で、保存していないアカウントのことも足す） |
+
+- **なぜ:** 画面（Webview）の中ではファイルを読めないので、`extension.js` で読んで、要るものだけを送る。ログイン情報（鍵）は画面に送らない。アカウントは番号で見分ける。メールアドレスや名前は変わることがあるが、番号は変わらない。
+- **効果:** 3-9 で、この中身を画面に送れる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `viewData` | 画面に渡す中身を作るため | `{ accounts }` を返す（手順4で `unsaved` も足す） | この手順で作る |
+| 変数 | `current` | 今のアカウントを覚えておくため | `currentAccount()` の結果 | この手順で作る |
+| 変数 | `profiles`・`accounts` | アカウントを持っておくため | 読んだアカウントと、画面に送る形にしたもの | この手順で作る |
+| 値 | `id`・`email`・`isCurrent` | 画面に送るため | 番号・メールアドレス・使用中なら `true` | この手順で作る |
+| 値 | `accountUuid` | アカウントを見分けるため | アカウントごとに決まった、変わらない番号 | Claude Code が書く（`oauthAccount` の中） |
+| 値 | `emailAddress` | どのアカウントかを人に見せるため | アカウントのメールアドレス | Claude Code が書く（`oauthAccount` の中） |
+| C++ の書き方 | `!!x` | `true`・`false` にそろえるため | `x` が `null` なども `false` にする | JavaScript の書き方 |
+| C++ の書き方 | `===` | 同じかを比べるため | 型も中身も同じなら `true`（C++ の `==` に当たる） | JavaScript の書き方 |
+| C++ の書き方 | `(p) => ({ ... })` | オブジェクトを返す小さな関数のため | `{ }` を `( )` で囲むと、関数の中身でなくオブジェクトを返す | JavaScript の書き方 |
+| 変数 | `data` | 画面に送るものをまとめるため | `{ accounts }`（`accounts: accounts` の略） | この手順で作る |
+
+### 3-6. 画面を受け持つクラスを作る
+
+アクティビティバーの欄に出す画面は、Webview（VSCode の中で動く小さな Web ページ）で作ります。まず、そのクラスの入れ物を作ります。
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **48行目** `}` の下に、8行足します（49〜56行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 49 -->
+<table class="code-lines"><tr><td>
+
+```js
+49
+50
+51
+52
+53
+54
+55
+56
+```
+
+</td><td>
+
+```js
+
+// アクティビティバーに出す画面（Webview）。描くのは media/view.js で、ここは中身を渡すだけ。
+class AccountsView {
+  constructor(extensionUri) {
+    this.extensionUri = extensionUri;
+    this.view = null;
   }
 }
 ```
@@ -740,111 +826,50 @@ class AccountsProvider {
 
 | 行 | 何をしているか |
 |---|---|
-| 37 | 一覧に中身を渡すクラス |
-| 38〜41 | コンストラクタ。「変わった」と知らせる道具を作り、VSCode が見る名前（`onDidChangeTreeData`）で置く |
+| 51 | 画面を受け持つクラス |
+| 52〜55 | 拡張機能のフォルダの場所を覚え、画面はまだないので `null` にしておく |
 
-- **なぜ:** 保存や切り替えのあとに一覧を描き直してもらうには、VSCode に「中身が変わった」と知らせる道具が要る。VSCode はこの名前の値を見に来る。
-- **効果:** 3-6 の `refresh()` で、一覧を描き直せるようになる。
+- **なぜ:** `view.js`・`view.css` を画面に読ませるには、拡張機能のフォルダの場所が要る。画面は、欄を初めて開いたときに VSCode が作って渡してくる（3-7）ので、それまでは `null`。
+- **効果:** 3-7 で、VSCode から画面を受け取れる。
 
 **初めて出てくる名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| 型 | `AccountsProvider` | 一覧に中身を渡すため | 保存したアカウントを、一覧の1行ずつにして VSCode に渡す | この手順で作る |
+| 型 | `AccountsView` | 画面を受け持つため | 画面を作り、中身を送り、画面からの知らせを受け取る | この手順で作る |
 | 関数 | `constructor` | 作ったときに用意するため | クラスのコンストラクタ。`new` で作ったときに呼ばれる | JavaScript の書き方 |
+| 引数・メンバー変数 | `extensionUri` | 拡張機能のフォルダを指すため | 拡張機能のフォルダの場所（`vscode.Uri`） | VSCode の拡張機能の API（`ExtensionContext`）。3-12 で渡す |
 | C++ の書き方 | `this.名前 = ...` | メンバー変数を作るため | JavaScript のクラスでは、宣言せずに `this.名前` に入れるとメンバー変数ができる | JavaScript の書き方 |
-| メンバー変数 | `changed` | 「変わった」と知らせるため | `vscode.EventEmitter` | この手順で作る |
-| 型 | `vscode.EventEmitter` | 出来事を知らせるため | `fire()` を呼ぶと、`event` に登録した相手（ここでは VSCode）に知らせる | [VSCode の拡張機能の API](https://code.visualstudio.com/api/references/vscode-api#EventEmitter) |
-| メンバー変数 | `onDidChangeTreeData` | VSCode に変わったことを伝えるため | この名前にしておくと、VSCode が登録して、知らせが来たら一覧を描き直す | [VSCode の拡張機能の API](https://code.visualstudio.com/api/references/vscode-api#TreeDataProvider)（`TreeDataProvider` の決まり） |
-| メンバー変数 | `event` | 知らせを受け取る相手を登録するため | `EventEmitter` が持つ、登録の口 | VSCode の拡張機能の API（`EventEmitter`） |
+| メンバー変数 | `view` | 受け取った画面を持っておくため | VSCode から渡された欄（`WebviewView`）。まだなければ `null` | この手順で作る |
 
-### 3-6. 描き直す関数と、1行を渡す関数を足す
+### 3-7. 画面を受け取り、ファイルを読ませる設定をする
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **41行目** `}` の下、`}` の上に、8行足します（42〜49行目になります）。
+欄を開くと、VSCode が `resolveWebviewView` を呼んで画面を渡してきます。画面で JavaScript を動かすことと、`media` フォルダのファイルを読ませることを決めます。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 42 -->
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **55行目** `}` の下、`}` の上に、7行足します（56〜62行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 56 -->
 <table class="code-lines"><tr><td>
 
 ```js
-42
-43
-44
-45
-46
-47
-48
-49
-```
-
-</td><td>
-
-```js
-
-  refresh() {
-    this.changed.fire();
-  }
-
-  getTreeItem(item) {
-    return item;
-  }
-```
-
-</td></tr></table>
-
-| 行 | 何をしているか |
-|---|---|
-| 43〜45 | 「変わった」と知らせて、一覧を描き直してもらう |
-| 47〜49 | VSCode に聞かれた1行を、そのまま返す（3-7 で、もう1行の形にして渡すため） |
-
-- **なぜ:** `getTreeItem` は、VSCode が1行ずつ「どう見せるか」を聞いてくる関数で、必ず要る。3-7 で最初から見せる形（`TreeItem`）を作るので、受け取ったものを返すだけでよい。
-- **効果:** 手順4〜6 で、保存・切り替え・消したあとに `refresh()` を呼べば一覧が新しくなる。
-
-**初めて出てくる名前:**
-
-| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
-|---|---|---|---|---|
-| 関数 | `refresh` | 一覧を描き直すため | `changed.fire()` を呼ぶ | この手順で作る |
-| 関数 | `fire` | 知らせを送るため | 登録した相手に、出来事を知らせる | VSCode の拡張機能の API（`EventEmitter`） |
-| 関数 | `getTreeItem` | 1行の見せ方を VSCode に渡すため | VSCode が1行ずつ呼ぶ。見せ方（`TreeItem`）を返す | VSCode の拡張機能の API（`TreeDataProvider` の決まり） |
-
-### 3-7. 一覧の中身を作る関数を足す
-
-保存したアカウントを1行ずつにします。今ログインしているアカウントには、印と「（使用中）」を付けます。
-
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **49行目** `}` の下、`}` の上に、12行足します（50〜61行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/extension.js 50 -->
-<table class="code-lines"><tr><td>
-
-```js
-50
-51
-52
-53
-54
-55
 56
 57
 58
 59
 60
 61
+62
 ```
 
 </td><td>
 
 ```js
 
-  getChildren(element) {
-    const current = currentAccount();
-    const profiles = loadProfiles();
-    return profiles.map((p) => {
-      const isCurrent = current && p.oauthAccount.accountUuid === current.accountUuid;
-      const item = new vscode.TreeItem(p.name);
-      item.description = p.oauthAccount.emailAddress + (isCurrent ? '（使用中）' : '');
-      item.iconPath = new vscode.ThemeIcon(isCurrent ? 'pass-filled' : 'account');
-      return item;
-    });
+  resolveWebviewView(webviewView) {
+    this.view = webviewView;
+    const webview = webviewView.webview;
+    const media = vscode.Uri.joinPath(this.extensionUri, 'media');
+    webview.options = { enableScripts: true, localResourceRoots: [media] };
   }
 ```
 
@@ -852,52 +877,90 @@ class AccountsProvider {
 
 | 行 | 何をしているか |
 |---|---|
-| 51 | VSCode が一覧を描くときに呼ぶ。1行ずつの配列を返す。行の下の行（子）を聞くときは `element` にその行が入る（手順8で使う。この手順では一番上の行だけなので使わない） |
-| 52 | 今のアカウントを取る（3-3） |
-| 53 | 保存したアカウントを読む（3-4） |
-| 54 | 保存したアカウントを1つずつ、1行に作り替える |
-| 55 | 番号（`accountUuid`）が今のアカウントと同じなら、使用中 |
-| 56 | 保存した名前を見出しにした1行を作る |
-| 57 | 見出しの右に、メールアドレスを薄く出す。使用中なら「（使用中）」を足す |
-| 58 | 左の絵。使用中なら丸の中にチェック、それ以外は人の絵 |
-| 59 | 作った1行を返す |
+| 57 | 欄を初めて開いたときに、VSCode が呼ぶ |
+| 58 | 受け取った欄を覚えておく（3-9 で中身を送るため） |
+| 59 | 欄の中の Web ページ |
+| 60 | 拡張機能の `media` フォルダの場所 |
+| 61 | ページで JavaScript を動かせるようにし、読めるファイルを `media` の中だけにする |
 
-- **なぜ:** アカウントは番号（`accountUuid`）で見分ける。メールアドレスや名前は変わることがあるが、番号は変わらない。読んだアカウントを `profiles` に入れておくのは、手順7で、作り替える前に並べ替えの1行を足せるようにするため。
-- **効果:** 一覧に、保存したアカウントが名前の順に並び、今のアカウントがひと目でわかる。
+- **なぜ:** Webview は、何も決めないと JavaScript が動かず、PC のファイルも読めない。読める場所を `media` だけにしておけば、ページから鍵のファイルなどは読めない。
+- **効果:** 3-8 で、`media` の `view.js`・`view.css` を読ませられる。
 
 **初めて出てくる名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| 関数 | `getChildren` | 一覧の中身を VSCode に渡すため | VSCode が一覧を描くときに呼ぶ。1行ずつの配列を返す | VSCode の拡張機能の API（`TreeDataProvider` の決まり） |
-| 引数 | `element` | どの行の下を聞かれているかを知るため | 一番上の行を聞かれたときは `undefined`、ある行の下（子）を聞かれたときはその行 | VSCode の拡張機能の API（`TreeDataProvider` の決まり） |
-| 変数 | `profiles` | 一覧に出すアカウントを持っておくため | `loadProfiles()` の結果 | この手順で作る |
-| 変数 | `isCurrent` | 使用中かを覚えておくため | 保存したアカウントが、今ログインしているアカウントなら `true` | この手順で作る |
-| 値 | `accountUuid` | アカウントを見分けるため | アカウントごとに決まった、変わらない番号 | Claude Code が書く（`oauthAccount` の中） |
-| C++ の書き方 | `===` | 同じかを比べるため | 型も中身も同じなら `true`（C++ の `==` に当たる） | JavaScript の書き方 |
-| 型 | `vscode.TreeItem` | 一覧の1行を作るため | 見出し・説明・絵・押したときのコマンドを持つ | [VSCode の拡張機能の API](https://code.visualstudio.com/api/references/vscode-api#TreeItem) |
-| メンバー変数 | `description` | メールアドレスを出すため | 見出しの右に薄く出る文 | VSCode の拡張機能の API（`TreeItem`） |
-| 値 | `emailAddress` | どのアカウントかを人に見せるため | アカウントのメールアドレス | Claude Code が書く（`oauthAccount` の中） |
-| メンバー変数 | `iconPath` | 使用中を絵で見せるため | 行の左に出す絵 | VSCode の拡張機能の API（`TreeItem`） |
-| 型 | `vscode.ThemeIcon` | VSCode に入っている絵を使うため | 名前を渡すと、その絵（[Codicon](https://code.visualstudio.com/api/references/icons-in-labels#icon-listing)）になる。`'pass-filled'` は丸の中のチェック、`'account'` は人 | VSCode の拡張機能の API |
+| 関数 | `resolveWebviewView` | 画面を受け取るため | 欄を開いたときに VSCode が呼び、欄（`WebviewView`）を渡す | [VSCode の拡張機能の API](https://code.visualstudio.com/api/references/vscode-api#WebviewViewProvider)（`WebviewViewProvider` の決まり） |
+| 引数 | `webviewView` | 欄を受け取るため | 欄。中の Web ページ（`webview`）と、見えているか（`visible`）などを持つ | VSCode の拡張機能の API（`WebviewView`） |
+| 変数 | `webview` | ページを動かすため | 欄の中の Web ページ。中身（`html`）を入れ、知らせを送り合う | VSCode の拡張機能の API（`Webview`） |
+| 関数 | `vscode.Uri.joinPath` | フォルダの中の場所を作るため | 場所（`Uri`）に、名前をつないだ場所を返す | VSCode の拡張機能の API（`Uri`） |
+| 変数 | `media` | `media` フォルダを指すため | 拡張機能の `media` フォルダの場所 | この手順で作る |
+| メンバー変数 | `options`・`enableScripts`・`localResourceRoots` | ページでできることを決めるため | JavaScript を動かすか、読めるフォルダはどこか | VSCode の拡張機能の API（`WebviewOptions`） |
 
-### 3-8. 拡張機能が動き出したときに、一覧に中身を渡す
+### 3-8. ページの中身（HTML）を作る
 
-VSCode は、一覧を開いたときに `extension.js` の `activate` を呼びます。そこで、3-5〜3-7 のクラスを一覧 `claudeAccounts.list` に渡します。
+ページには、枠を描く場所（`root`）を1つ置き、`view.css`（見た目）と `view.js`（描く動き）を読ませます。
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **62行目** `}` の下に、11行足します（63〜73行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **61行目** `webview.options = { enableScripts: true, localResourceRoots: [media] };` の下、`}` の上に、7行足します（62〜68行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 63 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 62 -->
 <table class="code-lines"><tr><td>
 
 ```js
+62
 63
 64
 65
 66
 67
 68
-69
+```
+
+</td><td>
+
+```js
+    const nonce = String(Math.random()).slice(2);
+    const script = webview.asWebviewUri(vscode.Uri.joinPath(media, 'view.js'));
+    const style = webview.asWebviewUri(vscode.Uri.joinPath(media, 'view.css'));
+    webview.html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+<link rel="stylesheet" href="${style}"></head>
+<body><div id="root"></div><script nonce="${nonce}" src="${script}"></script></body></html>`;
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 62 | 読ませてよい JavaScript の印にする、毎回違う数字の文字 |
+| 63〜64 | `view.js`・`view.css` を、ページから読める形の場所にする |
+| 65〜68 | ページの中身。読んでよいもの（CSS は拡張機能のもの、JavaScript は印の付いたものだけ）を決め、CSS を読み、`root` を置き、`view.js` を読む |
+
+- **なぜ:** ページで動かしてよい JavaScript を、印（`nonce`）の付いた `view.js` だけにする（VSCode の決まりで勧められている形）。描く動きを別のファイルにすると、`extension.js` の中に長い HTML を書かなくて済む。
+- **効果:** 欄を開くと、`view.js` が動き出す（3-13 から書く）。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 変数 | `nonce` | 読ませてよい JavaScript に印を付けるため | 毎回違う数字の文字 | この手順で作る |
+| 関数 | `Math.random`・`String`・`slice` | 毎回違う文字を作るため | 0〜1 の数を作る・文字にする・`0.` を取り除く | JavaScript の標準 |
+| 関数 | `asWebviewUri` | ページから読める場所にするため | PC の中のファイルの場所を、ページが読める URL にする | VSCode の拡張機能の API（`Webview`） |
+| 変数 | `script`・`style` | 読ませるファイルを指すため | `view.js`・`view.css` の URL | この手順で作る |
+| メンバー変数 | `html` | ページの中身を入れるため | 入れた HTML がページに出る | VSCode の拡張機能の API（`Webview`） |
+| C++ の書き方 | `` `…${x}…` `` | 文字に値を埋め込むため | `` ` `` で囲んだ文字の中の `${ }` に、値が入る。改行もそのまま入る | JavaScript の書き方 |
+| 値 | `Content-Security-Policy` | ページで読んでよいものを決めるため | `default-src 'none'` で全部止め、CSS と印の付いた JavaScript だけを許す | ブラウザ（HTML） |
+| メンバー変数 | `cspSource` | 拡張機能のファイルを許すため | 拡張機能のファイルの場所を表す文字 | VSCode の拡張機能の API（`Webview`） |
+| 値 | `root` | 枠を描く場所 | `<div id="root">`。`view.js` がこの中に枠を入れる | この手順で作る |
+
+### 3-9. ページに中身を送る関数を足す
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **69行目** `}` の下、`}` の上に、4行足します（70〜73行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 70 -->
+<table class="code-lines"><tr><td>
+
+```js
 70
 71
 72
@@ -908,10 +971,140 @@ VSCode は、一覧を開いたときに `extension.js` の `activate` を呼び
 
 ```js
 
+  render() {
+    if (this.view) this.view.webview.postMessage(viewData());
+  }
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 71〜73 | 欄があれば、3-5 の中身をページに送る |
+
+- **なぜ:** ページ（`view.js`）と `extension.js` は別々に動いていて、関数を直接は呼べない。知らせ（メッセージ）を送り合う。
+- **効果:** 保存や切り替えのあとに `render()` を呼べば、ページが描き直される（ページ側は 3-16）。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `render` | ページを描き直させるため | `viewData()` をページに送る | この手順で作る |
+| 関数 | `postMessage` | ページに知らせを送るため | 渡したもの（JSON にできるもの）をページに届ける | VSCode の拡張機能の API（`Webview`） |
+
+### 3-10. ページから届いた知らせを受け取る関数を作る
+
+ページは、動き出すと「準備できた（`ready`）」と知らせてきます（3-16）。そのときに中身を送ります。
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **74行目** `}` の下に、8行足します（75〜82行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 75 -->
+<table class="code-lines"><tr><td>
+
+```js
+75
+76
+77
+78
+79
+80
+81
+82
+```
+
+</td><td>
+
+```js
+
+// 画面から届いた知らせ。{ type: 'ready' | 'save' | 'switch' | 'up' | 'down' | 'remove', id }
+function onMessage(view, message) {
+  if (message.type === 'ready') {
+    view.render();
+    return;
+  }
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 77 | 画面のクラスと、届いた知らせを受け取る |
+| 78〜80 | `ready` なら、中身を送って終わる |
+
+- **なぜ:** ページが動き出す前に送った知らせは、受け取る相手がいなくて消える。ページから「準備できた」と言ってもらってから送れば、取りこぼさない。
+- **効果:** 欄を開くと、すぐ枠が描かれる。手順4〜7 で、ボタンの知らせもここに足す。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `onMessage` | ページからの知らせに応えるため | 知らせの `type` ごとに動きを分ける | この手順で作る |
+| 引数 | `message` | 知らせを受け取るため | `{ type, id }`。`type` は何をしてほしいか、`id` はどのアカウントか | この手順で作る（送るのは `view.js`） |
+
+### 3-11. ページからの知らせを、3-10 の関数につなぐ
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **68行目** `` <body><div id="root"></div><script nonce="${nonce}" src="${script}"></script></body></html>`; `` の下、`}` の上に、1行足します（69行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 69 -->
+<table class="code-lines"><tr><td>
+
+```js
+69
+```
+
+</td><td>
+
+```js
+    webview.onDidReceiveMessage((message) => onMessage(this, message));
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 69 | ページから知らせが届いたら、`onMessage` に渡す |
+
+- **なぜ:** 受け取る口（`onDidReceiveMessage`）に関数を登録しないと、知らせは届かない。
+- **効果:** ページの `ready` で、中身が送られる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `onDidReceiveMessage` | ページからの知らせを受け取るため | 知らせが届いたときに呼ぶ関数を登録する | VSCode の拡張機能の API（`Webview`） |
+
+### 3-12. 拡張機能が動き出したときに、画面のクラスを登録する
+
+VSCode は、欄を開いたときに `extension.js` の `activate` を呼びます。そこで、画面のクラスを欄 `claudeAccounts.list` に登録します。
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **83行目** `}` の下に、11行足します（84〜94行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 84 -->
+<table class="code-lines"><tr><td>
+
+```js
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+```
+
+</td><td>
+
+```js
+
 function activate(context) {
-  const provider = new AccountsProvider();
+  const view = new AccountsView(context.extensionUri);
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider('claudeAccounts.list', provider),
+    vscode.window.registerWebviewViewProvider('claudeAccounts.list', view, { webviewOptions: { retainContextWhenHidden: true } }),
   );
 }
 
@@ -924,49 +1117,561 @@ module.exports = { activate, deactivate };
 
 | 行 | 何をしているか |
 |---|---|
-| 64 | 拡張機能が動き出したときに VSCode が呼ぶ |
-| 65 | 一覧に中身を渡すクラスを1つ作る |
-| 66〜68 | 一覧 `claudeAccounts.list` の中身を、65行目のクラスからもらうように登録する。登録したものは `subscriptions` に入れておき、拡張機能が止まるときに VSCode に片付けてもらう |
-| 71 | 拡張機能が止まるときに VSCode が呼ぶ。片付けは `subscriptions` に任せるので、中身はない |
-| 73 | `activate` と `deactivate` を、VSCode から呼べるようにする |
+| 85 | 拡張機能が動き出したときに VSCode が呼ぶ |
+| 86 | 画面のクラスを1つ作る |
+| 87〜89 | 欄 `claudeAccounts.list` の画面を、このクラスが受け持つように登録する。見えなくなっても、ページを残しておく |
+| 92 | 拡張機能が止まるときに VSCode が呼ぶ。片付けは `subscriptions` に任せるので、中身はない |
+| 94 | `activate` と `deactivate` を、VSCode から呼べるようにする |
 
-- **なぜ:** 拡張機能の入り口は `activate` と決まっている。登録を `subscriptions` に入れておけば、止めるときの片付けを自分で書かなくてよい。
-- **効果:** 一覧を開くと、保存したアカウントが並ぶ（まだ保存できないので、空のまま）。
+- **なぜ:** 拡張機能の入り口は `activate` と決まっている。登録を `subscriptions` に入れておけば、止めるときの片付けを自分で書かなくてよい。`retainContextWhenHidden` を付けないと、ほかの欄に切り替えるたびにページが作り直され、`view.js` が初めから動き直す。
+- **効果:** 欄を開くと、`view.js` が動き出す。
 
 **初めて出てくる名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
 | 関数 | `activate` | 拡張機能を動き出させるため | 拡張機能が動き出したときに、VSCode が1回呼ぶ | VSCode の拡張機能の決まり |
-| 引数 | `context` | 拡張機能の情報を受け取るため | 片付けを任せる `subscriptions` などを持つ | VSCode の拡張機能の API（`ExtensionContext`） |
-| 変数 | `provider` | 一覧に中身を渡すクラスを持っておくため | `AccountsProvider` | この手順で作る |
-| C++ の書き方 | `new` | クラスを作るため | C++ と同じくクラスを作る。消すのは JavaScript が自動でする（`delete` は要らない） | JavaScript の書き方 |
+| 引数 | `context` | 拡張機能の情報を受け取るため | 片付けを任せる `subscriptions`、フォルダの場所 `extensionUri` などを持つ | VSCode の拡張機能の API（`ExtensionContext`） |
+| C++ の書き方 | `new` | クラスを作るため | C++ と同じくクラスを作る。消すのは JavaScript が自動でする | JavaScript の書き方 |
 | メンバー変数 | `subscriptions` | 片付けを任せるため | ここに入れたものを、拡張機能が止まるときに VSCode が片付ける | VSCode の拡張機能の API（`ExtensionContext`） |
 | 関数 | `push` | 配列に足すため | 配列の最後に足す（`std::vector` の `push_back` に当たる） | JavaScript の標準（配列） |
-| 関数 | `vscode.window.registerTreeDataProvider` | 一覧に中身を渡すクラスを登録するため | ビューの名前と、`getChildren` などを持つクラスを結びつける | VSCode の拡張機能の API |
+| 関数 | `vscode.window.registerWebviewViewProvider` | 画面のクラスを登録するため | 欄の名前と、`resolveWebviewView` を持つクラスを結びつける | [VSCode の拡張機能の API](https://code.visualstudio.com/api/references/vscode-api#window.registerWebviewViewProvider) |
+| 値 | `retainContextWhenHidden` | ページを残しておくため | `true` なら、欄が見えなくなってもページを消さない | VSCode の拡張機能の API（`WebviewPanelOptions`） |
 | 関数 | `deactivate` | 拡張機能を止めるため | 拡張機能が止まるときに、VSCode が呼ぶ | VSCode の拡張機能の決まり |
 | 変数 | `module.exports` | 関数をファイルの外から呼べるようにするため | ここに入れたものを、`require` した側（VSCode）が使える | Node.js |
 
-**確かめ方:** VSCode のウィンドウを再読み込みし（2-6）、アイコンを押すと、英語の文が消えて空の一覧になる。`Ctrl+Shift+U`（出力）で「拡張機能ホスト」を選び、`claude-accounts` のエラーが出ていない。
+### 3-13. ページの JavaScript を作り、要素を作る関数を足す
+
+ここからは `media\view.js`（ページの中で動く JavaScript）です。`extension.js` と違い、ファイルは読めず、HTML の要素を作って並べることだけをします。
+
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) に、次の12行を書きます（1〜12行目）。
+
+<!-- new: .claude/extensions/claude-accounts/media/view.js -->
+<table class="code-lines"><tr><td>
+
+```js
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+```
+
+</td><td>
+
+```js
+// アカウントの一覧を描く（Webview の中で動く）。中身は extension.js から postMessage で届く。
+const vscode = acquireVsCodeApi();
+const root = document.getElementById('root');
+let data = { accounts: [] };
+
+// 要素を作る。children は文字か要素の配列（文字は textContent なので、名前に < などがあっても崩れない）。
+function el(tag, className, children = []) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  for (const child of children) node.append(child);
+  return node;
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 2 | `extension.js` と知らせを送り合う道具を受け取る |
+| 3 | 3-8 で置いた `root` |
+| 4 | `extension.js` から届いた中身。届くまでは、アカウントなし |
+| 7〜12 | 要素を作り、見た目の名前（`className`）を付け、中に文字や要素を入れて返す |
+
+- **なぜ:** 文字は `append` で入れると、そのまま文字として出る。HTML の文字をつないで入れる形にすると、アカウントの名前に `<` などがあったときに崩れる。
+- **効果:** `el('div', 'name', [名前])` のように、短く要素を作れる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `acquireVsCodeApi` | `extension.js` と知らせを送り合うため | `postMessage` を持つものを返す。ページで1回だけ呼べる | VSCode の Webview（ページの中だけにある） |
+| 変数 | `vscode`（`view.js`） | `extension.js` に知らせを送るため | `acquireVsCodeApi()` の結果。`extension.js` の `vscode` とは別もの | この手順で作る |
+| 関数 | `document.getElementById` | `root` を取るため | `id` が同じ要素を返す | ブラウザ（DOM） |
+| C++ の書き方 | `let` | あとで値を入れる名前を作るため | 名前を作る。`const` と違い、あとで別の値を入れられる | JavaScript の書き方 |
+| 変数 | `data`（`view.js`） | 届いた中身を覚えておくため | 3-5 の `viewData()` の結果 | この手順で作る |
+| 関数 | `el` | 要素を作るため | 要素の種類・見た目の名前・中身を受け取り、要素を返す | この手順で作る |
+| C++ の書き方 | `children = []` | 引数を省けるようにするため | 渡されなければ空の配列にする（C++ の引数の初期値と同じ） | JavaScript の書き方 |
+| 関数 | `document.createElement` | 要素を作るため | `div`・`span`・`button` などの要素を作る | ブラウザ（DOM） |
+| メンバー変数 | `className` | 見た目を決めるため | 要素の `class`。`view.css` の `.名前` と同じなら、その見た目になる | ブラウザ（DOM） |
+| C++ の書き方 | `for (const x of 配列)` | 1つずつ取り出すため | 配列の中身を1つずつ `x` に入れて回す（C++ の範囲 for と同じ） | JavaScript の書き方 |
+| 関数 | `append` | 中身を入れるため | 要素の最後に、文字か要素を足す。いくつでも渡せる | ブラウザ（DOM） |
+
+### 3-14. アカウント1つ分の枠を作る関数を足す
+
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **12行目** `}` の下に、10行足します（13〜22行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.js 13 -->
+<table class="code-lines"><tr><td>
+
+```js
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+```
+
+</td><td>
+
+```js
+
+function card(account) {
+  const head = el('div', 'card-head', [
+    el('span', `dot ${account.isCurrent ? 'on' : ''}`, [account.isCurrent ? '●' : '○']),
+    el('div', 'who', [el('div', 'name', [account.name]), el('div', 'dim', [account.email])]),
+  ]);
+  const node = el('div', `card ${account.isCurrent ? 'is-current' : ''}`, [head]);
+  if (account.isCurrent) node.append(el('div', 'current', ['使用中']));
+  return node;
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 15〜18 | 枠の頭の段。使用中なら `●`、それ以外は `○`。その右に、名前と、薄い字のメールアドレス |
+| 19 | 枠を作り、頭の段を入れる。使用中なら枠の線の色を変える（3-18） |
+| 20 | 使用中なら、下に「使用中」と出す |
+
+- **なぜ:** 頭の段を配列で書いておくと、手順6・7 で↑↓✕のボタンを、行を足すだけで並べられる。枠に入れるものを `append` で足していく形にすると、手順5・8 で切り替えのボタンや使用量を、行を足すだけで入れられる。
+- **効果:** アカウント1つ分の枠ができる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `card` | アカウント1つ分の枠を作るため | アカウントを受け取り、枠の要素を返す | この手順で作る |
+| 引数 | `account` | 枠に出すアカウントを受け取るため | 3-5 で作った `{ id, name, email, isCurrent }` | 3-5 で作る |
+| 変数 | `head`・`node` | 枠を組み立てるため | 枠の頭の段と、枠 | この手順で作る |
+
+### 3-15. 全部の枠を描く関数を足す
+
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **22行目** `}` の下に、5行足します（23〜27行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.js 23 -->
+<table class="code-lines"><tr><td>
+
+```js
+23
+24
+25
+26
+27
+```
+
+</td><td>
+
+```js
+
+function render() {
+  const children = data.accounts.map(card);
+  root.replaceChildren(...children);
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 25 | アカウントを1つずつ枠にする |
+| 26 | `root` の中身を、作った枠に入れ替える |
+
+- **なぜ:** 毎回全部作り直す。アカウントは数個なので、差分を探すより簡単で速さも変わらない。
+- **効果:** `render()` を呼ぶと、今の `data` で描き直される。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `render`（`view.js`） | 枠を描き直すため | `data` から全部の枠を作り、`root` に入れる | この手順で作る |
+| 変数 | `children` | 描く枠を持っておくため | 枠の配列 | この手順で作る |
+| 関数 | `replaceChildren` | 中身を入れ替えるため | 要素の中身を全部消し、渡したものを入れる | ブラウザ（DOM） |
+| C++ の書き方 | `f(...配列)` | 配列を引数に並べるため | 配列の中身を、1つずつの引数にして渡す | JavaScript の書き方 |
+
+### 3-16. 中身が届いたら描き、準備できたと知らせる
+
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **27行目** `}` の下に、6行足します（28〜33行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.js 28 -->
+<table class="code-lines"><tr><td>
+
+```js
+28
+29
+30
+31
+32
+33
+```
+
+</td><td>
+
+```js
+
+window.addEventListener('message', (event) => {
+  data = event.data;
+  render();
+});
+vscode.postMessage({ type: 'ready' });
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 29〜32 | `extension.js` から中身が届いたら、覚えて描き直す |
+| 33 | `extension.js` に「準備できた」と知らせる（3-10） |
+
+- **なぜ:** 受け取る関数を登録してから `ready` を送る。逆にすると、`ready` への返事が、登録の前に届いて消えることがある。
+- **効果:** 欄を開くと、保存したアカウントの枠が並ぶ。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `window.addEventListener` | 知らせを受け取るため | `'message'` を渡すと、`extension.js` の `postMessage` が届いたときに関数を呼ぶ | ブラウザ（DOM） |
+| 値 | `event.data` | 届いた中身を取るため | `postMessage` で送られたもの | ブラウザ（DOM） |
+| 関数 | `vscode.postMessage`（`view.js`） | `extension.js` に知らせるため | 渡したものを `extension.js` の `onDidReceiveMessage` に届ける | VSCode の Webview |
+
+### 3-17. 見た目のファイルを作り、文字の色と大きさを VSCode に合わせる
+
+ここからは `media\view.css`（ページの見た目）です。
+
+[view.css](../../../../.claude/extensions/claude-accounts/media/view.css) に、次の7行を書きます（1〜7行目）。
+
+<!-- new: .claude/extensions/claude-accounts/media/view.css -->
+<table class="code-lines"><tr><td>
+
+```css
+1
+2
+3
+4
+5
+6
+7
+```
+
+</td><td>
+
+```css
+/* 色は VSCode のテーマの色（--vscode-〇〇）を使い、明るいテーマでも暗いテーマでも読めるようにする。 */
+body {
+  padding: 8px 12px;
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 2〜7 | ページ全体の余白と、文字の色・書体・大きさを、VSCode と同じにする |
+
+- **なぜ:** 色を決め打ちにすると、明るいテーマ・暗いテーマのどちらかで読めなくなる。VSCode は、テーマの色を `--vscode-〇〇` の名前でページに渡してくれる。
+- **効果:** ほかの欄と同じ文字で出る。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 値 | `body { … }` | 見た目を決めるため | `選ぶもの { 名前: 値; }` の形で、選んだ要素の見た目を決める。`body` はページ全体 | ブラウザ（CSS） |
+| 値 | `padding`・`color`・`font-family`・`font-size` | 見た目を決めるため | 内側の余白・文字の色・書体・文字の大きさ | ブラウザ（CSS） |
+| 値 | `var(--vscode-〇〇)` | テーマの色を使うため | VSCode が渡す、今のテーマの色や書体。`var(名前, 代わり)` で、ないときの値も書ける | VSCode の Webview（[テーマの色の名前](https://code.visualstudio.com/api/references/theme-color)） |
+
+### 3-18. 枠の見た目を足す
+
+[view.css](../../../../.claude/extensions/claude-accounts/media/view.css) の **7行目** `}` の下に、11行足します（8〜18行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.css 8 -->
+<table class="code-lines"><tr><td>
+
+```css
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+```
+
+</td><td>
+
+```css
+
+.card {
+  border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.card.is-current {
+  border-color: var(--vscode-focusBorder);
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 9〜14 | 枠（`.card`）に、細い線・角の丸み・内側の余白・下のすき間を付ける |
+| 16〜18 | 使用中の枠は、線を目立つ色にする |
+
+- **なぜ:** 1つずつ線で囲むと、アカウントの区切りがわかりやすい。
+- **効果:** アカウントが枠で並び、使用中がひと目でわかる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 値 | `.card`・`.card.is-current` | 見た目を当てる要素を選ぶため | `.名前` は `className` にその名前を持つ要素。続けて書くと、両方を持つ要素 | ブラウザ（CSS） |
+| 値 | `border`・`border-radius`・`margin-bottom`・`border-color` | 枠の線を引くため | 線・角の丸み・下のすき間・線の色 | ブラウザ（CSS） |
+
+### 3-19. 枠の頭の段を横に並べる
+
+[view.css](../../../../.claude/extensions/claude-accounts/media/view.css) の **18行目** `}` の下に、7行足します（19〜25行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.css 19 -->
+<table class="code-lines"><tr><td>
+
+```css
+19
+20
+21
+22
+23
+24
+25
+```
+
+</td><td>
+
+```css
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 20〜25 | 頭の段の中身（印・名前・ボタン）を、横1列に、縦の真ん中でそろえて並べる |
+
+- **なぜ:** 要素は何もしないと縦に積まれる。
+- **効果:** 印・名前が横に並ぶ（手順6・7 でボタンも右に並ぶ）。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 値 | `display: flex`・`align-items`・`gap` | 横に並べるため | 中身を横1列に並べる・縦のそろえ方・すき間 | ブラウザ（CSS） |
+
+### 3-20. 名前とメールアドレスを、残りの幅いっぱいに置く
+
+[view.css](../../../../.claude/extensions/claude-accounts/media/view.css) の **25行目** `}` の下に、12行足します（26〜37行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.css 26 -->
+<table class="code-lines"><tr><td>
+
+```css
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+```
+
+</td><td>
+
+```css
+
+.who {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 27〜30 | 名前の欄を、残りの幅いっぱいに広げる（ボタンを右端に寄せる） |
+| 32〜37 | 名前を太字にし、入りきらないときは `…` で切る |
+
+- **なぜ:** 欄の幅は人が変えられるので、狭いときに名前が折り返して崩れないようにする。
+- **効果:** 欄を狭くしても、1行に収まる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 値 | `flex: 1`・`min-width: 0` | 残りの幅に広げるため | 横に並んだ中で、余った幅を全部取る。`min-width: 0` で、中身が長くても縮められる | ブラウザ（CSS） |
+| 値 | `font-weight`・`overflow`・`text-overflow`・`white-space` | 名前を1行に収めるため | 太さ・はみ出した分を隠す・隠した所に `…`・折り返さない | ブラウザ（CSS） |
+
+### 3-21. 使用中の印の色を付ける
+
+[view.css](../../../../.claude/extensions/claude-accounts/media/view.css) の **37行目** `}` の下に、9行足します（38〜46行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.css 38 -->
+<table class="code-lines"><tr><td>
+
+```css
+38
+39
+40
+41
+42
+43
+44
+45
+46
+```
+
+</td><td>
+
+```css
+
+.dot {
+  color: var(--vscode-descriptionForeground);
+  margin-right: 4px;
+}
+
+.dot.on {
+  color: var(--vscode-testing-iconPassed, var(--vscode-charts-green));
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 39〜42 | 印（`○`）は薄い色にする |
+| 44〜46 | 使用中の印（`●`）は緑にする |
+
+- **なぜ:** 使用中かどうかを、枠の線（3-18）と印の色の両方で見せる。
+- **効果:** 使用中のアカウントに緑の `●` が付く。
+
+### 3-22. 薄い字と「使用中」の見た目を足す
+
+[view.css](../../../../.claude/extensions/claude-accounts/media/view.css) の **46行目** `}` の下に、11行足します（47〜57行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.css 47 -->
+<table class="code-lines"><tr><td>
+
+```css
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+```
+
+</td><td>
+
+```css
+
+.dim {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.92em;
+}
+
+.current {
+  margin-top: 6px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 48〜51 | メールアドレスなどの説明の字を、薄く少し小さくする |
+| 53〜57 | 「使用中」を、枠の下に真ん中寄せで薄く出す |
+
+- **なぜ:** 名前より目立たせない情報は、VSCode のほかの欄と同じ「説明の色」にする。
+- **効果:** 名前が目立ち、メールアドレスは控えめに出る。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 値 | `text-align`・`margin-top` | 「使用中」の置き方を決めるため | 文字の寄せ方・上のすき間 | ブラウザ（CSS） |
+
+**確かめ方:** VSCode のウィンドウを再読み込みし（2-6）、アイコンを押すと、欄が開いて何も出ない（まだ保存していないので）。`Ctrl+Shift+U`（出力）で「拡張機能ホスト」を選び、`claude-accounts` のエラーが出ていない。
 
 ---
 
 ## 手順4: 今のアカウントを保存する
 
-一覧の上に「+」のボタンを出し、押すと今ログインしているアカウントのログイン情報を、名前を付けて `account-profiles` に保存します。
+欄の上に「+」のボタンを出し、押すと今ログインしているアカウントのログイン情報を、名前を付けて `account-profiles` に保存します。今のアカウントが保存されていないときは、欄の一番上にも保存のボタンを出します。
 
 **この手順で触るファイル:**
 
 | ファイル | 何をするか |
 |---|---|
-| [package.json](../../../../.claude/extensions/claude-accounts/package.json) | 追加（4-1 でコマンド、4-8 でボタン、4-9 で一覧が空のときの文） |
-| [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) | 追加（4-2〜4-7） |
+| [package.json](../../../../.claude/extensions/claude-accounts/package.json) | 追加（4-1 でコマンド、4-10 でボタン） |
+| [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) | 追加（4-2〜4-9、4-11） |
+| [view.js](../../../../.claude/extensions/claude-accounts/media/view.js) | 追加（4-12〜4-13） |
+| [view.css](../../../../.claude/extensions/claude-accounts/media/view.css) | 追加（4-14〜4-15） |
 
-### 4-1. 保存と読み直しのコマンドを決める
+### 4-1. 保存のコマンドを決める
 
-ボタンから呼ぶものは、先に「コマンド」として名前と絵を決めます。保存（`+`）と、一覧の読み直し（くるっと回る矢印）の2つです。
+ボタンから呼ぶものは、先に「コマンド」として名前と絵を決めます。
 
-[package.json](../../../../.claude/extensions/claude-accounts/package.json) の **9行目** `"contributes": {` の下、`"viewsContainers": {` の上に、4行足します（10〜13行目になります）。
+[package.json](../../../../.claude/extensions/claude-accounts/package.json) の **9行目** `"contributes": {` の下、`"viewsContainers": {` の上に、3行足します（10〜12行目になります）。
 
 <!-- add: .claude/extensions/claude-accounts/package.json 10 -->
 <table class="code-lines"><tr><td>
@@ -975,15 +1680,13 @@ module.exports = { activate, deactivate };
 10
 11
 12
-13
 ```
 
 </td><td>
 
 ```json
     "commands": [
-      { "command": "claudeAccounts.save", "title": "今のアカウントを保存", "icon": "$(add)" },
-      { "command": "claudeAccounts.refresh", "title": "一覧を読み直す", "icon": "$(refresh)" }
+      { "command": "claudeAccounts.save", "title": "今のアカウントを保存", "icon": "$(add)" }
     ],
 ```
 
@@ -993,11 +1696,10 @@ module.exports = { activate, deactivate };
 |---|---|
 | 10 | コマンドの一覧 |
 | 11 | 保存のコマンド。ボタンの絵は `+` |
-| 12 | 読み直しのコマンド。ボタンの絵は回る矢印 |
-| 13 | 一覧の終わり。次の `"viewsContainers"` があるので `,` を付ける |
+| 12 | 一覧の終わり。次の `"viewsContainers"` があるので `,` を付ける |
 
-- **なぜ:** VSCode のボタンは、コマンドの名前を指して作る。コマンドを先に決めておくと、ボタン（4-8）や一覧が空のときの文（4-9）から同じ名前で呼べる。
-- **効果:** `claudeAccounts.save`・`claudeAccounts.refresh` の名前で、4-7 で動きを結びつけられる。
+- **なぜ:** VSCode の見出しのボタンは、コマンドの名前を指して作る。コマンドを先に決めておくと、ボタン（4-10）から同じ名前で呼べる。
+- **効果:** `claudeAccounts.save` の名前で、4-9 で動きを結びつけられる。
 
 **初めて出てくる名前:**
 
@@ -1005,8 +1707,8 @@ module.exports = { activate, deactivate };
 |---|---|---|---|---|
 | 値 | `commands` | コマンドを決めるため | コマンドの名前・見出し・絵を並べる | [VSCode の拡張機能の決まり（Contribution Points）](https://code.visualstudio.com/api/references/contribution-points#contributes.commands) |
 | 値 | `command`・`title`・`icon` | コマンドを決めるため | コマンドの名前・マウスを乗せたときの見出し・ボタンの絵 | 同上 |
-| 値 | `$(add)`・`$(refresh)` | ボタンの絵にするため | `$(名前)` で、VSCode に入っている絵（Codicon）を使う。`add` は `+`、`refresh` は回る矢印 | 同上 |
-| 値 | `claudeAccounts.save`・`claudeAccounts.refresh` | コマンドを見分けるため | 保存と読み直しのコマンドの名前 | この手順で作る |
+| 値 | `$(add)` | ボタンの絵にするため | `$(名前)` で、VSCode に入っている絵（Codicon）を使う。`add` は `+` | 同上 |
+| 値 | `claudeAccounts.save` | コマンドを見分けるため | 保存のコマンドの名前 | この手順で作る |
 
 ### 4-2. 書きかけを読まれない JSON の書き方を足す
 
@@ -1159,31 +1861,71 @@ function saveCurrent(name) {
 | C++ の書き方 | `{ name, oauthAccount: account }` | 名前と値をまとめるため | `name` だけを書くと、`name: name`（同じ名前の変数を入れる）の略になる | JavaScript の書き方 |
 | 値 | `credentials` | ログイン情報を持っておくため | `.credentials.json` の中身そのもの | この手順で作る |
 
-### 4-5. 保存のボタンを押したときの関数を作る
+### 4-5. 保存などのあとに描き直す関数を足す
 
-まず、ログインしていないときは知らせて終わるところまでを書きます。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **94行目** `}` の下、`}` の上に、5行足します（95〜99行目になります）。
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **82行目** `}` の下、（空の行） の上に、8行足します（83〜90行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/extension.js 83 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 95 -->
 <table class="code-lines"><tr><td>
 
 ```js
-83
-84
-85
-86
-87
-88
-89
-90
+95
+96
+97
+98
+99
 ```
 
 </td><td>
 
 ```js
 
-async function onSave(provider) {
+  // 保存・切り替え・消したあと。すぐ描き直し、使用量もすぐ聞き直す。
+  refresh() {
+    this.render();
+  }
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 97〜99 | ページを描き直す（手順8で、使用量もすぐ聞き直すようにする） |
+
+- **なぜ:** 保存・切り替え・消したあとに呼ぶものを1つにしておけば、手順8で「そのあと使用量も聞き直す」を1行足すだけで済む。
+- **効果:** 4-7 などで `view.refresh()` を呼べば、枠が新しくなる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `refresh` | 保存などのあとに描き直すため | `render()` を呼ぶ（手順8で使用量の聞き直しを足す） | この手順で作る |
+
+### 4-6. 保存のボタンを押したときの関数を作る
+
+まず、ログインしていないときは知らせて終わるところまでを書きます。
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **100行目** `}` の下、（空の行） の上に、8行足します（101〜108行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 101 -->
+<table class="code-lines"><tr><td>
+
+```js
+101
+102
+103
+104
+105
+106
+107
+108
+```
+
+</td><td>
+
+```js
+
+async function onSave(view) {
   const account = currentAccount();
   if (!account || !fs.existsSync(CREDENTIALS_PATH)) {
     vscode.window.showWarningMessage('Claude にログインしていません。Claude で /login してから保存してください。');
@@ -1196,8 +1938,8 @@ async function onSave(provider) {
 
 | 行 | 何をしているか |
 |---|---|
-| 84 | 保存のボタンを押したときに呼ぶ。描き直しのために一覧のクラスを受け取る |
-| 86〜89 | ログインしていない（`oauthAccount` かログイン情報のファイルがない）ときは、黄色の知らせを出して終わる |
+| 102 | 保存のボタンを押したときに呼ぶ。描き直しのために画面のクラスを受け取る |
+| 104〜107 | ログインしていない（`oauthAccount` かログイン情報のファイルがない）ときは、黄色の知らせを出して終わる |
 
 - **なぜ:** ログインしていないのに保存すると、中身のないアカウントが一覧に出てしまう。
 - **効果:** ログインしていないときは「/login してから」と知らせる。
@@ -1206,26 +1948,26 @@ async function onSave(provider) {
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| C++ の書き方 | `async` | 中で `await`（4-6）を使うため | 関数を「途中で人の入力を待てる関数」にする | JavaScript の書き方 |
+| C++ の書き方 | `async` | 中で `await`（4-7）を使うため | 関数を「途中で人の入力を待てる関数」にする | JavaScript の書き方 |
 | 関数 | `onSave` | 保存のボタンの動き | 名前を聞いて、今のアカウントを保存する | この手順で作る |
 | 関数 | `vscode.window.showWarningMessage` | 注意を知らせるため | 右下に黄色の知らせを出す | [VSCode の拡張機能の API](https://code.visualstudio.com/api/references/vscode-api#window.showWarningMessage) |
 
-### 4-6. 名前を聞いて保存する
+### 4-7. 名前を聞いて保存する
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **89行目** `}` の下、`}` の上に、8行足します（90〜97行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **107行目** `}` の下、`}` の上に、8行足します（108〜115行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 90 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 108 -->
 <table class="code-lines"><tr><td>
 
 ```js
-90
-91
-92
-93
-94
-95
-96
-97
+108
+109
+110
+111
+112
+113
+114
+115
 ```
 
 </td><td>
@@ -1238,20 +1980,20 @@ async function onSave(provider) {
   });
   if (!name) return;
   saveCurrent(name);
-  provider.refresh();
+  view.refresh();
 ```
 
 </td></tr></table>
 
 | 行 | 何をしているか |
 |---|---|
-| 90 | 保存済みかを探す |
-| 91〜94 | 画面の上に入力欄を出し、一覧に出す名前を聞く。初めの値は、保存済みならその名前、まだならメールアドレス |
-| 95 | `Esc` で閉じた・空にしたときは保存しない |
-| 96〜97 | 保存して、一覧を描き直す |
+| 108 | 保存済みかを探す |
+| 109〜112 | 画面の上に入力欄を出し、一覧に出す名前を聞く。初めの値は、保存済みならその名前、まだならメールアドレス |
+| 113 | `Esc` で閉じた・空にしたときは保存しない |
+| 114〜115 | 保存して、描き直す |
 
 - **なぜ:** メールアドレスだけだと、どのアカウントか（仕事用・自分用など）がわかりにくいので、名前を付けられるようにする。保存済みのアカウントでもう一度押せば、名前を付け直せる。
-- **効果:** 押すと名前を聞かれ、`account-profiles` にファイルができて一覧に出る。
+- **効果:** 押すと名前を聞かれ、`account-profiles` にファイルができて枠が出る。
 
 **初めて出てくる名前:**
 
@@ -1261,53 +2003,155 @@ async function onSave(provider) {
 | C++ の書き方 | `await` | 人が入力し終わるのを待つため | 右の処理が終わるまで待ち、その結果を受け取る。待つ間も VSCode は止まらない | JavaScript の書き方 |
 | 関数 | `vscode.window.showInputBox` | 名前を聞くため | 画面の上に入力欄を出し、打った文字を返す | [VSCode の拡張機能の API](https://code.visualstudio.com/api/references/vscode-api#window.showInputBox) |
 | 値 | `prompt`・`value` | 入力欄に出すため | 入力欄の下の説明と、初めから入っている文字 | VSCode の拡張機能の API（`InputBoxOptions`） |
-| C++ の書き方 | `` `${x} を…` `` | 文字に値を埋め込むため | `` ` `` で囲んだ文字の中の `${ }` に、値が入る | JavaScript の書き方 |
 
-### 4-7. コマンドに動きを結びつける
+### 4-8. ページの「保存」の知らせで保存する
 
-4-1 で決めたコマンドを押したときに、4-5〜4-6 の関数と 3-6 の `refresh` が動くようにします。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **123行目** `}` の下、`}` の上に、1行足します（124行目になります）。
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **103行目** `vscode.window.registerTreeDataProvider('claudeAccounts.list', provider),` の下、`);` の上に、2行足します（104〜105行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/extension.js 104 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 124 -->
 <table class="code-lines"><tr><td>
 
 ```js
-104
-105
+124
 ```
 
 </td><td>
 
 ```js
-    vscode.commands.registerCommand('claudeAccounts.save', () => onSave(provider)),
-    vscode.commands.registerCommand('claudeAccounts.refresh', () => provider.refresh()),
+  if (message.type === 'save') return onSave(view);
 ```
 
 </td></tr></table>
 
 | 行 | 何をしているか |
 |---|---|
-| 104 | `claudeAccounts.save` が呼ばれたら、`onSave` を動かす |
-| 105 | `claudeAccounts.refresh` が呼ばれたら、一覧を描き直す |
+| 124 | ページから `save` が届いたら、`onSave` を動かす（ページのボタンは 4-13） |
 
-- **なぜ:** `package.json` のコマンドは名前だけなので、動きは `registerCommand` で結びつける。読み直しは、ほかの窓で切り替えたあとなどに使う。
-- **効果:** コマンドが呼べるようになる（ボタンは 4-8 で出す）。
+- **なぜ:** 欄の一番上に出す保存のボタン（4-13）は、ページの中にあるので、知らせで頼んでくる。
+- **効果:** ページのボタンからも保存できる。
+
+### 4-9. コマンドに動きを結びつける
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **130行目** `vscode.window.registerWebviewViewProvider('claudeAccounts.list', view, { webviewOptions: { retainContextWhenHidden: true } }),` の下、`);` の上に、1行足します（131行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 131 -->
+<table class="code-lines"><tr><td>
+
+```js
+131
+```
+
+</td><td>
+
+```js
+    vscode.commands.registerCommand('claudeAccounts.save', () => onSave(view)),
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 131 | `claudeAccounts.save` が呼ばれたら、`onSave` を動かす |
+
+- **なぜ:** `package.json` のコマンドは名前だけなので、動きは `registerCommand` で結びつける。
+- **効果:** コマンドが呼べるようになる（ボタンは 4-10 で出す）。
 
 **初めて出てくる名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
 | 関数 | `vscode.commands.registerCommand` | コマンドに動きを結びつけるため | コマンドの名前と、呼ばれたときに動かす関数を結びつける | [VSCode の拡張機能の API](https://code.visualstudio.com/api/references/vscode-api#commands.registerCommand) |
+| C++ の書き方 | `() => f()` | その場で小さな関数を作るため | 引数のない関数。呼ばれたら `f()` を動かす | JavaScript の書き方 |
 
-### 4-8. 一覧の上にボタンを出す
+### 4-10. 欄の見出しにボタンを出す
 
-[package.json](../../../../.claude/extensions/claude-accounts/package.json) の **13行目** `],` の下、`"viewsContainers": {` の上に、6行足します（14〜19行目になります）。
+[package.json](../../../../.claude/extensions/claude-accounts/package.json) の **12行目** `],` の下、`"viewsContainers": {` の上に、5行足します（13〜17行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/package.json 14 -->
+<!-- add: .claude/extensions/claude-accounts/package.json 13 -->
 <table class="code-lines"><tr><td>
 
 ```json
+13
+14
+15
+16
+17
+```
+
+</td><td>
+
+```json
+    "menus": {
+      "view/title": [
+        { "command": "claudeAccounts.save", "when": "view == claudeAccounts.list", "group": "navigation@1" }
+      ]
+    },
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 13 | ボタン（メニュー）の一覧 |
+| 14〜16 | 欄 `claudeAccounts.list` の見出しの右に、保存のボタンを出す |
+| 17 | 次の `"viewsContainers"` があるので `,` を付ける |
+
+- **なぜ:** `navigation` の組に入れると、`…` のメニューの中ではなく、見出しの右に絵のボタンとして出る。`@1` は組の中での順番で、手順8で足す聞き直しのボタン（`@2`）より左に出すため。
+- **効果:** 欄の見出しの右に「+」が出る。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 値 | `menus` | ボタンを出すため | どこに、どのコマンドのボタン・メニューを出すかを書く | [VSCode の拡張機能の決まり（Contribution Points）](https://code.visualstudio.com/api/references/contribution-points#contributes.menus) |
+| 値 | `view/title` | 欄の見出しにボタンを出すため | ビューの見出しの所 | 同上 |
+| 値 | `when` | どのビューに出すかを決めるため | 条件を書く。`view == claudeAccounts.list` は「この欄のとき」 | 同上 |
+| 値 | `group` | ボタンの出し方を決めるため | `navigation` にすると、見出しの右に絵で出る。`@` の後ろの数が小さいほど左 | 同上 |
+
+### 4-11. 今のアカウントが保存されていなければ、ページに知らせる
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **66行目** `const data = { accounts };` の下、`return data;` の上に、2行足します（67〜68行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 67 -->
+<table class="code-lines"><tr><td>
+
+```js
+67
+68
+```
+
+</td><td>
+
+```js
+  // 今のアカウントが保存されていなければ、保存を勧める
+  if (current && !accounts.some((a) => a.isCurrent)) data.unsaved = current.emailAddress;
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 68 | ログインしていて、そのアカウントがどの枠でも使用中でない（保存されていない）なら、メールアドレスを `unsaved` に入れて送る |
+
+- **なぜ:** 保存していないアカウントで使っていると、切り替えたあとに戻れない。気づけるように、欄に出す（4-13）。
+- **効果:** ページで、保存していないアカウントがわかる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `some` | 1つでも当てはまるかを調べるため | 配列の中に、関数が `true` を返すものが1つでもあれば `true` | JavaScript の標準（配列） |
+| 値 | `unsaved` | 保存していないアカウントを知らせるため | 今のアカウントのメールアドレス。保存済みなら入れない | この手順で作る |
+
+### 4-12. 横いっぱいのボタンを作る関数を足す（view.js）
+
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **12行目** `}` の下、（空の行） の上に、7行足します（13〜19行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.js 13 -->
+<table class="code-lines"><tr><td>
+
+```js
+13
 14
 15
 16
@@ -1318,124 +2162,184 @@ async function onSave(provider) {
 
 </td><td>
 
-```json
-    "menus": {
-      "view/title": [
-        { "command": "claudeAccounts.save", "when": "view == claudeAccounts.list", "group": "navigation" },
-        { "command": "claudeAccounts.refresh", "when": "view == claudeAccounts.list", "group": "navigation" }
-      ]
-    },
+```js
+
+// 横いっぱいのボタン（切り替える・保存）。押したら extension.js に { type, id } を送る。
+function action(text, type, id) {
+  const node = el('button', 'action', [text]);
+  node.addEventListener('click', () => vscode.postMessage({ type, id }));
+  return node;
+}
 ```
 
 </td></tr></table>
 
 | 行 | 何をしているか |
 |---|---|
-| 14 | ボタン（メニュー）の一覧 |
-| 15〜18 | 一覧 `claudeAccounts.list` の見出しの右に、保存と読み直しのボタンを出す |
-| 19 | 次の `"viewsContainers"` があるので `,` を付ける |
+| 15 | ボタンの文字、知らせの種類、どのアカウントかを受け取る |
+| 16 | 見た目の名前 `action` のボタンを作る |
+| 17 | 押したら `extension.js` に `{ type, id }` を送る |
 
-- **なぜ:** `navigation` の組に入れると、`…` のメニューの中ではなく、見出しの右に絵のボタンとして出る。
-- **効果:** 一覧の見出しの右に「+」と回る矢印が出る。
+- **なぜ:** 保存（4-13）と切り替え（手順5）で同じ形のボタンを使うので、関数にまとめる。
+- **効果:** `action('文字', '種類', 番号)` で、押すと知らせを送るボタンが作れる。
 
 **初めて出てくる名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| 値 | `menus` | ボタンを出すため | どこに、どのコマンドのボタン・メニューを出すかを書く | [VSCode の拡張機能の決まり（Contribution Points）](https://code.visualstudio.com/api/references/contribution-points#contributes.menus) |
-| 値 | `view/title` | 一覧の見出しにボタンを出すため | ビューの見出しの所 | 同上 |
-| 値 | `when` | どのビューに出すかを決めるため | 条件を書く。`view == claudeAccounts.list` は「この一覧のとき」 | 同上 |
-| 値 | `group` | ボタンの出し方を決めるため | `navigation` にすると、見出しの右に絵で出る | 同上 |
+| 関数 | `action` | 横いっぱいのボタンを作るため | 押すと `{ type, id }` を送るボタンを返す | この手順で作る |
+| 引数 | `type`・`id` | 何をしてほしいか・どのアカウントかを送るため | `'save'`・`'switch'` などと、アカウントの番号 | 使う側が決める |
+| 関数 | `addEventListener` | 押したときの動きを決めるため | `'click'` を渡すと、押されたときに関数を呼ぶ | ブラウザ（DOM） |
 
-### 4-9. 一覧が空のときに、保存の案内を出す
+### 4-13. 保存していないとき・1つもないときの案内を出す
 
-[package.json](../../../../.claude/extensions/claude-accounts/package.json) の **19行目** `},` の下、`"viewsContainers": {` の上に、6行足します（20〜25行目になります）。
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **32行目** `const children = data.accounts.map(card);` の下、`root.replaceChildren(...children);` の上に、3行足します（33〜35行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/package.json 20 -->
+<!-- add: .claude/extensions/claude-accounts/media/view.js 33 -->
 <table class="code-lines"><tr><td>
 
-```json
-20
-21
-22
-23
-24
-25
+```js
+33
+34
+35
 ```
 
 </td><td>
 
-```json
-    "viewsWelcome": [
-      {
-        "view": "claudeAccounts.list",
-        "contents": "保存したアカウントがありません。\nClaude で /login してから、今のアカウントを保存してください。\n[今のアカウントを保存](command:claudeAccounts.save)"
-      }
-    ],
+```js
+  // 今のアカウントが保存されていなければ、一番上に保存のボタンを出す
+  if (data.unsaved) children.unshift(el('div', 'card', [el('div', 'dim', [`${data.unsaved} は保存されていません。`]), action('今のアカウントを保存', 'save')]));
+  if (children.length === 0) children.push(el('div', 'dim', ['Claude で /login してから、上の「+」で今のアカウントを保存してください。']));
 ```
 
 </td></tr></table>
 
 | 行 | 何をしているか |
 |---|---|
-| 20〜25 | 一覧 `claudeAccounts.list` が空のとき、説明の文と、保存のコマンドを呼ぶボタンを出す（`\n` で行を分ける） |
+| 33〜34 | 今のアカウントが保存されていなければ、一番上に「〇〇 は保存されていません。」と保存のボタンの枠を出す |
+| 35 | 枠が1つもなければ、保存のしかたを出す |
 
-- **なぜ:** 初めて開いたときに一覧が空だと、何をすればよいかがわからない。
-- **効果:** 1つも保存していないときに「Claude で /login してから、今のアカウントを保存してください。」と、保存のボタンが出る。
+- **なぜ:** 初めて開いたときに何も出ないと、何をすればよいかがわからない。
+- **効果:** 保存していないアカウントで使っていると、すぐ保存できる。
 
 **初めて出てくる名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| 値 | `viewsWelcome` | 空の一覧に案内を出すため | ビューが空のときに出す文を書く。`[文字](command:コマンド名)` と書くと、そのコマンドを呼ぶボタンになる | [VSCode の拡張機能の決まり（Contribution Points）](https://code.visualstudio.com/api/references/contribution-points#contributes.viewsWelcome) |
-| 値 | `view`・`contents` | どこに何を出すかを決めるため | 出すビューの名前と、出す文 | 同上 |
+| 関数 | `unshift` | 配列の先頭に足すため | 配列の一番前に足す | JavaScript の標準（配列） |
+| メンバー変数 | `length` | 枠がいくつあるかを知るため | 配列の長さ | JavaScript の標準（配列） |
+
+### 4-14. 横いっぱいのボタンの見た目を足す
+
+[view.css](../../../../.claude/extensions/claude-accounts/media/view.css) の **57行目** `}` の下に、11行足します（58〜68行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.css 58 -->
+<table class="code-lines"><tr><td>
+
+```css
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+```
+
+</td><td>
+
+```css
+
+button.action {
+  width: 100%;
+  margin-top: 6px;
+  padding: 4px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 59〜68 | 枠の幅いっぱいに広げ、VSCode のボタンと同じ色にし、マウスを乗せると指の形にする |
+
+- **なぜ:** VSCode のほかのボタン（拡張機能の「インストール」など）と同じ見た目にすると、押せるものだとすぐわかる。
+- **効果:** 保存・切り替えのボタンが、VSCode の青いボタンの形で出る。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 値 | `button.action` | 見た目を当てる要素を選ぶため | `button` の要素のうち、`className` が `action` のもの | ブラウザ（CSS） |
+| 値 | `width`・`border: none`・`cursor`・`background` | ボタンの見た目を決めるため | 幅・線なし・マウスの形・塗りの色 | ブラウザ（CSS） |
+
+### 4-15. マウスを乗せたときの色を足す
+
+[view.css](../../../../.claude/extensions/claude-accounts/media/view.css) の **68行目** `}` の下に、4行足します（69〜72行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.css 69 -->
+<table class="code-lines"><tr><td>
+
+```css
+69
+70
+71
+72
+```
+
+</td><td>
+
+```css
+
+button.action:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 70〜72 | マウスを乗せている間だけ、少し違う色にする |
+
+- **なぜ:** 押せる所だとわかるようにする。
+- **効果:** マウスを乗せると、ボタンの色が変わる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 値 | `:hover` | マウスを乗せている間の見た目のため | 選んだ要素にマウスが乗っている間だけ当たる | ブラウザ（CSS） |
 
 **確かめ方:**
 
-1. ウィンドウを再読み込みし、アイコンを押すと、案内の文と「今のアカウントを保存」のボタンが出る。
-2. ボタン（または見出しの「+」）を押し、名前を入れて `Enter` を押すと、一覧にその名前とメールアドレス、「（使用中）」とチェックの絵が出る。
+1. ウィンドウを再読み込みし、アイコンを押すと、「〇〇 は保存されていません。」と「今のアカウントを保存」のボタンが出る。
+2. ボタン（または見出しの「+」）を押し、名前を入れて `Enter` を押すと、その名前とメールアドレス、緑の `●`、「使用中」の枠が出る。
 3. `%USERPROFILE%\.claude\account-profiles\` に、`番号.json` が1つできている。
 
 ---
 
 ## 手順5: アカウントを切り替える
 
-一覧の名前を押すと、そのアカウントの保存したログイン情報を、Claude Code が読む2つのファイルに書き戻します。書き戻す前に、今のアカウントの最新のログイン情報を保存し直します。
+枠の「このアカウントに切り替える」を押すと、そのアカウントの保存したログイン情報を、Claude Code が読む2つのファイルに書き戻します。書き戻す前に、今のアカウントの最新のログイン情報を保存し直します。
 
 **この手順で触るファイル:**
 
 | ファイル | 何をするか |
 |---|---|
-| [package.json](../../../../.claude/extensions/claude-accounts/package.json) | 追加（5-1 でコマンド、5-8 でコマンドパレットに出さない設定） |
-| [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) | 追加（5-2〜5-7） |
+| [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) | 追加（5-1〜5-5） |
+| [view.js](../../../../.claude/extensions/claude-accounts/media/view.js) | 追加（5-6） |
 
-### 5-1. 切り替えのコマンドを決める
-
-[package.json](../../../../.claude/extensions/claude-accounts/package.json) の **10行目** `"commands": [` の下、`{ "command": "claudeAccounts.save", "title": "今のアカウントを保存", "icon": "$(add)" },` の上に、1行足します（11行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/package.json 11 -->
-<table class="code-lines"><tr><td>
-
-```json
-11
-```
-
-</td><td>
-
-```json
-      { "command": "claudeAccounts.switch", "title": "このアカウントに切り替える" },
-```
-
-</td></tr></table>
-
-| 行 | 何をしているか |
-|---|---|
-| 11 | 切り替えのコマンド。一覧の行を押したときに呼ぶので、ボタンの絵はない |
-
-- **なぜ:** 一覧の行を押したときに動かすものも、コマンドとして名前を付ける決まりのため。
-- **効果:** `claudeAccounts.switch` の名前で、5-6・5-7 から使える。
-
-### 5-2. 保存したログイン情報を書き戻す関数を足す
+### 5-1. 保存したログイン情報を書き戻す関数を足す
 
 [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **54行目** `}` の下、（空の行） の上に、8行足します（55〜62行目になります）。
 
@@ -1484,28 +2388,28 @@ function applyProfile(profile) {
 | 関数 | `applyProfile` | 保存したアカウントに切り替えるため | ログイン情報と `oauthAccount` を、Claude Code が読むファイルに書く | この手順で作る |
 | 変数 | `config` | `~/.claude.json` の中身を持っておくため | 読んだ設定。`oauthAccount` だけを替えて書き戻す | この手順で作る |
 
-### 5-3. 一覧を押したときの関数を作る
+### 5-2. 切り替えのボタンを押したときの関数を作る
 
 まず、押したのが今のアカウントなら、何もしないところまでを書きます。
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **106行目** `}` の下、（空の行） の上に、5行足します（107〜111行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **126行目** `}` の下、（空の行） の上に、5行足します（127〜131行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 107 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 127 -->
 <table class="code-lines"><tr><td>
 
 ```js
-107
-108
-109
-110
-111
+127
+128
+129
+130
+131
 ```
 
 </td><td>
 
 ```js
 
-async function onSwitch(provider, profile) {
+async function onSwitch(view, profile) {
   const current = currentAccount();
   if (current && current.accountUuid === profile.oauthAccount.accountUuid) return;
 }
@@ -1515,39 +2419,38 @@ async function onSwitch(provider, profile) {
 
 | 行 | 何をしているか |
 |---|---|
-| 108 | 一覧のクラスと、押したアカウントを受け取る |
-| 109 | 今のアカウントを取る |
-| 110 | 押したのが今のアカウントなら、何もしない |
+| 128 | 画面のクラスと、切り替える先のアカウントを受け取る |
+| 129 | 今のアカウントを取る |
+| 130 | 押したのが今のアカウントなら、何もしない |
 
 - **なぜ:** 同じアカウントに切り替えても意味がなく、再読み込みを勧める知らせが出るだけになるため。
-- **効果:** 使用中の行を押しても何も起きない。
+- **効果:** 使用中のアカウントを頼まれても何も起きない。
 
 **初めて出てくる名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| 関数 | `onSwitch` | 一覧の行を押したときの動き | 今のアカウントを保存し直してから、押したアカウントに切り替える | この手順で作る |
-| 引数 | `profile` | 切り替える先を受け取るため | 押した行のアカウント（`loadProfiles` の1つ） | 5-6 で一覧の行から渡す |
-| 変数 | `current` | 今のアカウントを覚えておくため | `currentAccount()` の結果 | この手順で作る |
+| 関数 | `onSwitch` | 切り替えのボタンの動き | 今のアカウントを保存し直してから、押したアカウントに切り替える | この手順で作る |
+| 引数 | `profile` | 切り替える先を受け取るため | 保存したアカウント（`loadProfiles` の1つ） | 5-5 で `findProfile` から渡す |
 
-### 5-4. 切り替える前に、今のアカウントを保存し直す
+### 5-3. 切り替える前に、今のアカウントを保存し直す
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **110行目** `if (current && current.accountUuid === profile.oauthAccount.accountUuid) return;` の下、`}` の上に、10行足します（111〜120行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **130行目** `if (current && current.accountUuid === profile.oauthAccount.accountUuid) return;` の下、`}` の上に、10行足します（131〜140行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 111 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 131 -->
 <table class="code-lines"><tr><td>
 
 ```js
-111
-112
-113
-114
-115
-116
-117
-118
-119
-120
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
 ```
 
 </td><td>
@@ -1569,10 +2472,10 @@ async function onSwitch(provider, profile) {
 
 | 行 | 何をしているか |
 |---|---|
-| 111 | なぜ保存し直すかの説明 |
-| 112 | 今のアカウントが保存済みかを探す |
-| 113〜114 | 保存済みなら、今のログイン情報で保存し直す（名前はそのまま） |
-| 115〜120 | 保存していないアカウントなら、「戻すときにもう一度ログインが要る」と画面の中央で聞き、「切り替える」を押さなければやめる |
+| 131 | なぜ保存し直すかの説明 |
+| 132 | 今のアカウントが保存済みかを探す |
+| 133〜134 | 保存済みなら、今のログイン情報で保存し直す（名前はそのまま） |
+| 135〜140 | 保存していないアカウントなら、「戻すときにもう一度ログインが要る」と画面の中央で聞き、「切り替える」を押さなければやめる |
 
 - **なぜ:** Claude Code は、使っている間にログイン情報（鍵）を新しいものに取り替え、古い鍵は使えなくなる。保存したときの古い鍵のままにしておくと、戻したときにログインし直しになる。
 - **効果:** 何度行き来しても、どのアカウントもログインし直さずに戻れる。保存していないアカウントを、うっかり失わない。
@@ -1584,27 +2487,27 @@ async function onSwitch(provider, profile) {
 | 値 | `{ modal: true }` | 必ず答えてもらうため | 知らせを右下ではなく画面の中央に出し、答えるまでほかを触れなくする | VSCode の拡張機能の API（`MessageOptions`） |
 | 変数 | `answer` | 押したボタンを知るため | 押したボタンの文字（`'切り替える'`）。閉じたら `undefined` | この手順で作る |
 
-### 5-5. 書き戻して、再読み込みを勧める
+### 5-4. 書き戻して、再読み込みを勧める
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **120行目** `}` の下、`}` の上に、6行足します（121〜126行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **140行目** `}` の下、`}` の上に、6行足します（141〜146行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 121 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 141 -->
 <table class="code-lines"><tr><td>
 
 ```js
-121
-122
-123
-124
-125
-126
+141
+142
+143
+144
+145
+146
 ```
 
 </td><td>
 
 ```js
   applyProfile(profile);
-  provider.refresh();
+  view.refresh();
   const answer = await vscode.window.showInformationMessage(
     `${profile.name} に切り替えました。開いている Claude に効かせるには、ウィンドウを再読み込みしてください。`,
     '再読み込み');
@@ -1615,10 +2518,10 @@ async function onSwitch(provider, profile) {
 
 | 行 | 何をしているか |
 |---|---|
-| 121 | 押したアカウントのログイン情報を書き戻す |
-| 122 | 一覧を描き直す（「（使用中）」が移る） |
-| 123〜125 | 切り替えたことと、再読み込みが要ることを、「再読み込み」のボタン付きで知らせる |
-| 126 | 「再読み込み」を押したら、VSCode のウィンドウを読み込み直す |
+| 141 | 押したアカウントのログイン情報を書き戻す |
+| 142 | 描き直す（「使用中」が移る） |
+| 143〜145 | 切り替えたことと、再読み込みが要ることを、「再読み込み」のボタン付きで知らせる |
+| 146 | 「再読み込み」を押したら、VSCode のウィンドウを読み込み直す |
 
 - **なぜ:** 開いている Claude の会話は、動き出したときに読んだログイン情報を持ったままで、ファイルを替えても気づかない。読み込み直すと、新しいファイルを読み直す。
 - **効果:** ボタンを1つ押すだけで、開いている Claude も切り替わる。
@@ -1631,180 +2534,112 @@ async function onSwitch(provider, profile) {
 | 関数 | `vscode.commands.executeCommand` | VSCode のコマンドを呼ぶため | 名前でコマンドを呼ぶ | VSCode の拡張機能の API |
 | 値 | `'workbench.action.reloadWindow'` | ウィンドウを読み込み直すため | `Ctrl+Shift+P` の「Developer: Reload Window」と同じコマンド | VSCode に入っているコマンド |
 
-### 5-6. 一覧の行を押したら切り替える
+### 5-5. ページの「切り替え」の知らせで切り替える
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **86行目** `item.iconPath = new vscode.ThemeIcon(isCurrent ? 'pass-filled' : 'account');` の下、`return item;` の上に、1行足します（87行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **155行目** `if (message.type === 'save') return onSave(view);` の下、`}` の上に、3行足します（156〜158行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 87 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 156 -->
 <table class="code-lines"><tr><td>
 
 ```js
-87
+156
+157
+158
 ```
 
 </td><td>
 
 ```js
-      item.command = { command: 'claudeAccounts.switch', title: '切り替える', arguments: [p] };
+  const profile = findProfile(message.id);
+  if (!profile) return;
+  if (message.type === 'switch') return onSwitch(view, profile);
 ```
 
 </td></tr></table>
 
 | 行 | 何をしているか |
 |---|---|
-| 87 | 行を押したら `claudeAccounts.switch` を呼び、その行のアカウント `p` を渡す |
+| 156 | 知らせの番号（`id`）で、保存したアカウントを探す |
+| 157 | 見つからなければ（ほかの窓で消したなど）、何もしない |
+| 158 | `switch` なら、そのアカウントに切り替える |
 
-- **なぜ:** 行の `command` に入れたコマンドは、行を押したときに VSCode が `arguments` を付けて呼ぶ。
-- **効果:** 一覧の名前を押すと、そのアカウントで `onSwitch` が動く（5-7 で結びつける）。
+- **なぜ:** ページには番号しか送っていない（3-5。ログイン情報はページに渡さない）ので、ここで保存ファイルを読み直す。
+- **効果:** 手順6・7 の知らせも、見つけたアカウントを使える。
 
-**初めて出てくる名前:**
+### 5-6. 枠に切り替えのボタンを出す（view.js）
 
-| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
-|---|---|---|---|---|
-| メンバー変数 | `command` | 行を押したときの動きを決めるため | `{ command: コマンド名, title, arguments: [渡すもの] }` を入れる | VSCode の拡張機能の API（`TreeItem`） |
-| 値 | `arguments` | コマンドに渡すため | コマンドの関数に渡す引数の配列 | VSCode の拡張機能の API（`Command`） |
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **27行目** `if (account.isCurrent) node.append(el('div', 'current', ['使用中']));` の下、`return node;` の上に、1行足します（28行目になります）。
 
-### 5-7. 切り替えのコマンドに動きを結びつける
-
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **135行目** `vscode.commands.registerCommand('claudeAccounts.refresh', () => provider.refresh()),` の下、`);` の上に、1行足します（136行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/extension.js 136 -->
+<!-- add: .claude/extensions/claude-accounts/media/view.js 28 -->
 <table class="code-lines"><tr><td>
 
 ```js
-136
+28
 ```
 
 </td><td>
 
 ```js
-    vscode.commands.registerCommand('claudeAccounts.switch', (p) => onSwitch(provider, p)),
+  if (!account.isCurrent) node.append(action('このアカウントに切り替える', 'switch', account.id));
 ```
 
 </td></tr></table>
 
 | 行 | 何をしているか |
 |---|---|
-| 136 | `claudeAccounts.switch` が呼ばれたら、渡されたアカウント `p` で `onSwitch` を動かす |
+| 28 | 使用中でない枠の下に、「このアカウントに切り替える」のボタンを出す（4-12 の `action`） |
 
-- **なぜ:** 5-1 で決めたコマンドは名前だけなので、動きを結びつける。
-- **効果:** 一覧の名前を押すと、そのアカウントに切り替わる。
-
-### 5-8. コマンドパレットに出さない
-
-[package.json](../../../../.claude/extensions/claude-accounts/package.json) の **15行目** `"menus": {` の下、`"view/title": [` の上に、3行足します（16〜18行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/package.json 16 -->
-<table class="code-lines"><tr><td>
-
-```json
-16
-17
-18
-```
-
-</td><td>
-
-```json
-      "commandPalette": [
-        { "command": "claudeAccounts.switch", "when": "false" }
-      ],
-```
-
-</td></tr></table>
-
-| 行 | 何をしているか |
-|---|---|
-| 16〜18 | `Ctrl+Shift+P`（コマンドパレット）の一覧に、切り替えのコマンドを出さない |
-
-- **なぜ:** コマンドは、何もしないとコマンドパレットにも出る。切り替えは一覧の行から呼ばれる（どのアカウントかを渡す）ので、パレットから呼ばれると、渡すものがなくて失敗する。
-- **効果:** コマンドパレットに、押しても動かない「このアカウントに切り替える」が出ない。
-
-**初めて出てくる名前:**
-
-| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
-|---|---|---|---|---|
-| 値 | `commandPalette` | コマンドパレットの出し方を決めるため | ここで `"when": "false"` にしたコマンドは、コマンドパレットに出ない | [VSCode の拡張機能の決まり（Contribution Points）](https://code.visualstudio.com/api/references/contribution-points#contributes.menus) |
+- **なぜ:** 枠そのものを押して切り替える形にすると、↑↓などを押すつもりで切り替えてしまう。ボタンを分ける。
+- **効果:** ボタンを押すと、そのアカウントに切り替わる。
 
 **確かめ方:**
 
-1. 2つ目のアカウントを保存する: Claude の会話で `/logout` のあと `/login` し、ブラウザで2つ目のアカウントを選ぶ。一覧の「+」で保存すると、一覧に2つ並び、2つ目に「（使用中）」が付く。
-2. 1つ目の名前を押すと「〇〇 に切り替えました。」と出て、「（使用中）」が1つ目に移る。
+1. 2つ目のアカウントを保存する: Claude の会話で `/login` し、ブラウザで2つ目のアカウントを選ぶ（**`/logout` はしない**。`/logout` すると、1つ目の保存した鍵がサーバーで使えなくなる）。欄の「+」で保存すると、枠が2つ並び、2つ目が「使用中」になる。
+2. 1つ目の「このアカウントに切り替える」を押すと「〇〇 に切り替えました。」と出て、「使用中」が1つ目に移る。
 3. 「再読み込み」を押し、Claude の会話で `/status` を打つと、1つ目のアカウントのメールアドレスが出る。ブラウザは開かない。
 
 ---
 
 ## 手順6: 保存を消す
 
-一覧の行にマウスを乗せるとゴミ箱のボタンが出て、押すとそのアカウントの保存ファイルを消します。Claude からログアウトはしません。
+枠の右上の ✕ を押すと、そのアカウントの保存ファイルを消します。Claude からログアウトはしません。
 
 **この手順で触るファイル:**
 
 | ファイル | 何をするか |
 |---|---|
-| [package.json](../../../../.claude/extensions/claude-accounts/package.json) | 追加（6-1 でコマンド、6-5 で行のボタン、6-6 でコマンドパレットに出さない設定） |
-| [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) | 追加（6-2〜6-4） |
+| [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) | 追加（6-1〜6-2） |
+| [view.js](../../../../.claude/extensions/claude-accounts/media/view.js) | 追加（6-3〜6-4） |
+| [view.css](../../../../.claude/extensions/claude-accounts/media/view.css) | 追加（6-5） |
 
-### 6-1. 消すコマンドを決める
+### 6-1. 消す関数を足す
 
-[package.json](../../../../.claude/extensions/claude-accounts/package.json) の **10行目** `"commands": [` の下、`{ "command": "claudeAccounts.switch", "title": "このアカウントに切り替える" },` の上に、1行足します（11行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **147行目** `}` の下、（空の行） の上に、8行足します（148〜155行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/package.json 11 -->
-<table class="code-lines"><tr><td>
-
-```json
-11
-```
-
-</td><td>
-
-```json
-      { "command": "claudeAccounts.remove", "title": "保存を消す", "icon": "$(trash)" },
-```
-
-</td></tr></table>
-
-| 行 | 何をしているか |
-|---|---|
-| 11 | 保存を消すコマンド。ボタンの絵はゴミ箱 |
-
-- **なぜ:** 行のボタン（6-5）は、コマンドを指して作るため。
-- **効果:** `claudeAccounts.remove` の名前で、6-4・6-5 から使える。
-
-**初めて出てくる名前:**
-
-| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
-|---|---|---|---|---|
-| 値 | `$(trash)` | ボタンの絵にするため | ゴミ箱の絵（Codicon） | VSCode の拡張機能の決まり |
-
-### 6-2. 消す関数を足す
-
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **128行目** `}` の下、（空の行） の上に、8行足します（129〜136行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/extension.js 129 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 148 -->
 <table class="code-lines"><tr><td>
 
 ```js
-129
-130
-131
-132
-133
-134
-135
-136
+148
+149
+150
+151
+152
+153
+154
+155
 ```
 
 </td><td>
 
 ```js
 
-async function onRemove(provider, item) {
+async function onRemove(view, profile) {
   const answer = await vscode.window.showWarningMessage(
-    `${item.profile.name} の保存を消しますか？（ログアウトはしません）`, { modal: true }, '消す');
+    `${profile.name} の保存を消しますか？（ログアウトはしません）`, { modal: true }, '消す');
   if (answer !== '消す') return;
-  fs.unlinkSync(item.profile.file);
-  provider.refresh();
+  fs.unlinkSync(profile.file);
+  view.refresh();
 }
 ```
 
@@ -1812,205 +2647,192 @@ async function onRemove(provider, item) {
 
 | 行 | 何をしているか |
 |---|---|
-| 130 | 一覧のクラスと、ボタンを押した行を受け取る |
-| 131〜133 | 画面の中央で「消しますか？」と聞き、「消す」を押さなければやめる |
-| 134 | その行のアカウントの保存ファイルを消す |
-| 135 | 一覧を描き直す |
+| 149 | 画面のクラスと、消すアカウントを受け取る |
+| 150〜152 | 画面の中央で「消しますか？」と聞き、「消す」を押さなければやめる |
+| 153 | そのアカウントの保存ファイルを消す |
+| 154 | 描き直す |
 
 - **なぜ:** 消したら戻せない（そのアカウントは、もう一度ログインして保存し直すことになる）ので、必ず聞く。ログアウトはしないので、使用中のアカウントを消しても Claude はそのまま使える。
-- **効果:** 要らなくなったアカウントを一覧から外せる。
+- **効果:** 要らなくなったアカウントを外せる。
 
 **初めて出てくる名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| 関数 | `onRemove` | ゴミ箱のボタンの動き | 確かめてから、保存ファイルを消す | この手順で作る |
-| 引数 | `item` | 押した行を受け取るため | 行のボタンを押すと、VSCode がその行（`TreeItem`）を渡す | VSCode の拡張機能の API |
+| 関数 | `onRemove` | ✕ のボタンの動き | 確かめてから、保存ファイルを消す | この手順で作る |
 | 関数 | `fs.unlinkSync` | 保存ファイルを消すため | ファイルを消す | Node.js の標準ライブラリ（fs） |
 
-### 6-3. 行に、どのアカウントかを持たせる
+### 6-2. ページの「消す」の知らせで消す
 
-ゴミ箱のボタンからは、行（`TreeItem`）しか渡されません。行に、どのアカウントの行かを持たせておきます。あわせて、アカウントの行だということがわかる名前を付けます。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **166行目** `if (message.type === 'switch') return onSwitch(view, profile);` の下、`}` の上に、1行足します（167行目になります）。
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **87行目** `item.command = { command: 'claudeAccounts.switch', title: '切り替える', arguments: [p] };` の下、`return item;` の上に、2行足します（88〜89行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/extension.js 88 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 167 -->
 <table class="code-lines"><tr><td>
 
 ```js
-88
-89
+167
 ```
 
 </td><td>
 
 ```js
-      item.profile = p;
-      item.contextValue = 'account';
+  if (message.type === 'remove') return onRemove(view, profile);
 ```
 
 </td></tr></table>
 
 | 行 | 何をしているか |
 |---|---|
-| 88 | 行に、そのアカウント（ファイルのパスも入っている）を持たせる |
-| 89 | 行の種類を `account` にする（6-5 で、この種類の行にだけボタンを出す） |
+| 167 | `remove` なら、そのアカウントの保存を消す |
 
-- **なぜ:** `TreeItem` には決まったメンバー変数しかないので、消すファイルを知るために、自分で `profile` を足す。手順8でアカウントの下に使用量の行を足すので、ボタンを出す行を種類で分けておく。
-- **効果:** 6-2 で、`item.profile.file` から消すファイルがわかる。使用量の行にはゴミ箱が出ない。
+- **なぜ:** 5-5 で探したアカウントを、そのまま使う。
+- **効果:** ✕ の知らせ（6-4）で消せる。
 
-**初めて出てくる名前:**
+### 6-3. 小さなボタンを作る関数を足す（view.js）
 
-| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
-|---|---|---|---|---|
-| メンバー変数 | `profile` | 行がどのアカウントかを知るため | その行の、保存したアカウント | この手順で作る |
-| メンバー変数 | `contextValue` | 行の種類を見分けるため | 好きな名前を入れると、`package.json` の `when` で `viewItem == 名前` と書いて見分けられる | VSCode の拡張機能の API（`TreeItem`） |
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **19行目** `}` の下、（空の行） の上に、8行足します（20〜27行目になります）。
 
-### 6-4. 消すコマンドに動きを結びつける
-
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **146行目** `vscode.commands.registerCommand('claudeAccounts.switch', (p) => onSwitch(provider, p)),` の下、`);` の上に、1行足します（147行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/extension.js 147 -->
+<!-- add: .claude/extensions/claude-accounts/media/view.js 20 -->
 <table class="code-lines"><tr><td>
 
 ```js
-147
-```
-
-</td><td>
-
-```js
-    vscode.commands.registerCommand('claudeAccounts.remove', (item) => onRemove(provider, item)),
-```
-
-</td></tr></table>
-
-| 行 | 何をしているか |
-|---|---|
-| 147 | `claudeAccounts.remove` が呼ばれたら、渡された行で `onRemove` を動かす |
-
-- **なぜ:** 6-1 で決めたコマンドは名前だけなので、動きを結びつける。
-- **効果:** 6-5 のボタンを押すと、消す動きが動く。
-
-### 6-5. 行にゴミ箱のボタンを出す
-
-[package.json](../../../../.claude/extensions/claude-accounts/package.json) の **16行目** `"menus": {` の下、`"commandPalette": [` の上に、3行足します（17〜19行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/package.json 17 -->
-<table class="code-lines"><tr><td>
-
-```json
-17
-18
-19
-```
-
-</td><td>
-
-```json
-      "view/item/context": [
-        { "command": "claudeAccounts.remove", "when": "view == claudeAccounts.list && viewItem == account", "group": "inline@9" }
-      ],
-```
-
-</td></tr></table>
-
-| 行 | 何をしているか |
-|---|---|
-| 17〜19 | 一覧 `claudeAccounts.list` の、種類が `account` の行（6-3）の右に、ゴミ箱のボタンを出す |
-
-- **なぜ:** `inline` の組に入れると、右クリックのメニューの中ではなく、マウスを乗せたときに行の右に絵のボタンで出る。`@9` は組の中での順番で、手順7で足す並べ替えのボタン（`@1`・`@2`）より右に出すため。
-- **効果:** アカウントの行にマウスを乗せると、ゴミ箱のボタンが出る。
-
-**初めて出てくる名前:**
-
-| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
-|---|---|---|---|---|
-| 値 | `view/item/context` | 一覧の行にボタンを出すため | ビューの各行の所 | [VSCode の拡張機能の決まり（Contribution Points）](https://code.visualstudio.com/api/references/contribution-points#contributes.menus) |
-| 値 | `inline@9` | 行の右にボタンを出すため | `group` を `inline` にすると、マウスを乗せたときに行の右に絵で出る。`@` の後ろの数が小さいほど左 | 同上 |
-| 値 | `viewItem == account` | アカウントの行にだけ出すため | 行の `contextValue`（6-3）が `account` のとき | 同上 |
-
-### 6-6. 消すコマンドもコマンドパレットに出さない
-
-[package.json](../../../../.claude/extensions/claude-accounts/package.json) の **20行目** `"commandPalette": [` の下、`{ "command": "claudeAccounts.switch", "when": "false" }` の上に、1行足します（21行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/package.json 21 -->
-<table class="code-lines"><tr><td>
-
-```json
+20
 21
+22
+23
+24
+25
+26
+27
 ```
 
 </td><td>
 
-```json
-        { "command": "claudeAccounts.remove", "when": "false" },
+```js
+
+// 小さなボタン（↑・↓・✕）。title はマウスを乗せたときに出る説明。
+function button(text, title, type, id) {
+  const node = el('button', 'icon', [text]);
+  node.title = title;
+  node.addEventListener('click', () => vscode.postMessage({ type, id }));
+  return node;
+}
 ```
 
 </td></tr></table>
 
 | 行 | 何をしているか |
 |---|---|
-| 21 | `Ctrl+Shift+P` の一覧に、消すコマンドを出さない |
+| 22 | ボタンの文字、マウスを乗せたときの説明、知らせの種類、どのアカウントかを受け取る |
+| 23〜24 | 見た目の名前 `icon` のボタンを作り、説明を付ける |
+| 25 | 押したら `extension.js` に `{ type, id }` を送る |
 
-- **なぜ:** 5-8 と同じで、行から呼ばれるコマンドなので、パレットから呼ぶと渡すものがない。
-- **効果:** コマンドパレットに、押しても動かない「保存を消す」が出ない。
+- **なぜ:** ✕（手順6）と↑↓（手順7）で同じ形のボタンを使うので、関数にまとめる。文字だけのボタンなので、何をするかを `title` で出す。
+- **効果:** `button('✕', '説明', 'remove', 番号)` で、小さなボタンが作れる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `button` | 小さなボタンを作るため | 押すと `{ type, id }` を送る、文字1つのボタンを返す | この手順で作る |
+| 引数・メンバー変数 | `title` | 何のボタンかを見せるため | マウスを乗せたときに出る説明 | ブラウザ（DOM） |
+
+### 6-4. 枠の頭の段に ✕ を出す
+
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **32行目** `el('div', 'who', [el('div', 'name', [account.name]), el('div', 'dim', [account.email])]),` の下、`]);` の上に、1行足します（33行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.js 33 -->
+<table class="code-lines"><tr><td>
+
+```js
+33
+```
+
+</td><td>
+
+```js
+    button('✕', '保存を消す（ログアウトはしない）', 'remove', account.id),
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 33 | 名前の右に ✕ を出す。押すと `remove` を送る |
+
+- **なぜ:** 3-14 で頭の段を配列にしたので、1行足すだけで右に並ぶ。
+- **効果:** 枠の右上に ✕ が出る。
+
+### 6-5. 小さなボタンの見た目を足す
+
+[view.css](../../../../.claude/extensions/claude-accounts/media/view.css) の **57行目** `}` の下、（空の行） の上に、13行足します（58〜70行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.css 58 -->
+<table class="code-lines"><tr><td>
+
+```css
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+```
+
+</td><td>
+
+```css
+
+button.icon {
+  background: none;
+  border: none;
+  color: var(--vscode-icon-foreground, var(--vscode-foreground));
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+button.icon:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 59〜66 | 塗り・線なしで、絵の色の文字にする |
+| 68〜70 | マウスを乗せている間だけ、薄く塗る |
+
+- **なぜ:** VSCode の見出しのボタンと同じ見た目にすると、目立ちすぎない。
+- **効果:** ✕ が、VSCode の小さなボタンの形で出る。
 
 **確かめ方:**
 
-1. ウィンドウを再読み込みし、一覧の行にマウスを乗せると、右にゴミ箱が出る。
-2. 押して「消す」を押すと、一覧から消え、`account-profiles` のファイルも消える。Claude はログインしたまま使える。
-3. `Ctrl+Shift+P` で「切り替える」「保存を消す」と打っても、この拡張機能のコマンドは出ない。
+1. ウィンドウを再読み込みすると、枠の右上に ✕ が出る。
+2. 押して「消す」を押すと、枠が消え、`account-profiles` のファイルも消える。Claude はログインしたまま使える。
 
 ---
 
 ## 手順7: 並べ替える
 
-アカウントの行にマウスを乗せると↑↓のボタンが出て、押すと1つ上・1つ下の行と入れ替わります。並び順は、VSCode がこのPCに覚えておく場所（`globalState`）に、アカウントの番号を上から並べた配列で置きます。保存ファイルには書きません。
+枠の右上の↑↓を押すと、1つ上・1つ下の枠と入れ替わります。並び順は、VSCode がこのPCに覚えておく場所（`globalState`）に、アカウントの番号を上から並べた配列で置きます。保存ファイルには書きません。
 
 **この手順で触るファイル:**
 
 | ファイル | 何をするか |
 |---|---|
-| [package.json](../../../../.claude/extensions/claude-accounts/package.json) | 追加（7-1 でコマンド、7-7 で行のボタン、7-8 でコマンドパレットに出さない設定） |
-| [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) | 追加（7-2〜7-6） |
+| [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) | 追加（7-1〜7-5） |
+| [view.js](../../../../.claude/extensions/claude-accounts/media/view.js) | 追加（7-6） |
 
-### 7-1. 上へ・下へのコマンドを決める
-
-[package.json](../../../../.claude/extensions/claude-accounts/package.json) の **10行目** `"commands": [` の下、`{ "command": "claudeAccounts.remove", "title": "保存を消す", "icon": "$(trash)" },` の上に、2行足します（11〜12行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/package.json 11 -->
-<table class="code-lines"><tr><td>
-
-```json
-11
-12
-```
-
-</td><td>
-
-```json
-      { "command": "claudeAccounts.moveUp", "title": "上へ", "icon": "$(arrow-up)" },
-      { "command": "claudeAccounts.moveDown", "title": "下へ", "icon": "$(arrow-down)" },
-```
-
-</td></tr></table>
-
-| 行 | 何をしているか |
-|---|---|
-| 11 | 上へのコマンド。ボタンの絵は上向きの矢印 |
-| 12 | 下へのコマンド。ボタンの絵は下向きの矢印 |
-
-- **なぜ:** 行のボタン（7-7）は、コマンドを指して作るため。
-- **効果:** `claudeAccounts.moveUp`・`claudeAccounts.moveDown` の名前で、7-6・7-7 から使える。
-
-**初めて出てくる名前:**
-
-| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
-|---|---|---|---|---|
-| 値 | `$(arrow-up)`・`$(arrow-down)` | ボタンの絵にするため | 上向き・下向きの矢印の絵（Codicon） | VSCode の拡張機能の決まり |
-
-### 7-2. 覚えておく場所と、並び順のとおりに並べる関数を足す
+### 7-1. 覚えておく場所と、並び順のとおりに並べる関数を足す
 
 [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **62行目** `}` の下、（空の行） の上に、13行足します（63〜75行目になります）。
 
@@ -2055,7 +2877,7 @@ function sortByOrder(profiles) {
 
 | 行 | 何をしているか |
 |---|---|
-| 65 | VSCode がこのPCに覚えておく場所。7-3 で入れる（手順8の使用量も、ここに置く） |
+| 65 | VSCode がこのPCに覚えておく場所。7-2 で入れる（手順8の使用量も、ここに置く） |
 | 68 | アカウントの配列を受け取る |
 | 69 | 覚えておいた並び順（番号の配列）を取る。まだなければ空の配列 |
 | 70〜73 | アカウントが並び順の何番目かを返す。並び順にないもの（新しく保存したもの）は、一番後ろ |
@@ -2068,22 +2890,21 @@ function sortByOrder(profiles) {
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| C++ の書き方 | `let` | あとで値を入れる名前を作るため | 名前を作る。`const` と違い、あとで別の値を入れられる | JavaScript の書き方 |
-| 変数 | `state` | 並び順と使用量を覚えておくため | `context.globalState`（7-3） | この手順で作る |
+| 変数 | `state` | 並び順と使用量を覚えておくため | `context.globalState`（7-2） | この手順で作る |
 | 関数 | `sortByOrder` | 並び順のとおりに並べるため | 渡した配列を並べ替え、その配列を返す | この手順で作る |
 | 関数 | `get` | 覚えておいた値を取るため | 名前で値を取る。なければ2つ目の値を返す | VSCode の拡張機能の API（`Memento`） |
 | 関数 | `rank` | 並び順の何番目かを知るため | アカウントを受け取り、並び順の何番目か（なければ一番後ろ）を返す | この手順で作る |
 | 関数 | `indexOf` | 番号が並び順の何番目かを探すため | 配列の中で、同じものが何番目にあるかを返す。なければ -1 | JavaScript の標準（配列） |
 
-### 7-3. 拡張機能が動き出したときに、覚えておく場所を受け取る
+### 7-2. 拡張機能が動き出したときに、覚えておく場所を受け取る
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **153行目** `function activate(context) {` の下、`const provider = new AccountsProvider();` の上に、1行足します（154行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **183行目** `function activate(context) {` の下、`const view = new AccountsView(context.extensionUri);` の上に、1行足します（184行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 154 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 184 -->
 <table class="code-lines"><tr><td>
 
 ```js
-154
+184
 ```
 
 </td><td>
@@ -2096,9 +2917,9 @@ function sortByOrder(profiles) {
 
 | 行 | 何をしているか |
 |---|---|
-| 154 | VSCode がこのPCに覚えておく場所を、`state` に入れる |
+| 184 | VSCode がこのPCに覚えておく場所を、`state` に入れる |
 
-- **なぜ:** 一覧を描く（`getChildren`）前に入れておかないと、`sortByOrder` が `state` を読めない。だから `activate` の一番初めに置く。
+- **なぜ:** 描く（`viewData`）前に入れておかないと、`sortByOrder` が `state` を読めない。だから `activate` の一番初めに置く。
 - **効果:** 並び順が、VSCode を閉じても残る。
 
 **初めて出てくる名前:**
@@ -2107,66 +2928,66 @@ function sortByOrder(profiles) {
 |---|---|---|---|---|
 | メンバー変数 | `globalState` | このPCに値を覚えておくため | 名前と値の組を覚えておく。VSCode を閉じても残り、どのフォルダを開いても同じ | VSCode の拡張機能の API（`ExtensionContext`） |
 
-### 7-4. 一覧を、並び順のとおりに並べる
+### 7-3. 画面に送る前に、並び順のとおりに並べる
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **94行目** `const profiles = loadProfiles();` の下、`return profiles.map((p) => {` の上に、1行足します（95行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **80行目** `const profiles = loadProfiles();` の下、`const accounts = profiles.map((p) => ({` の上に、1行足します（81行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 95 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 81 -->
 <table class="code-lines"><tr><td>
 
 ```js
-95
+81
 ```
 
 </td><td>
 
 ```js
-    sortByOrder(profiles);
+  sortByOrder(profiles);
 ```
 
 </td></tr></table>
 
 | 行 | 何をしているか |
 |---|---|
-| 95 | 読んだアカウントを、並び順のとおりに並べ替える |
+| 81 | 読んだアカウントを、並び順のとおりに並べ替える |
 
-- **なぜ:** 3-7 で読んだ `profiles` を、1行ずつに作り替える前に並べ替える。
-- **効果:** 一覧が、覚えておいた順に並ぶ。
+- **なぜ:** 3-5 で読んだ `profiles` を、画面に送る形に作り替える前に並べ替える。
+- **効果:** 枠が、覚えておいた順に並ぶ。
 
-### 7-5. 上へ・下へを押したときの関数を足す
+### 7-4. 上へ・下へを押したときの関数を足す
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **152行目** `}` の下、（空の行） の上に、11行足します（153〜163行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **169行目** `}` の下、（空の行） の上に、11行足します（170〜180行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 153 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 170 -->
 <table class="code-lines"><tr><td>
 
 ```js
-153
-154
-155
-156
-157
-158
-159
-160
-161
-162
-163
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
 ```
 
 </td><td>
 
 ```js
 
-// 押した行を、1つ上（step = -1）か1つ下（step = 1）と入れ替える。
-async function onMove(provider, item, step) {
+// 押したアカウントを、1つ上（step = -1）か1つ下（step = 1）と入れ替える。
+async function onMove(view, profile, step) {
   const ids = sortByOrder(loadProfiles()).map((p) => p.oauthAccount.accountUuid);
-  const from = ids.indexOf(item.profile.oauthAccount.accountUuid);
+  const from = ids.indexOf(profile.oauthAccount.accountUuid);
   const to = from + step;
   if (to < 0 || to >= ids.length) return;
   [ids[from], ids[to]] = [ids[to], ids[from]];
   await state.update('order', ids);
-  provider.changed.fire();
+  view.render();
 }
 ```
 
@@ -2174,141 +2995,117 @@ async function onMove(provider, item, step) {
 
 | 行 | 何をしているか |
 |---|---|
-| 155 | 押した行と、動かす向き（上は -1、下は 1）を受け取る |
-| 156 | 今の並び（画面に出ている順）の、番号の配列を作る |
-| 157〜158 | 押した行が何番目か、どこへ動かすか |
-| 159 | 一番上で「上へ」、一番下で「下へ」を押したときは何もしない |
-| 160 | 2つの番号を入れ替える |
-| 161 | 新しい並び順を覚えておく |
-| 162 | 一覧を描き直す |
+| 172 | 押したアカウントと、動かす向き（上は -1、下は 1）を受け取る |
+| 173 | 今の並び（画面に出ている順）の、番号の配列を作る |
+| 174〜175 | 押したアカウントが何番目か、どこへ動かすか |
+| 176 | 一番上で「上へ」、一番下で「下へ」を押したときは何もしない |
+| 177 | 2つの番号を入れ替える |
+| 178 | 新しい並び順を覚えておく |
+| 179 | 描き直す |
 
-- **なぜ:** 画面に出ている順をそのまま並び順として覚え直すので、まだ並び順にないアカウントも、一度動かせば並び順に入る。描き直しに `refresh()` でなく `changed.fire()` を使うのは、手順8で `refresh()` が使用量を取り直すようになるため（並べ替えでは取り直さなくてよい）。
-- **効果:** ↑↓を押すたびに、行が1つずつ動く。
+- **なぜ:** 画面に出ている順をそのまま並び順として覚え直すので、まだ並び順にないアカウントも、一度動かせば並び順に入る。描き直しに `refresh()` でなく `render()` を使うのは、手順8で `refresh()` が使用量を聞き直すようになるため（並べ替えでは聞き直さなくてよい）。
+- **効果:** ↑↓を押すたびに、枠が1つずつ動く。
 
 **初めて出てくる名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| 関数 | `onMove` | ↑↓のボタンの動き | 押した行を、上か下の行と入れ替える | この手順で作る |
-| 引数 | `step` | 動かす向きを受け取るため | 上は -1、下は 1 | 使う側が決める（7-6） |
-| 変数 | `ids`・`from`・`to` | 入れ替えるため | 番号の配列、押した行の位置、動かす先の位置 | この手順で作る |
+| 関数 | `onMove` | ↑↓のボタンの動き | 押したアカウントを、上か下のアカウントと入れ替える | この手順で作る |
+| 引数 | `step` | 動かす向きを受け取るため | 上は -1、下は 1 | 使う側が決める（7-5） |
+| 変数 | `ids`・`from`・`to` | 入れ替えるため | 番号の配列、押したアカウントの位置、動かす先の位置 | この手順で作る |
 | C++ の書き方 | `[a, b] = [b, a]` | 2つを入れ替えるため | 右に並べた値を、左の2つに入れる（`std::swap` と同じことができる） | JavaScript の書き方 |
 | 関数 | `update` | 値を覚えておくため | 名前と値を覚えておく。終わるまで `await` で待てる | VSCode の拡張機能の API（`Memento`） |
 
-### 7-6. 上へ・下へのコマンドに動きを結びつける
+### 7-5. ページの「上へ」「下へ」の知らせで動かす
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **173行目** `vscode.commands.registerCommand('claudeAccounts.remove', (item) => onRemove(provider, item)),` の下、`);` の上に、2行足します（174〜175行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **192行目** `if (message.type === 'remove') return onRemove(view, profile);` の下、`}` の上に、2行足します（193〜194行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 174 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 193 -->
 <table class="code-lines"><tr><td>
 
 ```js
-174
-175
+193
+194
 ```
 
 </td><td>
 
 ```js
-    vscode.commands.registerCommand('claudeAccounts.moveUp', (item) => onMove(provider, item, -1)),
-    vscode.commands.registerCommand('claudeAccounts.moveDown', (item) => onMove(provider, item, 1)),
+  if (message.type === 'up') return onMove(view, profile, -1);
+  if (message.type === 'down') return onMove(view, profile, 1);
 ```
 
 </td></tr></table>
 
 | 行 | 何をしているか |
 |---|---|
-| 174 | `claudeAccounts.moveUp` が呼ばれたら、押した行を上へ |
-| 175 | `claudeAccounts.moveDown` が呼ばれたら、押した行を下へ |
+| 193〜194 | `up` なら1つ上へ、`down` なら1つ下へ動かす |
 
-- **なぜ:** 7-1 で決めたコマンドは名前だけなので、動きを結びつける。
-- **効果:** 7-7 のボタンを押すと、行が動く。
+- **なぜ:** 動かす向きを `step` で渡せば、関数は1つで済む。
+- **効果:** ↑↓の知らせ（7-6）で動かせる。
 
-### 7-7. 行に↑↓のボタンを出す
+### 7-6. 枠の頭の段に↑↓を出す（view.js）
 
-[package.json](../../../../.claude/extensions/claude-accounts/package.json) の **19行目** `"view/item/context": [` の下、`{ "command": "claudeAccounts.remove", "when": "view == claudeAccounts.list && viewItem == account", "group": "inline@9" }` の上に、2行足します（20〜21行目になります）。
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **32行目** `el('div', 'who', [el('div', 'name', [account.name]), el('div', 'dim', [account.email])]),` の下、`button('✕', '保存を消す（ログアウトはしない）', 'remove', account.id),` の上に、2行足します（33〜34行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/package.json 20 -->
+<!-- add: .claude/extensions/claude-accounts/media/view.js 33 -->
 <table class="code-lines"><tr><td>
 
-```json
-20
-21
+```js
+33
+34
 ```
 
 </td><td>
 
-```json
-        { "command": "claudeAccounts.moveUp", "when": "view == claudeAccounts.list && viewItem == account", "group": "inline@1" },
-        { "command": "claudeAccounts.moveDown", "when": "view == claudeAccounts.list && viewItem == account", "group": "inline@2" },
+```js
+    button('↑', '上へ', 'up', account.id),
+    button('↓', '下へ', 'down', account.id),
 ```
 
 </td></tr></table>
 
 | 行 | 何をしているか |
 |---|---|
-| 20〜21 | アカウントの行の右に、↑・↓の順でボタンを出す（ゴミ箱は `@9` なので、その右） |
+| 33〜34 | 名前の右（✕ の左）に↑↓を出す。押すと `up`・`down` を送る |
 
-- **なぜ:** 6-5 と同じく、`inline` の組でマウスを乗せたときに出す。`@1`・`@2` で、左から↑・↓・ゴミ箱に並べる。
-- **効果:** アカウントの行にマウスを乗せると、↑↓とゴミ箱が出る。
-
-### 7-8. 上へ・下へもコマンドパレットに出さない
-
-[package.json](../../../../.claude/extensions/claude-accounts/package.json) の **24行目** `"commandPalette": [` の下、`{ "command": "claudeAccounts.remove", "when": "false" },` の上に、2行足します（25〜26行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/package.json 25 -->
-<table class="code-lines"><tr><td>
-
-```json
-25
-26
-```
-
-</td><td>
-
-```json
-        { "command": "claudeAccounts.moveUp", "when": "false" },
-        { "command": "claudeAccounts.moveDown", "when": "false" },
-```
-
-</td></tr></table>
-
-| 行 | 何をしているか |
-|---|---|
-| 25〜26 | `Ctrl+Shift+P` の一覧に、上へ・下へのコマンドを出さない |
-
-- **なぜ:** 5-8 と同じで、行から呼ばれるコマンドなので、パレットから呼ぶと渡すものがない。
-- **効果:** コマンドパレットに、押しても動かない「上へ」「下へ」が出ない。
+- **なぜ:** 6-4 と同じく、頭の段の配列に足すだけで並ぶ。
+- **効果:** 枠の右上に ↑ ↓ ✕ が並ぶ。
 
 **確かめ方:**
 
-1. ウィンドウを再読み込みし、アカウントの行にマウスを乗せると、右に↑↓とゴミ箱が出る。
-2. 2つ目の行の↑を押すと、1つ目と入れ替わる。一番上の↑、一番下の↓は何も起きない。
-3. ウィンドウを再読み込みしても、並びがそのまま残る。
+1. ウィンドウを再読み込みすると、枠の右上に ↑ ↓ ✕ が出る。
+2. 2つ目の枠の ↑ を押すと、1つ目と入れ替わる。一番上の ↑・一番下の ↓ は何も起きない。
+3. VSCode を閉じて開き直しても、並び順が残っている。
 
 ---
 
-## 手順8: 残りの使用量と、復活する時刻を出す
+## 手順8: 使用量のバーと、復活する時刻を出す
 
-各アカウントの行の下に、5時間の枠と週の枠の「残り何%か」「何時何分に復活するか（あと何分か）」を出します。使用量は、Claude Code の `/usage` と同じ API から、各アカウントの保存した鍵で取ります。
+各枠に、5時間の枠と週の枠の使用量をバーで出し、「残り何%か」「何時何分に復活するか（あと何分か）」も出します。使用量は、Claude Code の `/usage` と同じ API から、各アカウントの鍵で聞きます。使用中のアカウントは、Claude の会話が進むたびに（30秒に1回まで）、それ以外は5分に1回聞き直します。
 
-| 出る行の例 | 何のことか |
+| 出るもの（例） | 何のことか |
 |---|---|
-| `5時間: 残り 92%・17:00 に復活（あと 4時間38分）` | 5時間の枠の残り。17:00 に 100% に戻る |
-| `週: 残り 53%・11/23(月) 20:00 に復活（あと 4日7時間）` | 週の枠の残り |
-| `（11/19 11:21 に取った値。鍵の期限切れなどで取り直せていない）` | 鍵の期限が切れていて取り直せないとき、前に取った値を出している |
-| `保存した鍵が無効（ログインし直して、保存し直す）` | 鍵がサーバーで無効にされている（`/logout` したときなど） |
-| `使用量: 取れなかった（混んでいる・鍵の期限切れなど。5分ごとに取り直す）` | 前は「無効」だったが、そのあと 401 ではない理由で取れなかった |
+| `5時間の枠　残り 83%` とバー | バーは使った分（17%）を塗る（Claude Code の `/usage` と同じ向き）。残りが 30% 以下で黄色、10% 以下で赤 |
+| `17% 使用・17:10 に復活（あと 41分）` | 17:10 に 0% に戻る |
+| `93% 使用・11/20(金) 07:00 に復活（あと 14時間31分）` | 週の枠は日付も出す |
+| `16:28:19 に取った値` | いつ聞いた値か |
+| `保存した鍵が無効（ログインし直して、保存し直す）` | 401 が返った（鍵がサーバーで無効にされている。`/logout` したときなど） |
+| `混んでいて取れなかった（2分後に聞き直す）` | 429 が返った（聞く回数が多すぎる） |
+| `鍵の期限切れで聞けない（切り替えると取れる）` | 保存した鍵の期限が切れている |
 
 **この手順で触るファイル:**
 
 | ファイル | 何をするか |
 |---|---|
-| [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) | 追加（8-1〜8-15） |
+| [package.json](../../../../.claude/extensions/claude-accounts/package.json) | 追加（8-20 でコマンド、8-21 でボタン） |
+| [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) | 追加（8-1〜8-19、8-22） |
+| [view.js](../../../../.claude/extensions/claude-accounts/media/view.js) | 追加（8-23〜8-30） |
+| [view.css](../../../../.claude/extensions/claude-accounts/media/view.css) | 追加（8-31〜8-35） |
 
-### 8-1. API の場所と、取り直す間隔を決める
+### 8-1. API の場所と、聞き直す間隔を決める
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **75行目** `}` の下、（空の行） の上に、4行足します（76〜79行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **75行目** `}` の下、（空の行） の上に、9行足します（76〜84行目になります）。
 
 <!-- add: .claude/extensions/claude-accounts/extension.js 76 -->
 <table class="code-lines"><tr><td>
@@ -2318,6 +3115,11 @@ async function onMove(provider, item, step) {
 77
 78
 79
+80
+81
+82
+83
+84
 ```
 
 </td><td>
@@ -2325,8 +3127,13 @@ async function onMove(provider, item, step) {
 ```js
 
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage';
-const USAGE_INTERVAL_MS = 5 * 60 * 1000;
-let usageFetchedAt = 0;
+const CURRENT_GAP_MS = 30 * 1000;      // 使用中のアカウントを、続けて聞かない間（Claude の会話が進むたびに聞く）
+const OTHER_GAP_MS = 5 * 60 * 1000;    // ほかのアカウントを、続けて聞かない間
+const BUSY_WAIT_MS = 2 * 60 * 1000;    // 429（混んでいる）のあと、聞かずに待つ間
+const lastAsked = {};                  // アカウントの番号 → 最後に聞いた時刻
+const busyUntil = {};                  // アカウントの番号 → この時刻までは聞かない
+let updating = false;                  // 聞いている最中か
+let again = null;                      // 聞いている最中に頼まれたら、終わったあとにもう一度聞く（null・false・true は force）
 ```
 
 </td></tr></table>
@@ -2334,49 +3141,53 @@ let usageFetchedAt = 0;
 | 行 | 何をしているか |
 |---|---|
 | 77 | 使用量を返す API の URL |
-| 78 | 取り直す間隔（5分） |
-| 79 | 最後に取り直しを始めた時刻（ミリ秒）。0 は「まだ」 |
+| 78 | 使用中のアカウントは、前に聞いてから30秒たつまで聞かない |
+| 79 | ほかのアカウントは、5分たつまで聞かない |
+| 80 | 429（混んでいる）が返ったら、2分は聞かない |
+| 81〜82 | アカウントごとの、最後に聞いた時刻と、聞かずに待つ時刻 |
+| 83〜84 | 聞いている最中か。最中に頼まれたかを覚えておく（8-7・8-8） |
 
-- **なぜ:** 一覧を描くたびに API を呼ぶと、呼ぶ回数が多くなりすぎる。5分おきにすれば、Claude の画面の `/usage` と大きくずれずに済む。
-- **効果:** 8-10 で、前に取ってから5分たったときだけ取り直せる。
+- **なぜ:** 使用中のアカウントは会話のたびに変わるので短く、ほかのアカウントはこのPCでは使っていないので長くする。聞きすぎると 429 で断られるので、そのときは待つ。
+- **効果:** 8-4〜8-8 で、アカウントごとに聞くかどうかを決められる。
 
 **初めて出てくる名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| 変数 | `USAGE_URL` | 使用量を取るため | `https://api.anthropic.com/api/oauth/usage`。Claude Code が `/usage` で使う API | この手順で作る（URL は Claude のサーバー） |
-| 変数 | `USAGE_INTERVAL_MS` | 取り直す間隔を決めるため | 5分をミリ秒にしたもの | この手順で作る |
-| 変数 | `usageFetchedAt` | 前に取ってからの時間を知るため | 最後に取り直しを始めた時刻（ミリ秒） | この手順で作る |
+| 変数 | `USAGE_URL` | 使用量を聞くため | `https://api.anthropic.com/api/oauth/usage`。Claude Code が `/usage` で使う API | この手順で作る（URL は Claude のサーバー） |
+| 変数 | `CURRENT_GAP_MS`・`OTHER_GAP_MS`・`BUSY_WAIT_MS` | 聞く間隔を決めるため | 30秒・5分・2分をミリ秒にしたもの | この手順で作る |
+| 変数 | `lastAsked`・`busyUntil` | アカウントごとの時刻を覚えるため | アカウントの番号から時刻（ミリ秒）を引ける | この手順で作る |
+| 変数 | `updating`・`again` | 聞いている最中に重ねて聞かないため | 最中なら `true`。最中に頼まれたら `again` に `force`（8-4）を入れる | この手順で作る |
 
-### 8-2. 1つのアカウントの使用量を取る関数を作る
+### 8-2. 1つのアカウントの使用量を聞く関数を作る
 
 鍵（ログイン情報）を受け取り、API に聞きます。まず、聞くところまでを書きます。
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **79行目** `let usageFetchedAt = 0;` の下、（空の行） の上に、9行足します（80〜88行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **84行目** `let again = null;                      // 聞いている最中に頼まれたら、終わったあとにもう一度聞く（null・false・true は force）` の下、（空の行） の上に、9行足します（85〜93行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 80 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 85 -->
 <table class="code-lines"><tr><td>
 
 ```js
-80
-81
-82
-83
-84
 85
 86
 87
 88
+89
+90
+91
+92
+93
 ```
 
 </td><td>
 
 ```js
 
-// アカウントの使用量（5時間の枠と週の枠）を取る。鍵の期限が切れていて取れないときは null。
+// 1つのアカウントの使用量を聞く。返すのは { fiveHour, sevenDay } か、取れなかった理由（status）。
 async function fetchUsage(credentials) {
   const oauth = credentials.claudeAiOauth;
-  if (!oauth || oauth.expiresAt < Date.now()) return null;
+  if (!oauth || oauth.expiresAt < Date.now()) return { status: 'expired' };
   const response = await fetch(USAGE_URL, {
     headers: { Authorization: `Bearer ${oauth.accessToken}`, 'anthropic-beta': 'oauth-2025-04-20' },
   });
@@ -2387,10 +3198,10 @@ async function fetchUsage(credentials) {
 
 | 行 | 何をしているか |
 |---|---|
-| 82 | ログイン情報（`.credentials.json` の中身の形）を受け取る |
-| 83 | その中の鍵の組 |
-| 84 | 鍵がない・期限が切れているときは、聞かずに `null` を返す |
-| 85〜87 | 鍵を付けて API に聞き、返事を待つ |
+| 87 | ログイン情報（`.credentials.json` の中身の形）を受け取る |
+| 88 | その中の鍵の組 |
+| 89 | 鍵がない・期限が切れているときは、聞かずに `expired` を返す |
+| 90〜92 | 鍵を付けて API に聞き、返事を待つ |
 
 - **なぜ:** 期限の切れた鍵で聞いても断られるだけなので、先に期限を見る。鍵を新しくする（リフレッシュ）のは、使っていない鍵を勝手に取り替えることになるのでしない。
 - **効果:** 期限内の鍵なら、そのアカウントの使用量を聞ける。
@@ -2399,119 +3210,68 @@ async function fetchUsage(credentials) {
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| 関数 | `fetchUsage` | 1つのアカウントの使用量を取るため | 5時間・週の枠と、取った時刻を返す。取れなければ `null` | この手順で作る |
+| 関数 | `fetchUsage` | 1つのアカウントの使用量を聞くため | `{ status, fiveHour, sevenDay, fetchedAt }` を返す。取れなければ `status` だけ | この手順で作る |
 | 値 | `claudeAiOauth` | 鍵の組を取り出すため | `.credentials.json` の中の、`accessToken`（鍵）・`expiresAt`（期限。ミリ秒）など | Claude Code が書く |
 | 関数 | `Date.now` | 今の時刻を知るため | 今の時刻を、1970年からのミリ秒で返す | JavaScript の標準 |
+| 値 | `status` | 取れたか・取れなかった理由を知らせるため | `'ok'`・`'expired'`（期限切れ）・`'invalid'`（401）・`'busy'`（429）・`'error'`（そのほか） | この手順で作る |
 | 関数 | `fetch` | API に聞くため | URL に問い合わせ、返事（`Response`）を返す。終わるまで `await` で待つ | JavaScript の標準（Node.js 18 から） |
 | 値 | `Authorization`・`anthropic-beta` | 鍵を渡すため | `Bearer 鍵` で鍵を渡す。`anthropic-beta: oauth-2025-04-20` は、ログインの鍵で使う API だと知らせる | Claude のサーバーの決まり |
 | 変数 | `response` | 返事を受け取るため | `fetch` の返事 | この手順で作る |
 
 ### 8-3. 返事から、5時間の枠と週の枠を取り出す
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **87行目** `});` の下、`}` の上に、5行足します（88〜92行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **92行目** `});` の下、`}` の上に、6行足します（93〜98行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 88 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 93 -->
 <table class="code-lines"><tr><td>
 
 ```js
-88
-89
-90
-91
-92
-```
-
-</td><td>
-
-```js
-  // 401 は、鍵がサーバーで無効にされている（/logout したときなど）
-  if (response.status === 401) return { invalid: true, fetchedAt: Date.now() };
-  if (!response.ok) return null;
-  const body = await response.json();
-  return { fiveHour: body.five_hour, sevenDay: body.seven_day, fetchedAt: Date.now() };
-```
-
-</td></tr></table>
-
-| 行 | 何をしているか |
-|---|---|
-| 89 | 401（認証できない）なら、鍵が無効になっていると覚える |
-| 90 | ほかの失敗は `null`（前の値のまま） |
-| 91 | 返事の JSON を読む |
-| 92 | 5時間の枠（`five_hour`）・週の枠（`seven_day`）と、取った時刻を返す |
-
-- **なぜ:** `/logout` した鍵は、期限の前でもサーバーで無効にされ、401 が返る。それを「取れなかった」と区別しないと、ログインし直しが要ることに気づけない。
-- **効果:** 使える鍵なら使用量、無効な鍵なら「無効」と返せる。
-
-**初めて出てくる名前:**
-
-| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
-|---|---|---|---|---|
-| メンバー変数 | `status`・`ok` | 返事が成功かを知るため | `status` は返事の番号（200 は成功、401 は認証できない）。`ok` は成功なら `true` | JavaScript の標準（`Response`） |
-| 値 | `invalid` | 鍵が無効だと覚えておくため | `true` なら、そのアカウントの鍵は無効 | この手順で作る |
-| 関数 | `json` | 返事を読むため | 返事の中身を JSON として読み、オブジェクトにする | JavaScript の標準（`Response`） |
-| 値 | `five_hour`・`seven_day` | 2つの枠を取り出すため | それぞれ `utilization`（使った割合。0〜100）と `resets_at`（復活する時刻） | Claude のサーバーの返事 |
-| 値 | `fiveHour`・`sevenDay`・`fetchedAt` | 覚えておく形にするため | 5時間の枠、週の枠、取った時刻（ミリ秒） | この手順で作る |
-
-### 8-4. 全部のアカウントの使用量を取り直す関数を作る
-
-まず、取った値を覚えて一覧を描き直すところまでを書きます。
-
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **93行目** `}` の下、（空の行） の上に、9行足します（94〜102行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/extension.js 94 -->
-<table class="code-lines"><tr><td>
-
-```js
+93
 94
 95
 96
 97
 98
-99
-100
-101
-102
 ```
 
 </td><td>
 
 ```js
-
-// 全部のアカウントの使用量を取り直す。取れなかったアカウントは、前に取った値のまま。
-async function updateUsage(provider) {
-  usageFetchedAt = Date.now();
-  const current = currentAccount();
-  const usage = state.get('usage', {});
-  await state.update('usage', usage);
-  provider.changed.fire();
-}
+  // 401 は、鍵がサーバーで無効にされている（/logout したときなど）。429 は、聞く回数が多すぎる
+  if (response.status === 401) return { status: 'invalid' };
+  if (response.status === 429) return { status: 'busy' };
+  if (!response.ok) return { status: 'error' };
+  const body = await response.json();
+  return { status: 'ok', fiveHour: body.five_hour, sevenDay: body.seven_day, fetchedAt: Date.now() };
 ```
 
 </td></tr></table>
 
 | 行 | 何をしているか |
 |---|---|
-| 96 | 一覧のクラスを受け取る（描き直すため） |
-| 97 | 取り直しを始めた時刻を覚える |
-| 98 | 今のアカウント |
-| 99 | 前に取った使用量（アカウントの番号ごと） |
-| 100 | 取った使用量を覚えておく |
-| 101 | 一覧を描き直す |
+| 94 | 401（認証できない）なら、鍵が無効になっている |
+| 95 | 429（回数が多すぎる）なら、混んでいる |
+| 96 | ほかの失敗 |
+| 97 | 返事の JSON を読む |
+| 98 | 5時間の枠（`five_hour`）・週の枠（`seven_day`）と、聞いた時刻を返す |
 
-- **なぜ:** 取り直しを始めた時刻を最初に覚えるのは、取っている間にもう一度一覧が描かれても、二重に取り直さないため。
-- **効果:** 8-5 で取った値が、VSCode を閉じても残る。
+- **なぜ:** 取れなかった理由で、することが違う（401 はログインし直す、429 は待つ、期限切れは切り替えたときに取れる）。理由ごとに分けて画面に出す。
+- **効果:** 取れれば使用量、取れなければ理由を返せる。
 
 **初めて出てくる名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| 関数 | `updateUsage` | 全部のアカウントの使用量を取り直すため | 取れたアカウントだけ値を新しくし、覚えて描き直す | この手順で作る |
-| 変数 | `usage` | 使用量を持っておくため | アカウントの番号から、`fetchUsage` の結果を引ける | この手順で作る |
+| メンバー変数 | `status`（`Response`）・`ok` | 返事が成功かを知るため | `status` は返事の番号（200 は成功、401 は認証できない、429 は回数が多すぎる）。`ok` は成功なら `true` | JavaScript の標準（`Response`） |
+| 関数 | `json` | 返事を読むため | 返事の中身を JSON として読み、オブジェクトにする | JavaScript の標準（`Response`） |
+| 値 | `five_hour`・`seven_day` | 2つの枠を取り出すため | それぞれ `utilization`（使った割合。0〜100）と `resets_at`（0% に戻る時刻） | Claude のサーバーの返事 |
+| 値 | `fiveHour`・`sevenDay`・`fetchedAt` | 覚えておく形にするため | 5時間の枠、週の枠、聞いた時刻（ミリ秒） | この手順で作る |
 
-### 8-5. アカウントを1つずつ聞く
+### 8-4. 間があいたアカウントの使用量を聞き直す関数を作る
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **99行目** `const usage = state.get('usage', {});` の下、`await state.update('usage', usage);` の上に、11行足します（100〜110行目になります）。
+まず、聞いた値を覚えて描き直すところまでを書きます。
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **99行目** `}` の下、（空の行） の上に、13行足します（100〜112行目になります）。
 
 <!-- add: .claude/extensions/claude-accounts/extension.js 100 -->
 <table class="code-lines"><tr><td>
@@ -2528,52 +3288,106 @@ async function updateUsage(provider) {
 108
 109
 110
+111
+112
 ```
 
 </td><td>
 
 ```js
-  for (const p of loadProfiles()) {
-    const isCurrent = current && p.oauthAccount.accountUuid === current.accountUuid;
-    try {
-      const fetched = await fetchUsage(isCurrent ? readJson(CREDENTIALS_PATH) : p.credentials);
-      if (fetched) usage[p.oauthAccount.accountUuid] = fetched;
-      // 401 のほかの理由（429 の混雑・鍵の期限切れなど）で取れなかったときは、前の「無効」の印を残さない
-      else if (usage[p.oauthAccount.accountUuid]?.invalid) usage[p.oauthAccount.accountUuid] = { failed: true, fetchedAt: Date.now() };
-    } catch {
-      // 通信できないときは、前に取った値を出す
-    }
+
+// 間があいたアカウントの使用量を聞き直す。force なら間を待たない（429 のあとは待つ）。
+async function updateUsage(view, force) {
+  updating = true;
+  try {
+    const current = currentAccount();
+    const usage = state.get('usage', {});
+    await state.update('usage', usage);
+  } finally {
+    updating = false;
   }
+  view.render();
+}
 ```
 
 </td></tr></table>
 
 | 行 | 何をしているか |
 |---|---|
-| 100 | 保存したアカウントを1つずつ |
-| 101 | 今のアカウントかどうか |
-| 103 | 今のアカウントは `.credentials.json` の鍵、ほかは保存した鍵で聞く |
-| 104 | 取れたら（`null` でなければ）値を新しくする |
-| 105〜106 | 取れなかったとき、前の値が「無効」なら、「取れなかった」に替える |
-| 107〜109 | 通信できないときは、何もしない（前の値のまま） |
+| 102 | 画面のクラス（描き直すため）と、間を待たずに聞くか（`force`）を受け取る |
+| 103 | 聞いている最中にする |
+| 105〜106 | 今のアカウントと、前に聞いた使用量（アカウントの番号ごと） |
+| 107 | 聞いた使用量を覚えておく |
+| 108〜110 | 途中で失敗しても、最中を終わりにする |
+| 111 | 描き直す |
 
-- **なぜ:** 今のアカウントの鍵は、Claude Code が使っている間に新しくしているので、保存した鍵より `.credentials.json` の方が新しい。「無効」は 401 が返ったときだけの印なので、そのあと 429（混んでいるので後で）などで断られたときに残すと、鍵が使えるようになっていても「無効」と出続ける。
-- **効果:** 全部のアカウントの使用量がそろう。期限の切れた鍵のアカウントは、前に取った値が残る。「無効」は、もう一度 401 が返ったときだけ出る。
+- **なぜ:** `finally` で最中を終わりにしないと、どこかで失敗したときに、ずっと「最中」のままになって二度と聞かなくなる。
+- **効果:** 8-5 で聞いた値が、VSCode を閉じても残る。
 
 **初めて出てくる名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| C++ の書き方 | `for (const p of 配列)` | 1つずつ取り出すため | 配列の中身を1つずつ `p` に入れて回す（C++ の範囲 for と同じ） | JavaScript の書き方 |
-| 変数 | `fetched` | 取った値を受け取るため | `fetchUsage` の結果 | この手順で作る |
-| JavaScript の書き方 | `?.` | 値がないときに止まらないため | `a?.b` は、`a` がなければ `undefined`、あれば `a.b` | JavaScript の書き方 |
-| 値 | `failed` | 取れなかったと覚えておくため | `true` なら、「無効」のあと取れていない | この手順で作る |
+| 関数 | `updateUsage` | 使用量を聞き直すため | 間があいたアカウントだけ聞き、覚えて描き直す | この手順で作る |
+| 引数 | `force` | 間を待たずに聞くため | `true` なら、30秒・5分を待たない（429 のあとの2分は待つ） | 使う側が決める |
+| C++ の書き方 | `try { } finally { }` | 失敗しても必ず後始末するため | `try` の中で何があっても、終わるときに `finally` の中を動かす | JavaScript の書き方 |
+| 変数 | `usage` | 使用量を持っておくため | アカウントの番号から、`fetchUsage` の結果を引ける | この手順で作る |
 
-### 8-6. 1つの枠を1行の文にする関数を作る
+### 8-5. アカウントを1つずつ、聞くかどうか決める
 
-まず、値がないときと、復活の時刻を過ぎたときを書きます。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **106行目** `const usage = state.get('usage', {});` の下、`await state.update('usage', usage);` の上に、8行足します（107〜114行目になります）。
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **113行目** `}` の下、（空の行） の上に、6行足します（114〜119行目になります）。
+<!-- add: .claude/extensions/claude-accounts/extension.js 107 -->
+<table class="code-lines"><tr><td>
+
+```js
+107
+108
+109
+110
+111
+112
+113
+114
+```
+
+</td><td>
+
+```js
+    for (const p of loadProfiles()) {
+      const id = p.oauthAccount.accountUuid;
+      const isCurrent = current && id === current.accountUuid;
+      const gap = isCurrent ? CURRENT_GAP_MS : OTHER_GAP_MS;
+      if (Date.now() < (busyUntil[id] || 0)) continue;
+      if (!force && Date.now() - (lastAsked[id] || 0) < gap) continue;
+      lastAsked[id] = Date.now();
+    }
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 107 | 保存したアカウントを1つずつ |
+| 108〜110 | 番号、今のアカウントか、待つ間（今なら30秒、ほかは5分） |
+| 111 | 429 のあとの待ち時間なら、聞かない |
+| 112 | `force` でなく、前に聞いてから間がたっていなければ、聞かない |
+| 113 | 聞く時刻を覚える |
+
+- **なぜ:** 一覧を開くたび・会話が進むたびに全部のアカウントを聞くと、聞く回数が多すぎて 429 で断られる。
+- **効果:** 使用中は30秒、ほかは5分より短い間では聞かない。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 変数 | `id`・`isCurrent`・`gap` | 聞くかどうか決めるため | 番号、今のアカウントか、待つ間 | この手順で作る |
+| C++ の書き方 | `continue` | このアカウントを飛ばすため | C++ と同じく、次の1つへ進む | JavaScript の書き方 |
+| C++ の書き方 | `a || 0` | まだ覚えていないときに 0 にするため | 左がない（`undefined`）なら右を使う | JavaScript の書き方 |
+
+### 8-6. 聞いて、結果を覚える
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **113行目** `lastAsked[id] = Date.now();` の下、`}` の上に、9行足します（114〜122行目になります）。
 
 <!-- add: .claude/extensions/claude-accounts/extension.js 114 -->
 <table class="code-lines"><tr><td>
@@ -2585,174 +3399,97 @@ async function updateUsage(provider) {
 117
 118
 119
-```
-
-</td><td>
-
-```js
-
-// 「残り 96%・17:00 に復活（あと 4時間42分）」のような1行の文にする。
-function formatLimit(label, limit, withDate) {
-  if (!limit || !limit.resets_at) return `${label}: 使用量なし`;
-  if (Date.parse(limit.resets_at) <= Date.now()) return `${label}: 残り 100%（復活済み）`;
-}
-```
-
-</td></tr></table>
-
-| 行 | 何をしているか |
-|---|---|
-| 116 | 行の見出し（`5時間`・`週`）、枠、日付も出すかを受け取る |
-| 117 | 枠の値がなければ「使用量なし」 |
-| 118 | 復活の時刻を過ぎていたら、残り 100% |
-
-- **なぜ:** 前に取った値を出しているとき（鍵の期限切れなど）でも、復活の時刻を過ぎていれば、その枠は 100% に戻っているとわかる。
-- **効果:** 取り直せないアカウントでも、「復活済み」がわかる。
-
-**初めて出てくる名前:**
-
-| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
-|---|---|---|---|---|
-| 関数 | `formatLimit` | 1つの枠を1行の文にするため | 「残り 〇%・〇時〇分 に復活（あと 〇）」を返す | この手順で作る |
-| 引数 | `label`・`limit`・`withDate` | 文を作るため | 見出し、枠（`fiveHour` か `sevenDay`）、日付も出すか | 使う側が決める（8-8） |
-| 関数 | `Date.parse` | 時刻の文字を数にするため | `2026-11-19T16:59:59+09:00` のような文字を、ミリ秒にする | JavaScript の標準 |
-
-### 8-7. 残りと、復活する時刻・あと何分かを書く
-
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **118行目** `` if (Date.parse(limit.resets_at) <= Date.now()) return `${label}: 残り 100%（復活済み）`; `` の下、`}` の上に、8行足します（119〜126行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/extension.js 119 -->
-<table class="code-lines"><tr><td>
-
-```js
-119
 120
 121
 122
-123
-124
-125
-126
 ```
 
 </td><td>
 
 ```js
-  // 16:59:59.68 のような時刻を、次の分（17:00）に切り上げる
-  const reset = new Date(Math.ceil(Date.parse(limit.resets_at) / 60000) * 60000);
-  const minutes = Math.max(1, Math.floor((reset - Date.now()) / 60000));
-  const left = minutes >= 1440 ? `${Math.floor(minutes / 1440)}日${Math.floor((minutes % 1440) / 60)}時間`
-    : minutes >= 60 ? `${Math.floor(minutes / 60)}時間${minutes % 60}分` : `${minutes}分`;
-  const day = withDate ? reset.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' }) + ' ' : '';
-  const time = reset.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-  return `${label}: 残り ${100 - Math.round(limit.utilization)}%・${day}${time} に復活（あと ${left}）`;
+      let result;
+      try {
+        result = await fetchUsage(isCurrent ? readJson(CREDENTIALS_PATH) : p.credentials);
+      } catch {
+        result = { status: 'error' };   // 通信できない
+      }
+      if (result.status === 'busy') busyUntil[id] = Date.now() + BUSY_WAIT_MS;
+      // 取れなかったときは、前に取れた値を残して理由だけ替える（理由は毎回替わるので、前の理由は残らない）
+      usage[id] = result.status === 'ok' ? result : { ...usage[id], status: result.status };
 ```
 
 </td></tr></table>
 
 | 行 | 何をしているか |
 |---|---|
-| 120 | 復活の時刻（16:59:59.68 のような値）を、次の分（17:00）に切り上げる |
-| 121 | 復活まであと何分か（少なくとも1分） |
-| 122〜123 | 1日以上なら「〇日〇時間」、1時間以上なら「〇時間〇分」、それより短ければ「〇分」 |
-| 124 | 週の枠なら、「11/23(月)」のような日付も付ける |
-| 125 | 「17:00」のような時刻 |
-| 126 | 残り（100 − 使った割合）と、時刻・あと何分かを1行にする |
+| 116 | 今のアカウントは `.credentials.json` の鍵、ほかは保存した鍵で聞く |
+| 117〜119 | 通信できないときは `error` にする |
+| 120 | 429 なら、2分は聞かない |
+| 122 | 取れたら値を入れ替える。取れなければ、前に取れた値を残して、理由（`status`）だけ入れ替える |
 
-- **なぜ:** API の時刻は 16:59:59.68 のように1秒前を返すので、そのまま切り捨てると「16:59」になり、実際に戻る 17:00 とずれる。
-- **効果:** 「5時間: 残り 92%・17:00 に復活（あと 4時間38分）」のような1行になる。
+- **なぜ:** 今のアカウントの鍵は、Claude Code が使っている間に新しくしているので、保存した鍵より `.credentials.json` の方が新しい。取れなかったときも、理由は毎回入れ替えるので、前の理由（たとえば「無効」）が残り続けない。
+- **効果:** 枠に、最後に取れた値と、今取れない理由が出る。
 
 **初めて出てくる名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| 型 | `Date` | 時刻を扱うため | `new Date(ミリ秒)` で時刻を作る。引き算するとミリ秒の差になる | JavaScript の標準 |
-| 関数 | `Math.ceil`・`Math.floor`・`Math.round`・`Math.max` | 数を丸める・大きい方を取るため | 切り上げ・切り捨て・四捨五入・大きい方 | JavaScript の標準 |
-| 変数 | `reset`・`minutes`・`left`・`day`・`time` | 文を組み立てるため | 復活の時刻、あと何分、「あと」の文、日付の文、時刻の文 | この手順で作る |
-| 関数 | `toLocaleDateString`・`toLocaleTimeString` | 日本の書き方で日付・時刻を出すため | `'ja-JP'` と、出すもの（月・日・曜日、時・分）を渡すと、「11/23(月)」「17:00」のような文を返す | JavaScript の標準（`Date`） |
-| 値 | `utilization` | 残りを出すため | 使った割合（0〜100） | Claude のサーバーの返事 |
+| 変数 | `result` | 聞いた結果を受け取るため | `fetchUsage` の結果 | この手順で作る |
 
-### 8-8. アカウントの下に出す行を作る関数を作る
+### 8-7. 聞いている最中に頼まれたら、覚えておく
 
-まず、5時間と週の2行を作るところまでを書きます。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **102行目** `async function updateUsage(view, force) {` の下、`updating = true;` の上に、4行足します（103〜106行目になります）。
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **127行目** `}` の下、（空の行） の上に、11行足します（128〜138行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/extension.js 128 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 103 -->
 <table class="code-lines"><tr><td>
 
 ```js
-128
-129
-130
-131
-132
+103
+104
+105
+106
+```
+
+</td><td>
+
+```js
+  if (updating) {
+    again = again || force;
+    return;
+  }
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 103〜106 | 聞いている最中なら、頼まれたことを覚えて終わる（`force` が1回でもあれば `true`） |
+
+- **なぜ:** 聞くのには時間がかかり、その間に会話が進んだり保存したりする。重ねて聞くと、同じアカウントを2回聞き、覚える値も取り合いになる。
+- **効果:** 一度に動く聞き直しは1つだけになる。
+
+### 8-8. 終わったあとに、頼まれていた分を聞く
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **132行目** `view.render();` の下、`}` の上に、5行足します（133〜137行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 133 -->
+<table class="code-lines"><tr><td>
+
+```js
 133
 134
 135
 136
 137
-138
 ```
 
 </td><td>
 
 ```js
-
-// アカウントの行の下に出す、使用量の行。
-function usageItems(profile) {
-  const usage = state.get('usage', {})[profile.oauthAccount.accountUuid];
-  if (!usage) return [new vscode.TreeItem('使用量: まだ取れていない（このアカウントに切り替えると取れる）')];
-  if (usage.invalid) return [new vscode.TreeItem('保存した鍵が無効（ログインし直して、保存し直す）')];
-  if (usage.failed) return [new vscode.TreeItem('使用量: 取れなかった（混んでいる・鍵の期限切れなど。5分ごとに取り直す）')];
-  const items = [formatLimit('5時間', usage.fiveHour, false), formatLimit('週', usage.sevenDay, true)]
-    .map((text) => new vscode.TreeItem(text));
-  return items;
-}
-```
-
-</td></tr></table>
-
-| 行 | 何をしているか |
-|---|---|
-| 130 | アカウントを受け取る |
-| 131 | そのアカウントの、覚えておいた使用量 |
-| 132 | まだ1回も取れていなければ、そう書いた1行だけ |
-| 133 | 鍵が無効なら、そう書いた1行だけ |
-| 134 | 「無効」のあと取れていなければ、そう書いた1行だけ |
-| 135〜136 | 5時間の枠（日付なし）と週の枠（日付あり）を、1行ずつにする |
-| 137 | 行の配列を返す |
-
-- **なぜ:** 5時間の枠は今日のうちに戻るので時刻だけ、週の枠は何日も先なので日付も出す。
-- **効果:** アカウントの下に出す、使用量の行ができる。
-
-**初めて出てくる名前:**
-
-| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
-|---|---|---|---|---|
-| 関数 | `usageItems` | アカウントの下の行を作るため | 使用量の行（`TreeItem`）の配列を返す | この手順で作る |
-| 変数 | `items` | 行を持っておくため | 使用量の行の配列 | この手順で作る |
-
-### 8-9. 古い値のときは、いつの値かを書き足す
-
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **136行目** `.map((text) => new vscode.TreeItem(text));` の下、`return items;` の上に、4行足します（137〜140行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/extension.js 137 -->
-<table class="code-lines"><tr><td>
-
-```js
-137
-138
-139
-140
-```
-
-</td><td>
-
-```js
-  if (Date.now() - usage.fetchedAt > USAGE_INTERVAL_MS * 2) {
-    const at = new Date(usage.fetchedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    items.push(new vscode.TreeItem(`（${at} に取った値。鍵の期限切れなどで取り直せていない）`));
+  if (again !== null) {
+    const nextForce = again;
+    again = null;
+    updateUsage(view, nextForce);
   }
 ```
 
@@ -2760,160 +3497,34 @@ function usageItems(profile) {
 
 | 行 | 何をしているか |
 |---|---|
-| 137 | 取った時刻から 10分（取り直す間隔の2倍）より前なら |
-| 138〜139 | 「11/19 11:21 に取った値」と書いた行を足す |
+| 133〜137 | 最中に頼まれていたら、もう一度聞き直す |
 
-- **なぜ:** 期限の切れた鍵のアカウントは取り直せないので、前に取った値のまま出る。そのアカウントをほかの所（別のPCや claude.ai）で使っていれば、本当の残りと違うことがある。
-- **効果:** 出ている値が古いことがわかる。
-
-**初めて出てくる名前:**
-
-| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
-|---|---|---|---|---|
-| 変数 | `at` | 取った時刻を出すため | 「11/19 11:21」のような文 | この手順で作る |
-| 関数 | `toLocaleString` | 日付と時刻を一緒に出すため | `'ja-JP'` と出すものを渡すと、日付と時刻の文を返す | JavaScript の標準（`Date`） |
-
-### 8-10. 一覧を描くときに、アカウントの下の行を渡し、使用量を取り直す
-
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **159行目** `getChildren(element) {` の下、`const current = currentAccount();` の上に、2行足します（160〜161行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/extension.js 160 -->
-<table class="code-lines"><tr><td>
-
-```js
-160
-161
-```
-
-</td><td>
-
-```js
-    if (element) return usageItems(element.profile);
-    if (Date.now() - usageFetchedAt > USAGE_INTERVAL_MS) updateUsage(this);
-```
-
-</td></tr></table>
-
-| 行 | 何をしているか |
-|---|---|
-| 160 | アカウントの行の下を聞かれたら、使用量の行を返す |
-| 161 | 前に取ってから5分たっていたら、使用量を取り直す（待たずに先へ進み、取れたら描き直す） |
-
-- **なぜ:** `getChildren` は、一覧が見えているときにだけ呼ばれる。ここで取り直せば、一覧を閉じている間は API を呼ばない。
-- **効果:** 一覧を開いたとき、5分より古ければ使用量が新しくなる。
-
-### 8-11. アカウントの行を開いた形にする
-
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **172行目** `item.contextValue = 'account';` の下、`return item;` の上に、1行足します（173行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/extension.js 173 -->
-<table class="code-lines"><tr><td>
-
-```js
-173
-```
-
-</td><td>
-
-```js
-      item.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
-```
-
-</td></tr></table>
-
-| 行 | 何をしているか |
-|---|---|
-| 173 | アカウントの行を、下の行（使用量）が見える形にする |
-
-- **なぜ:** 下の行がある行は、何もしないと閉じた形（`▶`）で出る。開いた形にしておけば、押さずに使用量が見える。
-- **効果:** アカウントの下に、使用量の行が並ぶ。
+- **なぜ:** 8-7 で捨てた頼みの中に「保存し直したのですぐ聞いて（`force`）」があると、それが消えてしまう。
+- **効果:** 保存の直後に、新しい鍵の使用量が出る。
 
 **初めて出てくる名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| メンバー変数 | `collapsibleState` | 行の開き方を決めるため | `vscode.TreeItemCollapsibleState.Expanded` で、下の行を開いた形にする | VSCode の拡張機能の API（`TreeItem`） |
+| 変数 | `nextForce` | もう一度聞くときの `force` | `again` の値 | この手順で作る |
 
-### 8-12. 読み直しのボタンで、使用量も取り直す
+### 8-9. 前に聞いた使用量を消す関数を足す
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **151行目** `refresh() {` の下、`this.changed.fire();` の上に、1行足します（152行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **138行目** `}` の下、（空の行） の上に、9行足します（139〜147行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 152 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 139 -->
 <table class="code-lines"><tr><td>
 
 ```js
-152
-```
-
-</td><td>
-
-```js
-    usageFetchedAt = 0;
-```
-
-</td></tr></table>
-
-| 行 | 何をしているか |
-|---|---|
-| 152 | 前に取った時刻を「まだ」に戻す |
-
-- **なぜ:** `refresh()` は、読み直しのボタン・保存・切り替え・消したあとに呼ばれる。時刻を戻せば、続けて描くとき（8-10）に5分を待たずに取り直す。
-- **効果:** 読み直しのボタンを押す・切り替えると、すぐに使用量が新しくなる。
-
-### 8-13. 1分ごとに描き直す
-
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **247行目** `);` の下、`}` の上に、3行足します（248〜250行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/extension.js 248 -->
-<table class="code-lines"><tr><td>
-
-```js
-248
-249
-250
-```
-
-</td><td>
-
-```js
-  // 「あと〇分」を進めるため、1分ごとに描き直す（5分たっていれば使用量も取り直す）
-  const timer = setInterval(() => provider.changed.fire(), 60 * 1000);
-  context.subscriptions.push({ dispose: () => clearInterval(timer) });
-```
-
-</td></tr></table>
-
-| 行 | 何をしているか |
-|---|---|
-| 249 | 1分ごとに一覧を描き直す |
-| 250 | 拡張機能が止まるときに、1分ごとの描き直しを止める |
-
-- **なぜ:** 「あと〇分」は時間がたつと変わるので、描き直さないと進まない。描き直すときに 8-10 が5分たったかを見るので、使用量も5分ごとに取り直される。
-- **効果:** 「あと〇分」が1分ごとに進み、使用量は5分ごとに新しくなる。
-
-**初めて出てくる名前:**
-
-| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
-|---|---|---|---|---|
-| 関数 | `setInterval` | 決まった間隔で動かすため | 関数を、渡したミリ秒ごとに呼ぶ。止めるための値を返す | JavaScript の標準 |
-| 変数 | `timer` | 止めるため | `setInterval` が返した値 | この手順で作る |
-| 関数 | `dispose`・`clearInterval` | 止めるときに片付けるため | `subscriptions` に `dispose` を持つものを入れると、止めるときに VSCode が呼ぶ。`clearInterval` は `setInterval` を止める | VSCode の拡張機能の API・JavaScript の標準 |
-
-### 8-14. 前に取った使用量を消す関数を足す
-
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **113行目** `}` の下、（空の行） の上に、7行足します（114〜120行目になります）。
-
-<!-- add: .claude/extensions/claude-accounts/extension.js 114 -->
-<table class="code-lines"><tr><td>
-
-```js
-114
-115
-116
-117
-118
-119
-120
+139
+140
+141
+142
+143
+144
+145
+146
+147
 ```
 
 </td><td>
@@ -2925,6 +3536,8 @@ async function forgetUsage(accountUuid) {
   const usage = state.get('usage', {});
   delete usage[accountUuid];
   await state.update('usage', usage);
+  delete lastAsked[accountUuid];
+  delete busyUntil[accountUuid];
 }
 ```
 
@@ -2932,30 +3545,167 @@ async function forgetUsage(accountUuid) {
 
 | 行 | 何をしているか |
 |---|---|
-| 116 | アカウントの番号を受け取る |
-| 117 | 覚えておいた使用量 |
-| 118 | そのアカウントの分を消す |
-| 119 | 消したものを覚えておく |
+| 141 | アカウントの番号を受け取る |
+| 142〜144 | 覚えておいた使用量から、そのアカウントの分を消す |
+| 145〜146 | 聞いた時刻と、待つ時刻も消す（すぐ聞けるように） |
 
-- **なぜ:** 保存し直すと、鍵が新しくなる。前の鍵で取った「無効」などが残っていると、新しい鍵で取り直すまで古い表示のままになる。
-- **効果:** 8-15 で、保存し直したアカウントの表示を「まだ取れていない」に戻し、取り直させられる。
+- **なぜ:** 保存し直すと、鍵が新しくなる。前の鍵で聞いた「無効」などが残っていると、新しい鍵で聞くまで古い表示のままになる。
+- **効果:** 8-15 で、保存し直したアカウントをすぐ聞き直せる。
 
 **初めて出てくる名前:**
 
 | ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
 |---|---|---|---|---|
-| 関数 | `forgetUsage` | 保存し直したアカウントの、前の使用量を消すため | `usage` から、そのアカウントの分を消して覚え直す | この手順で作る |
+| 関数 | `forgetUsage` | 保存し直したアカウントの、前の使用量を消すため | 使用量・聞いた時刻・待つ時刻から、そのアカウントの分を消す | この手順で作る |
 | JavaScript の書き方 | `delete` | オブジェクトから1つ消すため | `delete usage[番号]` で、その番号の値をなくす（C++ の `delete` とは別もの。メモリは開放しない） | JavaScript の書き方 |
 
-### 8-15. 保存のボタンで、前の使用量を消す
+### 8-10. 画面に送る中身に、使用量を足す（1）
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **199行目** `saveCurrent(name);` の下、`provider.refresh();` の上に、1行足します（200行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **151行目** `const current = currentAccount();` の下、`const profiles = loadProfiles();` の上に、1行足します（152行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 152 -->
+<table class="code-lines"><tr><td>
+
+```js
+152
+```
+
+</td><td>
+
+```js
+  const usage = state.get('usage', {});
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 152 | 覚えておいた使用量を取る |
+
+### 8-11. 画面に送る中身に、使用量を足す（2）
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **159行目** `isCurrent: !!current && p.oauthAccount.accountUuid === current.accountUuid,` の下、`}));` の上に、1行足します（160行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 160 -->
+<table class="code-lines"><tr><td>
+
+```js
+160
+```
+
+</td><td>
+
+```js
+    usage: usage[p.oauthAccount.accountUuid] || null,
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 160 | アカウントごとに、使用量（まだなければ `null`）を添える |
+
+- **なぜ:** 聞くのは `extension.js`（8-4）で、描くのはページ（8-23〜）なので、聞いた値を中身に入れて送る。
+- **効果:** ページで、アカウントごとの使用量が使える。
+
+### 8-12. 欄が見えるようになったら聞き直す
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **187行目** `webview.onDidReceiveMessage((message) => onMessage(this, message));` の下、`}` の上に、3行足します（188〜190行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 188 -->
+<table class="code-lines"><tr><td>
+
+```js
+188
+189
+190
+```
+
+</td><td>
+
+```js
+    webviewView.onDidChangeVisibility(() => {
+      if (webviewView.visible) updateUsage(this, false);
+    });
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 188〜190 | 欄が見えるようになったら、間があいたアカウントを聞き直す |
+
+- **なぜ:** ほかの欄を見ている間は聞かない（8-17）ので、戻ってきたときに古い値のことがある。
+- **効果:** 欄を開くと、間があいていれば新しい値になる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `onDidChangeVisibility` | 見える・見えないが変わったときに動くため | 変わったときに呼ぶ関数を登録する | VSCode の拡張機能の API（`WebviewView`） |
+| メンバー変数 | `visible` | 欄が見えているかを知るため | 見えていれば `true` | VSCode の拡張機能の API（`WebviewView`） |
+
+### 8-13. ページの準備ができたら聞く
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **262行目** `view.render();` の下、`return;` の上に、1行足します（263行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 263 -->
+<table class="code-lines"><tr><td>
+
+```js
+263
+```
+
+</td><td>
+
+```js
+    updateUsage(view, false);
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 263 | 枠を描いたあと、間があいたアカウントを聞き直す |
+
+- **なぜ:** 聞くのには時間がかかるので、先に前の値で描いてから聞く。
+- **効果:** 欄を開くとすぐ枠が出て、少しあとで使用量が新しくなる。
+
+### 8-14. 保存などのあとは、すぐ聞き直す
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **199行目** `this.render();` の下、`}` の上に、1行足します（200行目になります）。
 
 <!-- add: .claude/extensions/claude-accounts/extension.js 200 -->
 <table class="code-lines"><tr><td>
 
 ```js
 200
+```
+
+</td><td>
+
+```js
+    updateUsage(this, true);
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 200 | 描き直したあと、間を待たずに全部のアカウントを聞き直す |
+
+- **なぜ:** 保存・切り替えで、どのアカウントの鍵を使うかが変わる。
+- **効果:** 切り替えると、すぐ使用量が新しくなる。聞き直しのボタン（8-20〜8-22）も、これを呼ぶ。
+
+### 8-15. 保存したら、前の使用量を消す
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **216行目** `saveCurrent(name);` の下、`view.refresh();` の上に、1行足します（217行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 217 -->
+<table class="code-lines"><tr><td>
+
+```js
+217
 ```
 
 </td><td>
@@ -2968,10 +3718,859 @@ async function forgetUsage(accountUuid) {
 
 | 行 | 何をしているか |
 |---|---|
-| 200 | 保存したアカウントの、前に取った使用量を消す。すぐ下の `refresh()` で取り直す |
+| 217 | 保存したアカウントの、前に聞いた使用量を消す。すぐ下の `refresh()` で聞き直す |
 
-- **なぜ:** 「無効」と出ているアカウントにログインし直して保存したとき、すぐに新しい鍵の値に変わるようにするため。切り替える前の保存し直し（5-4）では消さない。そのときの今のアカウントは、もともと `.credentials.json` の新しい鍵で取っているので、消すと「まだ取れていない」が一瞬出るだけになる。
-- **効果:** 保存のボタンを押すと、そのアカウントの使用量がすぐに取り直される。
+- **なぜ:** 「無効」と出ているアカウントにログインし直して保存したとき、すぐに新しい鍵の値に変わるようにするため。
+- **効果:** 保存のボタンを押すと、そのアカウントの使用量がすぐ聞き直される。
+
+### 8-16. Claude の会話が進んだことに気づく関数を足す
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **275行目** `}` の下、（空の行） の上に、12行足します（276〜287行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 276 -->
+<table class="code-lines"><tr><td>
+
+```js
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287
+```
+
+</td><td>
+
+```js
+
+// Claude の会話のファイル（~/.claude/projects の下）が書かれたら、少し待って onChange を呼ぶ。
+function watchClaude(onChange) {
+  const dir = path.join(HOME, '.claude', 'projects');
+  if (!fs.existsSync(dir)) return { dispose() {} };
+  let timer;
+  const watcher = fs.watch(dir, { recursive: true }, () => {
+    clearTimeout(timer);
+    timer = setTimeout(onChange, 5000);   // 書き終わるのを待つ
+  });
+  return { dispose: () => { clearTimeout(timer); watcher.close(); } };
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 278 | Claude が会話を書くフォルダ |
+| 279 | フォルダがなければ、何も見張らない（片付けるものもない） |
+| 281〜284 | フォルダの中のどこかが書かれたら、5秒待ってから `onChange` を呼ぶ。待つ間にまた書かれたら、待ち直す |
+| 285 | 止めるときに、待ちと見張りを止めるものを返す |
+
+- **なぜ:** Claude Code は、会話が1つ進むたびに `~/.claude/projects` の下のファイルに書く。そこを見張れば、使用量が増えたかもしれないときがわかる。会話の間は何度も続けて書かれるので、静かになってから1回だけ呼ぶ。
+- **効果:** 会話が進むたびに、使用中のアカウントを聞き直せる（30秒に1回まで）。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `watchClaude` | 会話が進んだことに気づくため | フォルダを見張り、書かれたら `onChange` を呼ぶ。止めるための `{ dispose }` を返す | この手順で作る |
+| 引数 | `onChange` | 気づいたときに動かすため | 呼ぶ関数 | 使う側が決める（8-18） |
+| 変数 | `dir`・`timer`・`watcher` | 見張るため | 見張るフォルダ、待ちの印、見張り | この手順で作る |
+| 関数 | `fs.watch` | フォルダを見張るため | 中のファイルが変わったら関数を呼ぶ。`{ recursive: true }` で下のフォルダも見る | Node.js の標準ライブラリ（fs） |
+| 関数 | `setTimeout`・`clearTimeout` | 少し待ってから動かすため | 渡したミリ秒のあとに1回呼ぶ・それをやめる | JavaScript の標準 |
+| 関数 | `dispose`・`close` | 止めるときに片付けるため | `subscriptions` に `dispose` を持つものを入れると、止めるときに VSCode が呼ぶ。`close` は見張りを止める | VSCode の拡張機能の決まり・Node.js の標準ライブラリ（fs） |
+
+### 8-17. 欄が見えているときだけ聞く関数を作る
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **291行目** `const view = new AccountsView(context.extensionUri);` の下、`context.subscriptions.push(` の上に、4行足します（292〜295行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 292 -->
+<table class="code-lines"><tr><td>
+
+```js
+292
+293
+294
+295
+```
+
+</td><td>
+
+```js
+  // 画面が見えているときだけ、間があいたアカウントを聞き直す
+  const update = () => {
+    if (view.view && view.view.visible) updateUsage(view, false);
+  };
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 293〜295 | 欄があって見えているときだけ、間があいたアカウントを聞き直す |
+
+- **なぜ:** 見ていない間に聞いても、だれも見ない。聞く回数も減る。
+- **効果:** 8-18・8-19 から、この関数を呼ぶ。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 変数 | `update` | 見えているときだけ聞くため | 引数のない関数 | この手順で作る |
+
+### 8-18. 会話が進んだら聞く
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **298行目** `vscode.commands.registerCommand('claudeAccounts.save', () => onSave(view)),` の下、`);` の上に、1行足します（299行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 299 -->
+<table class="code-lines"><tr><td>
+
+```js
+299
+```
+
+</td><td>
+
+```js
+    watchClaude(update),
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 299 | 会話のフォルダを見張り、書かれたら `update` を呼ぶ。止めるときの片付けは `subscriptions` に任せる |
+
+- **なぜ:** 「逐一」新しくするため。
+- **効果:** Claude の返事が終わると、5秒ほどで使用中のアカウントのバーが動く。
+
+### 8-19. 会話がなくても1分ごとに聞く
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **300行目** `);` の下、`}` の上に、3行足します（301〜303行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 301 -->
+<table class="code-lines"><tr><td>
+
+```js
+301
+302
+303
+```
+
+</td><td>
+
+```js
+  // 会話が進んでいなくても、1分ごとに聞き直す（間があいたアカウントだけ）
+  const timer = setInterval(update, 60 * 1000);
+  context.subscriptions.push({ dispose: () => clearInterval(timer) });
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 302 | 1分ごとに `update` を呼ぶ |
+| 303 | 拡張機能が止まるときに、1分ごとの呼び出しを止める |
+
+- **なぜ:** ほかのアカウント（5分ごと）や、別のPC・claude.ai で使った分は、このPCの会話の見張りでは気づけない。
+- **効果:** 使用中は1分ごと、ほかは5分ごとに新しくなる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `setInterval`・`clearInterval` | 決まった間隔で動かすため | 関数を、渡したミリ秒ごとに呼ぶ・それをやめる | JavaScript の標準 |
+
+### 8-20. 聞き直しのコマンドを決める
+
+[package.json](../../../../.claude/extensions/claude-accounts/package.json) の **10行目** `"commands": [` の下、`{ "command": "claudeAccounts.save", "title": "今のアカウントを保存", "icon": "$(add)" }` の上に、1行足します（11行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/package.json 11 -->
+<table class="code-lines"><tr><td>
+
+```json
+11
+```
+
+</td><td>
+
+```json
+      { "command": "claudeAccounts.refresh", "title": "使用量を聞き直す", "icon": "$(refresh)" },
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 11 | 聞き直しのコマンド。ボタンの絵は回る矢印 |
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 値 | `$(refresh)`・`claudeAccounts.refresh` | 聞き直しのボタンにするため | 回る矢印の絵（Codicon）と、聞き直しのコマンドの名前 | VSCode の拡張機能の決まり・この手順で作る |
+
+### 8-21. 見出しに聞き直しのボタンを出す
+
+[package.json](../../../../.claude/extensions/claude-accounts/package.json) の **15行目** `"view/title": [` の下、`{ "command": "claudeAccounts.save", "when": "view == claudeAccounts.list", "group": "navigation@1" }` の上に、1行足します（16行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/package.json 16 -->
+<table class="code-lines"><tr><td>
+
+```json
+16
+```
+
+</td><td>
+
+```json
+        { "command": "claudeAccounts.refresh", "when": "view == claudeAccounts.list", "group": "navigation@2" },
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 16 | 欄の見出しの、保存の右に、聞き直しのボタンを出す |
+
+### 8-22. 聞き直しのコマンドに動きを結びつける
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **298行目** `vscode.commands.registerCommand('claudeAccounts.save', () => onSave(view)),` の下、`watchClaude(update),` の上に、1行足します（299行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 299 -->
+<table class="code-lines"><tr><td>
+
+```js
+299
+```
+
+</td><td>
+
+```js
+    vscode.commands.registerCommand('claudeAccounts.refresh', () => view.refresh()),
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 299 | `claudeAccounts.refresh` が呼ばれたら、描き直して、間を待たずに聞き直す（8-14） |
+
+- **なぜ:** 別のPCで使ったあとなど、すぐ新しい値を見たいときのため。
+- **効果:** 見出しの回る矢印を押すと、すぐ聞き直す。
+
+### 8-23. 「〇時〇分に復活（あと 〇分）」の文を作る関数を足す（view.js）
+
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **27行目** `}` の下、（空の行） の上に、12行足します（28〜39行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.js 28 -->
+<table class="code-lines"><tr><td>
+
+```js
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+```
+
+</td><td>
+
+```js
+
+// 「17:10 に復活（あと 47分）」。週の枠は日付も付ける。
+function resetText(resetsAt, withDate) {
+  // 16:59:59.68 のような時刻を、次の分（17:00）に切り上げる
+  const reset = new Date(Math.ceil(Date.parse(resetsAt) / 60000) * 60000);
+  const minutes = Math.max(1, Math.floor((reset - Date.now()) / 60000));
+  const left = minutes >= 1440 ? `${Math.floor(minutes / 1440)}日${Math.floor((minutes % 1440) / 60)}時間`
+    : minutes >= 60 ? `${Math.floor(minutes / 60)}時間${minutes % 60}分` : `${minutes}分`;
+  const day = withDate ? reset.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' }) + ' ' : '';
+  const time = reset.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+  return `${day}${time} に復活（あと ${left}）`;
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 30 | 復活する時刻（文字）と、日付も出すかを受け取る |
+| 32 | 復活の時刻（16:59:59.68 のような値）を、次の分（17:00）に切り上げる |
+| 33 | 復活まであと何分か（少なくとも1分） |
+| 34〜35 | 1日以上なら「〇日〇時間」、1時間以上なら「〇時間〇分」、それより短ければ「〇分」 |
+| 36 | 週の枠なら、「11/20(金)」のような日付も付ける |
+| 37 | 「17:00」のような時刻 |
+| 38 | 「11/20(金) 07:00 に復活（あと 14時間31分）」のような文にする |
+
+- **なぜ:** API の時刻は 16:59:59.68 のように1秒前を返すので、そのまま切り捨てると「16:59」になり、実際に戻る 17:00 とずれる。「あと〇分」は今の時刻で決まるので、ページで描くたびに作る。
+- **効果:** 復活する時刻と、あと何分かが1つの文になる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `resetText` | 復活の文を作るため | 「〇時〇分 に復活（あと 〇）」を返す | この手順で作る |
+| 引数 | `resetsAt`・`withDate` | 文を作るため | 復活する時刻（`2026-11-19T08:10:00+00:00` のような文字）と、日付も出すか | 使う側が決める（8-25） |
+| 型 | `Date` | 時刻を扱うため | `new Date(ミリ秒)` で時刻を作る。引き算するとミリ秒の差になる | JavaScript の標準 |
+| 関数 | `Date.parse` | 時刻の文字を数にするため | 時刻の文字を、ミリ秒にする | JavaScript の標準 |
+| 関数 | `Math.ceil`・`Math.floor`・`Math.round`・`Math.max` | 数を丸める・大きい方を取るため | 切り上げ・切り捨て・四捨五入・大きい方 | JavaScript の標準 |
+| 変数 | `reset`・`minutes`・`left`・`day`・`time` | 文を組み立てるため | 復活の時刻、あと何分、「あと」の文、日付の文、時刻の文 | この手順で作る |
+| 関数 | `toLocaleDateString`・`toLocaleTimeString` | 日本の書き方で日付・時刻を出すため | `'ja-JP'` と、出すもの（月・日・曜日、時・分）を渡すと、「11/20(金)」「07:00」のような文を返す | JavaScript の標準（`Date`） |
+
+### 8-24. 1つの枠を描く関数を作る
+
+まず、値がないときと、何%使ったかを決めるところまでを書きます。
+
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **39行目** `}` の下、（空の行） の上に、11行足します（40〜50行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.js 40 -->
+<table class="code-lines"><tr><td>
+
+```js
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+```
+
+</td><td>
+
+```js
+
+// 1つの枠（5時間・週）を、見出し・バー・復活の時刻の3段にする。
+function limitBlock(label, limit, withDate) {
+  if (!limit || !limit.resets_at) return el('div', 'limit', [el('div', 'limit-head', [el('span', '', [label]), el('span', 'dim', ['使用量なし'])])]);
+  const reset = Date.parse(limit.resets_at) <= Date.now();
+  const used = reset ? 0 : Math.round(limit.utilization);
+  const left = 100 - used;
+  const level = left <= 10 ? 'danger' : left <= 30 ? 'warn' : '';
+  const fill = el('div', `fill ${level}`);
+  fill.style.width = `${used}%`;
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 42 | 見出し（`5時間の枠`・`週の枠`）、枠の値、日付も出すかを受け取る |
+| 43 | 枠の値がなければ、見出しと「使用量なし」だけ |
+| 44〜45 | 復活の時刻を過ぎていれば 0%、まだなら使った割合（四捨五入） |
+| 46 | 残り |
+| 47 | 残りが 10% 以下なら赤、30% 以下なら黄色 |
+| 48〜49 | バーの塗り。幅を使った割合にする |
+
+- **なぜ:** 前に聞いた値を出しているとき（鍵の期限切れなど）でも、復活の時刻を過ぎていれば、その枠は 0% に戻っているとわかる。
+- **効果:** 8-25 で、バーと文を組み立てられる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `limitBlock` | 1つの枠を描くため | 見出しと残り・バー・使用と復活の文の3段を返す | この手順で作る |
+| 引数 | `label`・`limit` | 描く枠を受け取るため | 見出しと、枠の値（`fiveHour` か `sevenDay`） | 使う側が決める（8-27） |
+| 値 | `utilization`・`resets_at` | 使った割合と復活の時刻 | 8-3 の返事の中身 | Claude のサーバーの返事 |
+| 変数 | `used`・`level`・`fill` | バーを描くため | 使った割合、色の名前（`danger`・`warn`・なし）、バーの塗りの要素 | この手順で作る |
+| メンバー変数 | `style.width` | バーの長さを決めるため | 要素の幅。`'17%'` なら、外の枠の 17% | ブラウザ（DOM） |
+
+### 8-25. 見出し・バー・文の3段にする
+
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **49行目** `` fill.style.width = `${used}%`; `` の下、`}` の上に、5行足します（50〜54行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.js 50 -->
+<table class="code-lines"><tr><td>
+
+```js
+50
+51
+52
+53
+54
+```
+
+</td><td>
+
+```js
+  return el('div', 'limit', [
+    el('div', 'limit-head', [el('span', '', [label]), el('span', `left ${level}`, [`残り ${left}%`])]),
+    el('div', 'bar', [fill]),
+    el('div', 'dim', [reset ? '復活済み' : `${used}% 使用・${resetText(limit.resets_at, withDate)}`]),
+  ]);
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 51 | 1段目: 左に見出し、右に「残り 〇%」（色付き） |
+| 52 | 2段目: バー（8-33・8-34 の見た目） |
+| 53 | 3段目: 「〇% 使用・〇〇 に復活（あと 〇）」。過ぎていれば「復活済み」 |
+
+- **なぜ:** Claude Code の `/usage` と同じく、バーは使った分を塗る。残り（どれだけ使えるか）は数字で大きく出す。
+- **効果:** 1つの枠が、見出し・バー・文の3段で描ける。
+
+### 8-26. 取れなかった理由の文を決める
+
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **55行目** `}` の下、（空の行） の上に、7行足します（56〜62行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.js 56 -->
+<table class="code-lines"><tr><td>
+
+```js
+56
+57
+58
+59
+60
+61
+62
+```
+
+</td><td>
+
+```js
+
+const NOTES = {
+  invalid: '保存した鍵が無効（ログインし直して、保存し直す）',
+  busy: '混んでいて取れなかった（2分後に聞き直す）',
+  expired: '鍵の期限切れで聞けない（切り替えると取れる）',
+  error: '取れなかった（通信できない など）',
+};
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 57〜62 | 8-3 の `status` ごとに、枠に出す文 |
+
+- **なぜ:** 理由ごとに、何をすればよいか（ログインし直す・待つ・切り替える）が違う。
+- **効果:** 8-27 で、`NOTES[status]` で文が引ける。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 変数 | `NOTES` | 理由の文を引くため | `status` の名前から文を引ける | この手順で作る |
+
+### 8-27. アカウントの使用量を描く関数を作る
+
+まず、2つの枠と、取れなかった理由を描くところまでを書きます。
+
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **62行目** `};` の下、（空の行） の上に、10行足します（63〜72行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.js 63 -->
+<table class="code-lines"><tr><td>
+
+```js
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+```
+
+</td><td>
+
+```js
+
+function usageBlock(usage) {
+  if (!usage) return [el('div', 'dim', ['使用量: まだ取れていない'])];
+  const blocks = [];
+  if (usage.fiveHour || usage.sevenDay) {
+    blocks.push(limitBlock('5時間の枠', usage.fiveHour, false), limitBlock('週の枠', usage.sevenDay, true));
+  }
+  if (NOTES[usage.status]) blocks.push(el('div', `note ${usage.status === 'invalid' ? 'danger' : ''}`, [NOTES[usage.status]]));
+  return blocks;
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 64 | アカウントの使用量（8-11 で送ったもの）を受け取る |
+| 65 | まだ1回も聞いていなければ、そう書いた1行だけ |
+| 67〜69 | 前に取れた値があれば、5時間の枠（日付なし）と週の枠（日付あり）を描く |
+| 70 | 取れなかったなら、理由の文を出す。無効なら赤 |
+| 71 | 描いたものの配列を返す |
+
+- **なぜ:** 取れなかったときも、前に取れた値はそのまま出す。5時間の枠は今日のうちに戻るので時刻だけ、週の枠は何日も先なので日付も出す。
+- **効果:** アカウントの使用量の段ができる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `usageBlock` | アカウントの使用量を描くため | 枠・理由・聞いた時刻の要素の配列を返す | この手順で作る |
+| 変数 | `blocks` | 描いたものを持っておくため | 要素の配列 | この手順で作る |
+
+### 8-28. いつ聞いた値かを書き足す
+
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **70行目** `` if (NOTES[usage.status]) blocks.push(el('div', `note ${usage.status === 'invalid' ? 'danger' : ''}`, [NOTES[usage.status]])); `` の下、`return blocks;` の上に、4行足します（71〜74行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.js 71 -->
+<table class="code-lines"><tr><td>
+
+```js
+71
+72
+73
+74
+```
+
+</td><td>
+
+```js
+  if (usage.fetchedAt) {
+    const at = new Date(usage.fetchedAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    blocks.push(el('div', 'fetched', [`${at} に取った値`]));
+  }
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 71〜74 | 聞いた時刻を、「16:28:19 に取った値」のように右下に出す |
+
+- **なぜ:** 取れなかったときは前の値のまま出るので、いつの値かがわからないと、今の残りと思い違える。秒まで出すと、聞き直したことがわかる。
+- **効果:** 出ている値の新しさがわかる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 変数 | `at` | 聞いた時刻を出すため | 「16:28:19」のような文 | この手順で作る |
+
+### 8-29. 枠に使用量を入れる
+
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **86行目** `` const node = el('div', `card ${account.isCurrent ? 'is-current' : ''}`, [head]); `` の下、`if (account.isCurrent) node.append(el('div', 'current', ['使用中']));` の上に、1行足します（87行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.js 87 -->
+<table class="code-lines"><tr><td>
+
+```js
+87
+```
+
+</td><td>
+
+```js
+  node.append(...usageBlock(account.usage));
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 87 | 頭の段の下に、使用量の段を入れる |
+
+- **なぜ:** 3-14 で枠に `append` で足していく形にしたので、1行足すだけで入る。
+- **効果:** 枠に、5時間と週のバーが出る。
+
+### 8-30. 「あと〇分」を進める
+
+[view.js](../../../../.claude/extensions/claude-accounts/media/view.js) の **104行目** `});` の下、`vscode.postMessage({ type: 'ready' });` の上に、2行足します（105〜106行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.js 105 -->
+<table class="code-lines"><tr><td>
+
+```js
+105
+106
+```
+
+</td><td>
+
+```js
+// 「あと〇分」を進めるため、30秒ごとに描き直す（値は extension.js が聞き直して送ってくる）
+setInterval(render, 30 * 1000);
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 105〜106 | 30秒ごとに描き直す |
+
+- **なぜ:** 「あと〇分」は時間がたつと変わるので、描き直さないと進まない。値を聞き直すのは `extension.js`（8-17〜8-19）で、ページは描き直すだけ。
+- **効果:** 「あと〇分」が1分ごとに減っていく。
+
+### 8-31. いつ聞いた値かの見た目を足す（view.css）
+
+[view.css](../../../../.claude/extensions/claude-accounts/media/view.css) の **57行目** `}` の下、（空の行） の上に、7行足します（58〜64行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.css 58 -->
+<table class="code-lines"><tr><td>
+
+```css
+58
+59
+60
+61
+62
+63
+64
+```
+
+</td><td>
+
+```css
+
+.fetched {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.92em;
+  text-align: right;
+  margin-top: 4px;
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 59〜64 | 薄く小さい字で、右寄せにする |
+
+### 8-32. 枠の見出しの段の見た目を足す
+
+[view.css](../../../../.claude/extensions/claude-accounts/media/view.css) の **64行目** `}` の下、（空の行） の上に、15行足します（65〜79行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.css 65 -->
+<table class="code-lines"><tr><td>
+
+```css
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+```
+
+</td><td>
+
+```css
+
+.limit {
+  margin-bottom: 8px;
+}
+
+.limit-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.left {
+  font-weight: 600;
+}
+
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 66〜68 | 5時間の枠と週の枠の間をあける |
+| 70〜74 | 見出しを左、「残り 〇%」を右の端に置く |
+| 76〜78 | 「残り 〇%」を太字にする |
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 値 | `justify-content: space-between` | 両端に置くため | 横に並べた中身を、左端と右端に分ける | ブラウザ（CSS） |
+
+### 8-33. バーの見た目を足す
+
+[view.css](../../../../.claude/extensions/claude-accounts/media/view.css) の **79行目** （空の行） の下、（空の行） の上に、13行足します（80〜92行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.css 80 -->
+<table class="code-lines"><tr><td>
+
+```css
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+```
+
+</td><td>
+
+```css
+/* バーは使った分を塗る（Claude Code の /usage と同じ向き） */
+.bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--vscode-input-background, rgba(128, 128, 128, 0.2));
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+
+.fill {
+  height: 100%;
+  background: var(--vscode-progressBar-background);
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 81〜87 | バーの外の枠。細く、角を丸く、薄い色で塗る。はみ出した塗りは隠す |
+| 89〜92 | バーの塗り。高さいっぱいに、VSCode の進み具合のバーと同じ色で塗る（幅は 8-24 で決める） |
+
+- **なぜ:** VSCode の進み具合のバー（読み込み中の線など）と同じ色にすると、見慣れた形になる。
+- **効果:** 使った分が青いバーで出る。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 値 | `height` | バーの太さを決めるため | 要素の高さ | ブラウザ（CSS） |
+
+### 8-34. 残りが少ないときのバーの色を足す
+
+[view.css](../../../../.claude/extensions/claude-accounts/media/view.css) の **92行目** `}` の下、（空の行） の上に、8行足します（93〜100行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.css 93 -->
+<table class="code-lines"><tr><td>
+
+```css
+93
+94
+95
+96
+97
+98
+99
+100
+```
+
+</td><td>
+
+```css
+
+.fill.warn {
+  background: var(--vscode-editorWarning-foreground);
+}
+
+.fill.danger {
+  background: var(--vscode-errorForeground);
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 94〜96 | 残りが 30% 以下なら、黄色（注意の色） |
+| 98〜100 | 残りが 10% 以下なら、赤（エラーの色） |
+
+- **なぜ:** 数字を読まなくても、もうすぐ使えなくなる枠がわかるようにする。
+- **効果:** 残りが少ない枠のバーが、黄色・赤になる。
+
+### 8-35. 残りが少ないときの文字の色と、理由の文の見た目を足す
+
+[view.css](../../../../.claude/extensions/claude-accounts/media/view.css) の **100行目** `}` の下、（空の行） の上に、13行足します（101〜113行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/media/view.css 101 -->
+<table class="code-lines"><tr><td>
+
+```css
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+```
+
+</td><td>
+
+```css
+
+.left.warn {
+  color: var(--vscode-editorWarning-foreground);
+}
+
+.left.danger,
+.note.danger {
+  color: var(--vscode-errorForeground);
+}
+
+.note {
+  margin: 4px 0;
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 102〜104 | 残りが 30% 以下なら、「残り 〇%」を黄色にする |
+| 106〜109 | 残りが 10% 以下の「残り 〇%」と、「保存した鍵が無効」を赤にする |
+| 111〜113 | 理由の文の上下をあける |
+
+**確かめ方:**
+
+1. ウィンドウを再読み込みすると、各枠に「5時間の枠」「週の枠」のバーと「残り 〇%」、「〇% 使用・〇〇 に復活（あと 〇）」が出る。
+2. 使用中のアカウントの値が、Claude の会話で `/usage` を打ったときの値と合う（`/usage` の「〇% used」が「〇% 使用」、残り = 100 − 使用）。
+3. Claude に1つ頼んで返事が終わると、5秒ほどで使用中の枠の「〇〇 に取った値」の時刻が新しくなる（前に聞いてから30秒たっていれば）。
+4. 1分たつと「あと〇分」が1つ減る。
+
+---
 
 ### 出来上がった package.json
 
@@ -3010,27 +4609,6 @@ async function forgetUsage(accountUuid) {
 29
 30
 31
-32
-33
-34
-35
-36
-37
-38
-39
-40
-41
-42
-43
-44
-45
-46
-47
-48
-49
-50
-51
-52
 ```
 
 </td><td>
@@ -3046,36 +4624,15 @@ async function forgetUsage(accountUuid) {
   "main": "./extension.js",
   "contributes": {
     "commands": [
-      { "command": "claudeAccounts.moveUp", "title": "上へ", "icon": "$(arrow-up)" },
-      { "command": "claudeAccounts.moveDown", "title": "下へ", "icon": "$(arrow-down)" },
-      { "command": "claudeAccounts.remove", "title": "保存を消す", "icon": "$(trash)" },
-      { "command": "claudeAccounts.switch", "title": "このアカウントに切り替える" },
-      { "command": "claudeAccounts.save", "title": "今のアカウントを保存", "icon": "$(add)" },
-      { "command": "claudeAccounts.refresh", "title": "一覧を読み直す", "icon": "$(refresh)" }
+      { "command": "claudeAccounts.refresh", "title": "使用量を聞き直す", "icon": "$(refresh)" },
+      { "command": "claudeAccounts.save", "title": "今のアカウントを保存", "icon": "$(add)" }
     ],
     "menus": {
-      "view/item/context": [
-        { "command": "claudeAccounts.moveUp", "when": "view == claudeAccounts.list && viewItem == account", "group": "inline@1" },
-        { "command": "claudeAccounts.moveDown", "when": "view == claudeAccounts.list && viewItem == account", "group": "inline@2" },
-        { "command": "claudeAccounts.remove", "when": "view == claudeAccounts.list && viewItem == account", "group": "inline@9" }
-      ],
-      "commandPalette": [
-        { "command": "claudeAccounts.moveUp", "when": "false" },
-        { "command": "claudeAccounts.moveDown", "when": "false" },
-        { "command": "claudeAccounts.remove", "when": "false" },
-        { "command": "claudeAccounts.switch", "when": "false" }
-      ],
       "view/title": [
-        { "command": "claudeAccounts.save", "when": "view == claudeAccounts.list", "group": "navigation" },
-        { "command": "claudeAccounts.refresh", "when": "view == claudeAccounts.list", "group": "navigation" }
+        { "command": "claudeAccounts.refresh", "when": "view == claudeAccounts.list", "group": "navigation@2" },
+        { "command": "claudeAccounts.save", "when": "view == claudeAccounts.list", "group": "navigation@1" }
       ]
     },
-    "viewsWelcome": [
-      {
-        "view": "claudeAccounts.list",
-        "contents": "保存したアカウントがありません。\nClaude で /login してから、今のアカウントを保存してください。\n[今のアカウントを保存](command:claudeAccounts.save)"
-      }
-    ],
     "viewsContainers": {
       "activitybar": [
         { "id": "claudeAccounts", "title": "Claude アカウント", "icon": "media/accounts.svg" }
@@ -3083,7 +4640,7 @@ async function forgetUsage(accountUuid) {
     },
     "views": {
       "claudeAccounts": [
-        { "id": "claudeAccounts.list", "name": "アカウント" }
+        { "type": "webview", "id": "claudeAccounts.list", "name": "アカウント" }
       ]
     }
   }
@@ -3361,6 +4918,52 @@ async function forgetUsage(accountUuid) {
 261
 262
 263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287
+288
+289
+290
+291
+292
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
 ```
 
 </td><td>
@@ -3443,41 +5046,66 @@ function sortByOrder(profiles) {
 }
 
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage';
-const USAGE_INTERVAL_MS = 5 * 60 * 1000;
-let usageFetchedAt = 0;
+const CURRENT_GAP_MS = 30 * 1000;      // 使用中のアカウントを、続けて聞かない間（Claude の会話が進むたびに聞く）
+const OTHER_GAP_MS = 5 * 60 * 1000;    // ほかのアカウントを、続けて聞かない間
+const BUSY_WAIT_MS = 2 * 60 * 1000;    // 429（混んでいる）のあと、聞かずに待つ間
+const lastAsked = {};                  // アカウントの番号 → 最後に聞いた時刻
+const busyUntil = {};                  // アカウントの番号 → この時刻までは聞かない
+let updating = false;                  // 聞いている最中か
+let again = null;                      // 聞いている最中に頼まれたら、終わったあとにもう一度聞く（null・false・true は force）
 
-// アカウントの使用量（5時間の枠と週の枠）を取る。鍵の期限が切れていて取れないときは null。
+// 1つのアカウントの使用量を聞く。返すのは { fiveHour, sevenDay } か、取れなかった理由（status）。
 async function fetchUsage(credentials) {
   const oauth = credentials.claudeAiOauth;
-  if (!oauth || oauth.expiresAt < Date.now()) return null;
+  if (!oauth || oauth.expiresAt < Date.now()) return { status: 'expired' };
   const response = await fetch(USAGE_URL, {
     headers: { Authorization: `Bearer ${oauth.accessToken}`, 'anthropic-beta': 'oauth-2025-04-20' },
   });
-  // 401 は、鍵がサーバーで無効にされている（/logout したときなど）
-  if (response.status === 401) return { invalid: true, fetchedAt: Date.now() };
-  if (!response.ok) return null;
+  // 401 は、鍵がサーバーで無効にされている（/logout したときなど）。429 は、聞く回数が多すぎる
+  if (response.status === 401) return { status: 'invalid' };
+  if (response.status === 429) return { status: 'busy' };
+  if (!response.ok) return { status: 'error' };
   const body = await response.json();
-  return { fiveHour: body.five_hour, sevenDay: body.seven_day, fetchedAt: Date.now() };
+  return { status: 'ok', fiveHour: body.five_hour, sevenDay: body.seven_day, fetchedAt: Date.now() };
 }
 
-// 全部のアカウントの使用量を取り直す。取れなかったアカウントは、前に取った値のまま。
-async function updateUsage(provider) {
-  usageFetchedAt = Date.now();
-  const current = currentAccount();
-  const usage = state.get('usage', {});
-  for (const p of loadProfiles()) {
-    const isCurrent = current && p.oauthAccount.accountUuid === current.accountUuid;
-    try {
-      const fetched = await fetchUsage(isCurrent ? readJson(CREDENTIALS_PATH) : p.credentials);
-      if (fetched) usage[p.oauthAccount.accountUuid] = fetched;
-      // 401 のほかの理由（429 の混雑・鍵の期限切れなど）で取れなかったときは、前の「無効」の印を残さない
-      else if (usage[p.oauthAccount.accountUuid]?.invalid) usage[p.oauthAccount.accountUuid] = { failed: true, fetchedAt: Date.now() };
-    } catch {
-      // 通信できないときは、前に取った値を出す
-    }
+// 間があいたアカウントの使用量を聞き直す。force なら間を待たない（429 のあとは待つ）。
+async function updateUsage(view, force) {
+  if (updating) {
+    again = again || force;
+    return;
   }
-  await state.update('usage', usage);
-  provider.changed.fire();
+  updating = true;
+  try {
+    const current = currentAccount();
+    const usage = state.get('usage', {});
+    for (const p of loadProfiles()) {
+      const id = p.oauthAccount.accountUuid;
+      const isCurrent = current && id === current.accountUuid;
+      const gap = isCurrent ? CURRENT_GAP_MS : OTHER_GAP_MS;
+      if (Date.now() < (busyUntil[id] || 0)) continue;
+      if (!force && Date.now() - (lastAsked[id] || 0) < gap) continue;
+      lastAsked[id] = Date.now();
+      let result;
+      try {
+        result = await fetchUsage(isCurrent ? readJson(CREDENTIALS_PATH) : p.credentials);
+      } catch {
+        result = { status: 'error' };   // 通信できない
+      }
+      if (result.status === 'busy') busyUntil[id] = Date.now() + BUSY_WAIT_MS;
+      // 取れなかったときは、前に取れた値を残して理由だけ替える（理由は毎回替わるので、前の理由は残らない）
+      usage[id] = result.status === 'ok' ? result : { ...usage[id], status: result.status };
+    }
+    await state.update('usage', usage);
+  } finally {
+    updating = false;
+  }
+  view.render();
+  if (again !== null) {
+    const nextForce = again;
+    again = null;
+    updateUsage(view, nextForce);
+  }
 }
 
 // 保存し直したアカウントの、前に取った使用量を消す（新しい鍵で取り直すため）。
@@ -3485,74 +5113,66 @@ async function forgetUsage(accountUuid) {
   const usage = state.get('usage', {});
   delete usage[accountUuid];
   await state.update('usage', usage);
+  delete lastAsked[accountUuid];
+  delete busyUntil[accountUuid];
 }
 
-// 「残り 96%・17:00 に復活（あと 4時間42分）」のような1行の文にする。
-function formatLimit(label, limit, withDate) {
-  if (!limit || !limit.resets_at) return `${label}: 使用量なし`;
-  if (Date.parse(limit.resets_at) <= Date.now()) return `${label}: 残り 100%（復活済み）`;
-  // 16:59:59.68 のような時刻を、次の分（17:00）に切り上げる
-  const reset = new Date(Math.ceil(Date.parse(limit.resets_at) / 60000) * 60000);
-  const minutes = Math.max(1, Math.floor((reset - Date.now()) / 60000));
-  const left = minutes >= 1440 ? `${Math.floor(minutes / 1440)}日${Math.floor((minutes % 1440) / 60)}時間`
-    : minutes >= 60 ? `${Math.floor(minutes / 60)}時間${minutes % 60}分` : `${minutes}分`;
-  const day = withDate ? reset.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' }) + ' ' : '';
-  const time = reset.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-  return `${label}: 残り ${100 - Math.round(limit.utilization)}%・${day}${time} に復活（あと ${left}）`;
+// 画面に渡す中身。アカウントを並び順に並べ、使用量を添える。
+function viewData() {
+  const current = currentAccount();
+  const usage = state.get('usage', {});
+  const profiles = loadProfiles();
+  sortByOrder(profiles);
+  const accounts = profiles.map((p) => ({
+    id: p.oauthAccount.accountUuid,
+    name: p.name,
+    email: p.oauthAccount.emailAddress,
+    isCurrent: !!current && p.oauthAccount.accountUuid === current.accountUuid,
+    usage: usage[p.oauthAccount.accountUuid] || null,
+  }));
+  const data = { accounts };
+  // 今のアカウントが保存されていなければ、保存を勧める
+  if (current && !accounts.some((a) => a.isCurrent)) data.unsaved = current.emailAddress;
+  return data;
 }
 
-// アカウントの行の下に出す、使用量の行。
-function usageItems(profile) {
-  const usage = state.get('usage', {})[profile.oauthAccount.accountUuid];
-  if (!usage) return [new vscode.TreeItem('使用量: まだ取れていない（このアカウントに切り替えると取れる）')];
-  if (usage.invalid) return [new vscode.TreeItem('保存した鍵が無効（ログインし直して、保存し直す）')];
-  if (usage.failed) return [new vscode.TreeItem('使用量: 取れなかった（混んでいる・鍵の期限切れなど。5分ごとに取り直す）')];
-  const items = [formatLimit('5時間', usage.fiveHour, false), formatLimit('週', usage.sevenDay, true)]
-    .map((text) => new vscode.TreeItem(text));
-  if (Date.now() - usage.fetchedAt > USAGE_INTERVAL_MS * 2) {
-    const at = new Date(usage.fetchedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    items.push(new vscode.TreeItem(`（${at} に取った値。鍵の期限切れなどで取り直せていない）`));
-  }
-  return items;
-}
-
-// アクティビティバーに出す一覧。今のアカウントには印を付ける。
-class AccountsProvider {
-  constructor() {
-    this.changed = new vscode.EventEmitter();
-    this.onDidChangeTreeData = this.changed.event;
+// アクティビティバーに出す画面（Webview）。描くのは media/view.js で、ここは中身を渡すだけ。
+class AccountsView {
+  constructor(extensionUri) {
+    this.extensionUri = extensionUri;
+    this.view = null;
   }
 
-  refresh() {
-    usageFetchedAt = 0;
-    this.changed.fire();
-  }
-
-  getTreeItem(item) {
-    return item;
-  }
-
-  getChildren(element) {
-    if (element) return usageItems(element.profile);
-    if (Date.now() - usageFetchedAt > USAGE_INTERVAL_MS) updateUsage(this);
-    const current = currentAccount();
-    const profiles = loadProfiles();
-    sortByOrder(profiles);
-    return profiles.map((p) => {
-      const isCurrent = current && p.oauthAccount.accountUuid === current.accountUuid;
-      const item = new vscode.TreeItem(p.name);
-      item.description = p.oauthAccount.emailAddress + (isCurrent ? '（使用中）' : '');
-      item.iconPath = new vscode.ThemeIcon(isCurrent ? 'pass-filled' : 'account');
-      item.command = { command: 'claudeAccounts.switch', title: '切り替える', arguments: [p] };
-      item.profile = p;
-      item.contextValue = 'account';
-      item.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
-      return item;
+  resolveWebviewView(webviewView) {
+    this.view = webviewView;
+    const webview = webviewView.webview;
+    const media = vscode.Uri.joinPath(this.extensionUri, 'media');
+    webview.options = { enableScripts: true, localResourceRoots: [media] };
+    const nonce = String(Math.random()).slice(2);
+    const script = webview.asWebviewUri(vscode.Uri.joinPath(media, 'view.js'));
+    const style = webview.asWebviewUri(vscode.Uri.joinPath(media, 'view.css'));
+    webview.html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+<link rel="stylesheet" href="${style}"></head>
+<body><div id="root"></div><script nonce="${nonce}" src="${script}"></script></body></html>`;
+    webview.onDidReceiveMessage((message) => onMessage(this, message));
+    webviewView.onDidChangeVisibility(() => {
+      if (webviewView.visible) updateUsage(this, false);
     });
   }
+
+  render() {
+    if (this.view) this.view.webview.postMessage(viewData());
+  }
+
+  // 保存・切り替え・消したあと。すぐ描き直し、使用量もすぐ聞き直す。
+  refresh() {
+    this.render();
+    updateUsage(this, true);
+  }
 }
 
-async function onSave(provider) {
+async function onSave(view) {
   const account = currentAccount();
   if (!account || !fs.existsSync(CREDENTIALS_PATH)) {
     vscode.window.showWarningMessage('Claude にログインしていません。Claude で /login してから保存してください。');
@@ -3566,10 +5186,10 @@ async function onSave(provider) {
   if (!name) return;
   saveCurrent(name);
   await forgetUsage(account.accountUuid);
-  provider.refresh();
+  view.refresh();
 }
 
-async function onSwitch(provider, profile) {
+async function onSwitch(view, profile) {
   const current = currentAccount();
   if (current && current.accountUuid === profile.oauthAccount.accountUuid) return;
   // 今のアカウントの最新のログイン情報を先に取っておく（使っている間に Claude が更新しているため）。
@@ -3583,52 +5203,607 @@ async function onSwitch(provider, profile) {
     if (answer !== '切り替える') return;
   }
   applyProfile(profile);
-  provider.refresh();
+  view.refresh();
   const answer = await vscode.window.showInformationMessage(
     `${profile.name} に切り替えました。開いている Claude に効かせるには、ウィンドウを再読み込みしてください。`,
     '再読み込み');
   if (answer === '再読み込み') vscode.commands.executeCommand('workbench.action.reloadWindow');
 }
 
-async function onRemove(provider, item) {
+async function onRemove(view, profile) {
   const answer = await vscode.window.showWarningMessage(
-    `${item.profile.name} の保存を消しますか？（ログアウトはしません）`, { modal: true }, '消す');
+    `${profile.name} の保存を消しますか？（ログアウトはしません）`, { modal: true }, '消す');
   if (answer !== '消す') return;
-  fs.unlinkSync(item.profile.file);
-  provider.refresh();
+  fs.unlinkSync(profile.file);
+  view.refresh();
 }
 
-// 押した行を、1つ上（step = -1）か1つ下（step = 1）と入れ替える。
-async function onMove(provider, item, step) {
+// 押したアカウントを、1つ上（step = -1）か1つ下（step = 1）と入れ替える。
+async function onMove(view, profile, step) {
   const ids = sortByOrder(loadProfiles()).map((p) => p.oauthAccount.accountUuid);
-  const from = ids.indexOf(item.profile.oauthAccount.accountUuid);
+  const from = ids.indexOf(profile.oauthAccount.accountUuid);
   const to = from + step;
   if (to < 0 || to >= ids.length) return;
   [ids[from], ids[to]] = [ids[to], ids[from]];
   await state.update('order', ids);
-  provider.changed.fire();
+  view.render();
+}
+
+// 画面から届いた知らせ。{ type: 'ready' | 'save' | 'switch' | 'up' | 'down' | 'remove', id }
+function onMessage(view, message) {
+  if (message.type === 'ready') {
+    view.render();
+    updateUsage(view, false);
+    return;
+  }
+  if (message.type === 'save') return onSave(view);
+  const profile = findProfile(message.id);
+  if (!profile) return;
+  if (message.type === 'switch') return onSwitch(view, profile);
+  if (message.type === 'remove') return onRemove(view, profile);
+  if (message.type === 'up') return onMove(view, profile, -1);
+  if (message.type === 'down') return onMove(view, profile, 1);
+}
+
+// Claude の会話のファイル（~/.claude/projects の下）が書かれたら、少し待って onChange を呼ぶ。
+function watchClaude(onChange) {
+  const dir = path.join(HOME, '.claude', 'projects');
+  if (!fs.existsSync(dir)) return { dispose() {} };
+  let timer;
+  const watcher = fs.watch(dir, { recursive: true }, () => {
+    clearTimeout(timer);
+    timer = setTimeout(onChange, 5000);   // 書き終わるのを待つ
+  });
+  return { dispose: () => { clearTimeout(timer); watcher.close(); } };
 }
 
 function activate(context) {
   state = context.globalState;
-  const provider = new AccountsProvider();
+  const view = new AccountsView(context.extensionUri);
+  // 画面が見えているときだけ、間があいたアカウントを聞き直す
+  const update = () => {
+    if (view.view && view.view.visible) updateUsage(view, false);
+  };
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider('claudeAccounts.list', provider),
-    vscode.commands.registerCommand('claudeAccounts.save', () => onSave(provider)),
-    vscode.commands.registerCommand('claudeAccounts.refresh', () => provider.refresh()),
-    vscode.commands.registerCommand('claudeAccounts.switch', (p) => onSwitch(provider, p)),
-    vscode.commands.registerCommand('claudeAccounts.remove', (item) => onRemove(provider, item)),
-    vscode.commands.registerCommand('claudeAccounts.moveUp', (item) => onMove(provider, item, -1)),
-    vscode.commands.registerCommand('claudeAccounts.moveDown', (item) => onMove(provider, item, 1)),
+    vscode.window.registerWebviewViewProvider('claudeAccounts.list', view, { webviewOptions: { retainContextWhenHidden: true } }),
+    vscode.commands.registerCommand('claudeAccounts.save', () => onSave(view)),
+    vscode.commands.registerCommand('claudeAccounts.refresh', () => view.refresh()),
+    watchClaude(update),
   );
-  // 「あと〇分」を進めるため、1分ごとに描き直す（5分たっていれば使用量も取り直す）
-  const timer = setInterval(() => provider.changed.fire(), 60 * 1000);
+  // 会話が進んでいなくても、1分ごとに聞き直す（間があいたアカウントだけ）
+  const timer = setInterval(update, 60 * 1000);
   context.subscriptions.push({ dispose: () => clearInterval(timer) });
 }
 
 function deactivate() {}
 
 module.exports = { activate, deactivate };
+```
+
+</td></tr></table>
+
+### 出来上がった view.js
+
+<!-- full: .claude/extensions/claude-accounts/media/view.js -->
+<table class="code-lines"><tr><td>
+
+```js
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+```
+
+</td><td>
+
+```js
+// アカウントの一覧を描く（Webview の中で動く）。中身は extension.js から postMessage で届く。
+const vscode = acquireVsCodeApi();
+const root = document.getElementById('root');
+let data = { accounts: [] };
+
+// 要素を作る。children は文字か要素の配列（文字は textContent なので、名前に < などがあっても崩れない）。
+function el(tag, className, children = []) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  for (const child of children) node.append(child);
+  return node;
+}
+
+// 横いっぱいのボタン（切り替える・保存）。押したら extension.js に { type, id } を送る。
+function action(text, type, id) {
+  const node = el('button', 'action', [text]);
+  node.addEventListener('click', () => vscode.postMessage({ type, id }));
+  return node;
+}
+
+// 小さなボタン（↑・↓・✕）。title はマウスを乗せたときに出る説明。
+function button(text, title, type, id) {
+  const node = el('button', 'icon', [text]);
+  node.title = title;
+  node.addEventListener('click', () => vscode.postMessage({ type, id }));
+  return node;
+}
+
+// 「17:10 に復活（あと 47分）」。週の枠は日付も付ける。
+function resetText(resetsAt, withDate) {
+  // 16:59:59.68 のような時刻を、次の分（17:00）に切り上げる
+  const reset = new Date(Math.ceil(Date.parse(resetsAt) / 60000) * 60000);
+  const minutes = Math.max(1, Math.floor((reset - Date.now()) / 60000));
+  const left = minutes >= 1440 ? `${Math.floor(minutes / 1440)}日${Math.floor((minutes % 1440) / 60)}時間`
+    : minutes >= 60 ? `${Math.floor(minutes / 60)}時間${minutes % 60}分` : `${minutes}分`;
+  const day = withDate ? reset.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' }) + ' ' : '';
+  const time = reset.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+  return `${day}${time} に復活（あと ${left}）`;
+}
+
+// 1つの枠（5時間・週）を、見出し・バー・復活の時刻の3段にする。
+function limitBlock(label, limit, withDate) {
+  if (!limit || !limit.resets_at) return el('div', 'limit', [el('div', 'limit-head', [el('span', '', [label]), el('span', 'dim', ['使用量なし'])])]);
+  const reset = Date.parse(limit.resets_at) <= Date.now();
+  const used = reset ? 0 : Math.round(limit.utilization);
+  const left = 100 - used;
+  const level = left <= 10 ? 'danger' : left <= 30 ? 'warn' : '';
+  const fill = el('div', `fill ${level}`);
+  fill.style.width = `${used}%`;
+  return el('div', 'limit', [
+    el('div', 'limit-head', [el('span', '', [label]), el('span', `left ${level}`, [`残り ${left}%`])]),
+    el('div', 'bar', [fill]),
+    el('div', 'dim', [reset ? '復活済み' : `${used}% 使用・${resetText(limit.resets_at, withDate)}`]),
+  ]);
+}
+
+const NOTES = {
+  invalid: '保存した鍵が無効（ログインし直して、保存し直す）',
+  busy: '混んでいて取れなかった（2分後に聞き直す）',
+  expired: '鍵の期限切れで聞けない（切り替えると取れる）',
+  error: '取れなかった（通信できない など）',
+};
+
+function usageBlock(usage) {
+  if (!usage) return [el('div', 'dim', ['使用量: まだ取れていない'])];
+  const blocks = [];
+  if (usage.fiveHour || usage.sevenDay) {
+    blocks.push(limitBlock('5時間の枠', usage.fiveHour, false), limitBlock('週の枠', usage.sevenDay, true));
+  }
+  if (NOTES[usage.status]) blocks.push(el('div', `note ${usage.status === 'invalid' ? 'danger' : ''}`, [NOTES[usage.status]]));
+  if (usage.fetchedAt) {
+    const at = new Date(usage.fetchedAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    blocks.push(el('div', 'fetched', [`${at} に取った値`]));
+  }
+  return blocks;
+}
+
+function card(account) {
+  const head = el('div', 'card-head', [
+    el('span', `dot ${account.isCurrent ? 'on' : ''}`, [account.isCurrent ? '●' : '○']),
+    el('div', 'who', [el('div', 'name', [account.name]), el('div', 'dim', [account.email])]),
+    button('↑', '上へ', 'up', account.id),
+    button('↓', '下へ', 'down', account.id),
+    button('✕', '保存を消す（ログアウトはしない）', 'remove', account.id),
+  ]);
+  const node = el('div', `card ${account.isCurrent ? 'is-current' : ''}`, [head]);
+  node.append(...usageBlock(account.usage));
+  if (account.isCurrent) node.append(el('div', 'current', ['使用中']));
+  if (!account.isCurrent) node.append(action('このアカウントに切り替える', 'switch', account.id));
+  return node;
+}
+
+function render() {
+  const children = data.accounts.map(card);
+  // 今のアカウントが保存されていなければ、一番上に保存のボタンを出す
+  if (data.unsaved) children.unshift(el('div', 'card', [el('div', 'dim', [`${data.unsaved} は保存されていません。`]), action('今のアカウントを保存', 'save')]));
+  if (children.length === 0) children.push(el('div', 'dim', ['Claude で /login してから、上の「+」で今のアカウントを保存してください。']));
+  root.replaceChildren(...children);
+}
+
+window.addEventListener('message', (event) => {
+  data = event.data;
+  render();
+});
+// 「あと〇分」を進めるため、30秒ごとに描き直す（値は extension.js が聞き直して送ってくる）
+setInterval(render, 30 * 1000);
+vscode.postMessage({ type: 'ready' });
+```
+
+</td></tr></table>
+
+### 出来上がった view.css
+
+<!-- full: .claude/extensions/claude-accounts/media/view.css -->
+<table class="code-lines"><tr><td>
+
+```css
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+```
+
+</td><td>
+
+```css
+/* 色は VSCode のテーマの色（--vscode-〇〇）を使い、明るいテーマでも暗いテーマでも読めるようにする。 */
+body {
+  padding: 8px 12px;
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+}
+
+.card {
+  border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.card.is-current {
+  border-color: var(--vscode-focusBorder);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.who {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dot {
+  color: var(--vscode-descriptionForeground);
+  margin-right: 4px;
+}
+
+.dot.on {
+  color: var(--vscode-testing-iconPassed, var(--vscode-charts-green));
+}
+
+.dim {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.92em;
+}
+
+.current {
+  margin-top: 6px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+}
+
+.fetched {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.92em;
+  text-align: right;
+  margin-top: 4px;
+}
+
+.limit {
+  margin-bottom: 8px;
+}
+
+.limit-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.left {
+  font-weight: 600;
+}
+
+/* バーは使った分を塗る（Claude Code の /usage と同じ向き） */
+.bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--vscode-input-background, rgba(128, 128, 128, 0.2));
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+
+.fill {
+  height: 100%;
+  background: var(--vscode-progressBar-background);
+}
+
+.fill.warn {
+  background: var(--vscode-editorWarning-foreground);
+}
+
+.fill.danger {
+  background: var(--vscode-errorForeground);
+}
+
+.left.warn {
+  color: var(--vscode-editorWarning-foreground);
+}
+
+.left.danger,
+.note.danger {
+  color: var(--vscode-errorForeground);
+}
+
+.note {
+  margin: 4px 0;
+}
+
+button.icon {
+  background: none;
+  border: none;
+  color: var(--vscode-icon-foreground, var(--vscode-foreground));
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+button.icon:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+button.action {
+  width: 100%;
+  margin-top: 6px;
+  padding: 4px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+}
+
+button.action:hover {
+  background: var(--vscode-button-hoverBackground);
+}
 ```
 
 </td></tr></table>
@@ -3685,10 +5860,3 @@ Write-Output 'VSCode のウィンドウを再読み込みすると、アクテ�
 ```
 
 </td></tr></table>
-
-**確かめ方（これで出来上がり）:**
-
-1. ウィンドウを再読み込みすると、各アカウントの下に「5時間: 残り 〇%・〇〇:〇〇 に復活（あと 〇）」と「週: …」の2行が出る。
-2. 使用中のアカウントの値が、Claude の会話で `/usage` を打ったときの値と合う（残り = 100 − 使った割合）。
-3. 1分たつと「あと〇分」が1つ減る。
-4. 「保存した鍵が無効」と出ているアカウントにログインし直し、「+」で保存すると、すぐに使用量の2行に変わる。
