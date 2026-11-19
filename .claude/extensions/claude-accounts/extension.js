@@ -102,12 +102,21 @@ async function updateUsage(provider) {
     try {
       const fetched = await fetchUsage(isCurrent ? readJson(CREDENTIALS_PATH) : p.credentials);
       if (fetched) usage[p.oauthAccount.accountUuid] = fetched;
+      // 401 のほかの理由（429 の混雑・鍵の期限切れなど）で取れなかったときは、前の「無効」の印を残さない
+      else if (usage[p.oauthAccount.accountUuid]?.invalid) usage[p.oauthAccount.accountUuid] = { failed: true, fetchedAt: Date.now() };
     } catch {
       // 通信できないときは、前に取った値を出す
     }
   }
   await state.update('usage', usage);
   provider.changed.fire();
+}
+
+// 保存し直したアカウントの、前に取った使用量を消す（新しい鍵で取り直すため）。
+async function forgetUsage(accountUuid) {
+  const usage = state.get('usage', {});
+  delete usage[accountUuid];
+  await state.update('usage', usage);
 }
 
 // 「残り 96%・17:00 に復活（あと 4時間42分）」のような1行の文にする。
@@ -129,6 +138,7 @@ function usageItems(profile) {
   const usage = state.get('usage', {})[profile.oauthAccount.accountUuid];
   if (!usage) return [new vscode.TreeItem('使用量: まだ取れていない（このアカウントに切り替えると取れる）')];
   if (usage.invalid) return [new vscode.TreeItem('保存した鍵が無効（ログインし直して、保存し直す）')];
+  if (usage.failed) return [new vscode.TreeItem('使用量: 取れなかった（混んでいる・鍵の期限切れなど。5分ごとに取り直す）')];
   const items = [formatLimit('5時間', usage.fiveHour, false), formatLimit('週', usage.sevenDay, true)]
     .map((text) => new vscode.TreeItem(text));
   if (Date.now() - usage.fetchedAt > USAGE_INTERVAL_MS * 2) {
@@ -187,6 +197,7 @@ async function onSave(provider) {
   });
   if (!name) return;
   saveCurrent(name);
+  await forgetUsage(account.accountUuid);
   provider.refresh();
 }
 

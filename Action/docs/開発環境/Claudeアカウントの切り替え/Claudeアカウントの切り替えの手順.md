@@ -2298,12 +2298,13 @@ async function onMove(provider, item, step) {
 | `週: 残り 53%・11/23(月) 20:00 に復活（あと 4日7時間）` | 週の枠の残り |
 | `（11/19 11:21 に取った値。鍵の期限切れなどで取り直せていない）` | 鍵の期限が切れていて取り直せないとき、前に取った値を出している |
 | `保存した鍵が無効（ログインし直して、保存し直す）` | 鍵がサーバーで無効にされている（`/logout` したときなど） |
+| `使用量: 取れなかった（混んでいる・鍵の期限切れなど。5分ごとに取り直す）` | 前は「無効」だったが、そのあと 401 ではない理由で取れなかった |
 
 **この手順で触るファイル:**
 
 | ファイル | 何をするか |
 |---|---|
-| [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) | 追加（8-1〜8-13） |
+| [extension.js](../../../../.claude/extensions/claude-accounts/extension.js) | 追加（8-1〜8-15） |
 
 ### 8-1. API の場所と、取り直す間隔を決める
 
@@ -2510,7 +2511,7 @@ async function updateUsage(provider) {
 
 ### 8-5. アカウントを1つずつ聞く
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **99行目** `const usage = state.get('usage', {});` の下、`await state.update('usage', usage);` の上に、9行足します（100〜108行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **99行目** `const usage = state.get('usage', {});` の下、`await state.update('usage', usage);` の上に、11行足します（100〜110行目になります）。
 
 <!-- add: .claude/extensions/claude-accounts/extension.js 100 -->
 <table class="code-lines"><tr><td>
@@ -2525,6 +2526,8 @@ async function updateUsage(provider) {
 106
 107
 108
+109
+110
 ```
 
 </td><td>
@@ -2535,6 +2538,8 @@ async function updateUsage(provider) {
     try {
       const fetched = await fetchUsage(isCurrent ? readJson(CREDENTIALS_PATH) : p.credentials);
       if (fetched) usage[p.oauthAccount.accountUuid] = fetched;
+      // 401 のほかの理由（429 の混雑・鍵の期限切れなど）で取れなかったときは、前の「無効」の印を残さない
+      else if (usage[p.oauthAccount.accountUuid]?.invalid) usage[p.oauthAccount.accountUuid] = { failed: true, fetchedAt: Date.now() };
     } catch {
       // 通信できないときは、前に取った値を出す
     }
@@ -2549,10 +2554,11 @@ async function updateUsage(provider) {
 | 101 | 今のアカウントかどうか |
 | 103 | 今のアカウントは `.credentials.json` の鍵、ほかは保存した鍵で聞く |
 | 104 | 取れたら（`null` でなければ）値を新しくする |
-| 105〜107 | 通信できないときは、何もしない（前の値のまま） |
+| 105〜106 | 取れなかったとき、前の値が「無効」なら、「取れなかった」に替える |
+| 107〜109 | 通信できないときは、何もしない（前の値のまま） |
 
-- **なぜ:** 今のアカウントの鍵は、Claude Code が使っている間に新しくしているので、保存した鍵より `.credentials.json` の方が新しい。
-- **効果:** 全部のアカウントの使用量がそろう。期限の切れた鍵のアカウントは、前に取った値が残る。
+- **なぜ:** 今のアカウントの鍵は、Claude Code が使っている間に新しくしているので、保存した鍵より `.credentials.json` の方が新しい。「無効」は 401 が返ったときだけの印なので、そのあと 429（混んでいるので後で）などで断られたときに残すと、鍵が使えるようになっていても「無効」と出続ける。
+- **効果:** 全部のアカウントの使用量がそろう。期限の切れた鍵のアカウントは、前に取った値が残る。「無効」は、もう一度 401 が返ったときだけ出る。
 
 **初めて出てくる名前:**
 
@@ -2560,23 +2566,25 @@ async function updateUsage(provider) {
 |---|---|---|---|---|
 | C++ の書き方 | `for (const p of 配列)` | 1つずつ取り出すため | 配列の中身を1つずつ `p` に入れて回す（C++ の範囲 for と同じ） | JavaScript の書き方 |
 | 変数 | `fetched` | 取った値を受け取るため | `fetchUsage` の結果 | この手順で作る |
+| JavaScript の書き方 | `?.` | 値がないときに止まらないため | `a?.b` は、`a` がなければ `undefined`、あれば `a.b` | JavaScript の書き方 |
+| 値 | `failed` | 取れなかったと覚えておくため | `true` なら、「無効」のあと取れていない | この手順で作る |
 
 ### 8-6. 1つの枠を1行の文にする関数を作る
 
 まず、値がないときと、復活の時刻を過ぎたときを書きます。
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **111行目** `}` の下、（空の行） の上に、6行足します（112〜117行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **113行目** `}` の下、（空の行） の上に、6行足します（114〜119行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 112 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 114 -->
 <table class="code-lines"><tr><td>
 
 ```js
-112
-113
 114
 115
 116
 117
+118
+119
 ```
 
 </td><td>
@@ -2594,9 +2602,9 @@ function formatLimit(label, limit, withDate) {
 
 | 行 | 何をしているか |
 |---|---|
-| 114 | 行の見出し（`5時間`・`週`）、枠、日付も出すかを受け取る |
-| 115 | 枠の値がなければ「使用量なし」 |
-| 116 | 復活の時刻を過ぎていたら、残り 100% |
+| 116 | 行の見出し（`5時間`・`週`）、枠、日付も出すかを受け取る |
+| 117 | 枠の値がなければ「使用量なし」 |
+| 118 | 復活の時刻を過ぎていたら、残り 100% |
 
 - **なぜ:** 前に取った値を出しているとき（鍵の期限切れなど）でも、復活の時刻を過ぎていれば、その枠は 100% に戻っているとわかる。
 - **効果:** 取り直せないアカウントでも、「復活済み」がわかる。
@@ -2611,20 +2619,20 @@ function formatLimit(label, limit, withDate) {
 
 ### 8-7. 残りと、復活する時刻・あと何分かを書く
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **116行目** `` if (Date.parse(limit.resets_at) <= Date.now()) return `${label}: 残り 100%（復活済み）`; `` の下、`}` の上に、8行足します（117〜124行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **118行目** `` if (Date.parse(limit.resets_at) <= Date.now()) return `${label}: 残り 100%（復活済み）`; `` の下、`}` の上に、8行足します（119〜126行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 117 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 119 -->
 <table class="code-lines"><tr><td>
 
 ```js
-117
-118
 119
 120
 121
 122
 123
 124
+125
+126
 ```
 
 </td><td>
@@ -2644,12 +2652,12 @@ function formatLimit(label, limit, withDate) {
 
 | 行 | 何をしているか |
 |---|---|
-| 118 | 復活の時刻（16:59:59.68 のような値）を、次の分（17:00）に切り上げる |
-| 119 | 復活まであと何分か（少なくとも1分） |
-| 120〜121 | 1日以上なら「〇日〇時間」、1時間以上なら「〇時間〇分」、それより短ければ「〇分」 |
-| 122 | 週の枠なら、「11/23(月)」のような日付も付ける |
-| 123 | 「17:00」のような時刻 |
-| 124 | 残り（100 − 使った割合）と、時刻・あと何分かを1行にする |
+| 120 | 復活の時刻（16:59:59.68 のような値）を、次の分（17:00）に切り上げる |
+| 121 | 復活まであと何分か（少なくとも1分） |
+| 122〜123 | 1日以上なら「〇日〇時間」、1時間以上なら「〇時間〇分」、それより短ければ「〇分」 |
+| 124 | 週の枠なら、「11/23(月)」のような日付も付ける |
+| 125 | 「17:00」のような時刻 |
+| 126 | 残り（100 − 使った割合）と、時刻・あと何分かを1行にする |
 
 - **なぜ:** API の時刻は 16:59:59.68 のように1秒前を返すので、そのまま切り捨てると「16:59」になり、実際に戻る 17:00 とずれる。
 - **効果:** 「5時間: 残り 92%・17:00 に復活（あと 4時間38分）」のような1行になる。
@@ -2668,14 +2676,12 @@ function formatLimit(label, limit, withDate) {
 
 まず、5時間と週の2行を作るところまでを書きます。
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **125行目** `}` の下、（空の行） の上に、10行足します（126〜135行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **127行目** `}` の下、（空の行） の上に、11行足します（128〜138行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 126 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 128 -->
 <table class="code-lines"><tr><td>
 
 ```js
-126
-127
 128
 129
 130
@@ -2684,6 +2690,9 @@ function formatLimit(label, limit, withDate) {
 133
 134
 135
+136
+137
+138
 ```
 
 </td><td>
@@ -2695,6 +2704,7 @@ function usageItems(profile) {
   const usage = state.get('usage', {})[profile.oauthAccount.accountUuid];
   if (!usage) return [new vscode.TreeItem('使用量: まだ取れていない（このアカウントに切り替えると取れる）')];
   if (usage.invalid) return [new vscode.TreeItem('保存した鍵が無効（ログインし直して、保存し直す）')];
+  if (usage.failed) return [new vscode.TreeItem('使用量: 取れなかった（混んでいる・鍵の期限切れなど。5分ごとに取り直す）')];
   const items = [formatLimit('5時間', usage.fiveHour, false), formatLimit('週', usage.sevenDay, true)]
     .map((text) => new vscode.TreeItem(text));
   return items;
@@ -2705,12 +2715,13 @@ function usageItems(profile) {
 
 | 行 | 何をしているか |
 |---|---|
-| 128 | アカウントを受け取る |
-| 129 | そのアカウントの、覚えておいた使用量 |
-| 130 | まだ1回も取れていなければ、そう書いた1行だけ |
-| 131 | 鍵が無効なら、そう書いた1行だけ |
-| 132〜133 | 5時間の枠（日付なし）と週の枠（日付あり）を、1行ずつにする |
-| 134 | 行の配列を返す |
+| 130 | アカウントを受け取る |
+| 131 | そのアカウントの、覚えておいた使用量 |
+| 132 | まだ1回も取れていなければ、そう書いた1行だけ |
+| 133 | 鍵が無効なら、そう書いた1行だけ |
+| 134 | 「無効」のあと取れていなければ、そう書いた1行だけ |
+| 135〜136 | 5時間の枠（日付なし）と週の枠（日付あり）を、1行ずつにする |
+| 137 | 行の配列を返す |
 
 - **なぜ:** 5時間の枠は今日のうちに戻るので時刻だけ、週の枠は何日も先なので日付も出す。
 - **効果:** アカウントの下に出す、使用量の行ができる。
@@ -2724,16 +2735,16 @@ function usageItems(profile) {
 
 ### 8-9. 古い値のときは、いつの値かを書き足す
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **133行目** `.map((text) => new vscode.TreeItem(text));` の下、`return items;` の上に、4行足します（134〜137行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **136行目** `.map((text) => new vscode.TreeItem(text));` の下、`return items;` の上に、4行足します（137〜140行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 134 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 137 -->
 <table class="code-lines"><tr><td>
 
 ```js
-134
-135
-136
 137
+138
+139
+140
 ```
 
 </td><td>
@@ -2749,8 +2760,8 @@ function usageItems(profile) {
 
 | 行 | 何をしているか |
 |---|---|
-| 134 | 取った時刻から 10分（取り直す間隔の2倍）より前なら |
-| 135〜136 | 「11/19 11:21 に取った値」と書いた行を足す |
+| 137 | 取った時刻から 10分（取り直す間隔の2倍）より前なら |
+| 138〜139 | 「11/19 11:21 に取った値」と書いた行を足す |
 
 - **なぜ:** 期限の切れた鍵のアカウントは取り直せないので、前に取った値のまま出る。そのアカウントをほかの所（別のPCや claude.ai）で使っていれば、本当の残りと違うことがある。
 - **効果:** 出ている値が古いことがわかる。
@@ -2764,14 +2775,14 @@ function usageItems(profile) {
 
 ### 8-10. 一覧を描くときに、アカウントの下の行を渡し、使用量を取り直す
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **156行目** `getChildren(element) {` の下、`const current = currentAccount();` の上に、2行足します（157〜158行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **159行目** `getChildren(element) {` の下、`const current = currentAccount();` の上に、2行足します（160〜161行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 157 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 160 -->
 <table class="code-lines"><tr><td>
 
 ```js
-157
-158
+160
+161
 ```
 
 </td><td>
@@ -2785,21 +2796,21 @@ function usageItems(profile) {
 
 | 行 | 何をしているか |
 |---|---|
-| 157 | アカウントの行の下を聞かれたら、使用量の行を返す |
-| 158 | 前に取ってから5分たっていたら、使用量を取り直す（待たずに先へ進み、取れたら描き直す） |
+| 160 | アカウントの行の下を聞かれたら、使用量の行を返す |
+| 161 | 前に取ってから5分たっていたら、使用量を取り直す（待たずに先へ進み、取れたら描き直す） |
 
 - **なぜ:** `getChildren` は、一覧が見えているときにだけ呼ばれる。ここで取り直せば、一覧を閉じている間は API を呼ばない。
 - **効果:** 一覧を開いたとき、5分より古ければ使用量が新しくなる。
 
 ### 8-11. アカウントの行を開いた形にする
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **169行目** `item.contextValue = 'account';` の下、`return item;` の上に、1行足します（170行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **172行目** `item.contextValue = 'account';` の下、`return item;` の上に、1行足します（173行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 170 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 173 -->
 <table class="code-lines"><tr><td>
 
 ```js
-170
+173
 ```
 
 </td><td>
@@ -2812,7 +2823,7 @@ function usageItems(profile) {
 
 | 行 | 何をしているか |
 |---|---|
-| 170 | アカウントの行を、下の行（使用量）が見える形にする |
+| 173 | アカウントの行を、下の行（使用量）が見える形にする |
 
 - **なぜ:** 下の行がある行は、何もしないと閉じた形（`▶`）で出る。開いた形にしておけば、押さずに使用量が見える。
 - **効果:** アカウントの下に、使用量の行が並ぶ。
@@ -2825,13 +2836,13 @@ function usageItems(profile) {
 
 ### 8-12. 読み直しのボタンで、使用量も取り直す
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **148行目** `refresh() {` の下、`this.changed.fire();` の上に、1行足します（149行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **151行目** `refresh() {` の下、`this.changed.fire();` の上に、1行足します（152行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 149 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 152 -->
 <table class="code-lines"><tr><td>
 
 ```js
-149
+152
 ```
 
 </td><td>
@@ -2844,22 +2855,22 @@ function usageItems(profile) {
 
 | 行 | 何をしているか |
 |---|---|
-| 149 | 前に取った時刻を「まだ」に戻す |
+| 152 | 前に取った時刻を「まだ」に戻す |
 
 - **なぜ:** `refresh()` は、読み直しのボタン・保存・切り替え・消したあとに呼ばれる。時刻を戻せば、続けて描くとき（8-10）に5分を待たずに取り直す。
 - **効果:** 読み直しのボタンを押す・切り替えると、すぐに使用量が新しくなる。
 
 ### 8-13. 1分ごとに描き直す
 
-[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **244行目** `);` の下、`}` の上に、3行足します（245〜247行目になります）。
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **247行目** `);` の下、`}` の上に、3行足します（248〜250行目になります）。
 
-<!-- add: .claude/extensions/claude-accounts/extension.js 245 -->
+<!-- add: .claude/extensions/claude-accounts/extension.js 248 -->
 <table class="code-lines"><tr><td>
 
 ```js
-245
-246
-247
+248
+249
+250
 ```
 
 </td><td>
@@ -2874,8 +2885,8 @@ function usageItems(profile) {
 
 | 行 | 何をしているか |
 |---|---|
-| 246 | 1分ごとに一覧を描き直す |
-| 247 | 拡張機能が止まるときに、1分ごとの描き直しを止める |
+| 249 | 1分ごとに一覧を描き直す |
+| 250 | 拡張機能が止まるときに、1分ごとの描き直しを止める |
 
 - **なぜ:** 「あと〇分」は時間がたつと変わるので、描き直さないと進まない。描き直すときに 8-10 が5分たったかを見るので、使用量も5分ごとに取り直される。
 - **効果:** 「あと〇分」が1分ごとに進み、使用量は5分ごとに新しくなる。
@@ -2887,6 +2898,80 @@ function usageItems(profile) {
 | 関数 | `setInterval` | 決まった間隔で動かすため | 関数を、渡したミリ秒ごとに呼ぶ。止めるための値を返す | JavaScript の標準 |
 | 変数 | `timer` | 止めるため | `setInterval` が返した値 | この手順で作る |
 | 関数 | `dispose`・`clearInterval` | 止めるときに片付けるため | `subscriptions` に `dispose` を持つものを入れると、止めるときに VSCode が呼ぶ。`clearInterval` は `setInterval` を止める | VSCode の拡張機能の API・JavaScript の標準 |
+
+### 8-14. 前に取った使用量を消す関数を足す
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **113行目** `}` の下、（空の行） の上に、7行足します（114〜120行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 114 -->
+<table class="code-lines"><tr><td>
+
+```js
+114
+115
+116
+117
+118
+119
+120
+```
+
+</td><td>
+
+```js
+
+// 保存し直したアカウントの、前に取った使用量を消す（新しい鍵で取り直すため）。
+async function forgetUsage(accountUuid) {
+  const usage = state.get('usage', {});
+  delete usage[accountUuid];
+  await state.update('usage', usage);
+}
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 116 | アカウントの番号を受け取る |
+| 117 | 覚えておいた使用量 |
+| 118 | そのアカウントの分を消す |
+| 119 | 消したものを覚えておく |
+
+- **なぜ:** 保存し直すと、鍵が新しくなる。前の鍵で取った「無効」などが残っていると、新しい鍵で取り直すまで古い表示のままになる。
+- **効果:** 8-15 で、保存し直したアカウントの表示を「まだ取れていない」に戻し、取り直させられる。
+
+**初めて出てくる名前:**
+
+| ジャンル | 名前 | 何のためのもの | 何をするためのもの | どこから来たもの |
+|---|---|---|---|---|
+| 関数 | `forgetUsage` | 保存し直したアカウントの、前の使用量を消すため | `usage` から、そのアカウントの分を消して覚え直す | この手順で作る |
+| JavaScript の書き方 | `delete` | オブジェクトから1つ消すため | `delete usage[番号]` で、その番号の値をなくす（C++ の `delete` とは別もの。メモリは開放しない） | JavaScript の書き方 |
+
+### 8-15. 保存のボタンで、前の使用量を消す
+
+[extension.js](../../../../.claude/extensions/claude-accounts/extension.js) の **199行目** `saveCurrent(name);` の下、`provider.refresh();` の上に、1行足します（200行目になります）。
+
+<!-- add: .claude/extensions/claude-accounts/extension.js 200 -->
+<table class="code-lines"><tr><td>
+
+```js
+200
+```
+
+</td><td>
+
+```js
+  await forgetUsage(account.accountUuid);
+```
+
+</td></tr></table>
+
+| 行 | 何をしているか |
+|---|---|
+| 200 | 保存したアカウントの、前に取った使用量を消す。すぐ下の `refresh()` で取り直す |
+
+- **なぜ:** 「無効」と出ているアカウントにログインし直して保存したとき、すぐに新しい鍵の値に変わるようにするため。切り替える前の保存し直し（5-4）では消さない。そのときの今のアカウントは、もともと `.credentials.json` の新しい鍵で取っているので、消すと「まだ取れていない」が一瞬出るだけになる。
+- **効果:** 保存のボタンを押すと、そのアカウントの使用量がすぐに取り直される。
 
 ### 出来上がった package.json
 
@@ -3265,6 +3350,17 @@ function usageItems(profile) {
 250
 251
 252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
 ```
 
 </td><td>
@@ -3374,12 +3470,21 @@ async function updateUsage(provider) {
     try {
       const fetched = await fetchUsage(isCurrent ? readJson(CREDENTIALS_PATH) : p.credentials);
       if (fetched) usage[p.oauthAccount.accountUuid] = fetched;
+      // 401 のほかの理由（429 の混雑・鍵の期限切れなど）で取れなかったときは、前の「無効」の印を残さない
+      else if (usage[p.oauthAccount.accountUuid]?.invalid) usage[p.oauthAccount.accountUuid] = { failed: true, fetchedAt: Date.now() };
     } catch {
       // 通信できないときは、前に取った値を出す
     }
   }
   await state.update('usage', usage);
   provider.changed.fire();
+}
+
+// 保存し直したアカウントの、前に取った使用量を消す（新しい鍵で取り直すため）。
+async function forgetUsage(accountUuid) {
+  const usage = state.get('usage', {});
+  delete usage[accountUuid];
+  await state.update('usage', usage);
 }
 
 // 「残り 96%・17:00 に復活（あと 4時間42分）」のような1行の文にする。
@@ -3401,6 +3506,7 @@ function usageItems(profile) {
   const usage = state.get('usage', {})[profile.oauthAccount.accountUuid];
   if (!usage) return [new vscode.TreeItem('使用量: まだ取れていない（このアカウントに切り替えると取れる）')];
   if (usage.invalid) return [new vscode.TreeItem('保存した鍵が無効（ログインし直して、保存し直す）')];
+  if (usage.failed) return [new vscode.TreeItem('使用量: 取れなかった（混んでいる・鍵の期限切れなど。5分ごとに取り直す）')];
   const items = [formatLimit('5時間', usage.fiveHour, false), formatLimit('週', usage.sevenDay, true)]
     .map((text) => new vscode.TreeItem(text));
   if (Date.now() - usage.fetchedAt > USAGE_INTERVAL_MS * 2) {
@@ -3459,6 +3565,7 @@ async function onSave(provider) {
   });
   if (!name) return;
   saveCurrent(name);
+  await forgetUsage(account.accountUuid);
   provider.refresh();
 }
 
@@ -3584,3 +3691,4 @@ Write-Output 'VSCode のウィンドウを再読み込みすると、アクテ�
 1. ウィンドウを再読み込みすると、各アカウントの下に「5時間: 残り 〇%・〇〇:〇〇 に復活（あと 〇）」と「週: …」の2行が出る。
 2. 使用中のアカウントの値が、Claude の会話で `/usage` を打ったときの値と合う（残り = 100 − 使った割合）。
 3. 1分たつと「あと〇分」が1つ減る。
+4. 「保存した鍵が無効」と出ているアカウントにログインし直し、「+」で保存すると、すぐに使用量の2行に変わる。
