@@ -63,6 +63,12 @@ CLOTH = {
     "L": [(.130, .080, .980), (.140, .110, .720), (.150, .140, .460), (.160, .170, .200)],
 }
 CLOTH["R"] = [(-x, y, z) for x, y, z in CLOTH["L"]]
+# 背中（肩〜腰）の揺れ用の骨。上の3本は腰から下だけで、背中は胸の骨に付いて張り付いていたため、
+# 上胸（J_Bip_C_UpperChest）の子として、中央・左・右に3本ずつ足す（先の1本は揺らさないので、揺れるのは2本）。先は、下の L・R の骨の根元（z=.98）につなぐ。
+CLOTH["UB"] = [(0, 0.000, 1.36), (0, 0.050, 1.24), (0, 0.075, 1.11), (0, 0.080, .98)]
+CLOTH["UL"] = [(.12, 0.010, 1.36), (.12, 0.050, 1.24), (.12, 0.075, 1.11), (.13, 0.080, .98)]
+CLOTH["UR"] = [(-x, y, z) for x, y, z in CLOTH["UL"]]
+BACK_CLOTH_PARENT = "J_Bip_C_UpperChest"
 FINGER_SCALE = 1.15   # Meshy の手は SK_Player より大きいので、指の骨の間隔を広げる
 
 # 指（左手。右は x を反転する）。Meshy の手は籠手で指が分かれていないので、4本の指をまとめて
@@ -109,7 +115,7 @@ def targets():
             t[n] = Vector((sx * x, y, z))
             ends[n] = Vector((sx * x2, y2, z2))
     for key, pts in CLOTH.items():
-        for k in range(3):
+        for k in range(len(pts) - 1):
             n = f"J_Sec_Cloth{key}_{k + 1}"
             t[n] = Vector(pts[k])
             ends[n] = Vector(pts[k + 1])
@@ -187,6 +193,24 @@ def refit():
     bpy.ops.object.mode_set(mode="OBJECT")
 
 
+def add_back_cloth_bones():
+    """背中の揺れ用の骨（UB・UL・UR の3本ずつ）を、上胸の子として足す。位置は refit() が合わせる。"""
+    ARM.select_set(True)
+    bpy.context.view_layer.objects.active = ARM
+    bpy.ops.object.mode_set(mode="EDIT")
+    eb = ARM.data.edit_bones
+    for key in ("UB", "UL", "UR"):
+        parent = eb[BACK_CLOTH_PARENT]
+        for k in range(3):
+            b = eb.new(f"J_Sec_Cloth{key}_{k + 1}")
+            b.head = (0, 0, 0)
+            b.tail = (0, 0, 0.1)
+            b.parent = parent
+            parent = b
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+
+add_back_cloth_bones()
 refit()
 NEW_SWORD_HEAD = ARM.matrix_world @ ARM.data.bones["J_Sec_Sword"].head_local
 for b in ARM.data.bones:
@@ -441,6 +465,8 @@ def render_previews():
     rot("J_Bip_C_Head", "Y", -30)
     rot("J_Sec_ClothL_1", "X", 30)
     rot("J_Sec_ClothR_1", "X", 30)
+    for key in ("UB", "UL", "UR"):
+        rot(f"J_Sec_Cloth{key}_1", "X", 30)
     bpy.context.view_layer.update()
     for name, ang in (("pose_front", 0), ("pose_diag", 50), ("pose_side", 90)):
         shot(name, ang)
