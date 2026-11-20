@@ -9,10 +9,12 @@
    "in": "../../Game/Assets/modelData/player/Animation/ThirdPersonRunPlayer_Run.fbx",
    "out": "../../Game/Assets/modelData/player/Animation/PowerUp.fbx",
    "out_deg": {
-    "J_Bip_L_UpperArm": 45.0,
-    "J_Bip_R_UpperArm": 45.0,
-    "J_Bip_L_UpperLeg": 22.0,
-    "J_Bip_R_UpperLeg": 22.0
+    "J_Bip_L_UpperArm": 11.0,
+    "J_Bip_R_UpperArm": -3.0
+   },
+   "splay_deg": {
+    "J_Bip_L_LowerArm": 42.0,
+    "J_Bip_R_LowerArm": 37.0
    },
    "frames": {
     "start": 0,
@@ -31,7 +33,20 @@
     },
     "lean_deg": 0.0,
     "leg_lean_deg": 0.0,
-    "head_pitch_deg": -45.0
+    "face_deg": [
+     60.0,
+     60.0
+    ],
+    "face_frames": [
+     0,
+     1
+    ]
+   },
+   "open_after": {
+    "J_Bip_L_UpperLeg": 27.0,
+    "J_Bip_R_UpperLeg": 27.0,
+    "J_Bip_L_Foot": -27.0,
+    "J_Bip_R_Foot": -27.0
    }
   }
  ]

@@ -1036,6 +1036,80 @@ def rotoscope(anim, cfg, base_dir):
     unreal.EditorAssetLibrary.save_loaded_asset(anim)
 
 
+def open_after(anim, cfg):
+    """ロトスコープのあとで、ボーンを前後の軸（ワールド）まわりに回して、体の外へ開く。
+    cfg = {"J_Bip_L_UpperLeg": 27.0, "J_Bip_R_UpperLeg": 27.0, "J_Bip_L_Foot": -27.0, "J_Bip_R_Foot": -27.0}
+    正 = その側の太もも（腕なら上腕）が外へ開く向き、負 = その逆。子のボーンは一緒に回るので、
+    まっすぐな脚はまっすぐのまま開く（out_deg はロトスコープの前に回すので、膝が曲がった元のクリップでは
+    すねの向きがずれる）。足の裏を床と平らに戻すには、足に脚と同じ角度を負で入れる。
+    最後に、一番低いつま先の高さが開く前と同じになるよう、腰を上下させる。"""
+    P = unreal.AnimPoseExtensions
+    W = unreal.AnimPoseSpaces.WORLD
+    L = unreal.AnimPoseSpaces.LOCAL
+    opts = eval_options()
+    num_keys = unreal.AnimationLibrary.get_num_frames(anim) + 1
+    axis = side_axis(P.get_reference_pose(anim.get_editor_property("skeleton")))
+    fwd = unreal.Vector(0.0, 0.0, 1.0).cross(axis) * -1.0
+    bones = list(cfg)
+    # 側ごとの「外へ開く」回す向き（+1 か -1）。太もも（なければ上腕）の向きから決める。
+    pose0 = P.get_anim_pose_at_frame(anim, 0, opts)
+    hips0 = P.get_bone_pose(pose0, HIPS, W).translation
+    sign = {}
+    for sd in "LR":
+        for root, tip in (("J_Bip_%s_UpperLeg" % sd, "J_Bip_%s_LowerLeg" % sd),
+                          ("J_Bip_%s_UpperArm" % sd, "J_Bip_%s_LowerArm" % sd)):
+            j = P.get_bone_pose(pose0, root, W).translation
+            out = axis * (1.0 if (j - hips0).dot(axis) >= 0.0 else -1.0)
+            v = P.get_bone_pose(pose0, tip, W).translation - j
+            sign[(sd, "Leg" if "Leg" in root else "Arm")] = 1.0 if fwd.cross(v).dot(out) >= 0.0 else -1.0
+
+    def toe_min(pose):
+        return min(P.get_bone_pose(pose, "J_Bip_%s_ToeBase" % sd, W).translation.z for sd in "LR")
+
+    track = {b: {"pos": [], "rot": [], "scl": []} for b in bones + [HIPS]}
+    before = []
+    for f in range(num_keys):
+        pose = P.get_anim_pose_at_frame(anim, f, opts)
+        before.append(toe_min(pose))
+        for b in bones + [HIPS]:
+            local = P.get_bone_pose(pose, b, L)
+            t = track[b]
+            t["pos"].append(local.translation)
+            t["scl"].append(local.scale3d)
+            if b == HIPS and b not in cfg:
+                t["rot"].append(local.rotation)
+                continue
+            world = P.get_bone_pose(pose, b, W)
+            parent_rot = q_mul(world.rotation, q_inv(local.rotation))
+            a = q_rotate(q_inv(parent_rot), fwd)
+            sd = "L" if "_L_" in b else "R"
+            deg = cfg[b] * sign[(sd, "Arm" if "Arm" in b or "Hand" in b or "Shoulder" in b else "Leg")]
+            half = math.radians(deg) * 0.5
+            sn = math.sin(half)
+            t["rot"].append(q_mul(unreal.Quat(a.x * sn, a.y * sn, a.z * sn, math.cos(half)), local.rotation))
+
+    def write():
+        c = get_controller(anim)
+        c.open_bracket(unreal.Text("open_after"), False)
+        for b in bones + [HIPS]:
+            t = track[b]
+            c.set_bone_track_keys(b, t["pos"], t["rot"], t["scl"], False)
+        c.close_bracket(False)
+
+    write()
+    # 腰の高さを戻す（脚を開くと足が浮くので、そのぶん下げる）。
+    for f in range(num_keys):
+        pose = P.get_anim_pose_at_frame(anim, f, opts)
+        dz = before[f] - toe_min(pose)
+        hips = P.get_bone_pose(pose, HIPS, W)
+        local = P.get_bone_pose(pose, HIPS, L)
+        parent_rot = q_mul(hips.rotation, q_inv(local.rotation))
+        track[HIPS]["pos"][f] = track[HIPS]["pos"][f] + q_rotate(q_inv(parent_rot), unreal.Vector(0.0, 0.0, dz))
+    write()
+    unreal.EditorAssetLibrary.save_loaded_asset(anim)
+    log("open_after", cfg, "sign", sign)
+
+
 def skirt_follow(anim, cfg):
     """スカートのボーン（J_Sec_*_Skirt*）が、親の回りに一部だけついていくようにする。
     cfg = {"follow": {"Front": 0.5, "Back": 0.25, "Side": 0.5}, "copies": ["01", "02", "03"]}
@@ -1217,6 +1291,19 @@ def log_frames(anim, label):
             row += " out(elbow=%.1f hand=%.1f)" % (
                 (P.get_bone_pose(pose, "J_Bip_%s_LowerArm" % s, W).translation - sh_).dot(out),
                 (P.get_bone_pose(pose, "J_Bip_%s_Hand" % s, W).translation - sh_).dot(out))
+
+            # 正面から見た開き（度、正 = 外）。太もも・上腕は真下から、前腕は前から外への向き。足を開いて立つポーズで使う。
+            def d(a_, b_):
+                return P.get_bone_pose(pose, b_, W).translation - P.get_bone_pose(pose, a_, W).translation
+            th_ = d("J_Bip_%s_UpperLeg" % s, "J_Bip_%s_LowerLeg" % s)
+            ua_ = d("J_Bip_%s_UpperArm" % s, "J_Bip_%s_LowerArm" % s)
+            fa_ = d("J_Bip_%s_LowerArm" % s, "J_Bip_%s_Hand" % s)
+            sn_ = d("J_Bip_%s_LowerLeg" % s, "J_Bip_%s_Foot" % s)
+            row += " open(thigh=%.0f shin=%.0f upper=%.0f fore=%.0f)" % (
+                math.degrees(math.atan2(th_.dot(out), -th_.z)),
+                math.degrees(math.atan2(sn_.dot(out), -sn_.z)),
+                math.degrees(math.atan2(ua_.dot(out), -ua_.z)),
+                math.degrees(math.atan2(fa_.dot(out), fa_.dot(fwd))))
         log(row)
 
 
@@ -1264,6 +1351,9 @@ def main():
                 rotoscope(anim, clip["rotoscope"], base)
             if clip.get("crouch") and after_roto:
                 crouch(anim, clip["crouch"])
+            # open_after: ロトスコープでポーズを作ってから、脚・腕を外へ開く（足を開いて立つポーズ）。
+            if clip.get("open_after"):
+                open_after(anim, clip["open_after"])
             if clip.get("shift_feet"):
                 shift_feet(anim, clip["shift_feet"])
             if clip.get("blend_from"):
