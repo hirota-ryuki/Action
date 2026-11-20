@@ -197,7 +197,7 @@
 		// 後ろ歩き（WalkBack）・横歩き（StrafeL・StrafeR）の、足が地面を送る速さ。三人称の溜め撃ちで構えて歩くときに使う。
 		"walkBackMoveSpeed": 88.0,
 		"strafeMoveSpeed": 46.0,
-		// クリップの名前は PlayerConfig.cpp の対応表（Idle・Walk・Run・JumpStart・JumpLoop・JumpLand・Dash・StopL・StopR・Attack1〜3・WalkBack・StrafeL・StrafeR）と同じにする。
+		// クリップの名前は PlayerConfig.cpp の対応表（Idle・Walk・Run・JumpStart・JumpLoop・JumpLand・Dash・StopL・StopR・Attack1〜3・WalkBack・StrafeL・StrafeR・PowerUp）と同じにする。
 		"clips": {
 			// Idle・Walk は Mixamo のモーションを UE で SK_Player にリターゲットしたもの。
 			"Idle": { "path": "Assets/modelData/player/Animation/Idle.fbx", "loop": true },
@@ -223,7 +223,9 @@
 			// （tools/BlenderScripts/player_charge_walk_anims.json）。StrafeR は StrafeL を左右反転したもの。
 			"WalkBack": { "path": "Assets/modelData/player/Animation/WalkBack.fbx", "loop": true },
 			"StrafeL":  { "path": "Assets/modelData/player/Animation/StrafeL.fbx",  "loop": true },
-			"StrafeR":  { "path": "Assets/modelData/player/Animation/StrafeR.fbx",  "loop": true }
+			"StrafeR":  { "path": "Assets/modelData/player/Animation/StrafeR.fbx",  "loop": true },
+			// PowerUp は dash_roto.json と同じ作り方で、写真のポーズから作った（tools/UnrealScripts/powerup_roto.json）。ImGui の「アニメーションの確認」から流す。
+			"PowerUp":  { "path": "Assets/modelData/player/Animation/PowerUp.fbx",  "loop": false }
 		}
 	}
 }

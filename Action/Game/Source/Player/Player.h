@@ -71,6 +71,7 @@ private:
 	static void RotateBoneTreeY(Skeleton& skeleton, int boneId, float angle);
 	// 溜め撃ちの構えの調整値を変える窓（F1）。
 	void DrawChargeDebugUI();
+	void DrawAnimDebugUI();
 
 	PlayerInputSource m_playerInputSource;
 	PlayerStatus m_status;

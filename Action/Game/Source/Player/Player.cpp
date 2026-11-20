@@ -241,6 +241,7 @@ void Player::OnLateUpdate(float deltaTime)
 	UpdateChargePosition();
 	if (DebugUI::IsVisible()) {
 		DrawChargeDebugUI();
+		DrawAnimDebugUI();
 	}
 }
 
@@ -259,6 +260,30 @@ void Player::DrawChargeDebugUI()
 	ImGui::SliderFloat(u8"後ろ歩きにさらに掛ける（倍）", &settings.backMoveSpeedRate, 0.2f, 1.0f, "%.2f");
 	if (ImGui::Button(u8"最初の値に戻す")) {
 		settings = PlayerConfig::MakeChargeSettings();
+	}
+	ImGui::End();
+}
+
+void Player::DrawAnimDebugUI()
+{
+	// クリップの名前（EnPlayerAnimClip と同じ並び。player.json の clips の名前）。
+	static const char* const CLIP_NAMES[] = {
+		"Idle", "Walk", "Run", "JumpStart", "JumpLoop", "JumpLand", "Dash", "StopL", "StopR",
+		"Attack1", "Attack2", "Attack3", "WalkBack", "StrafeL", "StrafeR", "PowerUp",
+	};
+	static_assert(sizeof(CLIP_NAMES) / sizeof(CLIP_NAMES[0]) == enPlayerAnimClip_Num,
+		"EnPlayerAnimClip を足したら、CLIP_NAMES にも足してください。");
+	static const float BLEND_SECONDS = 0.3f;
+	ImGui::Begin(u8"アニメーションの確認");
+	ImGui::TextUnformatted(u8"押したクリップを流す（動いたり跳んだりするとステートのアニメーションに戻る）");
+	for (int clip = 0; clip < enPlayerAnimClip_Num; clip++) {
+		if (ImGui::Button(CLIP_NAMES[clip])) {
+			m_animator.PlayFrom(clip, BLEND_SECONDS, 0.0f, 1.0f);
+		}
+		// 3つずつ横に並べる。
+		if (clip % 3 != 2 && clip + 1 < enPlayerAnimClip_Num) {
+			ImGui::SameLine();
+		}
 	}
 	ImGui::End();
 }

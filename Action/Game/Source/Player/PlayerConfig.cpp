@@ -195,6 +195,7 @@ namespace
 		{ "WalkBack", enPlayerAnimClip_WalkBack, { "Assets/modelData/player/Animation/WalkBack.fbx", true } },
 		{ "StrafeL",  enPlayerAnimClip_StrafeL,  { "Assets/modelData/player/Animation/StrafeL.fbx",  true } },
 		{ "StrafeR",  enPlayerAnimClip_StrafeR,  { "Assets/modelData/player/Animation/StrafeR.fbx",  true } },
+		{ "PowerUp", enPlayerAnimClip_PowerUp, { "Assets/modelData/player/Animation/PowerUp.fbx", false } },
 	};
 	static_assert(sizeof(CLIP_TABLE) / sizeof(CLIP_TABLE[0]) == enPlayerAnimClip_Num,
 		"EnPlayerAnimClip を足したら、CLIP_TABLE と player.json の animation.clips にも足してください。");
