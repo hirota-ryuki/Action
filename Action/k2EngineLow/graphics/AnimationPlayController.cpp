@@ -15,6 +15,17 @@ namespace nsK2EngineLow {
 		int numBones = skeleton->GetNumBones();
 		//ボーン行列をバシッと確保。
 		m_boneMatrix.resize(numBones);
+		// クリップに動きがない骨は、バインドポーズのままにする。ワールド行列 = ローカル行列 × 親のワールド行列 なので、
+		// ローカル行列 = バインドポーズ × 親のバインドポーズの逆行列。
+		m_bindLocalMatrix.resize(numBones);
+		for (int boneNo = 0; boneNo < numBones; boneNo++) {
+			const Bone* bone = skeleton->GetBone(boneNo);
+			Matrix local = bone->GetBindPoseMatrix();
+			if (bone->GetParentBoneNo() != -1) {
+				local = local * skeleton->GetBone(bone->GetParentBoneNo())->GetInvBindPoseMatrix();
+			}
+			m_bindLocalMatrix[boneNo] = local;
+		}
 		m_skeleton = skeleton;
 	}
 	void AnimationPlayController::ChangeAnimationClip(AnimationClip* clip)
@@ -173,8 +184,13 @@ namespace nsK2EngineLow {
 	void AnimationPlayController::SamplingBoneMatrixFromAnimationClip()
 	{
 		const auto& keyFramePtrListArray = m_animationClip->GetKeyFramePtrListArray();
-		for (const auto& keyFrameList : keyFramePtrListArray) {
+		for (size_t boneNo = 0; boneNo < keyFramePtrListArray.size(); boneNo++) {
+			const auto& keyFrameList = keyFramePtrListArray[boneNo];
 			if (keyFrameList.size() == 0) {
+				// このクリップに動きがない骨。前のフレームの結果（ルート空間に直した行列）が残らないよう、毎回バインドポーズに戻す。
+				if (boneNo < m_bindLocalMatrix.size()) {
+					m_boneMatrix[boneNo] = m_bindLocalMatrix[boneNo];
+				}
 				continue;
 			}
 			//現在再生中のキーフレーム（今の時間より後で一番近いもの）を取ってくる。

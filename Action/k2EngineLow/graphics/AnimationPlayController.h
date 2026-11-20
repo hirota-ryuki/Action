@@ -192,6 +192,7 @@ namespace nsK2EngineLow {
 		int						m_currentKeyFrameNo = 0;			// 現在再生中のキーフレーム番号。
 		float					m_time = 0.0f;
 		std::vector<Matrix>		m_boneMatrix;						// このコントローラで再生中のアニメーションのボーン行列。
+		std::vector<Matrix>		m_bindLocalMatrix;					// 骨ごとの、バインドポーズのローカル行列（親から見た位置と向き）。クリップに動きがない骨に使う。
 		float					m_interpolateTime;					// 補完時間
 		float					m_interpolateEndTime;				// 補完終了時間
 		bool					m_isPlaying = false;				// 再生中？

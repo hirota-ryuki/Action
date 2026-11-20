@@ -64,10 +64,17 @@ namespace
 		settings.legRadius = 0.0f;  // マントは脚に当てない（脚のカプセルはモデルの大きさに合わせていないため）。
 		SpringBoneGroupSettings cloth;
 		cloth.match = L"Cloth";
-		cloth.frequency = 1.8f;
-		cloth.dampingRatio = 0.3f;
-		cloth.maxAngleDeg = 40.0f;
+		cloth.frequency = 2.2f;
+		cloth.dampingRatio = 0.55f;
+		cloth.maxAngleDeg = 25.0f;
 		settings.groups.push_back(cloth);
+		// 背中（肩〜腰）は胸のひねりを直に受けて荒ぶりやすいので、さらに小さく・止まりやすくする（ClothU は Cloth より長いので、こちらが選ばれる）。
+		SpringBoneGroupSettings backCloth;
+		backCloth.match = L"ClothU";
+		backCloth.frequency = 3.0f;
+		backCloth.dampingRatio = 0.7f;
+		backCloth.maxAngleDeg = 12.0f;
+		settings.groups.push_back(backCloth);
 		SpringBoneGroupSettings hood;
 		hood.match = L"Hood";
 		hood.frequency = 2.5f;
