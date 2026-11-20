@@ -839,7 +839,22 @@ def rotoscope(anim, cfg, base_dir):
                 k = (k + 1) % cycle
             swing[src] = (frames, cycle)
     targets = []
+    # pose_hold: {"values": {"torso": 36, "Athigh": -158, ...}, "frames": [a, b, c, d]}: 読み取りの値（torso・neck・脚・腕）を、
+    # 決まったポーズへ寄せる。a → b コマ目で寄せ（smoothstep）、b〜c コマ目は止め、c → d コマ目で読み取りの値へ戻す。
+    # 動画のポーズでなく、フィギュアなどの写真から読み取ったポーズにしたい区間に使う。
+    pose_hold = cfg.get("pose_hold")
     for i, r in enumerate(rows):
+        if pose_hold:
+            pa, pb, pc, pd = pose_hold["frames"]
+            if pb <= i <= pc:
+                pw = 1.0
+            else:
+                pu = (i - pa) / float(pb - pa) if i < pb else (pd - i) / float(pd - pc)
+                pu = max(0.0, min(1.0, pu))
+                pw = pu * pu * (3.0 - 2.0 * pu)
+            r = dict(r)
+            for key, val in pose_hold["values"].items():
+                r[key] = val + wrap180(r[key] - val) * (1.0 - pw)
         # lean_deg: 胴体と首を、データよりさらに前へ倒す角度（正 = 前へ）。
         lean = cfg.get("lean_deg", 0.0)
         u = max(0.0, min(1.0, (i - na) / float(max(1, nb - na))))
