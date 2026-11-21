@@ -22,6 +22,10 @@ struct SpringBonesSettings
 	float legRadius = 0.0f;
 	// ジャンプ中に、noLiftInJump のまとまり（スカート）を、真下からこの角度より上へ上げない。0 なら抑えない。
 	float jumpMaxAngleFromDownDeg = 0.0f;
+	// アニメーションでの骨の動きのうち、揺れ（遅れ）として残す割合（0〜1）。
+	// 0 で、揺れ物の骨はアニメーションでの自分の骨の動き（腰の揺さぶり・太ももに振られる裾など）に完全に付いていき、
+	// キャラクターそのものの動き（走り出し・止まる・向きを変える）だけで揺れる。1 でアニメーションの動きも全部揺れになる。
+	float animInertia = 0.0f;
 };
 
 // 髪・スカートなどの揺れ物の骨を、体の動きから遅れて付いてくるように揺らす部品。
@@ -30,7 +34,7 @@ struct SpringBonesSettings
 class SpringBones
 {
 public:
-	// model はスケルトンを読み込んだあとのもの。
+	// model はスケルトンを読み込んだあとのもの。Update() の中で、model のワールド行列を読む。
 	void Init(ModelRender& model, const SpringBonesSettings& settings);
 	// 揺らす骨があるか。
 	bool IsActive() const
@@ -60,6 +64,7 @@ private:
 		Vector3 tail = Vector3::Zero;          // 揺れている先の位置（ワールド）。
 		Vector3 velocity = Vector3::Zero;      // 先の速さ。
 		Vector3 prevAnimTail = Vector3::Zero;  // 前のフレームの、アニメーションどおりの先の位置。
+		Matrix prevAnimWorld;                  // 前のフレームの、揺らす前の骨のワールド行列。
 	};
 	struct Capsule
 	{
@@ -67,10 +72,15 @@ private:
 		int endBoneNo = -1;
 	};
 
+	// 骨がアニメーションで動いた分（キャラクターそのものの動きは除く）だけ、揺れの先・速さを運ぶ。
+	// 揺れ物の骨を動かす前（アニメーションと体の連動だけの姿勢）に呼ぶ。
+	void CarryWithAnimation(Skeleton& skeleton);
 	// 先を脚から押し出す。animTail がもとから近いときは、その近さまでは許す。
 	Vector3 PushOutFromLegs(Skeleton& skeleton, const Vector3& tail, const Vector3& animTail) const;
 
 	SpringBonesSettings m_settings;
+	ModelRender* m_modelRender = nullptr;
+	Matrix m_prevModelWorld;   // 前のフレームの、モデルのワールド行列（キャラクターの位置・向き）。
 	std::vector<Joint> m_joints;
 	std::vector<Capsule> m_legCapsules;
 	bool m_isFirstFrame = true;

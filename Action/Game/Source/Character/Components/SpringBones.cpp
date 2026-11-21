@@ -65,6 +65,7 @@ void SpringBones::Init(ModelRender& model, const SpringBonesSettings& settings)
 	m_joints.clear();
 	m_legCapsules.clear();
 	m_isFirstFrame = true;
+	m_modelRender = &model;
 	if (!m_settings.isEnabled) {
 		return;
 	}
@@ -126,6 +127,7 @@ void SpringBones::Update(Skeleton& skeleton)
 	if (deltaTime <= 0.0f) {
 		return;
 	}
+	CarryWithAnimation(skeleton);
 
 	for (Joint& joint : m_joints) {
 		Bone* bone = skeleton.GetBone(joint.boneNo);
@@ -232,6 +234,39 @@ void SpringBones::Update(Skeleton& skeleton)
 		PoseLayers::RotateBoneTree(*bone, toOrigin * rotationMatrix * back);
 	}
 	m_isFirstFrame = false;
+}
+
+void SpringBones::CarryWithAnimation(Skeleton& skeleton)
+{
+	if (m_modelRender == nullptr) {
+		return;
+	}
+	const Matrix& modelWorld = m_modelRender->GetModel().GetWorldMatrix();
+	Matrix modelBack;  // キャラクターが動いた分を戻す（今のモデル → 前のモデル）。
+	modelBack.Inverse(modelWorld);
+	modelBack = modelBack * m_prevModelWorld;
+	const float follow = 1.0f - max(0.0f, min(1.0f, m_settings.animInertia));
+	for (Joint& joint : m_joints) {
+		const Matrix& animWorld = skeleton.GetBone(joint.boneNo)->GetWorldMatrix();
+		if (!m_isFirstFrame) {
+			// 前のフレームの骨から今の骨へ運び、キャラクターが動いた分は戻す。
+			// 骨がモデルに対して止まっていれば、何も運ばない（キャラクターそのものの動きは揺れとして残る）。
+			Matrix carry;
+			carry.Inverse(joint.prevAnimWorld);
+			carry = carry * animWorld * modelBack;
+			Vector3 tail = joint.tail;
+			carry.Apply(tail);
+			joint.tail += (tail - joint.tail) * follow;
+			Vector3 prevAnimTail = joint.prevAnimTail;
+			carry.Apply(prevAnimTail);
+			joint.prevAnimTail += (prevAnimTail - joint.prevAnimTail) * follow;
+			Vector3 velocity = joint.velocity;
+			carry.Apply3x3(velocity);
+			joint.velocity += (velocity - joint.velocity) * follow;
+		}
+		joint.prevAnimWorld = animWorld;
+	}
+	m_prevModelWorld = modelWorld;
 }
 
 Vector3 SpringBones::PushOutFromLegs(Skeleton& skeleton, const Vector3& tail, const Vector3& animTail) const
