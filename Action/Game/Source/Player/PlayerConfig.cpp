@@ -311,9 +311,7 @@ namespace
 		settings.isEnabled = Read(section, "springBone", "enabled", true);
 		settings.legRadius = Read(section, "springBone", "legRadius", 8.0f);
 		settings.jumpMaxAngleFromDownDeg = Read(section, "springBone", "jumpMaxAngleFromDownDeg", 0.0f);
-		const std::string centerBone = Read(section, "springBone", "centerBone", std::string("J_Bip_C_Hips"));
-		settings.centerBone = std::wstring(centerBone.begin(), centerBone.end());
-		settings.centerInertia = Read(section, "springBone", "centerInertia", 0.0f);
+		settings.animInertia = Read(section, "springBone", "animInertia", 0.0f);
 		auto groups = section.find("groups");
 		if (groups == section.end() || !groups->is_object()) {
 			Log(std::string(JSON_PATH) + " に springBone.groups がないので、揺れ物を使いません。");
