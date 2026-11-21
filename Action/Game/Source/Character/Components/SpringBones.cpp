@@ -65,6 +65,8 @@ void SpringBones::Init(ModelRender& model, const SpringBonesSettings& settings)
 	m_joints.clear();
 	m_legCapsules.clear();
 	m_isFirstFrame = true;
+	m_modelRender = &model;
+	m_centerBoneNo = -1;
 	if (!m_settings.isEnabled) {
 		return;
 	}
@@ -108,6 +110,10 @@ void SpringBones::Init(ModelRender& model, const SpringBonesSettings& settings)
 		return a.depth < b.depth;
 	});
 
+	if (!m_settings.centerBone.empty()) {
+		m_centerBoneNo = skeleton.FindBoneID(m_settings.centerBone.c_str());
+	}
+
 	if (m_settings.legRadius > 0.0f) {
 		for (const auto& pair : LEG_BONE_PAIRS) {
 			Capsule capsule;
@@ -126,6 +132,7 @@ void SpringBones::Update(Skeleton& skeleton)
 	if (deltaTime <= 0.0f) {
 		return;
 	}
+	CarryWithCenter(skeleton);
 
 	for (Joint& joint : m_joints) {
 		Bone* bone = skeleton.GetBone(joint.boneNo);
@@ -232,6 +239,37 @@ void SpringBones::Update(Skeleton& skeleton)
 		PoseLayers::RotateBoneTree(*bone, toOrigin * rotationMatrix * back);
 	}
 	m_isFirstFrame = false;
+}
+
+void SpringBones::CarryWithCenter(Skeleton& skeleton)
+{
+	if (m_centerBoneNo == -1 || m_modelRender == nullptr) {
+		return;
+	}
+	const Matrix& centerWorld = skeleton.GetBone(m_centerBoneNo)->GetWorldMatrix();
+	const Matrix& modelWorld = m_modelRender->GetModel().GetWorldMatrix();
+	if (!m_isFirstFrame) {
+		// 前のフレームの腰から今の腰へ運び、キャラクターが動いた分（今のモデル → 前のモデル）は戻す。
+		// 腰がモデルに対して止まっていれば、何も運ばない（キャラクターそのものの動きは揺れとして残る）。
+		Matrix invPrevCenter, invModel;
+		invPrevCenter.Inverse(m_prevCenterWorld);
+		invModel.Inverse(modelWorld);
+		const Matrix carry = invPrevCenter * centerWorld * invModel * m_prevModelWorld;
+		const float follow = 1.0f - max(0.0f, min(1.0f, m_settings.centerInertia));
+		for (Joint& joint : m_joints) {
+			Vector3 tail = joint.tail;
+			carry.Apply(tail);
+			joint.tail += (tail - joint.tail) * follow;
+			Vector3 prevAnimTail = joint.prevAnimTail;
+			carry.Apply(prevAnimTail);
+			joint.prevAnimTail += (prevAnimTail - joint.prevAnimTail) * follow;
+			Vector3 velocity = joint.velocity;
+			carry.Apply3x3(velocity);
+			joint.velocity += (velocity - joint.velocity) * follow;
+		}
+	}
+	m_prevCenterWorld = centerWorld;
+	m_prevModelWorld = modelWorld;
 }
 
 Vector3 SpringBones::PushOutFromLegs(Skeleton& skeleton, const Vector3& tail, const Vector3& animTail) const
