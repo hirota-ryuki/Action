@@ -36,6 +36,7 @@ private:
 		enClip_ChargeStart,  // 両手を前へ上げる（炎を溜め始める）。
 		enClip_Charge,       // 両手を火の玉の左右に添えて溜める。
 		enClip_Release,      // 両腕を前へ伸ばして炎を放つ。
+		enClip_ReleaseToIdle,  // 炎を放った形から、腕を下ろしながら握り直して構えに戻る（繰り返さない）。
 		enClip_Num,
 	};
 

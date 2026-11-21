@@ -93,13 +93,39 @@ namespace
 		enSource_Num,
 	};
 
+	// 炎を放ったあと、構えに戻る動き（FpReleaseToIdle）。前の版（形をゲームの中で毎フレーム作っていたとき）と同じく、
+	// もとのクリップを溜めから構えへ RETURN_BLEND_SECONDS で切り替えながら、混ぜ具合を毎フレーム目標へ近づける。
+	// 放つ・溜めの置き方は 0 へ、握り具合は 1 へ、1フレーム（1/60 秒）ごとに、残りの差に「速さ / 60」を掛けた分だけ近づける。
+	constexpr float RETURN_FROM_TIME = 0.3f;      // 戻り始めるときの、溜めのクリップの再生位置（FirstPersonArms の RELEASE_OPEN_SECONDS）。
+	constexpr float RETURN_BLEND_SECONDS = 0.15f; // もとのクリップを、溜めから構えへ切り替える補間（秒）。
+	constexpr float RETURN_LENGTH = 0.6f;         // 焼き込む長さ（秒）。握り具合が 0.99 を超えるまで。
+	constexpr float RETURN_RELEASE_SPEED = 30.0f; // 放つ置き方を 0 へ近づける速さ。
+	constexpr float RETURN_CHARGE_SPEED = 10.0f;  // 溜めの置き方を 0 へ近づける速さ。
+	constexpr float RETURN_GRIP_SPEED = 8.0f;     // 握り具合を 1 へ近づける速さ（握り直すのはゆっくり）。
+	constexpr float RETURN_STEP_FPS = 60.0f;      // 前の版で近づけていた、1秒あたりのフレームの数。
+
+	// 戻り始めてから t 秒の混ぜ具合。from から to へ、speed で近づけたときの値。
+	float ReturnWeight(float from, float to, float speed, float t)
+	{
+		const float remain = powf(1.0f - speed / RETURN_STEP_FPS, t * RETURN_STEP_FPS);
+		return to + (from - to) * remain;
+	}
+
 	// 焼き込む1本分。もとのクリップに、weights の形を重ねる。
+	// toSource を決めたときは、source の fromTime 秒から toSource へ切り替える動きを length 秒分焼き、
+	// 混ぜ具合は weightsAt で時刻ごとに決める。
 	struct BakeJob
 	{
 		const char* name;
 		EnSourceClip source;
 		bool isLoop;
 		FirstPersonArmsPoser::Weights weights;
+		bool isEvenSpeed = false;  // 骨の動く速さを、どのコマでもそろえる（繰り返すクリップのつなぎ目で跳ばないように）。
+		EnSourceClip toSource = enSource_Num;
+		float fromTime = 0.0f;
+		float blendSeconds = 0.0f;
+		float length = 0.0f;
+		std::function<FirstPersonArmsPoser::Weights(float t)> weightsAt;
 	};
 
 	std::vector<BakeJob> MakeBakeJobs()
@@ -123,13 +149,33 @@ namespace
 			charge.grip[side] = 0.0f;
 		}
 		jobs.push_back({ "FpChargeStart", enSource_ChargeStart, false, charge });
-		jobs.push_back({ "FpCharge", enSource_Charge, true, charge });
+		// 溜めのクリップは、出だしが速く終わりが止まりかけなので、繰り返すつなぎ目で速さが急に変わる。速さをそろえて焼く。
+		BakeJob chargeLoop = { "FpCharge", enSource_Charge, true, charge };
+		chargeLoop.isEvenSpeed = true;
+		jobs.push_back(chargeLoop);
 		// 炎を放つ: 溜めの姿勢から、両腕を前へ伸ばして手のひらを前へ向ける。
 		FirstPersonArmsPoser::Weights release = charge;
 		for (int side = 0; side < 2; side++) {
 			release.release[side] = 1.0f;
 		}
 		jobs.push_back({ "FpRelease", enSource_Charge, true, release });
+		// 炎を放ったあと、構えに戻る: 放つ形から、腕を下ろしながら少しずつ握り直す。
+		// クリップの切り替えの補間に任せると、手首や指が骨ごとにまっすぐ回って、途中で指が平たく折れて見えるため、途中の形も焼く。
+		BakeJob toIdle = { "FpReleaseToIdle", enSource_Charge, false, release };
+		toIdle.toSource = enSource_Idle;
+		toIdle.fromTime = RETURN_FROM_TIME;
+		toIdle.blendSeconds = RETURN_BLEND_SECONDS;
+		toIdle.length = RETURN_LENGTH;
+		toIdle.weightsAt = [](float t) {
+			FirstPersonArmsPoser::Weights w;
+			for (int side = 0; side < 2; side++) {
+				w.release[side] = ReturnWeight(1.0f, 0.0f, RETURN_RELEASE_SPEED, t);
+				w.charge[side] = ReturnWeight(1.0f, 0.0f, RETURN_CHARGE_SPEED, t);
+				w.grip[side] = ReturnWeight(0.0f, 1.0f, RETURN_GRIP_SPEED, t);
+			}
+			return w;
+		};
+		jobs.push_back(toIdle);
 		return jobs;
 	}
 
@@ -198,8 +244,17 @@ bool FirstPersonArmsPoser::BakeAll(const char* logPath)
 	for (const BakeJob& job : MakeBakeJobs()) {
 		poser.SetWeights(job.weights);
 		const std::string path = std::string(BAKE_JSON_DIR) + job.name + ".json";
-		const bool isOk = PoseBaker::Bake(model, layers, job.source, job.name, job.isLoop, path);
-		WriteLog(log, isOk ? "baked %s (%.0f)\n" : "FAILED %s (%.0f)\n", job.name, model.GetClipLength(job.source) * PoseBaker::BAKE_FPS);
+		bool isOk = false;
+		float length = model.GetClipLength(job.source);
+		if (job.toSource != enSource_Num) {
+			length = job.length;
+			isOk = PoseBaker::BakeTransition(model, layers, job.source, job.fromTime, job.toSource, job.blendSeconds,
+				job.length, job.name, path, [&poser, &job](float t) { poser.SetWeights(job.weightsAt(t)); });
+		}
+		else {
+			isOk = PoseBaker::Bake(model, layers, job.source, job.name, job.isLoop, path, nullptr, job.isEvenSpeed);
+		}
+		WriteLog(log, isOk ? "baked %s (%.0f)\n" : "FAILED %s (%.0f)\n", job.name, length * PoseBaker::BAKE_FPS);
 		isAllOk = isAllOk && isOk;
 	}
 	if (log != nullptr) {
