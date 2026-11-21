@@ -37,9 +37,9 @@ public:
 	}
 
 private:
-	// 溜め撃ちで構えている間は、体がカメラの向きを向いたまま動くので、
-	// 動く向き（体から見て前・後ろ・左・右のいちばん近いもの）で歩きのクリップを選び、足の速さを動く速さに合わせる。
-	// 構えるのをやめたら、ふだんの前歩きに戻す。
+	// 溜め撃ちで構えている間は、前・横へは腰から下を進む向きへ回して前歩き、後ろへは体をカメラへ向けたまま後ろ歩きにする
+	// （Player::FilterAimingInput）。体から見て後ろへ動いていれば後ろ歩き、それ以外は前歩きのクリップを選び、
+	// 足の速さを動く速さに合わせる。横歩きのクリップは使わない。構えるのをやめたら、ふだんの前歩きに戻す。
 	void UpdateAimClip(PlayerStateContext& context, const CharacterInput& input)
 	{
 		int clip = enPlayerAnimClip_Walk;
@@ -48,15 +48,8 @@ private:
 			Vector3 forward = context.mover->GetForward();
 			forward.y = 0.0f;
 			forward.Normalize();
-			Vector3 right;
-			right.Cross(Vector3::AxisY, forward);
 			const float front = input.moveDirection.Dot(forward);
-			const float side = input.moveDirection.Dot(right);
-			if (fabsf(side) > fabsf(front)) {
-				clip = side > 0.0f ? enPlayerAnimClip_StrafeR : enPlayerAnimClip_StrafeL;
-				animMoveSpeed = context.settings.strafeAnimMoveSpeed;
-			}
-			else if (front < 0.0f) {
+			if (front < 0.0f) {
 				clip = enPlayerAnimClip_WalkBack;
 				animMoveSpeed = context.settings.walkBackAnimMoveSpeed;
 			}

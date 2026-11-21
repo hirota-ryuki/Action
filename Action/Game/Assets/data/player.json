@@ -194,10 +194,9 @@
 		"blendSeconds": 0.2, // アニメーションを切り替えるときの補間時間。
 		// Walk.fbx（Mixamo の Female Walk）の足が地面を送る速さ。UE で足のボーンを測った 115/秒 × モデルの大きさ 1.128。
 		"walkMoveSpeed": 130.0,
-		// 後ろ歩き（WalkBack）・横歩き（StrafeL・StrafeR）の、足が地面を送る速さ。三人称の溜め撃ちで構えて歩くときに使う。
+		// 後ろ歩き（WalkBack）の、足が地面を送る速さ。三人称の溜め撃ちで構えて後ろへ歩くときに使う。
 		"walkBackMoveSpeed": 88.0,
-		"strafeMoveSpeed": 46.0,
-		// クリップの名前は PlayerConfig.cpp の対応表（Idle・Walk・Run・JumpStart・JumpLoop・JumpLand・Dash・StopL・StopR・Attack1〜3・WalkBack・StrafeL・StrafeR）と同じにする。
+		// クリップの名前は PlayerConfig.cpp の対応表（Idle・Walk・Run・JumpStart・JumpLoop・JumpLand・Dash・StopL・StopR・Attack1〜3・WalkBack）と同じにする。
 		"clips": {
 			// Idle・Walk は Mixamo のモーションを UE で SK_Player にリターゲットしたもの。
 			"Idle": { "path": "Assets/modelData/player/Animation/Idle.fbx", "loop": true },
@@ -219,11 +218,8 @@
 			"Attack1": { "path": "Assets/modelData/player/Animation/Attack1.fbx", "loop": false },
 			"Attack2": { "path": "Assets/modelData/player/Animation/Attack2.fbx", "loop": false },
 			"Attack3": { "path": "Assets/modelData/player/Animation/Attack3.fbx", "loop": false },
-			// WalkBack・StrafeL・StrafeR は KinemIQ の Walk - backwards・Walk - side steps left を Blender で SK_Player に移したもの
-			// （tools/BlenderScripts/player_charge_walk_anims.json）。StrafeR は StrafeL を左右反転したもの。
-			"WalkBack": { "path": "Assets/modelData/player/Animation/WalkBack.fbx", "loop": true },
-			"StrafeL":  { "path": "Assets/modelData/player/Animation/StrafeL.fbx",  "loop": true },
-			"StrafeR":  { "path": "Assets/modelData/player/Animation/StrafeR.fbx",  "loop": true }
+			// WalkBack は KinemIQ の Walk - backwards を Blender で SK_Player に移したもの（tools/BlenderScripts/player_charge_walk_anims.json）。
+			"WalkBack": { "path": "Assets/modelData/player/Animation/WalkBack.fbx", "loop": true }
 		}
 	}
 }

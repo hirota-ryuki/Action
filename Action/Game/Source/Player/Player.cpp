@@ -14,6 +14,10 @@ namespace
 	// 溜め撃ちを構えて動くとき、進む向きとカメラの向きの内積がこれより大きければ、脚を進む向きへ向けて前歩きにする（上半身はひねる）。
 	// 小さければ（後ろの方へ動く）、体はカメラの向きのまま後ろ歩きにする。-0.2 は約 100度。
 	constexpr float AIM_TURN_LEGS_MIN_DOT = -0.2f;
+	// 溜め撃ちを構えて前・横へ動くとき、腰から下をカメラの向きから進む向きへ回す角度の上限（度）。
+	// 真横（90°）まで回すと、右から左へ入れ直したときに脚の向きが 180° 変わり、体の後ろを回って一回転して見える。
+	// 90° より小さくしておけば、見た目の向きはいつも近い方（体の前の側）を回る。上半身のひねり（AIM_TWIST_MAX_DEG）より小さくする。
+	constexpr float AIM_LEGS_MAX_DEG = 80.0f;
 	// 上半身をひねる角度の上限（度）と、背骨・胸・上の胸に分ける割合。
 	constexpr float AIM_TWIST_MAX_DEG = 100.0f;
 	constexpr float AIM_TWIST_SHARES[3] = { 0.3f, 0.3f, 0.4f };
@@ -137,20 +141,38 @@ void Player::FilterAimingInput(CharacterInput& input)
 	input.jump = ButtonState();
 	input.Action(ActionButton::Action1) = ButtonState();
 	input.moveDirection *= m_upperBody.GetSettings().moveSpeedRate;
-	// 前・横へ動くときは、脚を進む向きへ向けて前歩きにする（上半身は TwistUpperBodyToAim でカメラの向きへひねる）。
+	// 前・横へ動くときは、腰から下を進む向きへ回して前歩きにする（上半身は TwistUpperBodyToAim でカメラの向きへひねる）。
 	// 後ろの方へ動くときは、体はカメラの向き（入力元が入れた lookDirection）のまま、後ろ歩きにする。
 	Vector3 move = input.moveDirection;
 	move.y = 0.0f;
 	if (move.LengthSq() > FLT_EPSILON) {
 		move.Normalize();
 		if (move.Dot(input.lookDirection) > AIM_TURN_LEGS_MIN_DOT) {
-			input.lookDirection = move;
+			input.lookDirection = TurnLegsToward(input.lookDirection, move);
 		}
 		else {
 			// 後ろ歩きは、前・横よりさらにゆっくりにする。
 			input.moveDirection *= m_upperBody.GetSettings().backMoveSpeedRate;
 		}
 	}
+}
+
+Vector3 Player::TurnLegsToward(const Vector3& aimForward, const Vector3& moveDirection)
+{
+	// 進む向きが、カメラの向きから AIM_LEGS_MAX_DEG 以内なら、そのまま進む向きを向く。
+	const float maxRad = Math::DegToRad(AIM_LEGS_MAX_DEG);
+	if (moveDirection.Dot(aimForward) >= cosf(maxRad)) {
+		return moveDirection;
+	}
+	// それより横なら、進む向きの側へ AIM_LEGS_MAX_DEG だけ回した向きにする。
+	// 右から左へ入れ直しても、脚の向きの差が 180° にならず、見た目の向きは近い方（体の前の側）を回る。
+	Vector3 side = moveDirection - aimForward * moveDirection.Dot(aimForward);
+	side.y = 0.0f;
+	if (side.LengthSq() <= FLT_EPSILON) {
+		return aimForward;
+	}
+	side.Normalize();
+	return aimForward * cosf(maxRad) + side * sinf(maxRad);
 }
 
 void Player::OnAddPoseLayers(PoseLayers& layers)

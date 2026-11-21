@@ -83,7 +83,6 @@ struct PlayerStateSettings
 	float animBlendSeconds = 0.2f;    // アニメーションを切り替えるときの補間時間。
 	float walkAnimMoveSpeed = 0.0f;   // 歩くアニメーションを等速で再生したとき、足が地面を送る速さ。0なら等速で再生する。
 	float walkBackAnimMoveSpeed = 0.0f; // 後ろ歩き（WalkBack）の、足が地面を送る速さ。0なら等速で再生する。
-	float strafeAnimMoveSpeed = 0.0f;   // 横歩き（StrafeL・StrafeR）の、足が地面を送る速さ。0なら等速で再生する。
 };
 
 // ステートが触ってよいもの。ステートは Player クラスを直接は知らない。
