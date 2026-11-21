@@ -46,6 +46,11 @@ namespace
 	constexpr float TO_CHARGE_START_SECONDS = 0.2f;
 	constexpr float TO_CHARGE_SECONDS = 0.1f;
 	constexpr float TO_RELEASE_SECONDS = 0.05f;  // 撃った瞬間に両腕が伸びきるよう、短くする。
+	// 放つ形から、構えへ戻るクリップ（FpReleaseToIdle）へ。戻りのクリップの最初のコマは、放つクリップの
+	// RELEASE_OPEN_SECONDS 秒の姿勢と同じに焼いてあるので、補間は再生位置の小さなずれを埋めるだけ。
+	constexpr float TO_RELEASE_TO_IDLE_SECONDS = 0.05f;
+	// 戻りのクリップの最後から、構えへ。戻りのクリップの最後は、ほぼ構えの形になっている。
+	constexpr float RETURN_TO_IDLE_SECONDS = 0.1f;
 }
 
 void FirstPersonArms::Init()
@@ -63,6 +68,7 @@ void FirstPersonArms::Init()
 	desc.clips[enClip_ChargeStart] = { dir + "FpChargeStart.fbx", false };
 	desc.clips[enClip_Charge] = { dir + "FpCharge.fbx", true };
 	desc.clips[enClip_Release] = { dir + "FpRelease.fbx", true };
+	desc.clips[enClip_ReleaseToIdle] = { dir + "FpReleaseToIdle.fbx", false };
 	m_model.Init(desc);
 	ModelRender& modelRender = m_model.GetModelRender();
 	modelRender.SetMulColor(ARMS_MUL_COLOR);
@@ -235,9 +241,14 @@ void FirstPersonArms::UpdateClip(const Player& player, float deltaTime)
 		m_releaseTimer -= deltaTime;
 		if (m_releaseTimer <= 0.0f) {
 			m_releaseTimer = 0.0f;
-			Play(enClip_Idle, TO_IDLE_SECONDS);
+			// 構えのクリップへ直に切り替えると、手首や指が骨ごとにまっすぐ回って、途中で指が平たく折れて見える。
+			// 腕を下ろしながら握り直す途中の形を焼いたクリップを、間に流す。
+			Play(enClip_ReleaseToIdle, TO_RELEASE_TO_IDLE_SECONDS);
 		}
 		return;
+	}
+	if (m_clip == enClip_ReleaseToIdle && !m_model.IsPlayingAnimation()) {
+		Play(enClip_Idle, RETURN_TO_IDLE_SECONDS);
 	}
 	if (isCharging) {
 		if (!isChargeClip) {

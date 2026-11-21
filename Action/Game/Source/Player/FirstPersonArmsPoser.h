@@ -23,7 +23,7 @@ public:
 	// 骨のワールド行列を計算したあとに呼ぶ。指を握る → 腕を置く → 手の向きを決める、の順に形を作る。
 	void Apply(Skeleton& skeleton);
 
-	// 焼き込む6本（FpIdle・FpCastL・FpCastR・FpChargeStart・FpCharge・FpRelease）を JSON に書く。
+	// 焼き込む7本（FpIdle・FpCastL・FpCastR・FpChargeStart・FpCharge・FpRelease・FpReleaseToIdle）を JSON に書く。
 	// 書いたものと、うまくいかなかったものを logPath に書く。全部書けたら true。
 	static bool BakeAll(const char* logPath);
 	// Blender で作った FBX を読み、JSON の姿勢と比べる（骨の位置のずれのいちばん大きいもの）。結果は logPath に書く。

@@ -18,6 +18,8 @@ namespace PoseBaker
 	// clipNo のクリップを、最初から最後まで BAKE_FPS で止めながら流し、焼き込みに入れる層だけを重ねた姿勢を
 	// outPath に書く。clipName は Blender で付ける名前、isLoop はゲームで繰り返すか（JSON に残すだけ）。
 	// 書けたら true。焼き込みのあと、再生の速さは 1 に戻す。
+	// isEvenSpeed なら、骨の動く速さがどのコマでも同じになるように、コマごとの時刻を割り振り直す
+	// （出だしが速く終わりが遅いクリップを繰り返すと、つなぎ目で速さが急に変わって跳んで見えるのを防ぐ）。
 	bool Bake(
 		CharacterModel& model,
 		PoseLayers& layers,
@@ -25,7 +27,23 @@ namespace PoseBaker
 		const std::string& clipName,
 		bool isLoop,
 		const std::string& outPath,
-		const SetupFrameFunc& setupFrame = nullptr);
+		const SetupFrameFunc& setupFrame = nullptr,
+		bool isEvenSpeed = false);
+
+	// fromClipNo のクリップの fromTime 秒の姿勢から、toClipNo のクリップへ blendSeconds 秒で切り替える動き
+	// （ゲームの PlayAnimation と同じ補間。切り替えの間も、前のクリップは進み続ける）を、length 秒分書く。
+	// setupFrame の t は、切り替え始めてからの秒。繰り返さないクリップとして書く。
+	bool BakeTransition(
+		CharacterModel& model,
+		PoseLayers& layers,
+		int fromClipNo,
+		float fromTime,
+		int toClipNo,
+		float blendSeconds,
+		float length,
+		const std::string& clipName,
+		const std::string& outPath,
+		const SetupFrameFunc& setupFrame);
 
 	// 焼き込んだクリップ（clipNo）を、層を重ねずに流したときの姿勢と、jsonPath に書いた姿勢の差を測る。
 	// 返すのは、全部のコマ・全部の骨で、いちばん大きい位置のずれ（モデルの単位）。読めなければ負の数。
