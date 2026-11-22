@@ -31,7 +31,7 @@ UIManager（優先度 3）
 
 | 項目 | 内容 |
 |---|---|
-| 値 | 0.5秒ごとに、その間のフレーム数 ÷ 実際にかかった秒数（平均）を出す。毎フレームの値は揺れて読みにくいため |
+| 値 | 平均の FPS。0.5秒ごとに、その間のフレーム数 ÷ 実際にかかった秒数を出す。毎フレームの値は揺れて読みにくいため |
 | 時間の測り方 | `std::chrono::steady_clock` で実際の時間を測る。ゲームの経過時間（`GetFrameDeltaTime()`）は 1/30 秒で頭打ちになるので、それで測ると 30 より下が出ない |
 | 場所 | 左寄せ。左端は「FPS 0000.0」が右端から 20 に収まる位置に固定。文字の中央が上端から 20 |
 | 起動した直後 | 最初の平均が出るまで「FPS --」と出す |
@@ -49,6 +49,7 @@ void DebugHud::Update(float deltaTime)
     m_frameCount++;
     const float elapsed = std::chrono::duration<float>(now - m_averageStart).count();
     if (elapsed >= FPS_AVERAGE_SECONDS) {          // 0.5秒たったら、平均に書き換えて数え直す
+        wchar_t text[64];                          // 表示する文字を入れる配列
         swprintf_s(text, L"FPS %.1f", m_frameCount / elapsed);
         m_fps.SetText(text);
         m_averageStart = now;
@@ -91,7 +92,28 @@ void DebugHud::Update(float deltaTime)
 
 ### エンジン側で止めたところ
 
-[k2EngineLow.cpp](../../../../k2EngineLow/k2EngineLow.cpp) の `K2EngineLow::EndFrame()` で FPS を描いていた部分を、コメントアウトしている。エンジンだけで動かすとき（ゲームの UI がないとき）は、コメントを外せば右上に出る。文字の幅を測る `Font::MeasureString()` は、ゲームの `Text` が使うので残している。
+[k2EngineLow.cpp](../../../../k2EngineLow/k2EngineLow.cpp) の `K2EngineLow::EndFrame()` で FPS を描いていた部分を、コメントアウトしている。エンジンだけで動かすとき（ゲームの UI がないとき）は、コメントを外せば右上に出る。文字の幅を測る `Font::MeasureString()` は、ゲームの `Text` が使うので残している。変更前（左）と変更後（右）は次のとおり（「行」は変更前の行番号。ほかのファイルの変更は [FPSの表示の手順](FPSの表示の手順.md) の「もとからあるソースの変更前と変更後」）。
+
+| 行 | 変更前 | 変更後 |
+|---|---|---|
+| 72 | `{` | `{` |
+| 73 | `#ifdef K2_DEBUG` | `// FPS の表示は、ゲームの UI（Game/Source/UI/Hud/DebugHud）で出すので、ここでは描かない。` |
+| 74 | `m_fpsFont->Begin(g_graphicsEngine->GetRenderContext());` | `// エンジンだけで動かすとき（ゲームの UI がないとき）は、下のコメントを外せば右上に出る。` |
+| 75 | `float time = g_gameTime->GetFrameDeltaTime();` | `//#ifdef K2_DEBUG` |
+| 76 | `wchar_t text[256];` | `//		m_fpsFont->Begin(g_graphicsEngine->GetRenderContext());` |
+| 77 | `swprintf(text, L"FPS = %0.2f", 1.0f / time);` | `//		float time = g_gameTime->GetFrameDeltaTime();` |
+| 78 | `m_fpsFontShadow->Draw(text, { UI_SPACE_WIDTH * -0.48f + 3.0f , UI_SPACE_HEIGHT * 0.48f - 3.0f }, { 0.0f, 0.0f, 0.0f, 1.0f }, 0.0f, 1.0f, { 0.0f, 1.0f });` | `//		wchar_t text[256];` |
+| 79 | `m_fpsFont->Draw(text, { UI_SPACE_WIDTH * -0.48f, UI_SPACE_HEIGHT * 0.48f }, { 1.0f, 1.0f, 1.0f, 1.0f }, 0.0f, 1.0f, { 0.0f, 1.0f });` | `//		swprintf(text, L"FPS = %0.2f", 1.0f / time);` |
+| 80 | `m_fpsFont->End(g_graphicsEngine->GetRenderContext());` | `//		const float fpsScale = 0.5f;` |
+| 81 | `#endif` | `//		const float fpsShadowOffset = 1.5f;` |
+|  |  | `//		// 右端をそろえるため、文字の幅だけ左から描き始める。位置は文字の左上。` |
+|  |  | `//		const float fpsWidth = m_fpsFont->MeasureString(text).x * fpsScale;` |
+|  |  | `//		const Vector2 fpsPosition = { UI_SPACE_WIDTH * 0.49f - fpsWidth, UI_SPACE_HEIGHT * 0.49f };` |
+|  |  | `//		m_fpsFontShadow->Draw(text, { fpsPosition.x + fpsShadowOffset, fpsPosition.y - fpsShadowOffset }, { 0.0f, 0.0f, 0.0f, 1.0f }, 0.0f, fpsScale, { 0.0f, 1.0f });` |
+|  |  | `//		m_fpsFont->Draw(text, fpsPosition, { 1.0f, 1.0f, 1.0f, 1.0f }, 0.0f, fpsScale, { 0.0f, 1.0f });` |
+|  |  | `//		m_fpsFont->End(g_graphicsEngine->GetRenderContext());` |
+|  |  | `//#endif` |
+| 82 | `m_graphicsEngine->EndRender();` | `m_graphicsEngine->EndRender();` |
 
 **名前:**
 
