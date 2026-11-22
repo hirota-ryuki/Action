@@ -50,6 +50,9 @@ public:
 		return m_modelRender.IsPlayingAnimation();
 	}
 
+	// クリップの長さ（秒。最後のキーフレームの時間）。焼き込み（PoseBaker）で使う。
+	float GetClipLength(int animClip) const;
+
 	// アニメーション速度・ボーン・状態異常の色など、ModelRender を直接触る部品向け。
 	ModelRender& GetModelRender()
 	{
@@ -57,6 +60,7 @@ public:
 	}
 
 private:
+	int m_numClips = 0;
 	std::unique_ptr<AnimationClip[]> m_animClips;  // ModelRender が指し続けるので、Init 後は動かさない。
 	ModelRender m_modelRender;
 	Vector3 m_scale = Vector3::One;

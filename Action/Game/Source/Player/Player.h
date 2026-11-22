@@ -53,7 +53,7 @@ protected:
 	void UpdateAction(float deltaTime) override;
 	void FilterSkillInput(CharacterInput& input) const override;
 	void OnLateUpdate(float deltaTime) override;
-	void OnPostBodyLink(Skeleton& skeleton) override;
+	void OnAddPoseLayers(PoseLayers& layers) override;
 
 private:
 	void Respawn();
@@ -63,6 +63,9 @@ private:
 	void UpdateAttackWeight(float deltaTime);
 	// 三人称で溜め撃ちを構えている間の入力にする（走らない・跳ばない・ゆっくり歩く。ダッシュしたら溜めをやめる）。
 	void FilterAimingInput(CharacterInput& input);
+	// 構えて前・横へ動くときの、腰から下を向ける向き。進む向き（moveDirection）を、
+	// カメラの向き（aimForward）から AIM_LEGS_MAX_DEG までに抑える。どちらも水平で長さ 1。
+	static Vector3 TurnLegsToward(const Vector3& aimForward, const Vector3& moveDirection);
 	// 溜めている火の玉を置く位置を、両手の前に合わせる。
 	void UpdateChargePosition();
 	// 溜め撃ちを構えている間、脚が横を向いていても、上半身をカメラの向きへひねる。

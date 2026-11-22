@@ -3,7 +3,7 @@
 #include "DashSlashAttack.h"
 #include "HeavyComboAttack.h"
 #include "SlashWaveAttack.h"
-#include "SpringBones.h"
+#include "PoseLayers.h"
 #include <imgui/imgui.h>
 
 namespace
@@ -130,31 +130,13 @@ void Enemy::OnStart()
 	m_skillController.Register<DashSlashAttack>(ActionButton::Action1);
 	m_skillController.Register<HeavyComboAttack>(ActionButton::Action2);
 	m_skillController.Register<SlashWaveAttack>(ActionButton::Action3);
-
-	// 黒騎士は揺れ物・体の連動を使わない（垂れ布の揺れはモーションに焼き込んである）ので、
-	// アニメーションの姿勢ができたあとの処理は、開発用の窓の「剣を持つ右腕」の調整だけに使う。
-	m_model.GetModelRender().GetSkeleton().SetOnPostUpdateWorldMatrix([this](Skeleton& skeleton) {
-		RotateDebugArm(skeleton);
-	});
 }
 
-namespace
+void Enemy::OnAddPoseLayers(PoseLayers& layers)
 {
-	// bone とその子孫を、center を中心に、axis（向き）のまわりに deg 度回す。
-	void RotateBoneTreeAround(Bone& bone, const Vector3& center, Vector3 axis, float deg)
-	{
-		if (fabsf(deg) < 0.01f || axis.LengthSq() <= FLT_EPSILON) {
-			return;
-		}
-		axis.Normalize();
-		Quaternion rotation;
-		rotation.SetRotationDeg(axis, deg);
-		Matrix toOrigin, rotationMatrix, back;
-		toOrigin.MakeTranslation(center * -1.0f);
-		rotationMatrix.MakeRotationFromQuaternion(rotation);
-		back.MakeTranslation(center);
-		SpringBones::RotateBoneTree(bone, toOrigin * rotationMatrix * back);
-	}
+	// 黒騎士は揺れ物・体の連動を使わない（垂れ布の揺れはモーションに焼き込んである）ので、
+	// 層は、開発用の窓の「剣を持つ右腕」の調整だけ。
+	layers.Add([this](Skeleton& skeleton) { RotateDebugArm(skeleton); });
 }
 
 void Enemy::RotateDebugArm(Skeleton& skeleton)
@@ -175,13 +157,13 @@ void Enemy::RotateDebugArm(Skeleton& skeleton)
 
 	// ① 右肩 前後: 右肩の関節を中心に、左右の肩を結ぶ向き（体の横の向き）のまわりに回す。
 	const Vector3 shoulder = position(upperNo);
-	RotateBoneTreeAround(*upper, shoulder, shoulder - position(leftNo), m_debugShoulderDeg);
+	PoseLayers::RotateBoneTreeAround(*upper, shoulder, shoulder - position(leftNo), m_debugShoulderDeg);
 
 	// ② ひじから下 内・外: 上腕を、その向き（肩 → ひじ）を軸にひねる。ひじは動かず、曲げた前腕が体の内・外へ振れる。
-	RotateBoneTreeAround(*upper, shoulder, position(lowerNo) - shoulder, m_debugForearmDeg);
+	PoseLayers::RotateBoneTreeAround(*upper, shoulder, position(lowerNo) - shoulder, m_debugForearmDeg);
 
 	// ③ ひじから下 前後: ひじを中心に、①と同じ体の横の向きのまわりに前腕から先を回す（＋で前）。
-	RotateBoneTreeAround(*skeleton.GetBone(lowerNo), position(lowerNo), shoulder - position(leftNo), m_debugElbowDeg);
+	PoseLayers::RotateBoneTreeAround(*skeleton.GetBone(lowerNo), position(lowerNo), shoulder - position(leftNo), m_debugElbowDeg);
 
 	// ④ 手首: 手首を中心に、前腕から見た3つの向きで回す（剣も一緒に回る）。
 	const Vector3 elbow = position(lowerNo);
@@ -193,9 +175,9 @@ void Enemy::RotateDebugArm(Skeleton& skeleton)
 		bendAxis = Cross(Vector3::AxisY, forearm);
 	}
 	const Vector3 sideAxis = Cross(forearm, bendAxis);  // 手首を横（親指側・小指側）へ倒す軸。
-	RotateBoneTreeAround(*hand, wrist, bendAxis, m_debugWristBendDeg);
-	RotateBoneTreeAround(*hand, wrist, sideAxis, m_debugWristSideDeg);
-	RotateBoneTreeAround(*hand, wrist, forearm, m_debugWristTwistDeg);
+	PoseLayers::RotateBoneTreeAround(*hand, wrist, bendAxis, m_debugWristBendDeg);
+	PoseLayers::RotateBoneTreeAround(*hand, wrist, sideAxis, m_debugWristSideDeg);
+	PoseLayers::RotateBoneTreeAround(*hand, wrist, forearm, m_debugWristTwistDeg);
 }
 
 void Enemy::FilterSkillInput(CharacterInput& input) const

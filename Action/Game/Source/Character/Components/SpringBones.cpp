@@ -1,5 +1,6 @@
 ﻿#include "stdafx.h"
 #include "SpringBones.h"
+#include "PoseLayers.h"
 
 namespace
 {
@@ -8,6 +9,8 @@ namespace
 	// 1フレームでこれより大きく動いたら、ワープ（リスポーンなど）とみなして揺れをなくす。
 	constexpr float TELEPORT_DISTANCE = 200.0f;
 	constexpr float TELEPORT_DISTANCE_SQ = TELEPORT_DISTANCE * TELEPORT_DISTANCE;
+	// 下げた裾が脚に当たるとき、当たらない向きを探す回数（半分ずつ狭める）。
+	constexpr int LEG_SEARCH_STEPS = 8;
 	// 脚の当たり判定に使う骨（付け根 → 先）。
 	const wchar_t* const LEG_BONE_PAIRS[][2] = {
 		{ L"J_Bip_L_UpperLeg", L"J_Bip_L_LowerLeg" },
@@ -32,6 +35,47 @@ namespace
 		float t = (p - a).Dot(ab) / lengthSq;
 		t = max(0.0f, min(1.0f, t));
 		return a + ab * t;
+	}
+
+	// 線分 p0-p1 と 線分 q0-q1 の、いちばん近いところの距離。
+	float SegmentDistance(const Vector3& p0, const Vector3& p1, const Vector3& q0, const Vector3& q1)
+	{
+		const Vector3 d1 = p1 - p0;
+		const Vector3 d2 = q1 - q0;
+		const Vector3 r = p0 - q0;
+		const float a = d1.LengthSq();
+		const float e = d2.LengthSq();
+		const float f = d2.Dot(r);
+		float s = 0.0f;
+		float t = 0.0f;
+		if (a <= FLT_EPSILON && e <= FLT_EPSILON) {
+			return r.Length();
+		}
+		if (a <= FLT_EPSILON) {
+			t = max(0.0f, min(1.0f, f / e));
+		}
+		else {
+			const float c = d1.Dot(r);
+			if (e <= FLT_EPSILON) {
+				s = max(0.0f, min(1.0f, -c / a));
+			}
+			else {
+				const float b = d1.Dot(d2);
+				const float denom = a * e - b * b;
+				s = denom > FLT_EPSILON ? max(0.0f, min(1.0f, (b * f - c * e) / denom)) : 0.0f;
+				t = (b * s + f) / e;
+				if (t < 0.0f) {
+					t = 0.0f;
+					s = max(0.0f, min(1.0f, -c / a));
+				}
+				else if (t > 1.0f) {
+					t = 1.0f;
+					s = max(0.0f, min(1.0f, (b - c) / a));
+				}
+			}
+		}
+		const Vector3 diff = (p0 + d1 * s) - (q0 + d2 * t);
+		return diff.Length();
 	}
 
 	// from の向きを to の向きへ回すクォータニオン（どちらも正規化済み）。ほとんど同じ向きなら false。
@@ -64,6 +108,7 @@ void SpringBones::Init(ModelRender& model, const SpringBonesSettings& settings)
 	m_joints.clear();
 	m_legCapsules.clear();
 	m_isFirstFrame = true;
+	m_modelRender = &model;
 	if (!m_settings.isEnabled) {
 		return;
 	}
@@ -125,6 +170,7 @@ void SpringBones::Update(Skeleton& skeleton)
 	if (deltaTime <= 0.0f) {
 		return;
 	}
+	CarryWithAnimation(skeleton);
 
 	for (Joint& joint : m_joints) {
 		Bone* bone = skeleton.GetBone(joint.boneNo);
@@ -199,18 +245,44 @@ void SpringBones::Update(Skeleton& skeleton)
 			tail = head + direction * length;
 		}
 
-		// ジャンプ中は、真下から jumpMaxAngleFromDownDeg より上へ上げない（脚に押したあとに抑える）。
-		// スカートの骨はアニメーションの中で太ももと一緒に動き、跳んで太ももを上げると水平より上まで上がって中が見えるため。
-		// 太ももを大きく上げたときは、太ももがスカートに少し入り込む。
-		if (joint.group->noLiftInJump && m_jumpWeight > 0.0f && m_settings.jumpMaxAngleFromDownDeg > 0.0f) {
-			const float maxAngle = Math::DegToRad(m_settings.jumpMaxAngleFromDownDeg);
+		// 真下から maxAngleFromDownDeg（ジャンプ中は jumpMaxAngleFromDownDeg）より上へ上げない（脚に押したあとに抑える）。
+		// スカートの骨の一部はアニメーションの中で太ももと一緒に動き、走る・跳ぶで太ももを上げると水平より上まで上がって中が見えるため。
+		if (joint.group->noLiftInJump) {
+			const Vector3 liftedDirection = direction;  // 下げる前の向き（脚から押し出したあと）。
 			const float angle = acosf(max(-1.0f, min(1.0f, -direction.y)));
-			if (angle > maxAngle) {
-				Vector3 horizontal(direction.x, 0.0f, direction.z);
-				if (horizontal.LengthSq() > 1.0e-6f) {
-					horizontal.Normalize();
-					const float limited = angle + (maxAngle - angle) * m_jumpWeight;
-					direction = horizontal * sinf(limited) + Vector3::AxisY * -cosf(limited);
+			float limited = angle;
+			if (m_settings.maxAngleFromDownDeg > 0.0f) {
+				limited = min(limited, Math::DegToRad(m_settings.maxAngleFromDownDeg));
+			}
+			if (m_jumpWeight > 0.0f && m_settings.jumpMaxAngleFromDownDeg > 0.0f) {
+				const float jumpMaxAngle = Math::DegToRad(m_settings.jumpMaxAngleFromDownDeg);
+				if (limited > jumpMaxAngle) {
+					limited += (jumpMaxAngle - limited) * m_jumpWeight;
+				}
+			}
+			Vector3 horizontal(direction.x, 0.0f, direction.z);
+			if (limited < angle && horizontal.LengthSq() > 1.0e-6f) {
+				horizontal.Normalize();
+				direction = horizontal * sinf(limited) + Vector3::AxisY * -cosf(limited);
+				tail = head + direction * length;
+				// 下げた裾（付け根から先までの線分）が、上げた太もも・すねを横切るときは、下げる前の向きへ戻していき、
+				// 脚に当たらない一番低い向きにする（裾が太ももの下側へ回り込まず、太ももに乗る形になる）。
+				if (!m_legCapsules.empty() && HitsLegs(skeleton, head, tail, animTail)) {
+					float low = 0.0f;   // 当たる（下げた向きの側）
+					float high = 1.0f;  // 当たらないとみなす（下げる前の向きの側）
+					for (int i = 0; i < LEG_SEARCH_STEPS; i++) {
+						const float middle = (low + high) * 0.5f;
+						Vector3 candidate = direction + (liftedDirection - direction) * middle;
+						candidate.Normalize();
+						if (HitsLegs(skeleton, head, head + candidate * length, animTail)) {
+							low = middle;
+						}
+						else {
+							high = middle;
+						}
+					}
+					direction = direction + (liftedDirection - direction) * high;
+					direction.Normalize();
 					tail = head + direction * length;
 				}
 			}
@@ -228,17 +300,42 @@ void SpringBones::Update(Skeleton& skeleton)
 		toOrigin.MakeTranslation(head * -1.0f);
 		rotationMatrix.MakeRotationFromQuaternion(rotation);
 		back.MakeTranslation(head);
-		RotateBoneTree(*bone, toOrigin * rotationMatrix * back);
+		PoseLayers::RotateBoneTree(*bone, toOrigin * rotationMatrix * back);
 	}
 	m_isFirstFrame = false;
 }
 
-void SpringBones::RotateBoneTree(Bone& bone, const Matrix& rotationAroundCenter)
+void SpringBones::CarryWithAnimation(Skeleton& skeleton)
 {
-	bone.SetWorldMatrix(bone.GetWorldMatrix() * rotationAroundCenter);
-	for (Bone* child : bone.GetChildren()) {
-		RotateBoneTree(*child, rotationAroundCenter);
+	if (m_modelRender == nullptr) {
+		return;
 	}
+	const Matrix& modelWorld = m_modelRender->GetModel().GetWorldMatrix();
+	Matrix modelBack;  // キャラクターが動いた分を戻す（今のモデル → 前のモデル）。
+	modelBack.Inverse(modelWorld);
+	modelBack = modelBack * m_prevModelWorld;
+	const float follow = 1.0f - max(0.0f, min(1.0f, m_settings.animInertia));
+	for (Joint& joint : m_joints) {
+		const Matrix& animWorld = skeleton.GetBone(joint.boneNo)->GetWorldMatrix();
+		if (!m_isFirstFrame) {
+			// 前のフレームの骨から今の骨へ運び、キャラクターが動いた分は戻す。
+			// 骨がモデルに対して止まっていれば、何も運ばない（キャラクターそのものの動きは揺れとして残る）。
+			Matrix carry;
+			carry.Inverse(joint.prevAnimWorld);
+			carry = carry * animWorld * modelBack;
+			Vector3 tail = joint.tail;
+			carry.Apply(tail);
+			joint.tail += (tail - joint.tail) * follow;
+			Vector3 prevAnimTail = joint.prevAnimTail;
+			carry.Apply(prevAnimTail);
+			joint.prevAnimTail += (prevAnimTail - joint.prevAnimTail) * follow;
+			Vector3 velocity = joint.velocity;
+			carry.Apply3x3(velocity);
+			joint.velocity += (velocity - joint.velocity) * follow;
+		}
+		joint.prevAnimWorld = animWorld;
+	}
+	m_prevModelWorld = modelWorld;
 }
 
 Vector3 SpringBones::PushOutFromLegs(Skeleton& skeleton, const Vector3& tail, const Vector3& animTail) const
@@ -266,4 +363,18 @@ Vector3 SpringBones::PushOutFromLegs(Skeleton& skeleton, const Vector3& tail, co
 		result = closest + away * radius;
 	}
 	return result;
+}
+
+bool SpringBones::HitsLegs(Skeleton& skeleton, const Vector3& head, const Vector3& tail, const Vector3& animTail) const
+{
+	for (const Capsule& capsule : m_legCapsules) {
+		const Vector3 start = GetTranslation(skeleton.GetBone(capsule.startBoneNo)->GetWorldMatrix());
+		const Vector3 end = GetTranslation(skeleton.GetBone(capsule.endBoneNo)->GetWorldMatrix());
+		const float animDistance = SegmentDistance(head, animTail, start, end);
+		const float radius = min(m_settings.legRadius, animDistance) - 0.01f;
+		if (SegmentDistance(head, tail, start, end) < radius) {
+			return true;
+		}
+	}
+	return false;
 }

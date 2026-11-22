@@ -1,0 +1,31 @@
+{
+  "name": "claude-accounts",
+  "displayName": "Claude アカウント",
+  "description": "保存した Claude のログイン情報を入れ替えて、アカウントを切り替える",
+  "version": "0.0.1",
+  "publisher": "local",
+  "engines": { "vscode": "^1.82.0" },
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "claudeAccounts.refresh", "title": "使用量を聞き直す", "icon": "$(refresh)" },
+      { "command": "claudeAccounts.save", "title": "今のアカウントを保存", "icon": "$(add)" }
+    ],
+    "menus": {
+      "view/title": [
+        { "command": "claudeAccounts.refresh", "when": "view == claudeAccounts.list", "group": "navigation@2" },
+        { "command": "claudeAccounts.save", "when": "view == claudeAccounts.list", "group": "navigation@1" }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        { "id": "claudeAccounts", "title": "Claude アカウント", "icon": "media/accounts.svg" }
+      ]
+    },
+    "views": {
+      "claudeAccounts": [
+        { "type": "webview", "id": "claudeAccounts.list", "name": "アカウント" }
+      ]
+    }
+  }
+}

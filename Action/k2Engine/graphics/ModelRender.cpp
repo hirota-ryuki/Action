@@ -181,12 +181,12 @@ namespace nsK2Engine {
 		}
 	}
 
-	void ModelRender::InitAnimationLayer(const std::vector<std::pair<const wchar_t*, float>>& boneWeights)
+	void ModelRender::InitAnimationLayer(const std::vector<std::pair<const wchar_t*, float>>& boneWeights, int layerNo)
 	{
-		if (m_animationClips == nullptr || !m_skeleton.IsInited()) {
+		if (m_animationClips == nullptr || !m_skeleton.IsInited() || layerNo < 0 || layerNo >= MAX_ANIMATION_LAYER) {
 			return;
 		}
-		m_layerAnimation.Init(m_skeleton, m_animationClips, m_numAnimationClips);
+		m_layerAnimation[layerNo].Init(m_skeleton, m_animationClips, m_numAnimationClips);
 		// 骨ごとに、自分から根元へさかのぼって、最初に見つかった組の重みを使う。
 		const int numBone = m_skeleton.GetNumBones();
 		std::vector<float> weights(numBone, 0.0f);
@@ -201,7 +201,7 @@ namespace nsK2Engine {
 				}
 			}
 		}
-		m_layerAnimation.SetLayerBoneWeights(weights);
+		m_layerAnimation[layerNo].SetLayerBoneWeights(weights);
 	}
 
 	void ModelRender::InitInstancingDraw(int maxInstance)
@@ -494,8 +494,10 @@ namespace nsK2Engine {
 		m_animation.Progress(g_gameTime->GetFrameDeltaTime() * m_animationSpeed);
 		//層のアニメーションを、下のアニメーションの上に重ねる。
 		//速さは、下のアニメーションの速さ（m_animationSpeed）とは別にする（歩く速さに合わせた再生の速さに、つられないように）。
-		if (m_layerAnimation.IsInited() && m_layerAnimation.GetLayerWeight() > 0.0f) {
-			m_layerAnimation.Progress(g_gameTime->GetFrameDeltaTime() * m_layerAnimationSpeed);
+		for (int layerNo = 0; layerNo < MAX_ANIMATION_LAYER; layerNo++) {
+			if (m_layerAnimation[layerNo].IsInited() && m_layerAnimation[layerNo].GetLayerWeight() > 0.0f) {
+				m_layerAnimation[layerNo].Progress(g_gameTime->GetFrameDeltaTime() * m_layerAnimationSpeed[layerNo]);
+			}
 		}
 
 	}

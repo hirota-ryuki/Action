@@ -1,0 +1,141 @@
+/* 色は VSCode のテーマの色（--vscode-〇〇）を使い、明るいテーマでも暗いテーマでも読めるようにする。 */
+body {
+  padding: 8px 12px;
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+}
+
+.card {
+  border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.card.is-current {
+  border-color: var(--vscode-focusBorder);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.who {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dot {
+  color: var(--vscode-descriptionForeground);
+  margin-right: 4px;
+}
+
+.dot.on {
+  color: var(--vscode-testing-iconPassed, var(--vscode-charts-green));
+}
+
+.dim {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.92em;
+}
+
+.current {
+  margin-top: 6px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+}
+
+.fetched {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.92em;
+  text-align: right;
+  margin-top: 4px;
+}
+
+.limit {
+  margin-bottom: 8px;
+}
+
+.limit-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.left {
+  font-weight: 600;
+}
+
+/* バーは使った分を塗る（Claude Code の /usage と同じ向き） */
+.bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--vscode-input-background, rgba(128, 128, 128, 0.2));
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+
+.fill {
+  height: 100%;
+  background: var(--vscode-progressBar-background);
+}
+
+.fill.warn {
+  background: var(--vscode-editorWarning-foreground);
+}
+
+.fill.danger {
+  background: var(--vscode-errorForeground);
+}
+
+.left.warn {
+  color: var(--vscode-editorWarning-foreground);
+}
+
+.left.danger,
+.note.danger {
+  color: var(--vscode-errorForeground);
+}
+
+.note {
+  margin: 4px 0;
+}
+
+button.icon {
+  background: none;
+  border: none;
+  color: var(--vscode-icon-foreground, var(--vscode-foreground));
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+button.icon:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+button.action {
+  width: 100%;
+  margin-top: 6px;
+  padding: 4px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+}
+
+button.action:hover {
+  background: var(--vscode-button-hoverBackground);
+}

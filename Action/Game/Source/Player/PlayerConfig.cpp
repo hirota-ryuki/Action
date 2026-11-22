@@ -168,7 +168,6 @@ namespace
 		settings.animBlendSeconds = Read(animation, "animation", "blendSeconds", 0.2f);
 		settings.walkAnimMoveSpeed = Read(animation, "animation", "walkMoveSpeed", 130.0f);
 		settings.walkBackAnimMoveSpeed = Read(animation, "animation", "walkBackMoveSpeed", 88.0f);
-		settings.strafeAnimMoveSpeed = Read(animation, "animation", "strafeMoveSpeed", 46.0f);
 		return settings;
 	}
 
@@ -193,8 +192,6 @@ namespace
 		{ "Attack2", enPlayerAnimClip_Attack2, { "Assets/modelData/player/Animation/Attack2.fbx", false } },
 		{ "Attack3", enPlayerAnimClip_Attack3, { "Assets/modelData/player/Animation/Attack3.fbx", false } },
 		{ "WalkBack", enPlayerAnimClip_WalkBack, { "Assets/modelData/player/Animation/WalkBack.fbx", true } },
-		{ "StrafeL",  enPlayerAnimClip_StrafeL,  { "Assets/modelData/player/Animation/StrafeL.fbx",  true } },
-		{ "StrafeR",  enPlayerAnimClip_StrafeR,  { "Assets/modelData/player/Animation/StrafeR.fbx",  true } },
 	};
 	static_assert(sizeof(CLIP_TABLE) / sizeof(CLIP_TABLE[0]) == enPlayerAnimClip_Num,
 		"EnPlayerAnimClip を足したら、CLIP_TABLE と player.json の animation.clips にも足してください。");
@@ -314,6 +311,8 @@ namespace
 		settings.isEnabled = Read(section, "springBone", "enabled", true);
 		settings.legRadius = Read(section, "springBone", "legRadius", 8.0f);
 		settings.jumpMaxAngleFromDownDeg = Read(section, "springBone", "jumpMaxAngleFromDownDeg", 0.0f);
+		settings.maxAngleFromDownDeg = Read(section, "springBone", "maxAngleFromDownDeg", 0.0f);
+		settings.animInertia = Read(section, "springBone", "animInertia", 1.0f);
 		auto groups = section.find("groups");
 		if (groups == section.end() || !groups->is_object()) {
 			Log(std::string(JSON_PATH) + " に springBone.groups がないので、揺れ物を使いません。");

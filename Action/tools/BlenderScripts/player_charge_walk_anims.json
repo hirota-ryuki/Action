@@ -11,23 +11,6 @@
       "rig": "ue4",
       "frames": [48, 109],
       "loop": true
-    },
-    {
-      "name": "StrafeL",
-      "comment": "左への横歩き。KinemIQ の Walk - side steps left の 17〜64コマ目（立った姿勢から左へ1歩踏み、また立つまで）",
-      "source": "C:/Users/r-hir/Downloads/Walk_-_side_steps_left.fbx",
-      "rig": "ue4",
-      "frames": [17, 64],
-      "loop": true
-    },
-    {
-      "name": "StrafeR",
-      "comment": "右への横歩き。StrafeL を左右反転したもの",
-      "source": "C:/Users/r-hir/Downloads/Walk_-_side_steps_left.fbx",
-      "rig": "ue4",
-      "mirror": true,
-      "frames": [17, 64],
-      "loop": true
     }
   ]
 }

@@ -9,6 +9,7 @@ struct SpringBoneGroupSettings
 	float maxAngleDeg = 30.0f;    // アニメーションの形から曲がってよい角度の上限。
 	// ジャンプ中は、揺れ（体の動きからの遅れ）でアニメーションの形より上へ上がらず、
 	// 真下から SpringBonesSettings::jumpMaxAngleFromDownDeg より上へも上がらない。スカートの中が見えるのを防ぐ。
+	// 地面にいる間も、真下から SpringBonesSettings::maxAngleFromDownDeg より上へ上がらない。
 	bool noLiftInJump = false;
 };
 
@@ -22,6 +23,13 @@ struct SpringBonesSettings
 	float legRadius = 0.0f;
 	// ジャンプ中に、noLiftInJump のまとまり（スカート）を、真下からこの角度より上へ上げない。0 なら抑えない。
 	float jumpMaxAngleFromDownDeg = 0.0f;
+	// 地面にいる間も、noLiftInJump のまとまりを、真下からこの角度より上へ上げない。0 なら抑えない。
+	// スカートの付け根の骨の一部は太もも・すねの子で、走ると太ももと一緒に水平より上まで上がるため。
+	float maxAngleFromDownDeg = 0.0f;
+	// アニメーションでの骨の動きのうち、揺れ（遅れ）として残す割合（0〜1）。
+	// 0 で、揺れ物の骨はアニメーションでの自分の骨の動き（腰の揺さぶり・太ももに振られる裾など）に完全に付いていき、
+	// キャラクターそのものの動き（走り出し・止まる・向きを変える）だけで揺れる。1 でアニメーションの動きも全部揺れになる。
+	float animInertia = 1.0f;
 };
 
 // 髪・スカートなどの揺れ物の骨を、体の動きから遅れて付いてくるように揺らす部品。
@@ -30,7 +38,7 @@ struct SpringBonesSettings
 class SpringBones
 {
 public:
-	// model はスケルトンを読み込んだあとのもの。
+	// model はスケルトンを読み込んだあとのもの。Update() の中で、model のワールド行列を読む。
 	void Init(ModelRender& model, const SpringBonesSettings& settings);
 	// 揺らす骨があるか。
 	bool IsActive() const
@@ -49,8 +57,6 @@ public:
 	}
 	// アニメーションの姿勢（ワールド行列）を揺らす。体の連動（BodyLink）のあとに呼ぶ。
 	void Update(Skeleton& skeleton);
-	// 骨とその子孫のワールド行列に、rotationAroundCenter をかける。
-	static void RotateBoneTree(Bone& bone, const Matrix& rotationAroundCenter);
 
 private:
 	struct Joint
@@ -62,6 +68,7 @@ private:
 		Vector3 tail = Vector3::Zero;          // 揺れている先の位置（ワールド）。
 		Vector3 velocity = Vector3::Zero;      // 先の速さ。
 		Vector3 prevAnimTail = Vector3::Zero;  // 前のフレームの、アニメーションどおりの先の位置。
+		Matrix prevAnimWorld;                  // 前のフレームの、揺らす前の骨のワールド行列。
 	};
 	struct Capsule
 	{
@@ -69,10 +76,18 @@ private:
 		int endBoneNo = -1;
 	};
 
+	// 骨がアニメーションで動いた分（キャラクターそのものの動きは除く）だけ、揺れの先・速さを運ぶ。
+	// 揺れ物の骨を動かす前（アニメーションと体の連動だけの姿勢）に呼ぶ。
+	void CarryWithAnimation(Skeleton& skeleton);
 	// 先を脚から押し出す。animTail がもとから近いときは、その近さまでは許す。
 	Vector3 PushOutFromLegs(Skeleton& skeleton, const Vector3& tail, const Vector3& animTail) const;
+	// 付け根 head から先 tail までの線分が、脚（太もも・すね）に入り込むか。
+	// アニメーションの形（head から animTail）がもとから脚に近いときは、その近さまでは入り込みとみなさない。
+	bool HitsLegs(Skeleton& skeleton, const Vector3& head, const Vector3& tail, const Vector3& animTail) const;
 
 	SpringBonesSettings m_settings;
+	ModelRender* m_modelRender = nullptr;
+	Matrix m_prevModelWorld;   // 前のフレームの、モデルのワールド行列（キャラクターの位置・向き）。
 	std::vector<Joint> m_joints;
 	std::vector<Capsule> m_legCapsules;
 	bool m_isFirstFrame = true;
