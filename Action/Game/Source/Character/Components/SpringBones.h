@@ -9,6 +9,7 @@ struct SpringBoneGroupSettings
 	float maxAngleDeg = 30.0f;    // アニメーションの形から曲がってよい角度の上限。
 	// ジャンプ中は、揺れ（体の動きからの遅れ）でアニメーションの形より上へ上がらず、
 	// 真下から SpringBonesSettings::jumpMaxAngleFromDownDeg より上へも上がらない。スカートの中が見えるのを防ぐ。
+	// 地面にいる間も、真下から SpringBonesSettings::maxAngleFromDownDeg より上へ上がらない。
 	bool noLiftInJump = false;
 };
 
@@ -22,10 +23,13 @@ struct SpringBonesSettings
 	float legRadius = 0.0f;
 	// ジャンプ中に、noLiftInJump のまとまり（スカート）を、真下からこの角度より上へ上げない。0 なら抑えない。
 	float jumpMaxAngleFromDownDeg = 0.0f;
+	// 地面にいる間も、noLiftInJump のまとまりを、真下からこの角度より上へ上げない。0 なら抑えない。
+	// スカートの付け根の骨の一部は太もも・すねの子で、走ると太ももと一緒に水平より上まで上がるため。
+	float maxAngleFromDownDeg = 0.0f;
 	// アニメーションでの骨の動きのうち、揺れ（遅れ）として残す割合（0〜1）。
 	// 0 で、揺れ物の骨はアニメーションでの自分の骨の動き（腰の揺さぶり・太ももに振られる裾など）に完全に付いていき、
 	// キャラクターそのものの動き（走り出し・止まる・向きを変える）だけで揺れる。1 でアニメーションの動きも全部揺れになる。
-	float animInertia = 0.0f;
+	float animInertia = 1.0f;
 };
 
 // 髪・スカートなどの揺れ物の骨を、体の動きから遅れて付いてくるように揺らす部品。
@@ -77,6 +81,9 @@ private:
 	void CarryWithAnimation(Skeleton& skeleton);
 	// 先を脚から押し出す。animTail がもとから近いときは、その近さまでは許す。
 	Vector3 PushOutFromLegs(Skeleton& skeleton, const Vector3& tail, const Vector3& animTail) const;
+	// 付け根 head から先 tail までの線分が、脚（太もも・すね）に入り込むか。
+	// アニメーションの形（head から animTail）がもとから脚に近いときは、その近さまでは入り込みとみなさない。
+	bool HitsLegs(Skeleton& skeleton, const Vector3& head, const Vector3& tail, const Vector3& animTail) const;
 
 	SpringBonesSettings m_settings;
 	ModelRender* m_modelRender = nullptr;
