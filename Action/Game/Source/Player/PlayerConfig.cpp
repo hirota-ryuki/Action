@@ -71,7 +71,7 @@ namespace
 		CharacterMoveSettings settings;
 		settings.walkSpeed = Read(section, "move", "walkSpeed", 170.0f);
 		// CharacterMover は「歩く速さの何倍で走るか」で持つので、走る速さ ÷ 歩く速さにする。
-		const float runSpeed = Read(section, "move", "runSpeed", 480.0f);
+		const float runSpeed = Read(section, "move", "runSpeed", 960.0f);
 		settings.runSpeedMultiplier = settings.walkSpeed > 0.0f ? runSpeed / settings.walkSpeed : 1.0f;
 		settings.jumpSpeed = Read(section, "move", "jumpSpeed", 400.0f);
 		settings.gravity = Read(section, "move", "gravity", 980.0f);
@@ -80,8 +80,8 @@ namespace
 		settings.turnSpeedDeg = Read(section, "move", "turnSpeedDeg", 1296.0f);
 		settings.turnStiffness = Read(section, "move", "turnStiffness", 20.0f);
 		settings.turnInPlaceAngleDeg = Read(section, "move", "turnInPlaceAngleDeg", 100.0f);
-		settings.acceleration = Read(section, "move", "acceleration", 2400.0f);
-		settings.deceleration = Read(section, "move", "deceleration", 3000.0f);
+		settings.acceleration = Read(section, "move", "acceleration", 4800.0f);
+		settings.deceleration = Read(section, "move", "deceleration", 6000.0f);
 		return settings;
 	}
 
@@ -93,7 +93,7 @@ namespace
 		// distance を、蹴って低く滑る区間（kickFrames コマ）で進む速さにする。
 		const float kickSeconds = ReadFramesAsSeconds(section, "dash", "kickFrames", 7.0f);
 		settings.dashSpeed = kickSeconds > 0.0f ? settings.dashDistance / kickSeconds : 0.0f;
-		settings.dashEndSpeed = Read(section, "dash", "endSpeed", 480.0f);
+		settings.dashEndSpeed = Read(section, "dash", "endSpeed", 960.0f);
 		settings.dashAnimSpeed = Read(section, "dash", "animSpeed", 1.0f);
 		settings.dashAnimBlendSeconds = Read(section, "dash", "animBlendSeconds", 0.05f);
 		settings.dashCrouchSeconds = ReadFramesAsSeconds(section, "dash", "crouchFrames", 4.0f);
