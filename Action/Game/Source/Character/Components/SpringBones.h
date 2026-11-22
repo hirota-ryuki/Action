@@ -81,6 +81,9 @@ private:
 	void CarryWithAnimation(Skeleton& skeleton);
 	// 先を脚から押し出す。animTail がもとから近いときは、その近さまでは許す。
 	Vector3 PushOutFromLegs(Skeleton& skeleton, const Vector3& tail, const Vector3& animTail) const;
+	// 付け根 head から先 tail までの線分が、脚（太もも・すね）に入り込むか。
+	// アニメーションの形（head から animTail）がもとから脚に近いときは、その近さまでは入り込みとみなさない。
+	bool HitsLegs(Skeleton& skeleton, const Vector3& head, const Vector3& tail, const Vector3& animTail) const;
 
 	SpringBonesSettings m_settings;
 	ModelRender* m_modelRender = nullptr;
