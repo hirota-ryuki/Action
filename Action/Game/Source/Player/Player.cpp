@@ -239,9 +239,6 @@ void Player::OnLateUpdate(float deltaTime)
 		m_isThirdPersonCamera,
 		deltaTime);
 	UpdateChargePosition();
-	if (DebugUI::IsVisible()) {
-		DrawChargeDebugUI();
-	}
 }
 
 void Player::DrawChargeDebugUI()

@@ -121,9 +121,6 @@ void GameCamera::Update()
 		UpdateThirdPersonCamera();
 	}
 
-	if (DebugUI::IsVisible()) {
-		DrawShoulderViewDebugUI();
-	}
 }
 
 void GameCamera::DrawShoulderViewDebugUI()

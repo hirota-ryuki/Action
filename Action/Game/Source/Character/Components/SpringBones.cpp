@@ -9,6 +9,16 @@ namespace
 	// 1フレームでこれより大きく動いたら、ワープ（リスポーンなど）とみなして揺れをなくす。
 	constexpr float TELEPORT_DISTANCE = 200.0f;
 	constexpr float TELEPORT_DISTANCE_SQ = TELEPORT_DISTANCE * TELEPORT_DISTANCE;
+	// 持ち主の動きを調べる骨（腰）。windDrag に使う。
+	const wchar_t* const OWNER_BONE_NAME = L"J_Bip_C_Hips";
+	// 持ち主の速さをならす速さ（大きいほどすぐ追いつく。1/秒）。
+	constexpr float OWNER_VELOCITY_SMOOTHING = 10.0f;
+	// 持ち主の速さが、この加速（cm/秒²）より急に増えたら、踏み込みの出だしとみなして煽る。歩き出し・走り出しでは届かない。
+	constexpr float BURST_ACCELERATION = 20000.0f;
+	// 煽ったあと、次に煽れるまでの秒数。
+	constexpr float BURST_COOLDOWN_SECONDS = 0.4f;
+	// 風の揺らぎを、骨の番号ごとにずらす量（ラジアン）。
+	constexpr float BREEZE_PHASE_PER_BONE = 1.7f;
 	// 脚の当たり判定に使う骨（付け根 → 先）。
 	const wchar_t* const LEG_BONE_PAIRS[][2] = {
 		{ L"J_Bip_L_UpperLeg", L"J_Bip_L_LowerLeg" },
@@ -108,6 +118,10 @@ void SpringBones::Init(ModelRender& model, const SpringBonesSettings& settings)
 		return a.depth < b.depth;
 	});
 
+	m_ownerBoneNo = skeleton.FindBoneID(OWNER_BONE_NAME);
+	m_ownerVelocity = Vector3::Zero;
+	m_time = 0.0f;
+
 	if (m_settings.legRadius > 0.0f) {
 		for (const auto& pair : LEG_BONE_PAIRS) {
 			Capsule capsule;
@@ -122,9 +136,41 @@ void SpringBones::Init(ModelRender& model, const SpringBonesSettings& settings)
 
 void SpringBones::Update(Skeleton& skeleton)
 {
+	if (m_isSuspended) {
+		return;
+	}
 	const float deltaTime = min(g_gameTime->GetFrameDeltaTime(), MAX_DELTA_TIME);
 	if (deltaTime <= 0.0f) {
 		return;
+	}
+
+	m_time += deltaTime;
+	m_burstWideLeft = max(0.0f, m_burstWideLeft - deltaTime);
+	// 持ち主の動き（腰の骨のワールドでの位置の変わり方）。急に変わらないよう、少しならす。ワープ（リスポーンなど）は動きにしない。
+	if (m_ownerBoneNo != -1) {
+		const Vector3 ownerPosition = GetTranslation(skeleton.GetBone(m_ownerBoneNo)->GetWorldMatrix());
+		if (!m_isFirstFrame && (ownerPosition - m_prevOwnerPosition).LengthSq() <= TELEPORT_DISTANCE_SQ) {
+			const Vector3 rawVelocity = (ownerPosition - m_prevOwnerPosition) * (1.0f / deltaTime);
+			m_ownerVelocity += (rawVelocity - m_ownerVelocity) * (1.0f - expf(-OWNER_VELOCITY_SMOOTHING * deltaTime));
+			// 急に速くなった（踏み込み・ダッシュの出だし）ら、マントを後ろ・上へバサッと煽る（このフレームの揺れ物に1回だけ）。
+			m_burstCooldown = max(0.0f, m_burstCooldown - deltaTime);
+			const float speedUp = (rawVelocity - m_prevRawVelocity).Length() / deltaTime;
+			if (m_burstCooldown <= 0.0f && speedUp > BURST_ACCELERATION && rawVelocity.LengthSq() > m_prevRawVelocity.LengthSq()) {
+				Vector3 horizontal(rawVelocity.x, 0.0f, rawVelocity.z);
+				if (horizontal.LengthSq() > FLT_EPSILON) {
+					horizontal.Normalize();
+					Burst(horizontal * -1.0f);  // 動く向きの逆（後ろ）へ。
+					m_burstStrength = 1.0f;
+					m_burstCooldown = BURST_COOLDOWN_SECONDS;
+				}
+			}
+			m_prevRawVelocity = rawVelocity;
+		}
+		else {
+			m_ownerVelocity = Vector3::Zero;
+			m_prevRawVelocity = Vector3::Zero;
+		}
+		m_prevOwnerPosition = ownerPosition;
 	}
 
 	for (Joint& joint : m_joints) {
@@ -150,10 +196,26 @@ void SpringBones::Update(Skeleton& skeleton)
 		// 減衰はアニメーションどおりの先の速さとの差にかける（同じ速さで走っている間は遅れない）。
 		const Vector3 animVelocity = (animTail - joint.prevAnimTail) * (1.0f / deltaTime);
 		const float omega = Math::PI2 * joint.group->frequency;
-		const Vector3 acceleration =
+		Vector3 acceleration =
 			(animTail - joint.tail) * (omega * omega) +
 			(animVelocity - joint.velocity) * (2.0f * joint.group->dampingRatio * omega);
+		// 動くと後ろへ流される（動く向きの逆へ押す）。
+		acceleration -= m_ownerVelocity * joint.group->windDrag;
+		// 止まっていても吹く、ゆるい風。向き・強さを、周期のちがう揺らぎを重ねて変える。骨ごとに位相をずらし、マントが一枚岩に動かないようにする。
+		if (joint.group->breeze > 0.0f) {
+			const float phase = static_cast<float>(joint.boneNo) * BREEZE_PHASE_PER_BONE;
+			const float t = m_time;
+			const Vector3 gust(
+				sinf(t * 1.3f + phase) + 0.5f * sinf(t * 2.9f + phase * 2.0f),
+				0.4f * sinf(t * 1.7f + phase * 1.5f),
+				sinf(t * 1.1f + phase * 0.7f + 1.0f) + 0.5f * sinf(t * 3.3f + phase));
+			acceleration += gust * joint.group->breeze;
+		}
 		joint.velocity += acceleration * deltaTime;
+		// 急に速くなったときの煽り（後ろ・上へ速さを足す）。
+		if (m_isBurstPending && (joint.group->burstBack > 0.0f || joint.group->burstLift > 0.0f)) {
+			joint.velocity += (m_burstDirection * joint.group->burstBack + Vector3::AxisY * joint.group->burstLift) * m_burstStrength;
+		}
 		const Vector3 movedTail = joint.tail + joint.velocity * deltaTime;
 
 		// 骨の長さを保ち、アニメーションの形から曲がりすぎないようにする。
@@ -162,7 +224,12 @@ void SpringBones::Update(Skeleton& skeleton)
 			direction = animDirection;
 		}
 		direction.Normalize();
-		const float maxAngle = Math::DegToRad(joint.group->maxAngleDeg);
+		// 煽った直後は、上限を burstMaxAngleDeg まで広げ、BURST_WIDE_SECONDS かけて元に戻す。
+		float maxAngleDeg = joint.group->maxAngleDeg;
+		if (joint.group->burstMaxAngleDeg > maxAngleDeg) {
+			maxAngleDeg += (joint.group->burstMaxAngleDeg - maxAngleDeg) * (m_burstWideLeft / BURST_WIDE_SECONDS);
+		}
+		const float maxAngle = Math::DegToRad(maxAngleDeg);
 		Quaternion limitRotation;
 		if (direction.Dot(animDirection) < cosf(maxAngle) && MakeRotationBetween(animDirection, direction, limitRotation)) {
 			Vector3 axis;
@@ -231,6 +298,7 @@ void SpringBones::Update(Skeleton& skeleton)
 		back.MakeTranslation(head);
 		PoseLayers::RotateBoneTree(*bone, toOrigin * rotationMatrix * back);
 	}
+	m_isBurstPending = false;
 	m_isFirstFrame = false;
 }
 

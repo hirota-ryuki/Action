@@ -309,12 +309,80 @@ for v in BODY.data.vertices:
                 ws_ = {f"J_Bip_{s}_Middle{k}": 1 - t, f"J_Bip_{s}_Middle{k + 1}": t}
         set_weights(v.index, ws_)
 
+# マント（背中から体の横へ垂れる大きな布）は、腰の布・鎧とメッシュがつながっている。
+# ボーンヒートは、マントの骨の重みを、つながった腰の布・鎧にも付けるので、マントを上げるとそれらまでくっついて持ち上がる。
+# かといって重みだけを切り替えると、境目の面が、体とマントの間で引き伸ばされる。
+# そこで、面の頂点のマントの骨の重みの平均が CAPE_FACE_WEIGHT より大きく、腰の後ろの飾りでない面をマントとして、マントとそれ以外の境目の辺で頂点を二つに分け（切り離し）、
+# マントの頂点は、マント以外の骨の重みを外してマントの骨だけにし、それ以外の頂点は、マントの骨の重みを外して体の骨（腰より下は腰、上は上胸）に付ける。
+import bmesh
+CAPE_BONES = [g.name for g in BODY.vertex_groups if g.name.startswith("J_Sec_Cloth") and g.name[len("J_Sec_Cloth")] in "LRU"]
+CAPE_GROUP_IDS = {BODY.vertex_groups[n].index for n in CAPE_BONES}
+CAPE_FACE_WEIGHT = 0.5
+# マントの内側にある、腰の後ろの飾り（腰にあるパーツ）。マントの骨の重みは付いているが、腰に付ける。側面で測って、マントの面（外側）より体に近い面。
+WAIST_PIECE_BOTTOM_Z = 0.45
+WAIST_PIECE_Y_AT_Z1, WAIST_PIECE_Y_SLOPE = 0.075, 0.142   # 境目の y = 0.075 + 0.142 * (1 - z)
+WAIST_CLOTH_TOP_Z = 1.05
+bm = bmesh.new()
+bm.from_mesh(BODY.data)
+bm.faces.ensure_lookup_table()
+deform = bm.verts.layers.deform.active
+face_is_cape = {}
+for f in bm.faces:
+    cape_weight = sum(w for v in f.verts for g, w in v[deform].items() if g in CAPE_GROUP_IDS) / len(f.verts)
+    if cape_weight <= CAPE_FACE_WEIGHT:
+        face_is_cape[f.index] = "body"
+        continue
+    c = f.calc_center_median()
+    is_waist = WAIST_PIECE_BOTTOM_Z < c.z < WAIST_CLOTH_TOP_Z and c.y < WAIST_PIECE_Y_AT_Z1 + WAIST_PIECE_Y_SLOPE * (1.0 - c.z)
+    face_is_cape[f.index] = "waist" if is_waist else "cape"
+cut_edges = [e for e in bm.edges if len({face_is_cape[f.index] for f in e.link_faces}) == 2]
+print("cut edges between cape and body:", len(cut_edges))
+bmesh.ops.split_edges(bm, edges=cut_edges)
+bm.faces.ensure_lookup_table()
+bm.verts.index_update()
+cape_verts, body_verts = set(), set()
+for f in bm.faces:
+    (cape_verts if face_is_cape[f.index] == "cape" else body_verts).update(v.index for v in f.verts)
+bm.to_mesh(BODY.data)
+bm.free()
+BODY.data.update()
+changed = 0
+for vi in cape_verts | body_verts:
+    v = BODY.data.vertices[vi]
+    ws_ = {BODY.vertex_groups[g.group].name: g.weight for g in v.groups}
+    if vi in cape_verts:
+        cape_ws = {n: w for n, w in ws_.items() if n in CAPE_BONES}
+        if cape_ws:
+            set_weights(vi, cape_ws)
+            changed += 1
+    else:
+        moved = sum(ws_.pop(n) for n in CAPE_BONES if n in ws_)
+        if moved > 0.0:
+            target = "J_Bip_C_Hips" if v.co.z < WAIST_CLOTH_TOP_Z else "J_Bip_C_UpperChest"
+            ws_[target] = ws_.get(target, 0.0) + moved
+            set_weights(vi, ws_)
+            changed += 1
+print("vertices whose weights changed:", changed)
+
 # 1つの頂点に付ける骨を4本までにして、合計を1にする
 bpy.ops.object.select_all(action="DESELECT")
 BODY.select_set(True)
 bpy.context.view_layer.objects.active = BODY
 bpy.ops.object.vertex_group_limit_total(group_select_mode="ALL", limit=4)
 bpy.ops.object.vertex_group_normalize_all(group_select_mode="ALL", lock_active=False)
+
+# マントの裾は、体と同じ姿勢のとき、脚から 6cm しか離れていない（厚みのある殻が脚の後ろに垂れている）。
+# 脚が動くと脚に触れてくっつくので、マントの下の方（高さ 0.9m から下）を、下に行くほど後ろへ CAPE_FLARE_BACK ずらして、脚から離す。
+CAPE_FLARE_BACK = 0.08
+CAPE_FLARE_TOP_Z, CAPE_FLARE_BOTTOM_Z = 0.9, 0.15
+cape_group_ids = {g.index for g in BODY.vertex_groups if g.name.startswith("J_Sec_Cloth") and g.name[len("J_Sec_Cloth")] in "LRU"}
+for v in BODY.data.vertices:
+    if v.co.y <= 0.05 or v.co.z >= CAPE_FLARE_TOP_Z:
+        continue
+    cape_weight = sum(g.weight for g in v.groups if g.group in cape_group_ids)
+    if cape_weight > 0.5:
+        v.co.y += CAPE_FLARE_BACK * smooth01(CAPE_FLARE_TOP_Z, CAPE_FLARE_BOTTOM_Z, v.co.z)
+BODY.data.update()
 
 # ---------------------------------------------------------------------------
 # テクスチャとマテリアル

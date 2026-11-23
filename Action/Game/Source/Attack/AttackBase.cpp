@@ -45,6 +45,9 @@ void AttackBase::OnSkillUpdate()
 			m_isCharging = true;
 			m_chargeLeft = data.chargeSeconds;
 			body.model->GetModelRender().SetAnimationSpeed(0.0f);
+			if (body.onChargeStart) {
+				body.onChargeStart();
+			}
 		}
 		m_chargeLeft -= deltaTime;
 		if (m_chargeLeft > 0.0f) {

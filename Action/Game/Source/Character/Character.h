@@ -132,6 +132,15 @@ protected:
 		m_bodyLink.SetJumpWeight(jumpWeight);
 		m_springBones.SetJumpWeight(jumpWeight);
 	}
+	// 揺れ物を、backDirection（水平）の向きへ、後ろ・上へバサッと煽る（strength は、まとまりごとの burstBack・burstLift に掛ける倍率）。
+	void SetSpringBonesSuspended(bool isSuspended)
+	{
+		m_springBones.SetSuspended(isSuspended);
+	}
+	void TriggerSpringBurst(const Vector3& backDirection, float strength)
+	{
+		m_springBones.Burst(backDirection, strength);
+	}
 	// 攻撃中の度合い（0〜1）を、体の連動に渡す。モデルを更新する前（UpdateAction）に呼ぶ。
 	void SetAttackWeight(float attackWeight)
 	{

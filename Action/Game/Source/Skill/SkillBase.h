@@ -14,6 +14,8 @@ struct SkillBody
 	float timeScale = 1.0f;        // 動き全体の速さ（アニメーションと移動の両方に掛ける）。
 	float rootMoveScale = 100.0f;  // アニメーションの中で進む距離（モデルの m）を、ゲームの距離にする倍率。
 	float blendSeconds = 0.2f;     // アニメーションを切り替えるときの補間時間。
+	// 攻撃が構えのコマで止めて溜め始めた瞬間に呼ぶ（任意）。持ち主が、マントを舞い上がらせるなどに使う。
+	std::function<void()> onChargeStart;
 };
 
 // スキルの基底クラス。使うたびに1つ NewGO し、終わったら自分で消える。

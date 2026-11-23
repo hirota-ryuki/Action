@@ -29,6 +29,10 @@ namespace
 	constexpr float HIT_DAMAGE = 25.0f;
 	// 倒れ終わってから消えるまでの秒数。
 	constexpr float VANISH_DELAY = 2.0f;
+	// 攻撃1の構えで、マントを煽る強さ（マントの burstBack・burstLift に掛ける倍率）。
+	constexpr float CHARGE_BURST_STRENGTH = 0.5f;
+	// 攻撃1が構えで止める時刻（秒）。DashSlashAttack と同じ（Attack1 の 5.5コマ目）。窓で流すときに使う。
+	constexpr float DASH_SLASH_CHARGE_AT = 5.5f / 30.0f;
 
 	CharacterMoveSettings MakeMoveSettings()
 	{
@@ -64,16 +68,29 @@ namespace
 		settings.legRadius = 0.0f;  // マントは脚に当てない（脚のカプセルはモデルの大きさに合わせていないため）。
 		SpringBoneGroupSettings cloth;
 		cloth.match = L"Cloth";
-		cloth.frequency = 2.2f;
-		cloth.dampingRatio = 0.55f;
-		cloth.maxAngleDeg = 25.0f;
+		// 体へ引き戻す力を弱くし、後ろへ流される力（動くほど翻る）と、止まっていても吹くゆるい風を足して、バサバサ翻らせる。
+		cloth.frequency = 0.9f;
+		cloth.dampingRatio = 0.25f;
+		cloth.maxAngleDeg = 65.0f;
+		cloth.windDrag = 2.0f;
+		// 踏み込み（急に速くなる）の出だしで、後ろ・上へ煽って、足に張り付かず、バサッと浮かせる。
+		cloth.burstBack = 300.0f;
+		cloth.burstLift = 250.0f;
+		cloth.burstMaxAngleDeg = 110.0f;  // 煽った直後だけ、水平（90°）より上まで舞い上がれるようにする。
+		cloth.breeze = 0.0f;  // 止まっているときは、風でひらひらさせない（動いたときだけ翻る）。
 		settings.groups.push_back(cloth);
-		// 背中（肩〜腰）は胸のひねりを直に受けて荒ぶりやすいので、さらに小さく・止まりやすくする（ClothU は Cloth より長いので、こちらが選ばれる）。
+		// 背中の上（肩〜腰。ClothU）は肩・腕の重みと混ざっているので、大きく動かすと肩がぐじゃぐじゃになる。小さく・硬くして、少しだけ流す
+		// （ClothU は Cloth より長いので、こちらが選ばれる）。
 		SpringBoneGroupSettings backCloth;
 		backCloth.match = L"ClothU";
-		backCloth.frequency = 3.0f;
-		backCloth.dampingRatio = 0.7f;
-		backCloth.maxAngleDeg = 12.0f;
+		backCloth.frequency = 1.8f;
+		backCloth.dampingRatio = 0.6f;
+		backCloth.maxAngleDeg = 15.0f;
+		backCloth.windDrag = 0.5f;
+		// 構えで、肩のあたりから上へ舞い上がる（骨2本ぶん重なるので、1本ぶんは小さく）。煽った直後だけ上限を広げる。
+		backCloth.burstBack = 150.0f;
+		backCloth.burstLift = 300.0f;
+		backCloth.burstMaxAngleDeg = 50.0f;
 		settings.groups.push_back(backCloth);
 		SpringBoneGroupSettings hood;
 		hood.match = L"Hood";
@@ -156,6 +173,10 @@ void Enemy::OnStart()
 	body.timeScale = PLAY_SPEED;
 	body.rootMoveScale = stateContext.settings.rootMoveScale;
 	body.blendSeconds = stateContext.settings.animBlendSeconds;
+	// 攻撃1が構え（Attack1 の 6コマ目あたり。左腰に剣を構えてかがむ）で止めて溜め始めた瞬間に、マントを後ろ・上へ舞い上がらせる。
+	body.onChargeStart = [this]() {
+		TriggerSpringBurst(m_mover.GetForward() * -1.0f, CHARGE_BURST_STRENGTH);
+	};
 	m_skillController.SetBody(body);
 	m_skillController.Register<DashSlashAttack>(ActionButton::Action1);
 	m_skillController.Register<HeavyComboAttack>(ActionButton::Action2);
@@ -167,6 +188,74 @@ void Enemy::OnAddPoseLayers(PoseLayers& layers)
 	// 黒騎士は揺れ物・体の連動を使わない（垂れ布の揺れはモーションに焼き込んである）ので、
 	// 層は、開発用の窓の「剣を持つ右腕」の調整だけ。
 	layers.Add([this](Skeleton& skeleton) { RotateDebugArm(skeleton); });
+	layers.Add([this](Skeleton& skeleton) { RotateDebugCape(skeleton); });
+}
+
+void Enemy::RotateDebugCape(Skeleton& skeleton)
+{
+	if (m_playingDebugMotion != enEnemyAnimClip_Attack1 && m_playingDebugMotion != enEnemyAnimClip_Attack2) {
+		return;
+	}
+	const int rightNo = skeleton.FindBoneID(L"J_Bip_R_UpperArm");
+	const int leftNo = skeleton.FindBoneID(L"J_Bip_L_UpperArm");
+	if (rightNo < 0 || leftNo < 0) {
+		return;
+	}
+	auto position = [&](int boneNo) { return GetTranslation(skeleton.GetBone(boneNo)->GetWorldMatrix()); };
+	// 体の横の向き（左肩 → 右肩）。この軸まわりに＋で回すと、垂れた骨の先が前へ振れる（右腕の「前後」と同じ）ので、
+	// 後ろ・上へ上げるときは逆に回す。
+	const Vector3 side = position(rightNo) - position(leftNo);
+	// 背中の上の骨を上げる。先側の骨の位置は、根元側を回したあとのもの。
+	auto lift = [&](const wchar_t* chain, const float deg[3]) {
+		for (int k = 0; k < 3; k++) {
+			wchar_t name[32];
+			swprintf_s(name, L"%s_%d", chain, k + 1);
+			const int boneNo = skeleton.FindBoneID(name);
+			if (boneNo < 0 || deg[k] == 0.0f) {
+				continue;
+			}
+			PoseLayers::RotateBoneTreeAround(*skeleton.GetBone(boneNo), position(boneNo), side, -deg[k]);
+		}
+	};
+	lift(L"J_Sec_ClothUB", m_debugCapeUpperDeg);
+	lift(L"J_Sec_ClothUL", m_debugCapeUpperDeg);
+	lift(L"J_Sec_ClothUR", m_debugCapeUpperDeg);
+	// 腰から下（Hips の子）は、背中の上（UpperChest の子）と別に動くので、背の曲がりのぶんだけ境目がずれて折れる。
+	// まず、腰から下の根元を背中の上の先の位置へ移し、向きも背中の上の先の向きにそろえて、真っ直ぐにつなぐ（この形から、下のスライダーで曲げる）。
+	const wchar_t* weldPairs[2][3] = {
+		{ L"J_Sec_ClothUL_2", L"J_Sec_ClothUL_3", L"J_Sec_ClothL" },
+		{ L"J_Sec_ClothUR_2", L"J_Sec_ClothUR_3", L"J_Sec_ClothR" },
+	};
+	for (const auto& pair : weldPairs) {
+		wchar_t lowerName1[32], lowerName2[32];
+		swprintf_s(lowerName1, L"%s_1", pair[2]);
+		swprintf_s(lowerName2, L"%s_2", pair[2]);
+		const int upper2 = skeleton.FindBoneID(pair[0]);
+		const int upper3 = skeleton.FindBoneID(pair[1]);
+		const int lower1 = skeleton.FindBoneID(lowerName1);
+		const int lower2 = skeleton.FindBoneID(lowerName2);
+		if (upper2 < 0 || upper3 < 0 || lower1 < 0 || lower2 < 0) {
+			continue;
+		}
+		Bone& lowerBone = *skeleton.GetBone(lower1);
+		const Vector3 tail = position(upper3) * 2.0f - position(upper2);  // 背中の上の最後の骨の先（骨 3 本が同じ間隔で並ぶ）。
+		Matrix move;
+		move.MakeTranslation(tail - position(lower1));
+		PoseLayers::RotateBoneTree(lowerBone, move);
+		Vector3 upperDirection = position(upper3) - position(upper2);
+		Vector3 lowerDirection = position(lower2) - position(lower1);
+		upperDirection.Normalize();
+		lowerDirection.Normalize();
+		const float cosine = max(-1.0f, min(1.0f, lowerDirection.Dot(upperDirection)));
+		Vector3 axis;
+		axis.Cross(lowerDirection, upperDirection);
+		if (axis.LengthSq() > 1.0e-8f) {
+			axis.Normalize();
+			PoseLayers::RotateBoneTreeAround(lowerBone, tail, axis, Math::RadToDeg(acosf(cosine)));
+		}
+	}
+	lift(L"J_Sec_ClothL", m_debugCapeLowerDeg);
+	lift(L"J_Sec_ClothR", m_debugCapeLowerDeg);
 }
 
 void Enemy::RotateDebugArm(Skeleton& skeleton)
@@ -222,23 +311,52 @@ void Enemy::FilterSkillInput(CharacterInput& input) const
 	}
 }
 
+void Enemy::Revive()
+{
+	m_status.Init(MAX_HP);
+	m_damage.isVanished = false;
+	m_damage.isHitRequested = false;
+	SetRenderBody(true);
+	m_hitTarget.SetEnabled(true);
+	m_playingDebugMotion = -1;
+	m_stateMachine.Reset();  // Dead から Idle に戻す。
+}
+
 void Enemy::UpdateAction(float deltaTime)
 {
+	// 消えている間も、窓の「復活」ボタンは押せるようにする（先に窓を出す）。
+	UpdateDebugWindow();
 	// 倒れ終わって消えたら、体を隠して当たり判定を外し、何もしない。
 	if (m_damage.isVanished) {
 		SetRenderBody(false);
 		m_hitTarget.SetEnabled(false);
 		return;
 	}
-	UpdateDebugWindow();
 	if (m_debugMotion >= 0) {
 		// 窓で選んだクリップを、その場で繰り返す。AI の入力は捨てる（攻撃もしない）。
 		m_input = CharacterInput();
-		if (m_playingDebugMotion != m_debugMotion) {
+		if (m_playingDebugMotion != m_debugMotion || m_debugRestart) {
+			if (m_debugRestart) {
+				// 同じクリップを流しているときは PlayAnimation が何もしないので、いったん別のクリップに替えてから流し直す（補間なしで最初から）。
+				m_model.PlayAnimation(m_debugMotion == enEnemyAnimClip_Idle ? enEnemyAnimClip_Walk : enEnemyAnimClip_Idle, 0.0f);
+				m_model.PlayAnimation(m_debugMotion, 0.0f);
+			}
+			else {
+				m_model.PlayAnimation(m_debugMotion, 0.2f);
+			}
 			m_playingDebugMotion = m_debugMotion;
-			m_model.PlayAnimation(m_debugMotion, 0.2f);
+			m_debugRestart = false;
+			m_debugPlayTime = 0.0f;
+			m_isDebugBurstDone = false;
 		}
-		m_model.GetModelRender().SetAnimationSpeed(m_debugPlaySpeed);
+		const float debugSpeed = m_debugPaused ? 0.0f : m_debugPlaySpeed;
+		m_model.GetModelRender().SetAnimationSpeed(debugSpeed);
+		// 窓で Attack1 を流しているときも、ゲーム中と同じ構えのコマで、マントを舞い上がらせる。
+		m_debugPlayTime += deltaTime * debugSpeed;
+		if (m_debugMotion == enEnemyAnimClip_Attack1 && !m_isDebugBurstDone && m_debugPlayTime >= DASH_SLASH_CHARGE_AT) {
+			m_isDebugBurstDone = true;
+			TriggerSpringBurst(m_mover.GetForward() * -1.0f, CHARGE_BURST_STRENGTH);
+		}
 		return;
 	}
 	if (m_playingDebugMotion >= 0) {
@@ -258,11 +376,39 @@ void Enemy::UpdateDebugWindow()
 		return;
 	}
 	ImGui::Begin(u8"黒騎士のモーション");
-	ImGui::RadioButton(u8"AI（ふだんどおり）", &m_debugMotion, -1);
-	ImGui::RadioButton(u8"Walk（歩く）", &m_debugMotion, enEnemyAnimClip_Walk);
-	ImGui::RadioButton(u8"Run（走る）", &m_debugMotion, enEnemyAnimClip_Run);
+	if (ImGui::Button(u8"復活（HP を全回復して、その場で立たせる）")) {
+		Revive();
+	}
+	// ボタンを押すと、そのクリップを最初から流す（同じボタンをもう一度押すと、もう一度最初から。一時停止も解く）。流しているクリップは緑にする。
+	auto playButton = [this](const char* label, int clip) {
+		const bool isPlaying = m_debugMotion == clip;
+		if (isPlaying) {
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.15f, 0.55f, 0.25f, 1.0f));
+		}
+		if (ImGui::Button(label)) {
+			m_debugMotion = clip;
+			m_debugRestart = true;
+			m_debugPaused = false;
+		}
+		if (isPlaying) {
+			ImGui::PopStyleColor();
+		}
+	};
+	playButton(u8"AI（ふだんどおり）", -1);
+	playButton(u8"Idle（立ち）", enEnemyAnimClip_Idle);
+	ImGui::SameLine();
+	playButton(u8"Walk（歩く）", enEnemyAnimClip_Walk);
+	ImGui::SameLine();
+	playButton(u8"Run（走る）", enEnemyAnimClip_Run);
+	playButton(u8"Attack1（居合い・踏み込み）", enEnemyAnimClip_Attack1);
+	playButton(u8"Attack2（重い連続斬り）", enEnemyAnimClip_Attack2);
+	playButton(u8"Attack3（連続斬り）", enEnemyAnimClip_Attack3);
+	playButton(u8"Hit（やられ）", enEnemyAnimClip_Hit);
+	ImGui::SameLine();
+	playButton(u8"Dead（倒れる）", enEnemyAnimClip_Dead);
+	ImGui::Checkbox(u8"一時停止", &m_debugPaused);
 	// 歩く速さに合わせた Walk の速さ（足が滑らない速さ）にすぐ戻せるように、ボタンも置く。
-	ImGui::SliderFloat(u8"再生の速さ", &m_debugPlaySpeed, 0.05f, 1.5f, "%.2f");
+	ImGui::SliderFloat(u8"再生の速さ", &m_debugPlaySpeed, 0.05f, 2.0f, "%.2f");
 	if (ImGui::Button(u8"等速（1.0）")) {
 		m_debugPlaySpeed = 1.0f;
 	}
@@ -270,21 +416,23 @@ void Enemy::UpdateDebugWindow()
 	if (ImGui::Button(u8"ゲームの Walk の速さ")) {
 		m_debugPlaySpeed = WALK_SPEED / WALK_ANIM_FOOT_SPEED;
 	}
-	// Run を流している間だけ効く。決めた角度は、モーションの設定（black_knight_anims.json の Run の adjust）に書き写す。
-	ImGui::SeparatorText(u8"剣を持つ右腕（Run のときだけ）");
-	ImGui::SliderFloat(u8"右肩 前後（＋で前）", &m_debugShoulderDeg, -60.0f, 60.0f, "%.0f");
-	ImGui::SliderFloat(u8"ひじから下 内・外（－で内）", &m_debugForearmDeg, -90.0f, 90.0f, "%.0f");
-	ImGui::SliderFloat(u8"ひじから下 前後（＋で前）", &m_debugElbowDeg, -90.0f, 90.0f, "%.0f");
-	ImGui::SliderFloat(u8"手首 曲げ", &m_debugWristBendDeg, -90.0f, 90.0f, "%.0f");
-	ImGui::SliderFloat(u8"手首 横", &m_debugWristSideDeg, -90.0f, 90.0f, "%.0f");
-	ImGui::SliderFloat(u8"手首 ひねり", &m_debugWristTwistDeg, -90.0f, 90.0f, "%.0f");
-	if (ImGui::Button(u8"右腕を戻す")) {
-		m_debugShoulderDeg = 0.0f;
-		m_debugForearmDeg = 0.0f;
-		m_debugElbowDeg = 0.0f;
-		m_debugWristBendDeg = 0.0f;
-		m_debugWristSideDeg = 0.0f;
-		m_debugWristTwistDeg = 0.0f;
+	// Attack1・Attack2 を流している間だけ効く。構えのコマで「一時停止」して、角度を決める（＋で後ろ・上へ）。
+	// マントが引っ張られて見えるとき、揺れ物（SpringBones）のせいかを切り分ける。チェックすると揺れを止めて、アニメーションの姿勢のままにする。
+	if (ImGui::Checkbox(u8"揺れ物を止める（切り分け用）", &m_isDebugSpringSuspended)) {
+		SetSpringBonesSuspended(m_isDebugSpringSuspended);
+	}
+	ImGui::SeparatorText(u8"マントを上げる（Attack1・Attack2 のときだけ）");
+	ImGui::SliderFloat(u8"背中の上 1（肩）", &m_debugCapeUpperDeg[0], -30.0f, 120.0f, "%.0f");
+	ImGui::SliderFloat(u8"背中の上 2", &m_debugCapeUpperDeg[1], -30.0f, 120.0f, "%.0f");
+	ImGui::SliderFloat(u8"背中の上 3（腰の手前）", &m_debugCapeUpperDeg[2], -30.0f, 120.0f, "%.0f");
+	ImGui::SliderFloat(u8"腰から下 1（腰）", &m_debugCapeLowerDeg[0], -30.0f, 120.0f, "%.0f");
+	ImGui::SliderFloat(u8"腰から下 2", &m_debugCapeLowerDeg[1], -30.0f, 120.0f, "%.0f");
+	ImGui::SliderFloat(u8"腰から下 3", &m_debugCapeLowerDeg[2], -30.0f, 120.0f, "%.0f");
+	if (ImGui::Button(u8"マントを戻す")) {
+		for (int k = 0; k < 3; k++) {
+			m_debugCapeUpperDeg[k] = 0.0f;
+			m_debugCapeLowerDeg[k] = 0.0f;
+		}
 	}
 	ImGui::End();
 }
