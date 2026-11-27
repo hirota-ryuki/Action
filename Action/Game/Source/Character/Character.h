@@ -137,6 +137,11 @@ protected:
 	{
 		m_bodyLink.SetAttackWeight(attackWeight);
 	}
+	// ダッシュ中の度合い（0〜1）を、体の連動に渡す。モデルを更新する前（UpdateAction）に呼ぶ。
+	void SetDashWeight(float dashWeight)
+	{
+		m_bodyLink.SetDashWeight(dashWeight);
+	}
 	// スキルを撃つ位置の数値（高さ・前に出す距離）。
 	const CharacterCastSettings& GetCastSettings() const
 	{

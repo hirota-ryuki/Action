@@ -81,6 +81,14 @@ public:
 	{
 		m_attackWeight = attackWeight;
 	}
+	// ダッシュ中の度合い（0〜1）。持ち主が、ダッシュに入る・出るときに少しずつ変えて渡す。
+	// ダッシュ中は、走り用の腕の調整（振りの大きさ・前後の最大の角度・左右をそろえる）を外す。
+	// ダッシュのモーションは後ろの腕を後ろの脚と平行に伸ばしていて、後ろへの振りを抑えると、腕が真下へ引き寄せられ、
+	// 手が体の内側へ折りたたまれるため。
+	void SetDashWeight(float dashWeight)
+	{
+		m_dashWeight = dashWeight;
+	}
 	void Update(Skeleton& skeleton);
 
 private:
@@ -157,6 +165,7 @@ private:
 	float m_runWeight = 0.0f;
 	float m_jumpWeight = 0.0f;
 	float m_attackWeight = 0.0f;
+	float m_dashWeight = 0.0f;
 	// 腕をそろえるための記録。
 	std::deque<ArmSample> m_armHistory;
 	float m_time = 0.0f;

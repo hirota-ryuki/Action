@@ -61,6 +61,8 @@ private:
 	void UpdateJumpWeight(float deltaTime);
 	// 攻撃中（Attack）の度合いを、体の連動に渡す。入る・出るときは少しずつ変える。
 	void UpdateAttackWeight(float deltaTime);
+	// ダッシュ中（Dash）の度合いを、体の連動に渡す。入る・出るときは少しずつ変える。
+	void UpdateDashWeight(float deltaTime);
 	// 三人称で溜め撃ちを構えている間の入力にする（走らない・跳ばない・ゆっくり歩く。ダッシュしたら溜めをやめる）。
 	void FilterAimingInput(CharacterInput& input);
 	// 構えて前・横へ動くときの、腰から下を向ける向き。進む向き（moveDirection）を、
@@ -82,6 +84,7 @@ private:
 	FallRespawn m_fallRespawn;
 	float m_jumpWeight = 0.0f;  // ジャンプ中（Air・Land）の度合い（0〜1）。
 	float m_attackWeight = 0.0f;  // 攻撃中（Attack）の度合い（0〜1）。
+	float m_dashWeight = 0.0f;    // ダッシュ中（Dash）の度合い（0〜1）。
 	PlayerUpperBody m_upperBody;
 	bool m_isThirdPersonCamera = true;
 	int m_handBones[2] = { -1, -1 };          // 左手・右手の骨の番号。

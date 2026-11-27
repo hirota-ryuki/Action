@@ -11,6 +11,8 @@ namespace
 {
 	// ジャンプ中の度合いが 0 から 1（1 から 0）まで変わるのにかかる時間（秒）。アニメーションの切り替えの補間と同じくらいにする。
 	constexpr float JUMP_WEIGHT_FADE_SECONDS = 0.2f;
+	// ダッシュ中の度合いが 0 から 1（1 から 0）まで変わるのにかかる時間（秒）。ジャンプと同じにする。
+	constexpr float DASH_WEIGHT_FADE_SECONDS = 0.2f;
 	// 溜め撃ちを構えて動くとき、進む向きとカメラの向きの内積がこれより大きければ、脚を進む向きへ向けて前歩きにする（上半身はひねる）。
 	// 小さければ（後ろの方へ動く）、体はカメラの向きのまま後ろ歩きにする。-0.2 は約 100度。
 	constexpr float AIM_TURN_LEGS_MIN_DOT = -0.2f;
@@ -80,6 +82,7 @@ void Player::UpdateAction(float deltaTime)
 	m_stateMachine.Update(input, deltaTime);
 	UpdateJumpWeight(deltaTime);
 	UpdateAttackWeight(deltaTime);
+	UpdateDashWeight(deltaTime);
 	if (m_fallRespawn.IsFallen(m_mover.GetPosition())) {
 		Respawn();
 	}
@@ -124,6 +127,14 @@ void Player::UpdateAttackWeight(float deltaTime)
 	m_attackWeight = target > m_attackWeight ? min(target, m_attackWeight + step) : max(target, m_attackWeight - step);
 	// 溜め撃ちで上半身を構えている間も、攻撃中と同じに扱う（走りの腕の振りを外し、顔を前へそろえる）。
 	SetAttackWeight(max(m_attackWeight, m_upperBody.GetWeight()));
+}
+
+void Player::UpdateDashWeight(float deltaTime)
+{
+	const float target = m_stateMachine.GetCurrentId() == PlayerStateId::Dash ? 1.0f : 0.0f;
+	const float step = deltaTime / DASH_WEIGHT_FADE_SECONDS;
+	m_dashWeight = target > m_dashWeight ? min(target, m_dashWeight + step) : max(target, m_dashWeight - step);
+	SetDashWeight(m_dashWeight);
 }
 
 void Player::FilterAimingInput(CharacterInput& input)

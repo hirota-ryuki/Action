@@ -171,6 +171,15 @@ void SpringBones::Update(Skeleton& skeleton)
 		return;
 	}
 	CarryWithAnimation(skeleton);
+	FollowFastMove(deltaTime);
+	// どの骨も揺らす前の、アニメーションの向きを覚えておく（根元から数えた曲がりを maxTotalAngleDeg で抑えるため）。
+	for (Joint& joint : m_joints) {
+		const Vector3 head = GetTranslation(skeleton.GetBone(joint.boneNo)->GetWorldMatrix());
+		joint.baseDirection = GetTranslation(skeleton.GetBone(joint.childBoneNo)->GetWorldMatrix()) - head;
+		if (joint.baseDirection.LengthSq() > 1.0e-8f) {
+			joint.baseDirection.Normalize();
+		}
+	}
 
 	for (Joint& joint : m_joints) {
 		Bone* bone = skeleton.GetBone(joint.boneNo);
@@ -194,9 +203,27 @@ void SpringBones::Update(Skeleton& skeleton)
 		// アニメーションどおりの先の位置へ、ばねで引き戻す。
 		// 減衰はアニメーションどおりの先の速さとの差にかける（同じ速さで走っている間は遅れない）。
 		const Vector3 animVelocity = (animTail - joint.prevAnimTail) * (1.0f / deltaTime);
+		// 速く動いている間は、進む向きと逆へ倒した形へ引き戻す（後ろへなびく）。
+		Vector3 targetTail = animTail;
+		if (joint.group->fastLeanDeg > 0.0f && m_fastWeight > 0.0f) {
+			const Vector3 back = m_fastDirection * -1.0f;
+			Vector3 axis;
+			axis.Cross(animDirection, back);
+			const float sinAngle = axis.Length();
+			if (sinAngle > 1.0e-6f) {
+				axis *= 1.0f / sinAngle;
+				// 後ろの向きを越えて倒さない。
+				const float angle = min(Math::DegToRad(joint.group->fastLeanDeg) * m_fastWeight, atan2f(sinAngle, animDirection.Dot(back)));
+				Quaternion lean;
+				lean.SetRotation(axis, angle);
+				Vector3 leanDirection = animDirection;
+				lean.Apply(leanDirection);
+				targetTail = head + leanDirection * length;
+			}
+		}
 		const float omega = Math::PI2 * joint.group->frequency;
 		const Vector3 acceleration =
-			(animTail - joint.tail) * (omega * omega) +
+			(targetTail - joint.tail) * (omega * omega) +
 			(animVelocity - joint.velocity) * (2.0f * joint.group->dampingRatio * omega);
 		joint.velocity += acceleration * deltaTime;
 		const Vector3 movedTail = joint.tail + joint.velocity * deltaTime;
@@ -216,6 +243,22 @@ void SpringBones::Update(Skeleton& skeleton)
 			limitRotation.SetRotation(axis, maxAngle);
 			direction = animDirection;
 			limitRotation.Apply(direction);
+		}
+		// 根元から数えて、揺らす前のアニメーションの向きから maxTotalAngleDeg より曲がらないようにする。
+		// 骨1本ごとの上限だけでは、どの段も上限まで曲がったときに裾が丸まって折れて見えるため。
+		if (joint.group->maxTotalAngleDeg > 0.0f && joint.baseDirection.LengthSq() > 0.5f) {
+			const float maxTotalAngle = Math::DegToRad(joint.group->maxTotalAngleDeg);
+			if (direction.Dot(joint.baseDirection) < cosf(maxTotalAngle)) {
+				Vector3 axis;
+				axis.Cross(joint.baseDirection, direction);
+				if (axis.LengthSq() > 1.0e-12f) {
+					axis.Normalize();
+					Quaternion totalRotation;
+					totalRotation.SetRotation(axis, maxTotalAngle);
+					direction = joint.baseDirection;
+					totalRotation.Apply(direction);
+				}
+			}
 		}
 		// ジャンプ中は、アニメーションの形より上へ上がらない（向きの高さをアニメーションの高さまで下げる）。
 		// 左右・前後の揺れは残す。脚に押し出す前に行うので、脚に押される分は上がってよい。
@@ -336,6 +379,46 @@ void SpringBones::CarryWithAnimation(Skeleton& skeleton)
 		joint.prevAnimWorld = animWorld;
 	}
 	m_prevModelWorld = modelWorld;
+}
+
+void SpringBones::FollowFastMove(float deltaTime)
+{
+	if (m_modelRender == nullptr) {
+		return;
+	}
+	const Vector3 position = GetTranslation(m_modelRender->GetModel().GetWorldMatrix());
+	const Vector3 moved = position - m_prevModelPosition;
+	m_prevModelPosition = position;
+	const float start = m_settings.fastMoveStartSpeed;
+	const float full = m_settings.fastMoveFullSpeed;
+	if (m_isFirstFrame || start <= 0.0f || full <= start || moved.LengthSq() > TELEPORT_DISTANCE_SQ) {
+		m_fastWeight = 0.0f;
+		return;
+	}
+	// 水平の速さから、速く動いている度合いを決める。速くなったらすぐ上げ、遅くなったら少しずつ下げる。
+	Vector3 horizontal(moved.x, 0.0f, moved.z);
+	const float speed = horizontal.Length() / deltaTime;
+	const float target = max(0.0f, min(1.0f, (speed - start) / (full - start)));
+	if (target >= m_fastWeight) {
+		m_fastWeight = target;
+	}
+	else {
+		m_fastWeight = max(target, m_fastWeight - deltaTime / max(m_settings.fastMoveReleaseSeconds, 1.0e-3f));
+	}
+	if (target > 0.0f) {
+		horizontal.Normalize();
+		m_fastDirection = horizontal;
+	}
+	// 動いた分の一部だけ、揺れの先も一緒に運ぶ（前のフレームのアニメーションの先も運び、運んだ分は速さに入れない）。
+	const float follow = max(0.0f, min(1.0f, m_settings.fastMoveFollow)) * m_fastWeight;
+	if (follow <= 0.0f) {
+		return;
+	}
+	const Vector3 carried = moved * follow;
+	for (Joint& joint : m_joints) {
+		joint.tail += carried;
+		joint.prevAnimTail += carried;
+	}
 }
 
 Vector3 SpringBones::PushOutFromLegs(Skeleton& skeleton, const Vector3& tail, const Vector3& animTail) const

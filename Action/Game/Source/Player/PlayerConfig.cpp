@@ -313,6 +313,10 @@ namespace
 		settings.jumpMaxAngleFromDownDeg = Read(section, "springBone", "jumpMaxAngleFromDownDeg", 0.0f);
 		settings.maxAngleFromDownDeg = Read(section, "springBone", "maxAngleFromDownDeg", 0.0f);
 		settings.animInertia = Read(section, "springBone", "animInertia", 1.0f);
+		settings.fastMoveStartSpeed = Read(section, "springBone", "fastMoveStartSpeed", 0.0f);
+		settings.fastMoveFullSpeed = Read(section, "springBone", "fastMoveFullSpeed", 0.0f);
+		settings.fastMoveFollow = Read(section, "springBone", "fastMoveFollow", 0.0f);
+		settings.fastMoveReleaseSeconds = Read(section, "springBone", "fastMoveReleaseSeconds", 0.3f);
 		auto groups = section.find("groups");
 		if (groups == section.end() || !groups->is_object()) {
 			Log(std::string(JSON_PATH) + " に springBone.groups がないので、揺れ物を使いません。");
@@ -329,6 +333,8 @@ namespace
 			groupSettings.dampingRatio = Read(group, sectionName.c_str(), "dampingRatio", 0.5f);
 			groupSettings.maxAngleDeg = Read(group, sectionName.c_str(), "maxAngleDeg", 30.0f);
 			groupSettings.noLiftInJump = Read(group, sectionName.c_str(), "noLiftInJump", false);
+			groupSettings.maxTotalAngleDeg = Read(group, sectionName.c_str(), "maxTotalAngleDeg", 0.0f);
+			groupSettings.fastLeanDeg = Read(group, sectionName.c_str(), "fastLeanDeg", 0.0f);
 			settings.groups.push_back(groupSettings);
 		}
 		return settings;

@@ -285,9 +285,10 @@ void BodyLink::Update(Skeleton& skeleton)
 	}
 
 	// ── 走っているときだけ、腕を振る量を変える ──
-	// 腕の調整は走り・歩き用なので、ジャンプ中・攻撃中は外す。腕を横へ上げたジャンプの姿勢では、振りを抑える処理が
+	// 腕の調整は走り・歩き用なので、ジャンプ中・攻撃中・ダッシュ中は外す。腕を横へ上げたジャンプの姿勢では、振りを抑える処理が
 	// 腕を「後ろへ振りすぎ」とみなして真下へ引き寄せ、脇が締まって見えたため。攻撃では前へ突き出した腕が下がるため。
-	const float armWeight = (1.0f - m_jumpWeight) * (1.0f - m_attackWeight);
+	// ダッシュでは、後ろの脚と平行に伸ばした後ろの腕が真下へ引き寄せられ、手が体の内側へ折りたたまれるため。
+	const float armWeight = (1.0f - m_jumpWeight) * (1.0f - m_attackWeight) * (1.0f - m_dashWeight);
 	const float armRunWeight = m_runWeight * armWeight;
 	const float swingScale = 1.0f + (m_settings.armSwingScale - 1.0f) * armRunWeight;
 	ScaleArmSwing(skeleton, enBone_UpperArmL, enBone_LowerArmL, forward, swingScale);
@@ -530,7 +531,7 @@ void BodyLink::SymmetrizeArms(Skeleton& skeleton, const Vector3& forward, float 
 
 	// 走っていて、1歩の時間がわかっているときだけそろえる。止まったら少しずつやめる。
 	const bool isStepping = m_stepDuration > 0.0f && m_time - m_lastStepTime < m_stepDuration * STEP_TIMEOUT_RATIO;
-	const float targetWeight = (m_settings.symmetrize && isStepping) ? m_runWeight * (1.0f - m_jumpWeight) : 0.0f;
+	const float targetWeight = (m_settings.symmetrize && isStepping) ? m_runWeight * (1.0f - m_jumpWeight) * (1.0f - m_dashWeight) : 0.0f;
 	const float fadeStep = deltaTime / ARM_SYMMETRY_FADE_SECONDS;
 	m_armSymmetryWeight = Clamp(targetWeight, m_armSymmetryWeight - fadeStep, m_armSymmetryWeight + fadeStep);
 	if (m_armSymmetryWeight <= 0.0f) {

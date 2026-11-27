@@ -188,12 +188,22 @@
 		// キャラクターそのものの動き（走り出し・止まる・向きを変える）だけで揺れる。
 		// 0 では、急に動き出したとき（ダッシュの蹴り出しなど）に裾が1フレームで最大 130° 振られ、チラチラして見えたので 1 に戻した。
 		"animInertia": 1.0,
+		// 速く動いている間（ダッシュ）の揺れ方。水平の速さが fastMoveStartSpeed から fastMoveFullSpeed（cm/秒）になるまでに
+		// 度合いを 0 から 1 にし（走りの 960 では効かない）、遅くなったら fastMoveReleaseSeconds 秒かけて戻す。
+		// 度合いが 1 のとき、キャラクターが動いた分の fastMoveFollow だけ揺れの先も一緒に運び、まとまりごとの fastLeanDeg だけ後ろへ倒す。
+		// ダッシュ（秒速 1,600〜2,300）では、ばねが追いつけずに裾の3段の骨が全部上限まで曲がり、丸まって折れて見えたため。
+		"fastMoveStartSpeed": 1100.0,
+		"fastMoveFullSpeed": 1500.0,
+		"fastMoveFollow": 0.85,
+		"fastMoveReleaseSeconds": 0.3,
+		// maxTotalAngleDeg: 根元から数えて、アニメーションの形から曲がってよい角度（0 なら抑えない）。maxAngleDeg は骨1本ごと。
+		// fastLeanDeg: 速く動いている間に、骨1本ごとに後ろへ倒す角度（0 なら倒さない）。
 		"groups": {
-			"hair":      { "match": "Hair",      "frequency": 3.5, "dampingRatio": 0.6,  "maxAngleDeg": 20.0 }, // 2.5・0.35・40 では揺れすぎた。
+			"hair":      { "match": "Hair",      "frequency": 3.5, "dampingRatio": 0.6,  "maxAngleDeg": 20.0, "maxTotalAngleDeg": 0.0,  "fastLeanDeg": 0.0 }, // 2.5・0.35・40 では揺れすぎた。
 			// noLiftInJump: ジャンプ中は、揺れでアニメーションの形より上へめくれない（落ちるときにスカートの中が見えないように）。
-			"coatSkirt": { "match": "CoatSkirt", "frequency": 2.5, "dampingRatio": 0.4,  "maxAngleDeg": 35.0, "noLiftInJump": true },
-			"skirt":     { "match": "Skirt",     "frequency": 3.0, "dampingRatio": 0.5,  "maxAngleDeg": 25.0, "noLiftInJump": true },
-			"bust":      { "match": "Bust",      "frequency": 4.0, "dampingRatio": 0.25, "maxAngleDeg": 8.0 }
+			"coatSkirt": { "match": "CoatSkirt", "frequency": 2.5, "dampingRatio": 0.4,  "maxAngleDeg": 35.0, "noLiftInJump": true, "maxTotalAngleDeg": 45.0, "fastLeanDeg": 12.0 },
+			"skirt":     { "match": "Skirt",     "frequency": 3.0, "dampingRatio": 0.5,  "maxAngleDeg": 25.0, "noLiftInJump": true, "maxTotalAngleDeg": 35.0, "fastLeanDeg": 10.0 },
+			"bust":      { "match": "Bust",      "frequency": 4.0, "dampingRatio": 0.25, "maxAngleDeg": 8.0,  "maxTotalAngleDeg": 0.0,  "fastLeanDeg": 0.0 }
 		}
 	},
 
