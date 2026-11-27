@@ -898,6 +898,7 @@ def rotoscope(anim, cfg, base_dir):
                 fore = hf + wrap180(fore - hf) * (1.0 - hw)
             t["J_Bip_%s_UpperArm" % sd] = up
             t["J_Bip_%s_LowerArm" % sd] = fore
+        t["_hold_w"] = hw
         t["toe_cm"] = min(r["toeA"], r["toeB"]) * leg_cm + cfg.get("toe_offset_cm", 0.0)
         t["hip_cm"] = r["hipH"] * leg_cm
         targets.append(t)
@@ -954,6 +955,9 @@ def rotoscope(anim, cfg, base_dir):
         base = T * split[0] if par == "hips" else (T if par == "torso" else t.get(par, 0.0))
         return t.get(b, 0.0) - base
 
+    # arm_hold の splay で足す回転（ボーン → コマごとのローカルの回転）。ロトスコープを合わせたあとに求める。
+    extra = {}
+
     def write():
         c = get_controller(anim)
         c.open_bracket(unreal.Text("rotoscope"), False)
@@ -964,7 +968,10 @@ def rotoscope(anim, cfg, base_dir):
                 half = math.radians(own(f, b)) * 0.5
                 sn = math.sin(half)
                 a = o["axis"][f]
-                rots.append(q_mul(unreal.Quat(a.x * sn, a.y * sn, a.z * sn, math.cos(half)), o["rot"][f]))
+                rot = q_mul(unreal.Quat(a.x * sn, a.y * sn, a.z * sn, math.cos(half)), o["rot"][f])
+                if b in extra:
+                    rot = q_mul(extra[b][f], rot)
+                rots.append(rot)
                 p = o["pos"][f]
                 if b == HIPS:
                     p = p + q_rotate(q_inv(o["parent"][f]), unreal.Vector(0.0, 0.0, lift[f]))
@@ -998,6 +1005,37 @@ def rotoscope(anim, cfg, base_dir):
                 worst = max(worst, abs(r))
         write()
         log("rotoscope pass", it, "worst residual(deg)", round(worst, 1))
+
+    # arm_hold の splay: {"b": 度}: 腕を止める区間（arm_hold の重みが効くコマ）だけ、前腕（ひじ → 手）を体の外の向きへ倒す（正 = 外）。
+    # ロトスコープは手足を左右の軸のまわりにしか回さないので、元のポーズのひじの横への曲がりが残る。
+    # 腕を後ろへ伸ばしたとき、その曲がりで前腕が背中の側（体の内側）へ折れて見えるのを、止める区間だけ戻す。
+    # 軸は splay_deg と同じ「骨の向き × 外向き」なので、横から見た角度はほとんど変わらない。
+    hold_cfg = cfg.get("arm_hold") or {}
+    for src, deg in (hold_cfg.get("splay") or {}).items():
+        bone = "J_Bip_%s_LowerArm" % m[src]
+        if bone not in bones:
+            continue
+        d = P.get_bone_pose(skel_ref, bone, W).translation - P.get_bone_pose(skel_ref, HIPS, W).translation
+        out_side = axis * (1.0 if d.dot(axis) >= 0.0 else -1.0)
+        quats = []
+        for f in range(num_keys):
+            w = targets[f].get("_hold_w", 0.0) if f < len(targets) else 0.0
+            if w <= 0.0:
+                quats.append(unreal.Quat(0.0, 0.0, 0.0, 1.0))
+                continue
+            pose = P.get_anim_pose_at_frame(anim, f, opts)
+            world = P.get_bone_pose(pose, bone, W)
+            local = P.get_bone_pose(pose, bone, L)
+            parent_rot = q_mul(world.rotation, q_inv(local.rotation))
+            tip = P.get_bone_pose(pose, SEGMENT_CHILD[bone], W).translation - world.translation
+            ax = q_rotate(q_inv(parent_rot), tip.cross(out_side).normal())
+            half = math.radians(deg * w) * 0.5
+            sn = math.sin(half)
+            quats.append(unreal.Quat(ax.x * sn, ax.y * sn, ax.z * sn, math.cos(half)))
+        extra[bone] = quats
+        log("arm_hold splay", bone, deg)
+    if extra:
+        write()
 
     # 高さ: "toe" はコマごとに一番低いつま先を合わせる。"hips" は腰の高さの動きを動画に合わせ、
     # クリップ全体で一番低いつま先が 0.5cm になるよう全体を上下させる（走りのように、両足が浮くコマで跳ね上がらないように）。
