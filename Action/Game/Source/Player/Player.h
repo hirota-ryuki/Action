@@ -54,8 +54,19 @@ protected:
 	void FilterSkillInput(CharacterInput& input) const override;
 	void OnLateUpdate(float deltaTime) override;
 	void OnAddPoseLayers(PoseLayers& layers) override;
+	void OnDebugMeasurePose(Skeleton& skeleton, int stage) override;  // 【仮・測る用】
 
 private:
+	// 【仮・測る用】環境変数 DASH_MEASURE があれば、自動で前のダッシュを出して数値を CSV に書き、終わる。
+	void UpdateDebugMeasure(float deltaTime);
+	FILE* m_measureFile = nullptr;
+	bool m_isMeasureMode = false;
+	float m_measureTimer = 0.0f;
+	int m_measureFrame = -1;
+	std::vector<std::pair<int, int>> m_skirtBones;  // 揺れ物のスカートの骨と、その最初の子。
+	std::vector<Vector3> m_skirtAnimDir;
+	std::vector<Vector3> m_skirtPrevAnimDir;
+	std::vector<Vector3> m_skirtPrevFinalDir;
 	void Respawn();
 	// ジャンプ中（Air・Land）の度合いを、体の連動と揺れ物に渡す。入る・出るときは少しずつ変える。
 	void UpdateJumpWeight(float deltaTime);
@@ -86,4 +97,9 @@ private:
 	int m_rightUpperArmBone = -1;             // 右の上腕の骨の番号（右肩を引いたあと、腕を狙う向きへ戻す）。
 	int m_neckBone = -1;                      // 首の骨の番号（右肩を引いたあと、顔を狙う向きへ戻す）。
 	Vector3 m_chargePosition = Vector3::Zero; // 溜めている火の玉を置く位置。
+	bool m_isDebugDashRequested = false;      // 比べる用: F1 の窓のボタンが押された。次のフレームでダッシュを出す。
+	float m_debugPlaySpeed = 1.0f;            // 比べる用: ゲーム全体の再生速度（倍）。
+	int m_debugPoseClip = -1;                 // 比べる用: その場でポーズだけ流すクリップ。0より小さければ流さない。
+	float m_debugPoseFrame = 0.0f;            // 比べる用: ポーズだけ流すときの今のコマ。
+	bool m_isDebugPoseStopped = false;        // 比べる用: ポーズだけ流すとき、今のコマで止める。
 };

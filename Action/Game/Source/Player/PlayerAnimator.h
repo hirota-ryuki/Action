@@ -18,6 +18,7 @@ enum EnPlayerAnimClip
 	enPlayerAnimClip_WalkBack, // 後ろ歩き（三人称の溜め撃ちで、構えたまま後ろへ歩く）
 	enPlayerAnimClip_StrafeL,  // 左への横歩き（同じく、構えたまま左へ歩く）
 	enPlayerAnimClip_StrafeR,  // 右への横歩き（StrafeL を左右反転したもの）
+	enPlayerAnimClip_DashOld,  // 比べる用: 写真のポーズにする前のダッシュ（main の Dash）
 	enPlayerAnimClip_Num,
 };
 

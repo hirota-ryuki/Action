@@ -122,6 +122,10 @@ protected:
 	virtual void OnAddPoseLayers(PoseLayers& layers)
 	{
 	}
+	// 【仮・測る用】骨の調整の層の段階ごとの姿勢（0: アニメーションのまま、1: 体の連動のあと、2: 揺れ物のあと）。
+	virtual void OnDebugMeasurePose(Skeleton& skeleton, int stage)
+	{
+	}
 	// 体を描いたあと、自分だけのものを描く。
 	virtual void OnRender(RenderContext& rc)
 	{

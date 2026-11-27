@@ -223,7 +223,9 @@
 			// （tools/BlenderScripts/player_charge_walk_anims.json）。StrafeR は StrafeL を左右反転したもの。
 			"WalkBack": { "path": "Assets/modelData/player/Animation/WalkBack.fbx", "loop": true },
 			"StrafeL":  { "path": "Assets/modelData/player/Animation/StrafeL.fbx",  "loop": true },
-			"StrafeR":  { "path": "Assets/modelData/player/Animation/StrafeR.fbx",  "loop": true }
+			"StrafeR":  { "path": "Assets/modelData/player/Animation/StrafeR.fbx",  "loop": true },
+			// 比べる用: 写真のポーズにする前のダッシュ（main の Dash）。F1 の窓のボタンで切り替える。
+			"DashOld":  { "path": "Assets/modelData/player/Animation/DashOld.fbx",  "loop": false }
 		}
 	}
 }
