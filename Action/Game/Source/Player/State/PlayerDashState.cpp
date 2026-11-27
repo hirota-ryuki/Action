@@ -68,8 +68,11 @@ void PlayerDashState::PlayKick(PlayerStateContext& context, float blendSeconds, 
 {
 	// ダッシュの通しのクリップを1回流す（ループしないので、終わると着地して走り出すポーズで止まる）。
 	// 連打で続けて出すとき（dashCanChain）は同じクリップを流し直すので、補間されずに startTime のポーズへ飛ぶ。
-	context.animator->PlayFrom(enPlayerAnimClip_Dash, blendSeconds, startTime, context.settings.dashAnimSpeed);
+	const int clip = s_useOldClip ? enPlayerAnimClip_DashOld : enPlayerAnimClip_Dash;  // 【仮・比べる用】
+	context.animator->PlayFrom(clip, blendSeconds, startTime, context.settings.dashAnimSpeed);
 }
+
+bool PlayerDashState::s_useOldClip = false;  // 【仮・比べる用】
 
 PlayerStateId PlayerDashState::CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const
 {

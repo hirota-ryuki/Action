@@ -30,14 +30,17 @@ bool Character::Start()
 	// アニメーションの姿勢ができたあとに、体の連動 → 派生クラスの層 → 揺れ物の順に重ねる（揺れ物は連動した体の動きに遅れて付いてくる）。
 	// 使わない部品（黒騎士の体の連動・揺れ物など）は、層に入れない。
 	m_poseLayers.Init(m_model.GetModelRender());
+	m_poseLayers.Add([this](Skeleton& skeleton) { OnDebugMeasurePose(skeleton, 0); }, false);  // 【仮・測る用】
 	if (m_bodyLink.IsActive()) {
 		m_poseLayers.Add([this](Skeleton& skeleton) { m_bodyLink.Update(skeleton); });
 	}
+	m_poseLayers.Add([this](Skeleton& skeleton) { OnDebugMeasurePose(skeleton, 1); }, false);  // 【仮・測る用】
 	OnAddPoseLayers(m_poseLayers);
 	if (m_springBones.IsActive()) {
 		// 揺れ物は体の動き（移動・向きを変える）で変わるので、焼き込まない。
 		m_poseLayers.Add([this](Skeleton& skeleton) { m_springBones.Update(skeleton); }, false);
 	}
+	m_poseLayers.Add([this](Skeleton& skeleton) { OnDebugMeasurePose(skeleton, 2); }, false);  // 【仮・測る用】
 
 	m_statusEffects.Init(&m_model.GetModelRender());
 

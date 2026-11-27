@@ -5,6 +5,7 @@
 #include "FireMagic.h"
 #include "MagicConfig.h"
 #include "PoseLayers.h"
+#include "PlayerDashState.h"  // 【仮・比べる用】
 #include <imgui/imgui.h>
 
 namespace
@@ -76,10 +77,31 @@ void Player::FillInputContext(InputSourceContext& context) const
 void Player::UpdateAction(float deltaTime)
 {
 	// 移動とアニメーションはステートが行う。凍結中は Frozen ステートになり、重力で落ちるだけになる。
+	UpdateDebugMeasure(deltaTime);  // 【仮・測る用】
 	CharacterInput input = m_input;
 	FilterAimingInput(input);
 	m_stateMachine.SetAiming(IsThirdPersonAiming());
+	if (m_isDebugDashRequested) {  // 【仮・比べる用】
+		m_isDebugDashRequested = false;
+		input.dash.isTrigger = true;
+		if (m_isMeasureMode) {
+			// 測るときは、カメラから見て右へダッシュする（横から見るため）。
+			Vector3 right = g_camera3D->GetRight();
+			right.y = 0.0f;
+			right.Normalize();
+			input.moveDirection = right * -1.0f;  // 左へ（体の右側＝後ろの腕の側をカメラへ向ける）
+		}
+	}
 	m_stateMachine.Update(input, deltaTime);
+	if (m_debugPoseClip >= 0) {  // 【仮・比べる用】その場でダッシュのアニメーションだけを流す。
+		if (!m_isDebugPoseStopped) {
+			m_debugPoseFrame += deltaTime * 30.0f;
+			if (m_debugPoseFrame > 16.0f) {
+				m_debugPoseFrame = 0.0f;
+			}
+		}
+		m_model.GetModelRender().PlayAnimationAtTime(m_debugPoseClip, m_debugPoseFrame / 30.0f);
+	}
 	UpdateJumpWeight(deltaTime);
 	UpdateAttackWeight(deltaTime);
 	UpdateDashWeight(deltaTime);
@@ -134,7 +156,7 @@ void Player::UpdateDashWeight(float deltaTime)
 	const float target = m_stateMachine.GetCurrentId() == PlayerStateId::Dash ? 1.0f : 0.0f;
 	const float step = deltaTime / DASH_WEIGHT_FADE_SECONDS;
 	m_dashWeight = target > m_dashWeight ? min(target, m_dashWeight + step) : max(target, m_dashWeight - step);
-	SetDashWeight(m_dashWeight);
+	SetDashWeight(m_isDebugBeforeFix ? 0.0f : m_dashWeight);  // 【仮・比べる用】直す前は外さない。
 }
 
 void Player::FilterAimingInput(CharacterInput& input)
@@ -274,6 +296,7 @@ void Player::OnLateUpdate(float deltaTime)
 	UpdateChargePosition();
 	if (DebugUI::IsVisible()) {
 		DrawChargeDebugUI();
+		DrawDashCompareUI();  // 【仮・比べる用】
 	}
 }
 
@@ -325,3 +348,255 @@ void Player::Respawn()
 	m_mover.Stop();
 	m_stateMachine.Reset();
 }
+// ───────── 【仮・測る用】ここから（コミットしない） ─────────
+namespace
+{
+	float SideAngleDeg(const Vector3& v, const Vector3& forward)
+	{
+		// 横から見た角度。真下を 0°、後ろを正、前を負（BodyLink::LimitArmSwing と同じ決まり）。
+		return Math::RadToDeg(atan2f(-v.Dot(forward), -v.y));
+	}
+	float AngleBetweenDeg(Vector3 a, Vector3 b)
+	{
+		a.Normalize();
+		b.Normalize();
+		return Math::RadToDeg(acosf(min(1.0f, max(-1.0f, a.Dot(b)))));
+	}
+}
+
+void Player::UpdateDebugMeasure(float deltaTime)
+{
+	if (m_measureTimer == 0.0f && m_measureFrame < 0 && !m_isMeasureMode) {
+		char buf[8] = {};
+		size_t len = 0;
+		if (getenv_s(&len, buf, sizeof(buf), "DASH_MEASURE") != 0 || len == 0) {
+			m_measureTimer = -1.0f;  // 測らない。
+			return;
+		}
+		m_isMeasureMode = true;
+		m_isMeasureBefore = (buf[0] == 'o');
+		m_isCaptureMode = (buf[1] == 'c' || buf[3] == 'c');  // "oc" / "newc" で撮る。
+		g_gameTime->EnableFixedFrameDeltaTime(1.0f / 60.0f);
+		fopen_s(&m_measureFile, "dash_measure.csv", "w");
+		Skeleton& skeleton = m_model.GetModelRender().GetSkeleton();
+		for (int i = 0; i < skeleton.GetNumBones(); i++) {
+			Bone* bone = skeleton.GetBone(i);
+			const std::wstring name = bone->GetName();
+			if (name.rfind(L"J_Sec_", 0) != 0 || name.find(L"Skirt") == std::wstring::npos || bone->GetChildren().empty()) {
+				continue;
+			}
+			const int child = bone->GetChildren().front()->GetNo();
+			if ((PoseLayers::BonePosition(skeleton, child) - PoseLayers::BonePosition(skeleton, i)).Length() < 0.5f) {
+				continue;  // 長さ 0 の骨は、向きが決まらないので外す。
+			}
+			m_skirtBones.push_back({ i, child });
+		}
+		m_skirtAnimDir.resize(m_skirtBones.size());
+		m_skirtPrevAnimDir.resize(m_skirtBones.size());
+		m_skirtPrevFinalDir.resize(m_skirtBones.size());
+		if (m_measureFile) {
+			fprintf(m_measureFile, "frame,stage,state,posZ,"
+				"L_upper,L_lower,L_elbowBend,L_elbowOut,L_handOut,"
+				"R_upper,R_lower,R_elbowBend,R_elbowOut,R_handOut,"
+				"L_thigh,L_shin,R_thigh,R_shin,"
+				"skirt_devMax,skirt_devMean,skirt_jitterMax,skirt_jitterMean,skirt_animJitterMax,skirt_liftMax,skirtCount\n");
+		}
+	}
+	if (!m_isMeasureMode) {
+		return;
+	}
+	m_measureTimer += deltaTime;
+	if (m_measureTimer < 1000.0f) {
+		if (m_measureTimer >= 1.0f) {
+			m_measureFrame = -60;  // 立っている間を 60 フレーム測ってから、ダッシュを出す。
+			m_measureTimer = 1000.0f;
+		}
+		return;
+	}
+	if (m_isCaptureWaiting) {
+		// 撮り終わるまで、時間をほぼ止めて待つ。
+		FILE* done = nullptr;
+		if (fopen_s(&done, "capture_done.txt", "r") == 0 && done) {
+			fclose(done);
+			remove("capture_done.txt");
+			m_isCaptureWaiting = false;
+			g_gameTime->EnableFixedFrameDeltaTime(1.0f / 60.0f);
+		}
+		else {
+			return;
+		}
+	}
+	m_measureFrame++;
+	if (m_isCaptureMode && (m_measureFrame == -10 || m_measureFrame == 9 || m_measureFrame == 16 || m_measureFrame == 24 || m_measureFrame == 40)) {
+		g_gameTime->EnableFixedFrameDeltaTime(1.0e-5f);
+		FILE* ready = nullptr;
+		if (fopen_s(&ready, "capture_ready.txt", "w") == 0 && ready) {
+			fprintf(ready, "%d", m_measureFrame);
+			fclose(ready);
+		}
+		m_isCaptureWaiting = true;
+	}
+	if (m_measureFrame == 0) {
+		SetDebugBeforeFix(m_isMeasureBefore);
+		m_isDebugDashRequested = true;
+	}
+	if (m_measureFrame > 80) {
+		if (m_measureFile) {
+			fclose(m_measureFile);
+		}
+		ExitProcess(0);
+	}
+}
+
+void Player::OnDebugMeasurePose(Skeleton& skeleton, int stage)
+{
+	if (m_measureFile == nullptr || m_measureFrame < -60) {
+		return;
+	}
+	ModelRender& model = m_model.GetModelRender();
+	auto pos = [&](const wchar_t* name) { return PoseLayers::BonePosition(skeleton, model.FindBoneID(name)); };
+	Vector3 forward = m_mover.GetForward();
+	forward.y = 0.0f;
+	forward.Normalize();
+	const Vector3 chest = pos(L"J_Bip_C_UpperChest");
+
+	fprintf(m_measureFile, "%d,%d,%d,%.1f", m_measureFrame, stage, static_cast<int>(m_stateMachine.GetCurrentId()), m_mover.GetPosition().z);
+	const wchar_t* arms[2][3] = {
+		{ L"J_Bip_L_UpperArm", L"J_Bip_L_LowerArm", L"J_Bip_L_Hand" },
+		{ L"J_Bip_R_UpperArm", L"J_Bip_R_LowerArm", L"J_Bip_R_Hand" },
+	};
+	for (auto& arm : arms) {
+		const Vector3 s = pos(arm[0]);
+		const Vector3 e = pos(arm[1]);
+		const Vector3 h = pos(arm[2]);
+		// 体の外向き（胸の真ん中から、その肩の方へ。水平で、前向きに直角）。
+		Vector3 out = s - chest;
+		out -= forward * out.Dot(forward);
+		out.y = 0.0f;
+		out.Normalize();
+		fprintf(m_measureFile, ",%.1f,%.1f,%.1f,%.1f,%.1f",
+			SideAngleDeg(e - s, forward), SideAngleDeg(h - e, forward), AngleBetweenDeg(e - s, h - e),
+			(e - s).Dot(out), (h - s).Dot(out));
+	}
+	const wchar_t* legs[2][3] = {
+		{ L"J_Bip_L_UpperLeg", L"J_Bip_L_LowerLeg", L"J_Bip_L_Foot" },
+		{ L"J_Bip_R_UpperLeg", L"J_Bip_R_LowerLeg", L"J_Bip_R_Foot" },
+	};
+	for (auto& leg : legs) {
+		const Vector3 hip = pos(leg[0]);
+		const Vector3 knee = pos(leg[1]);
+		const Vector3 foot = pos(leg[2]);
+		fprintf(m_measureFile, ",%.1f,%.1f", SideAngleDeg(knee - hip, forward), SideAngleDeg(foot - knee, forward));
+	}
+
+	// スカート: 0 でアニメーションの向きを覚え、2 で揺れ物のあとの向きと比べる。
+	float devMax = 0.0f, devSum = 0.0f, jitMax = 0.0f, jitSum = 0.0f, animJitMax = 0.0f, liftMax = 0.0f;
+	for (size_t i = 0; i < m_skirtBones.size(); i++) {
+		Vector3 dir = PoseLayers::BonePosition(skeleton, m_skirtBones[i].second) - PoseLayers::BonePosition(skeleton, m_skirtBones[i].first);
+		dir.Normalize();
+		if (stage == 1) {
+			if (m_measureFrame > -60) {
+				animJitMax = max(animJitMax, AngleBetweenDeg(dir, m_skirtPrevAnimDir[i]));
+			}
+			m_skirtPrevAnimDir[i] = dir;
+			m_skirtAnimDir[i] = dir;
+		}
+		const float dev = AngleBetweenDeg(dir, m_skirtAnimDir[i]);
+		devMax = max(devMax, dev);
+		devSum += dev;
+		if (stage == 2) {
+			if (m_measureFrame > -60) {
+				const float jit = AngleBetweenDeg(dir, m_skirtPrevFinalDir[i]);
+				if (m_measureFrame == -10 || m_measureFrame == 4 || m_measureFrame == 14 || m_measureFrame == 24 || m_measureFrame == 40) {
+					// 骨1本ずつ: 名前・長さ・アニメーション（体の連動のあと）からのずれ・前のフレームからの動き。
+					FILE* dump = nullptr;
+					fopen_s(&dump, "dash_measure_bones.csv", "a");
+					if (dump) {
+						const float length = (PoseLayers::BonePosition(skeleton, m_skirtBones[i].second) - PoseLayers::BonePosition(skeleton, m_skirtBones[i].first)).Length();
+						fwprintf(dump, L"%d,%ls,%.2f,%.1f,%.1f\n", m_measureFrame, skeleton.GetBone(m_skirtBones[i].first)->GetName(), length, AngleBetweenDeg(dir, m_skirtAnimDir[i]), jit);
+						fclose(dump);
+					}
+				}
+				jitMax = max(jitMax, jit);
+				jitSum += jit;
+			}
+			m_skirtPrevFinalDir[i] = dir;
+		}
+		liftMax = max(liftMax, AngleBetweenDeg(dir, Vector3(0.0f, -1.0f, 0.0f)));
+	}
+	const float n = m_skirtBones.empty() ? 1.0f : static_cast<float>(m_skirtBones.size());
+	fprintf(m_measureFile, ",%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%d\n", devMax, devSum / n, jitMax, jitSum / n, animJitMax, liftMax, static_cast<int>(m_skirtBones.size()));
+}
+// ───────── 【仮・測る用】ここまで ─────────
+
+// ───────── 【仮・比べる用】ここから（コミットしない） ─────────
+void Player::SetDebugBeforeFix(bool isBefore)
+{
+	m_isDebugBeforeFix = isBefore;
+	PlayerDashState::SetUseOldClip(isBefore);
+	SpringBonesSettings& settings = DebugGetSpringBones().GetSettings();
+	if (!m_hasDebugSpringBackup) {
+		m_debugSpringBackup = settings;
+		m_hasDebugSpringBackup = true;
+	}
+	settings = m_debugSpringBackup;
+	if (isBefore) {
+		settings.fastMoveFollow = 0.0f;
+		for (SpringBoneGroupSettings& group : settings.groups) {
+			group.maxTotalAngleDeg = 0.0f;
+			group.fastLeanDeg = 0.0f;
+		}
+	}
+}
+
+void Player::DrawDashCompareUI()
+{
+	ImGui::Begin(u8"ダッシュの比較");
+	if (ImGui::SliderFloat(u8"再生速度（倍）", &m_debugPlaySpeed, 0.05f, 1.0f, "%.2f")) {
+		if (m_debugPlaySpeed < 1.0f) {
+			g_gameTime->EnableFixedFrameDeltaTime(m_debugPlaySpeed / 60.0f);
+		}
+		else {
+			g_gameTime->DisableFixedFrameDeltaTime();
+		}
+	}
+	const auto stopPose = [this]() {
+		if (m_debugPoseClip >= 0) {
+			m_debugPoseClip = -1;
+			m_animator.Play(enPlayerAnimClip_Idle);
+		}
+	};
+	ImGui::Text(u8"ダッシュ（進む）");
+	if (ImGui::Button(u8"直す前のダッシュ")) {
+		stopPose();
+		SetDebugBeforeFix(true);
+		m_isDebugDashRequested = true;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button(u8"直した後のダッシュ")) {
+		stopPose();
+		SetDebugBeforeFix(false);
+		m_isDebugDashRequested = true;
+	}
+	ImGui::Text(u8"ポーズだけ（その場で、進まない）");
+	if (ImGui::Button(u8"直す前のポーズ")) {
+		SetDebugBeforeFix(true);
+		m_debugPoseClip = enPlayerAnimClip_DashOld;
+		m_debugPoseFrame = 0.0f;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button(u8"直した後のポーズ")) {
+		SetDebugBeforeFix(false);
+		m_debugPoseClip = enPlayerAnimClip_Dash;
+		m_debugPoseFrame = 0.0f;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button(u8"ポーズをやめる")) {
+		stopPose();
+	}
+	ImGui::Checkbox(u8"止める", &m_isDebugPoseStopped);
+	ImGui::SliderFloat(u8"コマ", &m_debugPoseFrame, 0.0f, 16.0f, "%.1f");
+	ImGui::Text(m_isDebugBeforeFix ? u8"今: 直す前" : u8"今: 直した後");
+	ImGui::End();
+}
+// ───────── 【仮・比べる用】ここまで ─────────

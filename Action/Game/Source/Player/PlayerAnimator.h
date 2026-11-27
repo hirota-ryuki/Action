@@ -16,6 +16,7 @@ enum EnPlayerAnimClip
 	enPlayerAnimClip_Attack2, // 左手で撃つ（2段目）
 	enPlayerAnimClip_Attack3, // 両手で撃つ（3段目）
 	enPlayerAnimClip_WalkBack, // 後ろ歩き（三人称の溜め撃ちで、構えたまま後ろへ歩く）
+	enPlayerAnimClip_DashOld,  // 【仮・比べる用】直す前のダッシュ（main の Dash）
 	enPlayerAnimClip_Num,
 };
 

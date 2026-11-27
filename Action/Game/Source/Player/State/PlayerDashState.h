@@ -25,6 +25,9 @@ public:
 	PlayerStateId CheckTransition(const PlayerStateContext& context, const CharacterInput& input) const override;
 	void Update(PlayerStateContext& context, const CharacterInput& input, float deltaTime) override;
 	void Exit(PlayerStateContext& context) override;
+	// 【仮・比べる用】true なら、直す前のダッシュ（DashOld）を流す。
+	static void SetUseOldClip(bool useOld) { s_useOldClip = useOld; }
+	static bool s_useOldClip;
 
 private:
 	// 1回分のダッシュを始める。方向を決め直し、蹴る足を入れ替える。アニメーションは流さない。

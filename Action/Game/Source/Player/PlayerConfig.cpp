@@ -192,6 +192,7 @@ namespace
 		{ "Attack2", enPlayerAnimClip_Attack2, { "Assets/modelData/player/Animation/Attack2.fbx", false } },
 		{ "Attack3", enPlayerAnimClip_Attack3, { "Assets/modelData/player/Animation/Attack3.fbx", false } },
 		{ "WalkBack", enPlayerAnimClip_WalkBack, { "Assets/modelData/player/Animation/WalkBack.fbx", true } },
+		{ "DashOld", enPlayerAnimClip_DashOld, { "Assets/modelData/player/Animation/DashOld.fbx", false } },  // 【仮・比べる用】
 	};
 	static_assert(sizeof(CLIP_TABLE) / sizeof(CLIP_TABLE[0]) == enPlayerAnimClip_Num,
 		"EnPlayerAnimClip を足したら、CLIP_TABLE と player.json の animation.clips にも足してください。");

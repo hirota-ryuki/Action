@@ -54,8 +54,33 @@ protected:
 	void FilterSkillInput(CharacterInput& input) const override;
 	void OnLateUpdate(float deltaTime) override;
 	void OnAddPoseLayers(PoseLayers& layers) override;
+	void OnDebugMeasurePose(Skeleton& skeleton, int stage) override;  // 【仮・測る用】
 
 private:
+	// ───── 【仮・測る用／比べる用】ここから（コミットしない） ─────
+	void UpdateDebugMeasure(float deltaTime);
+	void DrawDashCompareUI();
+	void SetDebugBeforeFix(bool isBefore);  // true で、直す前（main のダッシュ・腕の調整あり・揺れ物の新しい値なし）にする。
+	FILE* m_measureFile = nullptr;
+	bool m_isMeasureMode = false;
+	bool m_isMeasureBefore = false;
+	bool m_isCaptureMode = false;
+	bool m_isCaptureWaiting = false;
+	float m_measureTimer = 0.0f;
+	int m_measureFrame = -1;
+	std::vector<std::pair<int, int>> m_skirtBones;
+	std::vector<Vector3> m_skirtAnimDir;
+	std::vector<Vector3> m_skirtPrevAnimDir;
+	std::vector<Vector3> m_skirtPrevFinalDir;
+	bool m_isDebugDashRequested = false;
+	bool m_isDebugBeforeFix = false;
+	bool m_hasDebugSpringBackup = false;
+	SpringBonesSettings m_debugSpringBackup;
+	float m_debugPlaySpeed = 1.0f;
+	int m_debugPoseClip = -1;
+	float m_debugPoseFrame = 0.0f;
+	bool m_isDebugPoseStopped = false;
+	// ───── 【仮】ここまで ─────
 	void Respawn();
 	// ジャンプ中（Air・Land）の度合いを、体の連動と揺れ物に渡す。入る・出るときは少しずつ変える。
 	void UpdateJumpWeight(float deltaTime);
